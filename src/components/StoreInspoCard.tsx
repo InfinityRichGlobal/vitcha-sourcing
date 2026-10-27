@@ -16,6 +16,7 @@ import {
   ChevronRight,
   Eye,
   X,
+  Pencil,
 } from 'lucide-react';
 
 interface StoreInspoCardProps {
@@ -35,6 +36,8 @@ export const StoreInspoCard: React.FC<StoreInspoCardProps> = ({
     toggleLikeItem,
     addReviewerNote,
     addReviewReply,
+    canEditItems,
+    openEditItem,
   } = useApp();
 
   const [currentPhotoIdx, setCurrentPhotoIdx] = useState(0);
@@ -127,6 +130,20 @@ export const StoreInspoCard: React.FC<StoreInspoCardProps> = ({
           </div>
 
           <div className="flex items-center gap-1.5 shrink-0">
+            {canEditItems && (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  openEditItem(store);
+                }}
+                className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-slate-100 hover:bg-amber-50 text-slate-700 hover:text-amber-800 border border-slate-200 text-[11px] font-bold transition-colors"
+                title="แก้ไขข้อมูลร้านน้ำนี้"
+              >
+                <Pencil className="w-3 h-3" />
+                <span>แก้ไข</span>
+              </button>
+            )}
             <span className="text-xs font-mono font-bold text-amber-600 bg-amber-50/70 px-2 py-0.5 rounded-md border border-amber-200/60">
               ★ {avgRating}
             </span>

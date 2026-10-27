@@ -1,20 +1,15 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import { CatalogItem } from '../types';
 import { AudioRecorder } from './AudioRecorder';
-import { 
-  X, 
-  Camera, 
-  Plus, 
-  Trash2, 
-  MapPin, 
-  Star, 
-  Sparkles,
+import {
+  X,
+  Camera,
+  Trash2,
   Upload,
-  Check,
-  Mic,
   Tag,
-  Factory
+  Factory,
+  Pencil,
 } from 'lucide-react';
 
 interface NewSupplierModalProps {
@@ -23,16 +18,23 @@ interface NewSupplierModalProps {
 }
 
 export const NewSupplierModal: React.FC<NewSupplierModalProps> = ({ isOpen, onClose }) => {
-  const { 
-    addSupplier, 
-    convertCnyToThb, 
-    currentUser, 
-    suppliers, 
-    categories, 
+  const {
+    addSupplier,
+    updateSupplier,
+    deleteSupplier,
+    editingSupplier,
+    closeEditItem,
+    convertCnyToThb,
+    currentUser,
+    suppliers,
+    categories,
     quickTagsList,
     addQuickTag,
     setActiveTab,
   } = useApp();
+
+  const isEditMode = !!editingSupplier;
+  const modalOpen = isOpen || isEditMode;
 
   const [country, setCountry] = useState<'CN' | 'TH'>('CN');
   const [name, setName] = useState('');
@@ -40,7 +42,7 @@ export const NewSupplierModal: React.FC<NewSupplierModalProps> = ({ isOpen, onCl
   const [marketOrCity, setMarketOrCity] = useState('กวางโจว (Guangzhou)');
   const [category, setCategory] = useState(categories[0] || 'เคาน์เตอร์ & สเตนเลส');
   const [rating, setRating] = useState(5);
-  
+
   const [selectedTags, setSelectedTags] = useState<string[]>([
     quickTagsList[0] || 'โรงงานผลิตเอง (Manufacturer)',
   ]);
@@ -58,7 +60,7 @@ export const NewSupplierModal: React.FC<NewSupplierModalProps> = ({ isOpen, onCl
   const [storefrontAndAtmosphere, setStorefrontAndAtmosphere] = useState<string[]>([]);
   const [contactCards, setContactCards] = useState<string[]>([]);
 
-  // Batch Catalog Items (รองรับภาพล้วนๆ แยกการ์ดอัตโนมัติ)
+  // Batch Catalog Items
   const [catalogItems, setCatalogItems] = useState<CatalogItem[]>([]);
 
   // GPS Location
@@ -68,7 +70,59 @@ export const NewSupplierModal: React.FC<NewSupplierModalProps> = ({ isOpen, onCl
   const [isLocating, setIsLocating] = useState(false);
   const [gpsStatusMsg, setGpsStatusMsg] = useState<string | null>(null);
 
-  if (!isOpen) return null;
+  // Populate form when editingSupplier changes or reset when opening fresh
+  useEffect(() => {
+    if (editingSupplier) {
+      setCountry(editingSupplier.country || 'CN');
+      setName(editingSupplier.name || '');
+      setChineseName(editingSupplier.chineseName || '');
+      setMarketOrCity(editingSupplier.marketOrCity || 'กวางโจว (Guangzhou)');
+      setCategory(editingSupplier.category || categories[0] || 'เคาน์เตอร์ & สเตนเลส');
+      setRating(editingSupplier.rating || 5);
+      setSelectedTags(editingSupplier.quickTags || []);
+      setPhone(editingSupplier.phone || '');
+      setWechatId(editingSupplier.wechatId || '');
+      setLineId(editingSupplier.lineId || '');
+      setMemo(editingSupplier.memo || '');
+      setMainVoiceUrl(editingSupplier.voiceNoteUrl);
+      setMainVoiceSec(editingSupplier.voiceDurationSec || 0);
+      setStorefrontAndAtmosphere(editingSupplier.photos?.storefrontAndAtmosphere || []);
+      setContactCards(editingSupplier.photos?.contactCards || []);
+      setCatalogItems(editingSupplier.catalogItems || []);
+      setLat(editingSupplier.location?.lat || 23.0965);
+      setLng(editingSupplier.location?.lng || 113.3644);
+      setAddressText(editingSupplier.location?.addressText || editingSupplier.marketOrCity || '');
+      setGpsStatusMsg(null);
+    } else if (isOpen) {
+      setCountry('CN');
+      setName('');
+      setChineseName('');
+      setMarketOrCity('กวางโจว (Guangzhou)');
+      setCategory(categories[0] || 'เคาน์เตอร์ & สเตนเลส');
+      setRating(5);
+      setSelectedTags([quickTagsList[0] || 'โรงงานผลิตเอง (Manufacturer)']);
+      setPhone('');
+      setWechatId('');
+      setLineId('');
+      setMemo('');
+      setMainVoiceUrl(undefined);
+      setMainVoiceSec(0);
+      setStorefrontAndAtmosphere([]);
+      setContactCards([]);
+      setCatalogItems([]);
+      setLat(23.0965);
+      setLng(113.3644);
+      setAddressText('กวางโจว (Guangzhou)');
+      setGpsStatusMsg(null);
+    }
+  }, [editingSupplier, isOpen]);
+
+  if (!modalOpen) return null;
+
+  const handleCloseAll = () => {
+    closeEditItem();
+    onClose();
+  };
 
   // Toggle quick tags
   const toggleTag = (tag: string) => {
@@ -77,7 +131,7 @@ export const NewSupplierModal: React.FC<NewSupplierModalProps> = ({ isOpen, onCl
     );
   };
 
-  // Mass batch photo upload for catalog: Upload multiple photos -> automatically creates individual items!
+  // Mass batch photo upload for catalog
   const handleMassCatalogUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
@@ -135,7 +189,6 @@ export const NewSupplierModal: React.FC<NewSupplierModalProps> = ({ isOpen, onCl
     setCatalogItems(catalogItems.filter((_, i) => i !== index));
   };
 
-  // Get current GPS + Reverse Geocode via OpenStreetMap Nominatim
   const handleGetLocation = () => {
     if (!navigator.geolocation) {
       setGpsStatusMsg('เบราว์เซอร์ไม่รองรับ GPS');
@@ -187,61 +240,111 @@ export const NewSupplierModal: React.FC<NewSupplierModalProps> = ({ isOpen, onCl
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
-    // Zero forced typing: default to fallback name if user didn't type anything!
+
     const finalName = name.trim() || `ซัพพลายเออร์ #${suppliers.length + 1} (${category})`;
 
-    addSupplier({
-      name: finalName,
-      chineseName: chineseName.trim() || undefined,
-      marketOrCity: marketOrCity.trim() || addressText,
-      category,
-      country,
-      rating,
-      quickTags: selectedTags,
-      isFactory: selectedTags.includes('โรงงานผลิตเอง (Manufacturer)'),
-      phone: phone.trim() || undefined,
-      wechatId: wechatId.trim() || undefined,
-      lineId: lineId.trim() || undefined,
-      photos: {
-        storefrontAndAtmosphere: storefrontAndAtmosphere.length > 0
-          ? storefrontAndAtmosphere
-          : ['https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80'],
-        contactCards,
-      },
-      catalogItems,
-      memo: memo.trim() || undefined,
-      voiceNoteUrl: mainVoiceUrl,
-      voiceDurationSec: mainVoiceSec,
-      location: {
-        lat,
-        lng,
-        addressText: marketOrCity.trim() || addressText,
-      },
-      status: 'scouted',
-      handoffStage: 'awaiting',
-      assignedTo: country === 'TH' ? 'ช่างบีม (วิศวกร)' : 'ไอซ์ (Scout Head)',
-    });
+    if (isEditMode && editingSupplier) {
+      updateSupplier(editingSupplier.id, {
+        name: finalName,
+        chineseName: chineseName.trim() || undefined,
+        marketOrCity: marketOrCity.trim() || addressText,
+        category,
+        country,
+        rating,
+        quickTags: selectedTags,
+        isFactory: selectedTags.includes('โรงงานผลิตเอง (Manufacturer)'),
+        phone: phone.trim() || undefined,
+        wechatId: wechatId.trim() || undefined,
+        lineId: lineId.trim() || undefined,
+        photos: {
+          storefrontAndAtmosphere:
+            storefrontAndAtmosphere.length > 0
+              ? storefrontAndAtmosphere
+              : ['https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80'],
+          contactCards,
+        },
+        catalogItems,
+        memo: memo.trim() || undefined,
+        voiceNoteUrl: mainVoiceUrl,
+        voiceDurationSec: mainVoiceSec,
+        location: {
+          lat,
+          lng,
+          addressText: marketOrCity.trim() || addressText,
+        },
+      });
+    } else {
+      addSupplier({
+        name: finalName,
+        chineseName: chineseName.trim() || undefined,
+        marketOrCity: marketOrCity.trim() || addressText,
+        category,
+        country,
+        rating,
+        quickTags: selectedTags,
+        isFactory: selectedTags.includes('โรงงานผลิตเอง (Manufacturer)'),
+        phone: phone.trim() || undefined,
+        wechatId: wechatId.trim() || undefined,
+        lineId: lineId.trim() || undefined,
+        photos: {
+          storefrontAndAtmosphere:
+            storefrontAndAtmosphere.length > 0
+              ? storefrontAndAtmosphere
+              : ['https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80'],
+          contactCards,
+        },
+        catalogItems,
+        memo: memo.trim() || undefined,
+        voiceNoteUrl: mainVoiceUrl,
+        voiceDurationSec: mainVoiceSec,
+        location: {
+          lat,
+          lng,
+          addressText: marketOrCity.trim() || addressText,
+        },
+        status: 'scouted',
+        handoffStage: 'awaiting',
+        assignedTo: country === 'TH' ? 'ช่างบีม (วิศวกร)' : 'Ice (Admin)',
+      });
+    }
 
-    onClose();
+    handleCloseAll();
+  };
+
+  const handleDelete = () => {
+    if (!editingSupplier) return;
+    if (window.confirm(`ยืนยันการลบรายการ "${editingSupplier.name}" หรือไม่?`)) {
+      deleteSupplier(editingSupplier.id);
+      handleCloseAll();
+    }
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-md flex items-center justify-center p-2 sm:p-4 overflow-y-auto">
+    <div className="fixed inset-0 z-[110] bg-black/45 backdrop-blur-md flex items-center justify-center p-2 sm:p-4 overflow-y-auto">
       <div className="bg-white border border-slate-200/90 w-full max-w-2xl rounded-2xl shadow-2xl overflow-hidden my-auto animate-in zoom-in-95 max-h-[92vh] flex flex-col text-slate-900">
         {/* Header */}
         <div className="p-4 border-b border-slate-100 flex items-center justify-between bg-white sticky top-0 z-10">
           <div className="flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center font-bold text-sm">
-              <Factory className="w-4 h-4 text-emerald-600" />
+              {isEditMode ? (
+                <Pencil className="w-4 h-4 text-emerald-600" />
+              ) : (
+                <Factory className="w-4 h-4 text-emerald-600" />
+              )}
             </div>
             <div>
-              <h2 className="font-bold text-slate-900 text-sm sm:text-base">บันทึกซัพพลายเออร์</h2>
-              <p className="text-[11px] text-slate-500">เน้นถ่ายภาพรัวๆ ข้อมูลพิมพ์ทีหลังได้ หรือบันทึกเฉพาะภาพล้วน</p>
+              <h2 className="font-bold text-slate-900 text-sm sm:text-base">
+                {isEditMode ? `แก้ไขข้อมูลซัพพลายเออร์: ${editingSupplier?.name}` : 'บันทึกซัพพลายเออร์'}
+              </h2>
+              <p className="text-[11px] text-slate-500">
+                {isEditMode
+                  ? 'แก้ไขรูปภาพ รายการสินค้า สเปก ช่องทางติดต่อ หรือพิกัดได้ทุกจุด'
+                  : 'เน้นถ่ายภาพรัวๆ ข้อมูลพิมพ์ทีหลังได้ หรือบันทึกเฉพาะภาพล้วน'}
+              </p>
             </div>
           </div>
           <button
-            onClick={onClose}
+            onClick={handleCloseAll}
             className="w-7 h-7 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center transition-colors"
           >
             <X className="w-4 h-4" />
@@ -288,10 +391,12 @@ export const NewSupplierModal: React.FC<NewSupplierModalProps> = ({ isOpen, onCl
             </button>
           </div>
 
-          {/* Section 1: Storefront & Atmosphere Photos + Main Info (รวมกันตามสั่ง) */}
+          {/* Section 1: Storefront & Atmosphere Photos + Main Info */}
           <div className="bg-slate-50/80 p-4 rounded-2xl border border-slate-100 space-y-3.5">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-bold text-slate-800">1. รูปป้ายหน้าร้าน & บรรยากาศ ({storefrontAndAtmosphere.length})</span>
+              <span className="text-xs font-bold text-slate-800">
+                1. รูปป้ายหน้าร้าน & บรรยากาศ ({storefrontAndAtmosphere.length})
+              </span>
               {/* Star Rating */}
               <div className="flex items-center gap-0.5">
                 {[1, 2, 3, 4, 5].map((star) => (
@@ -307,15 +412,26 @@ export const NewSupplierModal: React.FC<NewSupplierModalProps> = ({ isOpen, onCl
               </div>
             </div>
 
-            {/* Photo preview strip */}
+            {/* Photo preview strip with remove button */}
             {storefrontAndAtmosphere.length > 0 && (
               <div className="flex gap-2 overflow-x-auto py-1">
                 {storefrontAndAtmosphere.map((p, i) => (
-                  <img
-                    key={i}
-                    src={p}
-                    className="w-16 h-16 object-cover rounded-xl border border-slate-200 shadow-sm shrink-0"
-                  />
+                  <div key={i} className="relative shrink-0 group">
+                    <img
+                      src={p}
+                      className="w-16 h-16 object-cover rounded-xl border border-slate-200 shadow-sm"
+                    />
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setStorefrontAndAtmosphere((prev) => prev.filter((_, idx) => idx !== i))
+                      }
+                      className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-rose-500 text-white text-[10px] font-bold flex items-center justify-center shadow"
+                      title="ลบรูปนี้"
+                    >
+                      ×
+                    </button>
+                  </div>
                 ))}
               </div>
             )}
@@ -333,7 +449,7 @@ export const NewSupplierModal: React.FC<NewSupplierModalProps> = ({ isOpen, onCl
               />
             </label>
 
-            {/* Basic Info (NO REQUIRED FIELDS) */}
+            {/* Basic Info */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">
               <div>
                 <label className="text-[11px] font-medium text-slate-500 block mb-1">
@@ -361,7 +477,7 @@ export const NewSupplierModal: React.FC<NewSupplierModalProps> = ({ isOpen, onCl
                 />
               </div>
 
-              {/* Location with Real GPS + Reverse Geocoding */}
+              {/* Location with Real GPS */}
               <div>
                 <div className="flex items-center justify-between mb-1">
                   <label className="text-[11px] font-medium text-slate-500">
@@ -393,19 +509,19 @@ export const NewSupplierModal: React.FC<NewSupplierModalProps> = ({ isOpen, onCl
                   </button>
                 </div>
                 {gpsStatusMsg && (
-                  <p className="text-[10px] text-emerald-700 font-medium mt-1">
-                    {gpsStatusMsg}
-                  </p>
+                  <p className="text-[10px] text-emerald-700 font-medium mt-1">{gpsStatusMsg}</p>
                 )}
               </div>
 
               <div>
                 <div className="flex items-center justify-between mb-1">
-                  <label className="text-[11px] font-medium text-slate-500">หมวดหมู่อุปกรณ์/สินค้า</label>
+                  <label className="text-[11px] font-medium text-slate-500">
+                    หมวดหมู่อุปกรณ์/สินค้า
+                  </label>
                   <button
                     type="button"
                     onClick={() => {
-                      onClose();
+                      handleCloseAll();
                       setActiveTab('settings');
                     }}
                     className="text-[10px] font-bold text-emerald-700 hover:underline"
@@ -427,7 +543,7 @@ export const NewSupplierModal: React.FC<NewSupplierModalProps> = ({ isOpen, onCl
               </div>
             </div>
 
-            {/* Quick-tap checklist tags (ทางลัดการติ๊กหน้างาน — ซิงก์กับหน้าตั้งค่า) */}
+            {/* Quick-tap checklist tags */}
             <div className="pt-2">
               <div className="flex items-center justify-between mb-1.5">
                 <span className="text-[11px] font-semibold text-slate-600 flex items-center gap-1">
@@ -445,7 +561,7 @@ export const NewSupplierModal: React.FC<NewSupplierModalProps> = ({ isOpen, onCl
                   <button
                     type="button"
                     onClick={() => {
-                      onClose();
+                      handleCloseAll();
                       setActiveTab('settings');
                     }}
                     className="text-[10px] font-bold text-emerald-700 hover:underline"
@@ -504,7 +620,7 @@ export const NewSupplierModal: React.FC<NewSupplierModalProps> = ({ isOpen, onCl
             </div>
           </div>
 
-          {/* Section 2: Contact Photos & Info (อัปโหลดรูปนามบัตร/WeChat ไม่จำกัด) */}
+          {/* Section 2: Contact Photos & Info */}
           <div className="bg-slate-50/80 p-4 rounded-2xl border border-slate-100 space-y-3">
             <span className="text-xs font-bold text-slate-800 block">
               2. ช่องทางการติดต่อ & นามบัตร/WeChat ({contactCards.length})
@@ -513,11 +629,22 @@ export const NewSupplierModal: React.FC<NewSupplierModalProps> = ({ isOpen, onCl
             {contactCards.length > 0 && (
               <div className="flex gap-2 overflow-x-auto py-1">
                 {contactCards.map((p, i) => (
-                  <img
-                    key={i}
-                    src={p}
-                    className="w-16 h-16 object-cover rounded-xl border border-slate-200 shadow-sm shrink-0"
-                  />
+                  <div key={i} className="relative shrink-0">
+                    <img
+                      src={p}
+                      className="w-16 h-16 object-cover rounded-xl border border-slate-200 shadow-sm"
+                    />
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setContactCards((prev) => prev.filter((_, idx) => idx !== i))
+                      }
+                      className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-rose-500 text-white text-[10px] font-bold flex items-center justify-center shadow"
+                      title="ลบรูปนี้"
+                    >
+                      ×
+                    </button>
+                  </div>
                 ))}
               </div>
             )}
@@ -574,7 +701,7 @@ export const NewSupplierModal: React.FC<NewSupplierModalProps> = ({ isOpen, onCl
             </div>
           </div>
 
-          {/* Section 3: Mass Batch Catalog Upload (อัปโหลดรูปทีเดียวพร้อมแบ่งรายการอัตโนมัติ + วอยซ์เฉพาะชิ้น) */}
+          {/* Section 3: Mass Batch Catalog Upload */}
           <div className="bg-slate-50/80 p-4 rounded-2xl border border-slate-100 space-y-3">
             <div className="flex items-center justify-between">
               <div>
@@ -595,7 +722,6 @@ export const NewSupplierModal: React.FC<NewSupplierModalProps> = ({ isOpen, onCl
               </button>
             </div>
 
-            {/* Big Mass Photo Upload Trigger Button */}
             <label className="flex flex-col items-center justify-center p-4 bg-white border-2 border-dashed border-slate-300 hover:border-emerald-500 rounded-2xl cursor-pointer transition-colors shadow-sm">
               <Upload className="w-6 h-6 text-emerald-600 mb-1" />
               <span className="text-xs font-bold text-slate-800">
@@ -613,7 +739,6 @@ export const NewSupplierModal: React.FC<NewSupplierModalProps> = ({ isOpen, onCl
               />
             </label>
 
-            {/* List of Catalog Items */}
             {catalogItems.map((item, idx) => (
               <div
                 key={item.id}
@@ -638,21 +763,36 @@ export const NewSupplierModal: React.FC<NewSupplierModalProps> = ({ isOpen, onCl
                 </div>
 
                 <div className="flex gap-3">
-                  {/* Item Photo thumbnail */}
-                  <div className="shrink-0">
+                  {/* Item Photo thumbnail (clickable to upload/replace photo) */}
+                  <label className="shrink-0 cursor-pointer relative group">
                     {item.photo ? (
                       <img
                         src={item.photo}
-                        className="w-20 h-20 object-cover rounded-xl border border-slate-200 shadow-sm"
+                        className="w-20 h-20 object-cover rounded-xl border border-slate-200 shadow-sm group-hover:opacity-80"
                       />
                     ) : (
-                      <div className="w-20 h-20 rounded-xl bg-slate-100 border border-dashed border-slate-300 flex items-center justify-center text-[10px] text-slate-400">
-                        ไม่มีรูป
+                      <div className="w-20 h-20 rounded-xl bg-slate-100 border border-dashed border-slate-300 flex items-center justify-center text-[10px] text-slate-400 text-center p-1">
+                        + แตะใส่รูป
                       </div>
                     )}
-                  </div>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => {
+                        const f = e.target.files?.[0];
+                        if (!f) return;
+                        const reader = new FileReader();
+                        reader.onloadend = () => {
+                          const updated = [...catalogItems];
+                          updated[idx].photo = reader.result as string;
+                          setCatalogItems(updated);
+                        };
+                        reader.readAsDataURL(f);
+                      }}
+                      className="hidden"
+                    />
+                  </label>
 
-                  {/* Flexible fields */}
                   <div className="flex-1 space-y-1.5 min-w-0">
                     <input
                       type="text"
@@ -687,7 +827,6 @@ export const NewSupplierModal: React.FC<NewSupplierModalProps> = ({ isOpen, onCl
                         )}
                       </div>
 
-                      {/* Weight instead of wattage as requested */}
                       <input
                         type="text"
                         placeholder="น้ำหนัก (kg) / ขนาด"
@@ -715,7 +854,6 @@ export const NewSupplierModal: React.FC<NewSupplierModalProps> = ({ isOpen, onCl
                   </div>
                 </div>
 
-                {/* Voice memo specific to this item! */}
                 <div className="pt-1 border-t border-slate-100 flex items-center justify-between text-[11px]">
                   <span className="text-slate-400 font-medium">วอยซ์เสียงเฉพาะรายการนี้:</span>
                   <div className="flex-1 max-w-[240px]">
@@ -742,7 +880,9 @@ export const NewSupplierModal: React.FC<NewSupplierModalProps> = ({ isOpen, onCl
 
           {/* Section 4: Main Voice Memo & General Notes */}
           <div className="bg-slate-50/80 p-4 rounded-2xl border border-slate-100 space-y-3">
-            <span className="text-xs font-bold text-slate-800 block">4. วอยซ์เสียงภาพรวม & โน้ตกันลืม</span>
+            <span className="text-xs font-bold text-slate-800 block">
+              4. วอยซ์เสียงภาพรวม & โน้ตกันลืม
+            </span>
             <AudioRecorder
               initialAudioUrl={mainVoiceUrl}
               onAudioSaved={(base64, duration) => {
@@ -767,15 +907,33 @@ export const NewSupplierModal: React.FC<NewSupplierModalProps> = ({ isOpen, onCl
 
         {/* Footer Actions */}
         <div className="p-4 border-t border-slate-100 bg-white flex items-center justify-between gap-2">
-          <div className="text-xs text-slate-500 flex items-center gap-2">
-            <img src={currentUser.avatar} className="w-5 h-5 rounded-full object-cover ring-1 ring-slate-200" />
-            <span>โดย: <strong className="text-slate-800">{currentUser.alias}</strong></span>
+          <div className="flex items-center gap-2">
+            {isEditMode ? (
+              <button
+                type="button"
+                onClick={handleDelete}
+                className="px-3 py-2 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-600 text-xs font-bold flex items-center gap-1 transition-colors"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                <span>ลบรายการ</span>
+              </button>
+            ) : (
+              <div className="text-xs text-slate-500 flex items-center gap-2">
+                <img
+                  src={currentUser.avatar}
+                  className="w-5 h-5 rounded-full object-cover ring-1 ring-slate-200"
+                />
+                <span>
+                  โดย: <strong className="text-slate-800">{currentUser.alias}</strong>
+                </span>
+              </div>
+            )}
           </div>
 
           <div className="flex items-center gap-2">
             <button
               type="button"
-              onClick={onClose}
+              onClick={handleCloseAll}
               className="px-4 py-2 text-xs font-semibold text-slate-500 hover:text-slate-800"
             >
               ยกเลิก
@@ -785,7 +943,7 @@ export const NewSupplierModal: React.FC<NewSupplierModalProps> = ({ isOpen, onCl
               onClick={handleSubmit}
               className="px-6 py-2.5 text-xs font-bold rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg shadow-emerald-600/20 active:scale-95 transition-all"
             >
-              บันทึกเข้าระบบ
+              {isEditMode ? '💾 บันทึกการแก้ไข' : 'บันทึกเข้าระบบ'}
             </button>
           </div>
         </div>

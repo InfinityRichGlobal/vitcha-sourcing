@@ -19,6 +19,7 @@ import {
   Eye,
   LayoutGrid,
   ArrowRight,
+  Pencil,
 } from 'lucide-react';
 
 interface HandoffManagementViewProps {
@@ -26,7 +27,15 @@ interface HandoffManagementViewProps {
 }
 
 export const HandoffManagementView: React.FC<HandoffManagementViewProps> = ({ onSelectItem }) => {
-  const { suppliers, drinkStores, updateHandoff, users, convertCnyToThb } = useApp();
+  const {
+    suppliers,
+    drinkStores,
+    updateHandoff,
+    users,
+    convertCnyToThb,
+    canEditItems,
+    openEditItem,
+  } = useApp();
 
   // Dedicated Sub-Page Stage Selector (แยกหน้าย่อยแต่ละสเตจให้ชัดเจน + โหมดดูภาพรวม)
   const [activeStagePage, setActiveStagePage] = useState<HandoffStage | 'overview'>('awaiting');
@@ -429,6 +438,18 @@ export const HandoffManagementView: React.FC<HandoffManagementViewProps> = ({ on
           </div>
 
           <div className="flex items-center gap-1.5">
+            {canEditItems && (
+              <button
+                type="button"
+                onClick={() => openEditItem(item)}
+                className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 text-xs font-bold transition-colors"
+                title="แก้ไขข้อมูลรายการนี้"
+              >
+                <Pencil className="w-3.5 h-3.5 text-amber-600" />
+                <span>แก้ไข</span>
+              </button>
+            )}
+
             <button
               onClick={() => onSelectItem(item)}
               className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold transition-colors"

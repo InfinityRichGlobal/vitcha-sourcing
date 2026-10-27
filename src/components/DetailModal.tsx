@@ -25,6 +25,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Volume2,
+  Pencil,
 } from 'lucide-react';
 
 interface DetailModalProps {
@@ -51,6 +52,8 @@ export const DetailModal: React.FC<DetailModalProps> = ({
     drinkStores,
     quickMessages,
     recordItemView,
+    canEditItems,
+    openEditItem,
   } = useApp();
 
   // Always use LIVE record from Context so comments, likes, and replies update in real-time
@@ -253,6 +256,19 @@ export const DetailModal: React.FC<DetailModalProps> = ({
           </div>
 
           <div className="flex items-center gap-1.5 flex-wrap shrink-0">
+            {/* Edit Item Button (เฉพาะ 2 สิทธิ์ระดับบน Admin & Editor) */}
+            {canEditItems && (
+              <button
+                type="button"
+                onClick={() => openEditItem(currentItem)}
+                className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-bold rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-300 transition-colors shadow-2xs"
+                title="แก้ไขข้อมูลรายการนี้ (สำหรับ Admin / Editor)"
+              >
+                <Pencil className="w-3.5 h-3.5 text-amber-600" />
+                <span>แก้ไข</span>
+              </button>
+            )}
+
             {/* Like Button */}
             <button
               type="button"
@@ -855,12 +871,24 @@ export const DetailModal: React.FC<DetailModalProps> = ({
             ID: {currentItem.id} · ปรับปรุง:{' '}
             {new Date(currentItem.updatedAt).toLocaleTimeString('th-TH')}
           </div>
-          <button
-            onClick={onClose}
-            className="px-4 py-1.5 text-xs font-bold rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 transition-colors"
-          >
-            ปิดหน้าต่าง
-          </button>
+          <div className="flex items-center gap-2">
+            {canEditItems && (
+              <button
+                type="button"
+                onClick={() => openEditItem(currentItem)}
+                className="px-3.5 py-1.5 text-xs font-bold rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-300 flex items-center gap-1.5 transition-colors"
+              >
+                <Pencil className="w-3.5 h-3.5 text-amber-600" />
+                <span>แก้ไขข้อมูลรายการนี้</span>
+              </button>
+            )}
+            <button
+              onClick={onClose}
+              className="px-4 py-1.5 text-xs font-bold rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 transition-colors"
+            >
+              ปิดหน้าต่าง
+            </button>
+          </div>
         </div>
       </div>
 

@@ -108,6 +108,13 @@ interface AppContextType {
   updateStoreInspo: (id: string, updates: Partial<StoreInspoRecord>) => void;
   deleteStoreInspo: (id: string) => void;
 
+  // Edit Item Modal State (สำหรับ 2 สิทธิ์ระดับบน Admin & Editor)
+  canEditItems: boolean;
+  editingSupplier: SupplierRecord | null;
+  editingStore: StoreInspoRecord | null;
+  openEditItem: (item: SupplierRecord | StoreInspoRecord) => void;
+  closeEditItem: () => void;
+
   addReviewerNote: (targetId: string, type: 'supplier' | 'drink_store', noteText: string) => void;
   addReviewReply: (targetId: string, type: 'supplier' | 'drink_store', noteId: string, replyText: string, replyToAuthor?: string) => void;
   updatePipelineStatus: (supplierId: string, status: PipelineStatus) => void;
@@ -441,6 +448,28 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       window.removeEventListener('offline', handleOffline);
     };
   }, []);
+
+  const [editingSupplier, setEditingSupplier] = useState<SupplierRecord | null>(null);
+  const [editingStore, setEditingStore] = useState<StoreInspoRecord | null>(null);
+
+  // สองสิทธิ์ระดับบน (Admin & Editor) สามารถแก้ไขรายการได้
+  const canEditItems = currentUser.role === 'admin' || currentUser.role === 'editor';
+
+  const openEditItem = (item: SupplierRecord | StoreInspoRecord) => {
+    if (!canEditItems) return;
+    if (item.type === 'supplier') {
+      setEditingSupplier(item as SupplierRecord);
+      setEditingStore(null);
+    } else {
+      setEditingStore(item as StoreInspoRecord);
+      setEditingSupplier(null);
+    }
+  };
+
+  const closeEditItem = () => {
+    setEditingSupplier(null);
+    setEditingStore(null);
+  };
 
   useEffect(() => {
     localStorage.setItem('vitcha_users_v5', JSON.stringify(users));
@@ -1225,6 +1254,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         addStoreInspo,
         updateStoreInspo,
         deleteStoreInspo,
+        canEditItems,
+        editingSupplier,
+        editingStore,
+        openEditItem,
+        closeEditItem,
         addReviewerNote,
         addReviewReply,
         updatePipelineStatus,

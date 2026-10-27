@@ -1,17 +1,14 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import { DrinkDetailItem } from '../types';
 import { AudioRecorder } from './AudioRecorder';
-import { 
-  X, 
-  Camera, 
-  Plus, 
-  Trash2, 
-  MapPin, 
-  Star, 
-  Coffee, 
-  Sparkles,
-  Upload
+import {
+  X,
+  Camera,
+  Trash2,
+  Coffee,
+  Upload,
+  Pencil,
 } from 'lucide-react';
 
 interface NewStoreInspoModalProps {
@@ -20,11 +17,24 @@ interface NewStoreInspoModalProps {
 }
 
 export const NewStoreInspoModal: React.FC<NewStoreInspoModalProps> = ({ isOpen, onClose }) => {
-  const { addStoreInspo, convertCnyToThb, currentUser, drinkStores, storeCategories } = useApp();
+  const {
+    addStoreInspo,
+    updateStoreInspo,
+    deleteStoreInspo,
+    editingStore,
+    closeEditItem,
+    convertCnyToThb,
+    currentUser,
+    drinkStores,
+    storeCategories,
+  } = useApp();
+
+  const isEditMode = !!editingStore;
+  const modalOpen = isOpen || isEditMode;
 
   const [country, setCountry] = useState<'CN' | 'TH'>('CN');
   const [storeCategory, setStoreCategory] = useState<string>(
-    storeCategories[0] || 'ชาจีนพรีเมียม & ชาชีส'
+    storeCategories[0] || 'ชานมพรีเมียม & ชาสด'
   );
   const [storeName, setStoreName] = useState('');
   const [chineseName, setChineseName] = useState('');
@@ -33,7 +43,7 @@ export const NewStoreInspoModal: React.FC<NewStoreInspoModalProps> = ({ isOpen, 
   const [lineId, setLineId] = useState('');
   const [wechatId, setWechatId] = useState('');
   const [phone, setPhone] = useState('');
-  
+
   // 4-Dimension Ratings
   const [tasteRating, setTasteRating] = useState(5);
   const [aestheticsRating, setAestheticsRating] = useState(5);
@@ -49,7 +59,7 @@ export const NewStoreInspoModal: React.FC<NewStoreInspoModalProps> = ({ isOpen, 
   const [menuBoardPhotos, setMenuBoardPhotos] = useState<string[]>([]);
   const [drinkCupPhotos, setDrinkCupPhotos] = useState<string[]>([]);
 
-  // Drink Items (Batch support)
+  // Drink Items
   const [drinkItems, setDrinkItems] = useState<DrinkDetailItem[]>([]);
 
   // GPS Location
@@ -58,7 +68,65 @@ export const NewStoreInspoModal: React.FC<NewStoreInspoModalProps> = ({ isOpen, 
   const [addressText, setAddressText] = useState('Tianhe District, Guangzhou');
   const [isLocating, setIsLocating] = useState(false);
 
-  if (!isOpen) return null;
+  // Populate form when editingStore changes or reset when opening fresh
+  useEffect(() => {
+    if (editingStore) {
+      setCountry(editingStore.country || 'CN');
+      setStoreCategory(editingStore.storeCategory || storeCategories[0] || 'ชานมพรีเมียม & ชาสด');
+      setStoreName(editingStore.storeName || '');
+      setChineseName(editingStore.chineseName || '');
+      setBrandConcept(editingStore.brandConcept || '');
+      setCity(editingStore.city || 'กวางโจว (Guangzhou)');
+      setLineId(editingStore.lineId || '');
+      setWechatId(editingStore.wechatId || '');
+      setPhone(editingStore.phone || '');
+      setTasteRating(editingStore.ratings?.taste ?? 5);
+      setAestheticsRating(editingStore.ratings?.aesthetics ?? 5);
+      setValueRating(editingStore.ratings?.value ?? 4);
+      setSpeedRating(editingStore.ratings?.speed ?? 5);
+      setTastingNotes(editingStore.tastingNotes || '');
+      setMainVoiceUrl(editingStore.voiceNoteUrl);
+      setMainVoiceSec(editingStore.voiceDurationSec || 0);
+      setStorefrontAndAtmosphere(editingStore.photos?.storefrontAndAtmosphere || []);
+      setMenuBoardPhotos(editingStore.photos?.menuBoard || []);
+      setDrinkCupPhotos(editingStore.photos?.drinkCups || []);
+      setDrinkItems(editingStore.drinkItems || []);
+      setLat(editingStore.location?.lat || 23.1322);
+      setLng(editingStore.location?.lng || 113.3274);
+      setAddressText(editingStore.location?.addressText || editingStore.city || '');
+    } else if (isOpen) {
+      setCountry('CN');
+      setStoreCategory(storeCategories[0] || 'ชานมพรีเมียม & ชาสด');
+      setStoreName('');
+      setChineseName('');
+      setBrandConcept('');
+      setCity('กวางโจว (Guangzhou)');
+      setLineId('');
+      setWechatId('');
+      setPhone('');
+      setTasteRating(5);
+      setAestheticsRating(5);
+      setValueRating(4);
+      setSpeedRating(5);
+      setTastingNotes('');
+      setMainVoiceUrl(undefined);
+      setMainVoiceSec(0);
+      setStorefrontAndAtmosphere([]);
+      setMenuBoardPhotos([]);
+      setDrinkCupPhotos([]);
+      setDrinkItems([]);
+      setLat(23.1322);
+      setLng(113.3274);
+      setAddressText('Tianhe District, Guangzhou');
+    }
+  }, [editingStore, isOpen]);
+
+  if (!modalOpen) return null;
+
+  const handleCloseAll = () => {
+    closeEditItem();
+    onClose();
+  };
 
   const handleMultiPhotoUpload = (
     e: React.ChangeEvent<HTMLInputElement>,
@@ -165,61 +233,117 @@ export const NewStoreInspoModal: React.FC<NewStoreInspoModalProps> = ({ isOpen, 
     e.preventDefault();
     const finalName = storeName.trim() || `ร้านน้ำ #${drinkStores.length + 1} (${city})`;
 
-    addStoreInspo({
-      storeName: finalName,
-      chineseName: chineseName.trim() || undefined,
-      storeCategory,
-      brandConcept: brandConcept.trim() || undefined,
-      city: city.trim(),
-      country,
-      lineId: lineId.trim() || undefined,
-      wechatId: wechatId.trim() || undefined,
-      phone: phone.trim() || undefined,
-      photos: {
-        storefrontAndAtmosphere: storefrontAndAtmosphere.length > 0
-          ? storefrontAndAtmosphere
-          : ['https://images.unsplash.com/photo-1554118811-1e0d58224f24?w=800&auto=format&fit=crop&q=80'],
-        menuBoard: menuBoardPhotos,
-        drinkCups: drinkCupPhotos,
-      },
-      ratings: {
-        taste: tasteRating,
-        aesthetics: aestheticsRating,
-        value: valueRating,
-        speed: speedRating,
-      },
-      drinkItems,
-      tastingNotes: tastingNotes.trim() || undefined,
-      voiceNoteUrl: mainVoiceUrl,
-      voiceDurationSec: mainVoiceSec,
-      location: {
-        lat,
-        lng,
-        addressText,
-      },
-      handoffStage: 'awaiting',
-      assignedTo: country === 'TH' ? 'คุณแอน (จัดซื้อ/R&D)' : 'ไอซ์ (Scout Head)',
-    });
+    if (isEditMode && editingStore) {
+      updateStoreInspo(editingStore.id, {
+        storeName: finalName,
+        chineseName: chineseName.trim() || undefined,
+        storeCategory,
+        brandConcept: brandConcept.trim() || undefined,
+        city: city.trim(),
+        country,
+        lineId: lineId.trim() || undefined,
+        wechatId: wechatId.trim() || undefined,
+        phone: phone.trim() || undefined,
+        photos: {
+          storefrontAndAtmosphere:
+            storefrontAndAtmosphere.length > 0
+              ? storefrontAndAtmosphere
+              : ['https://images.unsplash.com/photo-1554118811-1e0d58224f24?w=800&auto=format&fit=crop&q=80'],
+          menuBoard: menuBoardPhotos,
+          drinkCups: drinkCupPhotos,
+        },
+        ratings: {
+          taste: tasteRating,
+          aesthetics: aestheticsRating,
+          value: valueRating,
+          speed: speedRating,
+        },
+        drinkItems,
+        tastingNotes: tastingNotes.trim() || undefined,
+        voiceNoteUrl: mainVoiceUrl,
+        voiceDurationSec: mainVoiceSec,
+        location: {
+          lat,
+          lng,
+          addressText,
+        },
+      });
+    } else {
+      addStoreInspo({
+        storeName: finalName,
+        chineseName: chineseName.trim() || undefined,
+        storeCategory,
+        brandConcept: brandConcept.trim() || undefined,
+        city: city.trim(),
+        country,
+        lineId: lineId.trim() || undefined,
+        wechatId: wechatId.trim() || undefined,
+        phone: phone.trim() || undefined,
+        photos: {
+          storefrontAndAtmosphere:
+            storefrontAndAtmosphere.length > 0
+              ? storefrontAndAtmosphere
+              : ['https://images.unsplash.com/photo-1554118811-1e0d58224f24?w=800&auto=format&fit=crop&q=80'],
+          menuBoard: menuBoardPhotos,
+          drinkCups: drinkCupPhotos,
+        },
+        ratings: {
+          taste: tasteRating,
+          aesthetics: aestheticsRating,
+          value: valueRating,
+          speed: speedRating,
+        },
+        drinkItems,
+        tastingNotes: tastingNotes.trim() || undefined,
+        voiceNoteUrl: mainVoiceUrl,
+        voiceDurationSec: mainVoiceSec,
+        location: {
+          lat,
+          lng,
+          addressText,
+        },
+        handoffStage: 'awaiting',
+        assignedTo: country === 'TH' ? 'แอน (จัดซื้อ)' : 'Ice (Admin)',
+      });
+    }
 
-    onClose();
+    handleCloseAll();
+  };
+
+  const handleDelete = () => {
+    if (!editingStore) return;
+    if (window.confirm(`ยืนยันการลบรายการ "${editingStore.storeName}" หรือไม่?`)) {
+      deleteStoreInspo(editingStore.id);
+      handleCloseAll();
+    }
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-md flex items-center justify-center p-2 sm:p-4 overflow-y-auto">
+    <div className="fixed inset-0 z-[110] bg-black/45 backdrop-blur-md flex items-center justify-center p-2 sm:p-4 overflow-y-auto">
       <div className="bg-white border border-slate-200/90 w-full max-w-2xl rounded-2xl shadow-2xl overflow-hidden my-auto animate-in zoom-in-95 max-h-[92vh] flex flex-col text-slate-900">
         {/* Header */}
         <div className="p-4 border-b border-slate-100 flex items-center justify-between bg-white sticky top-0 z-10">
           <div className="flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-xl bg-amber-50 text-amber-700 flex items-center justify-center font-bold text-sm">
-              <Coffee className="w-4 h-4 text-amber-600" />
+              {isEditMode ? (
+                <Pencil className="w-4 h-4 text-amber-600" />
+              ) : (
+                <Coffee className="w-4 h-4 text-amber-600" />
+              )}
             </div>
             <div>
-              <h2 className="font-bold text-slate-900 text-sm sm:text-base">บันทึกเรฟร้านน้ำ</h2>
-              <p className="text-[11px] text-slate-500">เน้นเก็บรูปแก้ว รสชาติ และไอเดียกิมมิกต่อยอด</p>
+              <h2 className="font-bold text-slate-900 text-sm sm:text-base">
+                {isEditMode ? `แก้ไขเรฟร้านน้ำ: ${editingStore?.storeName}` : 'บันทึกเรฟร้านน้ำ'}
+              </h2>
+              <p className="text-[11px] text-slate-500">
+                {isEditMode
+                  ? 'แก้ไขรูปภาพ เมนูที่ชิม คะแนนประเมิน หรือพิกัดได้ทุกจุด'
+                  : 'เน้นเก็บรูปแก้ว รสชาติ และไอเดียกิมมิกต่อยอด'}
+              </p>
             </div>
           </div>
           <button
-            onClick={onClose}
+            onClick={handleCloseAll}
             className="w-7 h-7 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center transition-colors"
           >
             <X className="w-4 h-4" />
@@ -234,7 +358,11 @@ export const NewStoreInspoModal: React.FC<NewStoreInspoModalProps> = ({ isOpen, 
               type="button"
               onClick={() => {
                 setCountry('CN');
-                if (city === 'กรุงเทพฯ (Bangkok)' || city === 'กรุงเทพฯ' || city === 'สยามสแควร์ กรุงเทพฯ') {
+                if (
+                  city === 'กรุงเทพฯ (Bangkok)' ||
+                  city === 'กรุงเทพฯ' ||
+                  city === 'สยามสแควร์ กรุงเทพฯ'
+                ) {
                   setCity('กวางโจว (Guangzhou)');
                 }
               }}
@@ -275,11 +403,22 @@ export const NewStoreInspoModal: React.FC<NewStoreInspoModalProps> = ({ isOpen, 
             {storefrontAndAtmosphere.length > 0 && (
               <div className="flex gap-2 overflow-x-auto py-1">
                 {storefrontAndAtmosphere.map((p, i) => (
-                  <img
-                    key={i}
-                    src={p}
-                    className="w-16 h-16 object-cover rounded-xl border border-slate-200 shadow-sm shrink-0"
-                  />
+                  <div key={i} className="relative shrink-0">
+                    <img
+                      src={p}
+                      className="w-16 h-16 object-cover rounded-xl border border-slate-200 shadow-sm"
+                    />
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setStorefrontAndAtmosphere((prev) => prev.filter((_, idx) => idx !== i))
+                      }
+                      className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-rose-500 text-white text-[10px] font-bold flex items-center justify-center shadow"
+                      title="ลบรูปนี้"
+                    >
+                      ×
+                    </button>
+                  </div>
                 ))}
               </div>
             )}
@@ -377,7 +516,9 @@ export const NewStoreInspoModal: React.FC<NewStoreInspoModalProps> = ({ isOpen, 
               </div>
 
               <div>
-                <label className="text-[11px] font-medium text-slate-500 block mb-1">คอนเซปต์ / สไตล์เด่น</label>
+                <label className="text-[11px] font-medium text-slate-500 block mb-1">
+                  คอนเซปต์ / สไตล์เด่น
+                </label>
                 <input
                   type="text"
                   placeholder="เช่น ชานมดอกไม้พรีเมียม / น้ำซ่าผลไม้"
@@ -421,7 +562,9 @@ export const NewStoreInspoModal: React.FC<NewStoreInspoModalProps> = ({ isOpen, 
 
           {/* Section 2: 4-Dimension Rating Dolls */}
           <div className="bg-slate-50/80 p-4 rounded-2xl border border-slate-100 space-y-2.5">
-            <span className="text-xs font-bold text-slate-800 block">2. ให้คะแนนประเมิน (Rating Dolls)</span>
+            <span className="text-xs font-bold text-slate-800 block">
+              2. ให้คะแนนประเมิน (Rating Dolls)
+            </span>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
               <div className="p-3 bg-white rounded-xl border border-slate-200 text-center space-y-1">
                 <span className="text-slate-600 font-medium text-[11px] block">👅 รสชาติ</span>
@@ -447,7 +590,9 @@ export const NewStoreInspoModal: React.FC<NewStoreInspoModalProps> = ({ isOpen, 
                       type="button"
                       key={s}
                       onClick={() => setAestheticsRating(s)}
-                      className={`text-sm ${s <= aestheticsRating ? 'text-amber-400' : 'text-slate-200'}`}
+                      className={`text-sm ${
+                        s <= aestheticsRating ? 'text-amber-400' : 'text-slate-200'
+                      }`}
                     >
                       ★
                     </button>
@@ -491,7 +636,49 @@ export const NewStoreInspoModal: React.FC<NewStoreInspoModalProps> = ({ isOpen, 
 
           {/* Section 3: Menu Board & Cup Photos */}
           <div className="bg-slate-50/80 p-4 rounded-2xl border border-slate-100 space-y-3">
-            <span className="text-xs font-bold text-slate-800 block">3. รูปป้ายเมนู & แก้วเครื่องดื่ม</span>
+            <span className="text-xs font-bold text-slate-800 block">
+              3. รูปป้ายเมนู & แก้วเครื่องดื่ม
+            </span>
+
+            {(menuBoardPhotos.length > 0 || drinkCupPhotos.length > 0) && (
+              <div className="flex gap-2 overflow-x-auto py-1">
+                {menuBoardPhotos.map((p, i) => (
+                  <div key={`mb-${i}`} className="relative shrink-0">
+                    <img
+                      src={p}
+                      className="w-14 h-14 object-cover rounded-xl border border-slate-200"
+                    />
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setMenuBoardPhotos((prev) => prev.filter((_, idx) => idx !== i))
+                      }
+                      className="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full bg-rose-500 text-white text-[9px] font-bold flex items-center justify-center"
+                    >
+                      ×
+                    </button>
+                  </div>
+                ))}
+                {drinkCupPhotos.map((p, i) => (
+                  <div key={`dc-${i}`} className="relative shrink-0">
+                    <img
+                      src={p}
+                      className="w-14 h-14 object-cover rounded-xl border border-amber-200"
+                    />
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setDrinkCupPhotos((prev) => prev.filter((_, idx) => idx !== i))
+                      }
+                      className="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full bg-rose-500 text-white text-[9px] font-bold flex items-center justify-center"
+                    >
+                      ×
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
               <label className="flex items-center justify-center gap-2 p-3 bg-white border border-slate-200 hover:border-amber-500 rounded-xl text-xs font-semibold text-slate-700 cursor-pointer shadow-sm">
                 <Camera className="w-4 h-4 text-amber-600" />
@@ -519,7 +706,7 @@ export const NewStoreInspoModal: React.FC<NewStoreInspoModalProps> = ({ isOpen, 
             </div>
           </div>
 
-          {/* Section 4: Mass Drink Upload with Voice Memo per Item */}
+          {/* Section 4: Mass Drink Upload */}
           <div className="bg-slate-50/80 p-4 rounded-2xl border border-slate-100 space-y-3">
             <div className="flex items-center justify-between">
               <div>
@@ -580,18 +767,34 @@ export const NewStoreInspoModal: React.FC<NewStoreInspoModalProps> = ({ isOpen, 
                 </div>
 
                 <div className="flex gap-3">
-                  <div className="shrink-0">
+                  <label className="shrink-0 cursor-pointer relative group">
                     {item.photo ? (
                       <img
                         src={item.photo}
-                        className="w-20 h-20 object-cover rounded-xl border border-slate-200 shadow-sm"
+                        className="w-20 h-20 object-cover rounded-xl border border-slate-200 shadow-sm group-hover:opacity-80"
                       />
                     ) : (
-                      <div className="w-20 h-20 rounded-xl bg-slate-100 border border-dashed border-slate-300 flex items-center justify-center text-[10px] text-slate-400">
-                        ไม่มีรูป
+                      <div className="w-20 h-20 rounded-xl bg-slate-100 border border-dashed border-slate-300 flex items-center justify-center text-[10px] text-slate-400 text-center p-1">
+                        + แตะใส่รูป
                       </div>
                     )}
-                  </div>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => {
+                        const f = e.target.files?.[0];
+                        if (!f) return;
+                        const reader = new FileReader();
+                        reader.onloadend = () => {
+                          const updated = [...drinkItems];
+                          updated[idx].photo = reader.result as string;
+                          setDrinkItems(updated);
+                        };
+                        reader.readAsDataURL(f);
+                      }}
+                      className="hidden"
+                    />
+                  </label>
 
                   <div className="flex-1 space-y-1.5 min-w-0">
                     <input
@@ -678,7 +881,9 @@ export const NewStoreInspoModal: React.FC<NewStoreInspoModalProps> = ({ isOpen, 
 
           {/* Section 5: Main Voice & Tasting Notes */}
           <div className="bg-slate-50/80 p-4 rounded-2xl border border-slate-100 space-y-3">
-            <span className="text-xs font-bold text-slate-800 block">5. วอยซ์เสียงภาพรวม & โน้ตชิม</span>
+            <span className="text-xs font-bold text-slate-800 block">
+              5. วอยซ์เสียงภาพรวม & โน้ตชิม
+            </span>
             <AudioRecorder
               initialAudioUrl={mainVoiceUrl}
               onAudioSaved={(base64, duration) => {
@@ -703,15 +908,33 @@ export const NewStoreInspoModal: React.FC<NewStoreInspoModalProps> = ({ isOpen, 
 
         {/* Footer */}
         <div className="p-4 border-t border-slate-100 bg-white flex items-center justify-between gap-2">
-          <div className="text-xs text-slate-500 flex items-center gap-2">
-            <img src={currentUser.avatar} className="w-5 h-5 rounded-full object-cover ring-1 ring-slate-200" />
-            <span>โดย: <strong className="text-slate-800">{currentUser.alias}</strong></span>
+          <div className="flex items-center gap-2">
+            {isEditMode ? (
+              <button
+                type="button"
+                onClick={handleDelete}
+                className="px-3 py-2 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-600 text-xs font-bold flex items-center gap-1 transition-colors"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                <span>ลบรายการ</span>
+              </button>
+            ) : (
+              <div className="text-xs text-slate-500 flex items-center gap-2">
+                <img
+                  src={currentUser.avatar}
+                  className="w-5 h-5 rounded-full object-cover ring-1 ring-slate-200"
+                />
+                <span>
+                  โดย: <strong className="text-slate-800">{currentUser.alias}</strong>
+                </span>
+              </div>
+            )}
           </div>
 
           <div className="flex items-center gap-2">
             <button
               type="button"
-              onClick={onClose}
+              onClick={handleCloseAll}
               className="px-4 py-2 text-xs font-semibold text-slate-500 hover:text-slate-800"
             >
               ยกเลิก
@@ -721,7 +944,7 @@ export const NewStoreInspoModal: React.FC<NewStoreInspoModalProps> = ({ isOpen, 
               onClick={handleSubmit}
               className="px-6 py-2.5 text-xs font-bold rounded-xl bg-amber-600 hover:bg-amber-700 text-white shadow-lg shadow-amber-600/20 active:scale-95 transition-all"
             >
-              บันทึกร้านน้ำ
+              {isEditMode ? '💾 บันทึกการแก้ไข' : 'บันทึกร้านน้ำ'}
             </button>
           </div>
         </div>
