@@ -323,11 +323,10 @@ export const NewSupplierModal: React.FC<NewSupplierModalProps> = ({ isOpen, onCl
             {/* Quick Upload Button */}
             <label className="flex items-center justify-center gap-2 py-2.5 px-4 bg-white border border-slate-200 hover:border-emerald-500 rounded-xl text-xs font-semibold text-slate-700 cursor-pointer shadow-sm active:scale-[0.99] transition-all">
               <Camera className="w-4 h-4 text-emerald-600" />
-              <span>+ ถ่ายภาพป้ายหน้าร้าน / บรรยากาศ (เลือกได้หลายรูปพร้อมกัน)</span>
+              <span>+ เลือกรูปจากอัลบั้มในเครื่อง / ถ่ายภาพป้ายหน้าร้าน (เลือกได้หลายรูป)</span>
               <input
                 type="file"
                 accept="image/*"
-                capture="environment"
                 multiple
                 onChange={(e) => handleMultiPhotoUpload(e, setStorefrontAndAtmosphere)}
                 className="hidden"
@@ -525,11 +524,10 @@ export const NewSupplierModal: React.FC<NewSupplierModalProps> = ({ isOpen, onCl
 
             <label className="flex items-center justify-center gap-2 py-2 px-3 bg-white border border-slate-200 hover:border-emerald-500 rounded-xl text-xs font-semibold text-slate-700 cursor-pointer shadow-sm active:scale-[0.99] transition-all">
               <Camera className="w-4 h-4 text-emerald-600" />
-              <span>+ ถ่ายรูปนามบัตร / QR WeChat / โบรชัวร์ (ไม่อั้น)</span>
+              <span>+ เลือกรูปจากอัลบั้ม / ถ่ายรูปนามบัตร / QR WeChat (ไม่อั้น)</span>
               <input
                 type="file"
                 accept="image/*"
-                capture="environment"
                 multiple
                 onChange={(e) => handleMultiPhotoUpload(e, setContactCards)}
                 className="hidden"
@@ -601,7 +599,7 @@ export const NewSupplierModal: React.FC<NewSupplierModalProps> = ({ isOpen, onCl
             <label className="flex flex-col items-center justify-center p-4 bg-white border-2 border-dashed border-slate-300 hover:border-emerald-500 rounded-2xl cursor-pointer transition-colors shadow-sm">
               <Upload className="w-6 h-6 text-emerald-600 mb-1" />
               <span className="text-xs font-bold text-slate-800">
-                แตะเพื่อถ่ายรูป / เลือกภาพหลายๆ รูปพร้อมกัน (Batch Upload)
+                แตะเพื่อเลือกรูปจากอัลบั้มในเครื่อง / ถ่ายรูปหลายรูปพร้อมกัน (Batch Upload)
               </span>
               <span className="text-[10px] text-slate-400">
                 เลือกทีเดียว 5-10 รูป ระบบจะสร้างรายการให้ทันทีโดยไม่ต้องพิมพ์
@@ -609,7 +607,6 @@ export const NewSupplierModal: React.FC<NewSupplierModalProps> = ({ isOpen, onCl
               <input
                 type="file"
                 accept="image/*"
-                capture="environment"
                 multiple
                 onChange={handleMassCatalogUpload}
                 className="hidden"

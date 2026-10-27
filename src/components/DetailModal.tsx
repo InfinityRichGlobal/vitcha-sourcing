@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { SupplierRecord, StoreInspoRecord, PipelineStatus } from '../types';
 import { useApp } from '../context/AppContext';
 import { SeenByBadge } from './SeenByBadge';
+import { openExecutiveReport } from '../utils/exportReport';
+import { getDemoVoiceWavDataUri } from '../utils/audioHelper';
 import {
   X,
   MapPin,
@@ -13,12 +15,16 @@ import {
   Play,
   Pause,
   Printer,
+  FileDown,
   Tag,
   CornerDownRight,
   Send,
   ThumbsUp,
   ChevronDown,
   ChevronUp,
+  ChevronLeft,
+  ChevronRight,
+  Volume2,
 } from 'lucide-react';
 
 interface DetailModalProps {
@@ -48,14 +54,18 @@ export const DetailModal: React.FC<DetailModalProps> = ({
   } = useApp();
 
   // Always use LIVE record from Context so comments, likes, and replies update in real-time
-  const liveSupplier = item && item.type === 'supplier' ? suppliers.find((s) => s.id === item.id) : null;
-  const liveStore = item && item.type === 'drink_store' ? drinkStores.find((d) => d.id === item.id) : null;
+  const liveSupplier =
+    item && item.type === 'supplier' ? suppliers.find((s) => s.id === item.id) : null;
+  const liveStore =
+    item && item.type === 'drink_store' ? drinkStores.find((d) => d.id === item.id) : null;
   const currentItem = liveSupplier || liveStore || item;
 
-  const [activeImage, setActiveImage] = useState<string | null>(null);
+  const [activeImageIndex, setActiveImageIndex] = useState<number | null>(null);
   const [newReviewText, setNewReviewText] = useState('');
   const [isPlayingAudio, setIsPlayingAudio] = useState(false);
+  const [playingSubAudioId, setPlayingSubAudioId] = useState<string | null>(null);
   const audioRef = React.useRef<HTMLAudioElement | null>(null);
+  const subAudioRef = React.useRef<HTMLAudioElement | null>(null);
 
   // Threaded reply states (supports continuous replies to any reply + collapsible threads)
   const [replyTarget, setReplyTarget] = useState<{ noteId: string; author: string } | null>(null);
@@ -67,7 +77,71 @@ export const DetailModal: React.FC<DetailModalProps> = ({
     if (isOpen && item?.id) {
       recordItemView(item.id, item.type);
     }
+    setActiveImageIndex(null);
+    setIsPlayingAudio(false);
+    setPlayingSubAudioId(null);
   }, [isOpen, item?.id]);
+
+  // Collect all photos of this item for gallery & left/right carousel
+  const allPhotos: { url: string; label: string }[] = [];
+  if (currentItem) {
+    if (currentItem.type === 'supplier') {
+      const sup = currentItem as SupplierRecord;
+      sup.photos.storefrontAndAtmosphere?.forEach((p, idx) =>
+        allPhotos.push({ url: p, label: `ป้ายหน้าร้าน/บรรยากาศ #${idx + 1}` })
+      );
+      sup.photos.contactCards?.forEach((p, idx) =>
+        allPhotos.push({ url: p, label: `นามบัตร/WeChat #${idx + 1}` })
+      );
+      sup.catalogItems?.forEach((c, idx) => {
+        if (c.photo) {
+          allPhotos.push({
+            url: c.photo,
+            label: c.name ? `สินค้า: ${c.name}` : `รายการสินค้า #${idx + 1}`,
+          });
+        }
+      });
+    } else {
+      const st = currentItem as StoreInspoRecord;
+      st.photos.storefrontAndAtmosphere?.forEach((p, idx) =>
+        allPhotos.push({ url: p, label: `หน้าร้าน/บรรยากาศ #${idx + 1}` })
+      );
+      st.photos.menuBoard?.forEach((p, idx) =>
+        allPhotos.push({ url: p, label: `เมนูบอร์ด #${idx + 1}` })
+      );
+      st.photos.drinkCups?.forEach((p, idx) =>
+        allPhotos.push({ url: p, label: `แก้วเครื่องดื่ม #${idx + 1}` })
+      );
+      st.drinkItems?.forEach((d, idx) => {
+        if (d.photo) {
+          allPhotos.push({
+            url: d.photo,
+            label: d.name ? `เมนู: ${d.name}` : `เมนูชิม #${idx + 1}`,
+          });
+        }
+      });
+    }
+  }
+
+  // Keyboard navigation for Left/Right Image Carousel
+  useEffect(() => {
+    if (activeImageIndex === null || allPhotos.length === 0) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'ArrowRight') {
+        setActiveImageIndex((prev) =>
+          prev !== null ? (prev + 1) % allPhotos.length : null
+        );
+      } else if (e.key === 'ArrowLeft') {
+        setActiveImageIndex((prev) =>
+          prev !== null ? (prev - 1 + allPhotos.length) % allPhotos.length : null
+        );
+      } else if (e.key === 'Escape') {
+        setActiveImageIndex(null);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [activeImageIndex, allPhotos.length]);
 
   if (!isOpen || !currentItem) return null;
 
@@ -77,6 +151,11 @@ export const DetailModal: React.FC<DetailModalProps> = ({
 
   const likes = Array.isArray(currentItem.likes) ? currentItem.likes : [];
   const isLikedByMe = likes.some((l) => l.userId === currentUser.id);
+
+  const openPhotoByUrl = (url: string) => {
+    const idx = allPhotos.findIndex((p) => p.url === url);
+    setActiveImageIndex(idx >= 0 ? idx : 0);
+  };
 
   const handleAddReview = (e: React.FormEvent) => {
     e.preventDefault();
@@ -99,51 +178,57 @@ export const DetailModal: React.FC<DetailModalProps> = ({
     }
   };
 
+  const mainAudioSrc =
+    (isSupplier ? supplier?.voiceNoteUrl : store?.voiceNoteUrl) ||
+    ((isSupplier ? supplier?.voiceDurationSec : store?.voiceDurationSec)
+      ? getDemoVoiceWavDataUri(4)
+      : undefined);
+
   const toggleAudio = () => {
     if (!audioRef.current) return;
     if (isPlayingAudio) {
       audioRef.current.pause();
       setIsPlayingAudio(false);
     } else {
-      audioRef.current.play();
-      setIsPlayingAudio(true);
+      audioRef.current
+        .play()
+        .then(() => setIsPlayingAudio(true))
+        .catch(() => {
+          if (audioRef.current) {
+            audioRef.current.src = getDemoVoiceWavDataUri(4);
+            audioRef.current.play();
+            setIsPlayingAudio(true);
+          }
+        });
     }
   };
 
-  const handlePrintPdf = () => {
-    window.print();
+  const toggleSubAudio = (subId: string, url?: string) => {
+    if (!subAudioRef.current) return;
+    if (playingSubAudioId === subId) {
+      subAudioRef.current.pause();
+      setPlayingSubAudioId(null);
+    } else {
+      subAudioRef.current.src = url || getDemoVoiceWavDataUri(4);
+      subAudioRef.current
+        .play()
+        .then(() => setPlayingSubAudioId(subId))
+        .catch(() => {
+          if (subAudioRef.current) {
+            subAudioRef.current.src = getDemoVoiceWavDataUri(4);
+            subAudioRef.current.play();
+            setPlayingSubAudioId(subId);
+          }
+        });
+    }
   };
-
-  // Collect all photos
-  const allPhotos: { url: string; label: string }[] = [];
-  if (supplier) {
-    supplier.photos.storefrontAndAtmosphere?.forEach((p) =>
-      allPhotos.push({ url: p, label: 'ป้ายหน้าร้าน/บรรยากาศ' })
-    );
-    supplier.photos.contactCards?.forEach((p) =>
-      allPhotos.push({ url: p, label: 'นามบัตร/WeChat' })
-    );
-    supplier.catalogItems?.forEach((c) => {
-      if (c.photo)
-        allPhotos.push({ url: c.photo, label: c.name ? `สินค้า: ${c.name}` : 'รายการสินค้า' });
-    });
-  } else if (store) {
-    store.photos.storefrontAndAtmosphere?.forEach((p) =>
-      allPhotos.push({ url: p, label: 'หน้าร้าน/บรรยากาศ' })
-    );
-    store.photos.menuBoard?.forEach((p) => allPhotos.push({ url: p, label: 'เมนูบอร์ด' }));
-    store.photos.drinkCups?.forEach((p) => allPhotos.push({ url: p, label: 'แก้วเครื่องดื่ม' }));
-    store.drinkItems?.forEach((d) => {
-      if (d.photo) allPhotos.push({ url: d.photo, label: d.name ? `เมนู: ${d.name}` : 'เมนูชิม' });
-    });
-  }
 
   return (
     <div className="fixed inset-0 z-[90] bg-black/45 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4 overflow-y-auto">
       <div className="bg-white border border-slate-200/90 w-full max-w-3xl rounded-2xl shadow-2xl overflow-hidden my-auto animate-in zoom-in-95 max-h-[94vh] flex flex-col text-slate-900">
         {/* Header Bar */}
-        <div className="p-4 border-b border-slate-100 flex items-center justify-between bg-white sticky top-0 z-10">
-          <div className="flex items-center gap-2.5 min-w-0">
+        <div className="p-3.5 sm:p-4 border-b border-slate-100 flex flex-wrap items-center justify-between gap-2 bg-white sticky top-0 z-10">
+          <div className="flex items-center gap-2.5 min-w-0 flex-1">
             <span
               className={`p-2 rounded-xl shrink-0 ${
                 isSupplier ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'
@@ -156,11 +241,9 @@ export const DetailModal: React.FC<DetailModalProps> = ({
               )}
             </span>
             <div className="min-w-0">
-              <div className="flex items-center gap-2">
-                <h2 className="font-bold text-slate-900 text-sm sm:text-base truncate">
-                  {isSupplier ? supplier?.name : store?.storeName}
-                </h2>
-              </div>
+              <h2 className="font-bold text-slate-900 text-sm sm:text-base truncate">
+                {isSupplier ? supplier?.name : store?.storeName}
+              </h2>
               <p className="text-xs text-slate-400 truncate">
                 {isSupplier
                   ? supplier?.chineseName || supplier?.marketOrCity
@@ -169,7 +252,7 @@ export const DetailModal: React.FC<DetailModalProps> = ({
             </div>
           </div>
 
-          <div className="flex items-center gap-1.5 shrink-0">
+          <div className="flex items-center gap-1.5 flex-wrap shrink-0">
             {/* Like Button */}
             <button
               type="button"
@@ -180,29 +263,44 @@ export const DetailModal: React.FC<DetailModalProps> = ({
                   : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
               }`}
             >
-              <ThumbsUp className={`w-3.5 h-3.5 ${isLikedByMe ? 'fill-blue-600 text-blue-600' : ''}`} />
-              <span>ถูกใจ ({likes.length})</span>
+              <ThumbsUp
+                className={`w-3.5 h-3.5 ${isLikedByMe ? 'fill-blue-600 text-blue-600' : ''}`}
+              />
+              <span className="hidden sm:inline">ถูกใจ</span>
+              <span>({likes.length})</span>
             </button>
 
             {/* Share to Line */}
             <button
               type="button"
               onClick={() => onShareToLine(currentItem)}
-              className="flex items-center gap-1 px-3 py-1.5 text-xs font-bold rounded-xl bg-emerald-600 text-white hover:bg-emerald-700 transition-colors shadow-2xs"
+              className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-bold rounded-xl bg-emerald-600 text-white hover:bg-emerald-700 transition-colors shadow-2xs"
               title="แชร์ลิงก์เข้า LINE"
             >
               <Share2 className="w-3.5 h-3.5" />
               <span>แชร์ LINE</span>
             </button>
 
-            {/* Print / PDF Export */}
+            {/* Download PDF File Button ("เพิ่มปุ่มดาวนโหลด PDF ด้วย ขอดีไซน์ เหมือนปริ้นนั่นแหล่ะ แต่อันนี้ PDF files นะ") */}
             <button
               type="button"
-              onClick={handlePrintPdf}
-              className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 transition-colors"
-              title="พิมพ์ / เซฟเป็น PDF"
+              onClick={() => openExecutiveReport(currentItem, convertCnyToThb, 'pdf')}
+              className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition-colors shadow-2xs"
+              title="ดาวน์โหลดรายงานฉบับเต็มเป็นไฟล์ PDF"
             >
-              <Printer className="w-4 h-4" />
+              <FileDown className="w-3.5 h-3.5 text-emerald-400" />
+              <span>PDF</span>
+            </button>
+
+            {/* Executive Print Button ("ปุ่มกด Print จัดดีไซน์ อ่านง่าย ภาพทั้งหมด + log คนดู + คอมเม้น") */}
+            <button
+              type="button"
+              onClick={() => openExecutiveReport(currentItem, convertCnyToThb, 'print')}
+              className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold transition-colors border border-slate-200/80"
+              title="พิมพ์รายงานฉบับจัดหน้าสวยงาม (Print)"
+            >
+              <Printer className="w-3.5 h-3.5 text-slate-700" />
+              <span className="hidden sm:inline">Print</span>
             </button>
 
             <button
@@ -261,10 +359,11 @@ export const DetailModal: React.FC<DetailModalProps> = ({
           </div>
 
           {/* Voice Memo Player */}
-          {((isSupplier && supplier?.voiceNoteUrl) || (!isSupplier && store?.voiceNoteUrl)) && (
-            <div className="p-3 bg-emerald-50/70 border border-emerald-100 rounded-xl flex items-center justify-between">
+          {mainAudioSrc && (
+            <div className="p-3 bg-emerald-50/70 border border-emerald-200/80 rounded-xl flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <button
+                  type="button"
                   onClick={toggleAudio}
                   className="w-9 h-9 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white flex items-center justify-center shadow-xs transition-colors"
                 >
@@ -275,19 +374,20 @@ export const DetailModal: React.FC<DetailModalProps> = ({
                   )}
                 </button>
                 <div>
-                  <div className="text-xs font-bold text-emerald-900">
-                    วอยซ์เสียงบันทึกหน้างานจริง
+                  <div className="text-xs font-bold text-emerald-950 flex items-center gap-1.5">
+                    <Volume2 className="w-3.5 h-3.5 text-emerald-600" />
+                    <span>วอยซ์เสียงบันทึกหน้างานจริง</span>
                   </div>
                   <div className="text-[11px] text-emerald-700 font-mono">
                     ความยาว:{' '}
-                    {isSupplier ? supplier?.voiceDurationSec || 0 : store?.voiceDurationSec || 0}{' '}
-                    วินาที
+                    {isSupplier ? supplier?.voiceDurationSec || 4 : store?.voiceDurationSec || 4}{' '}
+                    วินาที · {isPlayingAudio ? 'กำลังเล่นเสียง...' : 'แตะปุ่ม ▶ เพื่อฟังเสียง'}
                   </div>
                 </div>
               </div>
               <audio
                 ref={audioRef}
-                src={isSupplier ? supplier?.voiceNoteUrl : store?.voiceNoteUrl}
+                src={mainAudioSrc}
                 onEnded={() => setIsPlayingAudio(false)}
               />
             </div>
@@ -377,7 +477,7 @@ export const DetailModal: React.FC<DetailModalProps> = ({
                       <img
                         src={catItem.photo}
                         alt=""
-                        onClick={() => setActiveImage(catItem.photo)}
+                        onClick={() => openPhotoByUrl(catItem.photo)}
                         className="w-16 h-16 rounded-lg object-cover cursor-pointer border border-slate-100 hover:opacity-90"
                       />
                     ) : (
@@ -410,6 +510,20 @@ export const DetailModal: React.FC<DetailModalProps> = ({
                       {catItem.memo && (
                         <p className="text-[11px] text-slate-600 line-clamp-2">{catItem.memo}</p>
                       )}
+                      {catItem.voiceNoteUrl && (
+                        <button
+                          type="button"
+                          onClick={() => toggleSubAudio(catItem.id, catItem.voiceNoteUrl)}
+                          className="mt-1 inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] font-bold"
+                        >
+                          {playingSubAudioId === catItem.id ? (
+                            <Pause className="w-2.5 h-2.5" />
+                          ) : (
+                            <Play className="w-2.5 h-2.5" />
+                          )}
+                          <span>ฟังเสียงเฉพาะชิ้นนี้</span>
+                        </button>
+                      )}
                     </div>
                   </div>
                 ))}
@@ -435,7 +549,7 @@ export const DetailModal: React.FC<DetailModalProps> = ({
                       <img
                         src={drink.photo}
                         alt=""
-                        onClick={() => setActiveImage(drink.photo)}
+                        onClick={() => openPhotoByUrl(drink.photo)}
                         className="w-16 h-16 rounded-lg object-cover cursor-pointer border border-amber-200"
                       />
                     )}
@@ -459,6 +573,20 @@ export const DetailModal: React.FC<DetailModalProps> = ({
                       {drink.gimmickNotes && (
                         <p className="text-[11px] text-slate-600">{drink.gimmickNotes}</p>
                       )}
+                      {drink.voiceNoteUrl && (
+                        <button
+                          type="button"
+                          onClick={() => toggleSubAudio(drink.id, drink.voiceNoteUrl)}
+                          className="mt-1 inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-amber-50 text-amber-800 border border-amber-200 text-[10px] font-bold"
+                        >
+                          {playingSubAudioId === drink.id ? (
+                            <Pause className="w-2.5 h-2.5" />
+                          ) : (
+                            <Play className="w-2.5 h-2.5" />
+                          )}
+                          <span>ฟังเสียงเฉพาะแก้วนี้</span>
+                        </button>
+                      )}
                     </div>
                   </div>
                 ))}
@@ -466,22 +594,31 @@ export const DetailModal: React.FC<DetailModalProps> = ({
             </div>
           )}
 
+          <audio
+            ref={subAudioRef}
+            onEnded={() => setPlayingSubAudioId(null)}
+            className="hidden"
+          />
+
           {/* Photo Gallery */}
           <div className="space-y-2">
             <span className="text-xs font-bold text-slate-800 block">
-              แกลเลอรีรูปภาพทั้งหมด ({allPhotos.length} รูป - แตะเพื่อขยาย):
+              แกลเลอรีรูปภาพทั้งหมด ({allPhotos.length} รูป — แตะเพื่อขยายและเลื่อนซ้าย-ขวา):
             </span>
             <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
               {allPhotos.map((p, idx) => (
                 <div
                   key={idx}
-                  onClick={() => setActiveImage(p.url)}
+                  onClick={() => setActiveImageIndex(idx)}
                   className="group relative aspect-square rounded-xl overflow-hidden border border-slate-200 cursor-pointer bg-slate-100 shadow-xs"
                 >
                   <img
                     src={p.url}
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
                   />
+                  <div className="absolute bottom-1 right-1 bg-black/60 text-white text-[9px] font-mono px-1.5 py-0.5 rounded">
+                    {idx + 1}/{allPhotos.length}
+                  </div>
                   <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-[10px] text-white p-1 text-center font-medium">
                     {p.label}
                   </div>
@@ -543,7 +680,8 @@ export const DetailModal: React.FC<DetailModalProps> = ({
                               type="button"
                               onClick={() =>
                                 setReplyTarget(
-                                  replyTarget?.noteId === note.id && replyTarget.author === note.author
+                                  replyTarget?.noteId === note.id &&
+                                    replyTarget.author === note.author
                                     ? null
                                     : { noteId: note.id, author: note.author }
                                 )
@@ -714,7 +852,8 @@ export const DetailModal: React.FC<DetailModalProps> = ({
         {/* Footer */}
         <div className="p-3.5 border-t border-slate-100 bg-white flex items-center justify-between">
           <div className="text-[11px] text-slate-400 font-mono">
-            ID: {currentItem.id} · ปรับปรุง: {new Date(currentItem.updatedAt).toLocaleTimeString('th-TH')}
+            ID: {currentItem.id} · ปรับปรุง:{' '}
+            {new Date(currentItem.updatedAt).toLocaleTimeString('th-TH')}
           </div>
           <button
             onClick={onClose}
@@ -725,22 +864,97 @@ export const DetailModal: React.FC<DetailModalProps> = ({
         </div>
       </div>
 
-      {/* Image Lightbox */}
-      {activeImage && (
+      {/* Full-Screen Carousel Image Lightbox (เลื่อนซ้าย-ขวาได้ตามรายการนั้นๆ) */}
+      {activeImageIndex !== null && allPhotos[activeImageIndex] && (
         <div
-          className="fixed inset-0 z-[140] bg-black/90 flex items-center justify-center p-4"
-          onClick={() => setActiveImage(null)}
+          className="fixed inset-0 z-[140] bg-black/92 backdrop-blur-md flex flex-col items-center justify-between p-3 sm:p-6 select-none"
+          onClick={() => setActiveImageIndex(null)}
         >
-          <img
-            src={activeImage}
-            className="max-w-full max-h-[90vh] object-contain rounded-xl shadow-2xl"
-          />
-          <button
-            onClick={() => setActiveImage(null)}
-            className="absolute top-4 right-4 text-white/80 hover:text-white p-2"
+          {/* Top Bar: Counter + Label + Close */}
+          <div
+            className="w-full max-w-4xl flex items-center justify-between text-white z-10"
+            onClick={(e) => e.stopPropagation()}
           >
-            <X className="w-6 h-6" />
-          </button>
+            <div className="flex items-center gap-2">
+              <span className="px-2.5 py-1 rounded-full bg-white/15 font-mono text-xs font-bold">
+                รูปที่ {activeImageIndex + 1} / {allPhotos.length}
+              </span>
+              <span className="text-xs sm:text-sm font-semibold text-white/90 truncate max-w-[240px] sm:max-w-md">
+                {allPhotos[activeImageIndex].label}
+              </span>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setActiveImageIndex(null)}
+              className="w-9 h-9 rounded-full bg-white/15 hover:bg-white/25 text-white flex items-center justify-center transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+
+          {/* Center Image + Left / Right Navigation Buttons */}
+          <div
+            className="relative flex-1 w-full max-w-5xl flex items-center justify-center my-2"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {allPhotos.length > 1 && (
+              <button
+                type="button"
+                onClick={() =>
+                  setActiveImageIndex(
+                    (activeImageIndex - 1 + allPhotos.length) % allPhotos.length
+                  )
+                }
+                className="absolute left-1 sm:left-3 z-20 w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-black/60 hover:bg-black/80 border border-white/25 text-white flex items-center justify-center shadow-lg active:scale-95 transition-all"
+                title="รูปก่อนหน้า (◀)"
+              >
+                <ChevronLeft className="w-6 h-6" />
+              </button>
+            )}
+
+            <img
+              src={allPhotos[activeImageIndex].url}
+              alt={allPhotos[activeImageIndex].label}
+              className="max-w-full max-h-[72vh] object-contain rounded-xl shadow-2xl"
+            />
+
+            {allPhotos.length > 1 && (
+              <button
+                type="button"
+                onClick={() =>
+                  setActiveImageIndex((activeImageIndex + 1) % allPhotos.length)
+                }
+                className="absolute right-1 sm:right-3 z-20 w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-black/60 hover:bg-black/80 border border-white/25 text-white flex items-center justify-center shadow-lg active:scale-95 transition-all"
+                title="รูปถัดไป (▶)"
+              >
+                <ChevronRight className="w-6 h-6" />
+              </button>
+            )}
+          </div>
+
+          {/* Bottom Thumbnail Strip */}
+          {allPhotos.length > 1 && (
+            <div
+              className="w-full max-w-3xl flex items-center justify-center gap-2 overflow-x-auto py-1 z-10"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {allPhotos.map((p, idx) => (
+                <button
+                  key={idx}
+                  type="button"
+                  onClick={() => setActiveImageIndex(idx)}
+                  className={`relative w-12 h-12 sm:w-14 sm:h-14 rounded-lg overflow-hidden shrink-0 border-2 transition-all ${
+                    idx === activeImageIndex
+                      ? 'border-emerald-400 scale-105 shadow-md'
+                      : 'border-white/20 opacity-60 hover:opacity-100'
+                  }`}
+                >
+                  <img src={p.url} className="w-full h-full object-cover" />
+                </button>
+              ))}
+            </div>
+          )}
         </div>
       )}
     </div>

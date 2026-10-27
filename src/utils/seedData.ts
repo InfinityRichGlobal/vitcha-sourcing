@@ -1,4 +1,5 @@
 import { User, SupplierRecord, StoreInspoRecord, InviteLink, QuickMessageTemplate } from '../types';
+import { getDemoVoiceWavDataUri } from './audioHelper';
 
 export const INITIAL_CATEGORIES: string[] = [
   'เคาน์เตอร์ & สเตนเลส',
@@ -156,7 +157,8 @@ export const INITIAL_SUPPLIERS: SupplierRecord[] = [
       },
     ],
     memo: 'โรงงานใหญ่มาก เซลส์พูดอังกฤษคล่อง อะไหล่สวิตช์และซีลยางมีสต็อกพร้อมส่ง FOB กวางโจวได้ทันที',
-    voiceDurationSec: 24,
+    voiceNoteUrl: getDemoVoiceWavDataUri(4),
+    voiceDurationSec: 4,
     location: {
       lat: 23.0965,
       lng: 113.3644,
@@ -582,6 +584,8 @@ export const INITIAL_DRINK_STORES: StoreInspoRecord[] = [
       },
     ],
     tastingNotes: 'รสชาติชาเขียวมะลิหอมฟุ้งเข้าจมูก เบสชาเข้มแต่ไม่ฝาด นมสดนุ่มละมุนมาก ไม่มีความข้นเหนียวในคอ ระบบหน้าร้านทำเร็วมาก 1 แก้วไม่เกิน 40 วินาที',
+    voiceNoteUrl: getDemoVoiceWavDataUri(4),
+    voiceDurationSec: 4,
     location: {
       lat: 23.1322,
       lng: 113.3274,

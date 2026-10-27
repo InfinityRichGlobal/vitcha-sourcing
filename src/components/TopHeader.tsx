@@ -1,13 +1,14 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import {
   Calculator,
-  Plus,
   Download,
   Bell,
   Factory,
   Coffee,
   Menu,
+  Check,
+  X,
 } from 'lucide-react';
 import { AppDrawerMenu } from './AppDrawerMenu';
 
@@ -41,6 +42,29 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
   } = useApp();
 
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const [isPwaInstalled, setIsPwaInstalled] = useState<boolean>(false);
+
+  const checkInstallStatus = () => {
+    if (typeof window === 'undefined') return false;
+    const isStandalone =
+      window.matchMedia('(display-mode: standalone)').matches ||
+      (window.navigator as unknown as { standalone?: boolean }).standalone === true;
+    const isMarked = localStorage.getItem('vitcha_pwa_installed') === 'true';
+    return isStandalone || isMarked;
+  };
+
+  useEffect(() => {
+    setIsPwaInstalled(checkInstallStatus());
+    const handleStatusChange = () => setIsPwaInstalled(checkInstallStatus());
+    window.addEventListener('vitcha-pwa-status-changed', handleStatusChange);
+    window.addEventListener('appinstalled', () => {
+      localStorage.setItem('vitcha_pwa_installed', 'true');
+      setIsPwaInstalled(true);
+    });
+    return () => {
+      window.removeEventListener('vitcha-pwa-status-changed', handleStatusChange);
+    };
+  }, []);
 
   const unreadCount = notifications.filter((n) => !n.read).length;
 
@@ -88,28 +112,30 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
             </div>
           </button>
 
-          {/* Right: Minimal Capture Buttons (+ ซัพ / + ร้านน้ำ) + Utility Pills */}
+          {/* Right: Framed Capture Box ("เพิ่ม [🏭 ซัพ] [🧋 ร้านน้ำ]") + Utility Pills */}
           <div className="flex items-center gap-1 sm:gap-1.5 shrink-0">
             {currentUser.role !== 'viewer' && (
-              <div className="flex items-center gap-1 bg-slate-100/90 p-0.5 sm:p-1 rounded-xl border border-slate-200/70">
+              <div className="flex items-center gap-1 sm:gap-1.5 bg-slate-100/90 pl-2 sm:pl-2.5 pr-1 py-1 rounded-xl border border-slate-200/80">
+                <span className="text-[11px] sm:text-xs font-extrabold text-slate-700 select-none">
+                  เพิ่ม
+                </span>
+
                 <button
                   type="button"
                   onClick={onOpenNewSupplier}
-                  className="inline-flex items-center gap-1 px-2 sm:px-2.5 py-1.5 text-[11px] sm:text-xs font-extrabold rounded-lg bg-slate-950 hover:bg-emerald-700 text-white shadow-2xs active:scale-95 transition-all"
+                  className="inline-flex items-center gap-1 px-2.5 py-1.5 text-[11px] sm:text-xs font-extrabold rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white shadow-2xs active:scale-95 transition-all"
                   title="บันทึกซัพพลายเออร์ใหม่ (จีน/ไทย)"
                 >
-                  <Plus className="w-3 h-3 sm:w-3.5 sm:h-3.5 stroke-[2.5]" />
-                  <Factory className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-emerald-400" />
+                  <Factory className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-white" />
                   <span>ซัพ</span>
                 </button>
 
                 <button
                   type="button"
                   onClick={onOpenNewStoreInspo}
-                  className="inline-flex items-center gap-1 px-2 sm:px-2.5 py-1.5 text-[11px] sm:text-xs font-extrabold rounded-lg bg-white hover:bg-amber-50 text-slate-900 border border-slate-200/90 shadow-2xs active:scale-95 transition-all"
+                  className="inline-flex items-center gap-1 px-2.5 py-1.5 text-[11px] sm:text-xs font-extrabold rounded-lg bg-white hover:bg-amber-50 text-slate-900 border border-slate-200/90 shadow-2xs active:scale-95 transition-all"
                   title="บันทึกร้านน้ำ & เรฟใหม่"
                 >
-                  <Plus className="w-3 h-3 sm:w-3.5 sm:h-3.5 stroke-[2.5] text-amber-600" />
                   <Coffee className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-amber-600" />
                   <span>ร้านน้ำ</span>
                 </button>
@@ -127,14 +153,27 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
               <span>1¥={exchangeRate.rate.toFixed(2)}฿</span>
             </button>
 
-            {/* Install App Icon Button */}
+            {/* Install App Icon Button with ✓ / ✗ Status Badge */}
             <button
               type="button"
               onClick={onOpenInstall}
-              className="p-2 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-200/80 text-slate-700 transition-all active:scale-95"
-              title="ติดตั้งแอพลงหน้าจอโฮม"
+              className="relative p-2 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-200/80 text-slate-700 transition-all active:scale-95"
+              title={
+                isPwaInstalled
+                  ? 'ติดตั้งแอพลงหน้าจอโฮมแล้ว (✓) · กดเพื่อดู/ทดสอบแจ้งเตือน'
+                  : 'ยังไม่ได้ติดตั้งแอพลงหน้าจอโฮม (✗) · กดเพื่อติดตั้งและเปิดแจ้งเตือน'
+              }
             >
               <Download className="w-3.5 h-3.5 text-emerald-600" />
+              {isPwaInstalled ? (
+                <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-emerald-600 text-white flex items-center justify-center border-2 border-white shadow-2xs">
+                  <Check className="w-2.5 h-2.5 stroke-[3]" />
+                </span>
+              ) : (
+                <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-rose-500 text-white flex items-center justify-center border-2 border-white shadow-2xs">
+                  <X className="w-2.5 h-2.5 stroke-[3]" />
+                </span>
+              )}
             </button>
 
             {/* Notification Bell */}

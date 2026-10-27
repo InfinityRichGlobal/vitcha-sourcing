@@ -81,18 +81,16 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({ isOpen, onCl
                 <input
                   type="file"
                   accept="image/*"
-                  capture="user"
                   onChange={handleAvatarUpload}
                   className="hidden"
                 />
               </label>
             </div>
             <label className="text-xs text-emerald-700 font-semibold cursor-pointer hover:underline">
-              แตะเพื่อเปลี่ยนรูปโปรไฟล์
+              แตะเพื่อเลือกรูปโปรไฟล์จากอัลบั้มในเครื่อง หรือถ่ายรูปใหม่
               <input
                 type="file"
                 accept="image/*"
-                capture="user"
                 onChange={handleAvatarUpload}
                 className="hidden"
               />

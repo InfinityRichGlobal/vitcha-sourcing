@@ -286,11 +286,10 @@ export const NewStoreInspoModal: React.FC<NewStoreInspoModalProps> = ({ isOpen, 
 
             <label className="flex items-center justify-center gap-2 py-2.5 px-4 bg-white border border-slate-200 hover:border-amber-500 rounded-xl text-xs font-semibold text-slate-700 cursor-pointer shadow-sm active:scale-[0.99] transition-all">
               <Camera className="w-4 h-4 text-amber-600" />
-              <span>+ ถ่ายภาพหน้าร้าน / บรรยากาศ (เลือกได้หลายรูปพร้อมกัน)</span>
+              <span>+ เลือกรูปจากอัลบั้ม / ถ่ายภาพหน้าร้าน (เลือกได้หลายรูปพร้อมกัน)</span>
               <input
                 type="file"
                 accept="image/*"
-                capture="environment"
                 multiple
                 onChange={(e) => handleMultiPhotoUpload(e, setStorefrontAndAtmosphere)}
                 className="hidden"
@@ -496,11 +495,10 @@ export const NewStoreInspoModal: React.FC<NewStoreInspoModalProps> = ({ isOpen, 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
               <label className="flex items-center justify-center gap-2 p-3 bg-white border border-slate-200 hover:border-amber-500 rounded-xl text-xs font-semibold text-slate-700 cursor-pointer shadow-sm">
                 <Camera className="w-4 h-4 text-amber-600" />
-                <span>+ ถ่ายรูปป้ายเมนู/ราคา ({menuBoardPhotos.length})</span>
+                <span>+ เลือกรูป / ถ่ายป้ายเมนู ({menuBoardPhotos.length})</span>
                 <input
                   type="file"
                   accept="image/*"
-                  capture="environment"
                   multiple
                   onChange={(e) => handleMultiPhotoUpload(e, setMenuBoardPhotos)}
                   className="hidden"
@@ -509,11 +507,10 @@ export const NewStoreInspoModal: React.FC<NewStoreInspoModalProps> = ({ isOpen, 
 
               <label className="flex items-center justify-center gap-2 p-3 bg-white border border-slate-200 hover:border-amber-500 rounded-xl text-xs font-semibold text-slate-700 cursor-pointer shadow-sm">
                 <Camera className="w-4 h-4 text-amber-600" />
-                <span>+ ถ่ายรูปแก้ว/แพ็กเกจจิ้ง ({drinkCupPhotos.length})</span>
+                <span>+ เลือกรูป / ถ่ายแก้วแพ็กเกจจิ้ง ({drinkCupPhotos.length})</span>
                 <input
                   type="file"
                   accept="image/*"
-                  capture="environment"
                   multiple
                   onChange={(e) => handleMultiPhotoUpload(e, setDrinkCupPhotos)}
                   className="hidden"
@@ -546,7 +543,7 @@ export const NewStoreInspoModal: React.FC<NewStoreInspoModalProps> = ({ isOpen, 
             <label className="flex flex-col items-center justify-center p-4 bg-white border-2 border-dashed border-slate-300 hover:border-amber-500 rounded-2xl cursor-pointer transition-colors shadow-sm">
               <Upload className="w-6 h-6 text-amber-600 mb-1" />
               <span className="text-xs font-bold text-slate-800">
-                แตะเพื่อถ่ายรูป / เลือกภาพเครื่องดื่มหลายรูปพร้อมกัน
+                แตะเพื่อเลือกรูปจากอัลบั้มในเครื่อง หรือถ่ายภาพเครื่องดื่มหลายรูปพร้อมกัน
               </span>
               <span className="text-[10px] text-slate-400">
                 เลือกทีเดียวหลายๆ รูป ระบบจะสร้างการ์ดเมนูแยกให้ทันที
@@ -554,7 +551,6 @@ export const NewStoreInspoModal: React.FC<NewStoreInspoModalProps> = ({ isOpen, 
               <input
                 type="file"
                 accept="image/*"
-                capture="environment"
                 multiple
                 onChange={handleMassDrinkUpload}
                 className="hidden"
