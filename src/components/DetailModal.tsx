@@ -4,6 +4,7 @@ import { useApp } from '../context/AppContext';
 import { SeenByBadge } from './SeenByBadge';
 import { openExecutiveReport } from '../utils/exportReport';
 import { getDemoVoiceWavDataUri, getItemVoiceNotes } from '../utils/audioHelper';
+import { VideoPlayer } from './VideoPlayer';
 import {
   X,
   MapPin,
@@ -696,18 +697,13 @@ export const DetailModal: React.FC<DetailModalProps> = ({
               </span>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {currentItem.videos.map((vid, idx) => (
-                  <div key={idx} className="relative rounded-2xl overflow-hidden bg-black border border-slate-200 shadow-sm">
-                    <video
-                      src={vid}
-                      controls
-                      playsInline
-                      preload="metadata"
-                      className="w-full h-48 sm:h-52 object-contain bg-black"
-                    />
-                    <div className="absolute top-2 left-2 px-2.5 py-0.5 rounded-md bg-black/70 text-white text-[10px] font-mono font-bold">
-                      คลิปที่ {idx + 1}
-                    </div>
-                  </div>
+                  <VideoPlayer
+                    key={idx}
+                    src={vid}
+                    className="rounded-2xl border border-slate-200 shadow-sm h-48 sm:h-56"
+                    videoClassName="object-contain"
+                    badgeLabel={`คลิปที่ ${idx + 1}`}
+                  />
                 ))}
               </div>
             </div>

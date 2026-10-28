@@ -4,7 +4,8 @@ import { CatalogItem, VoiceNoteEntry } from '../types';
 import { AudioRecorder } from './AudioRecorder';
 import { getItemVoiceNotes } from '../utils/audioHelper';
 import { compressImageFile } from '../utils/imageCompressor';
-import { readVideoFile } from '../utils/mediaStorage';
+import { saveVideoFile, deleteVideoFile } from '../utils/mediaStorage';
+import { VideoPlayer } from './VideoPlayer';
 import {
   X,
   Camera,
@@ -184,7 +185,7 @@ export const NewSupplierModal: React.FC<NewSupplierModalProps> = ({ isOpen, onCl
     setIsVideoLoading(true);
     try {
       for (const file of Array.from(files)) {
-        const videoData = await readVideoFile(file);
+        const videoData = await saveVideoFile(file);
         if (videoData) {
           setVideos((prev) => [...prev, videoData]);
         }
@@ -195,6 +196,14 @@ export const NewSupplierModal: React.FC<NewSupplierModalProps> = ({ isOpen, onCl
       setIsVideoLoading(false);
       e.target.value = '';
     }
+  };
+
+  const handleRemoveVideo = (index: number) => {
+    const targetUrl = videos[index];
+    if (targetUrl) {
+      deleteVideoFile(targetUrl);
+    }
+    setVideos((prev) => prev.filter((_, idx) => idx !== index));
   };
 
   const addManualCatalogItem = () => {
@@ -739,32 +748,22 @@ export const NewSupplierModal: React.FC<NewSupplierModalProps> = ({ isOpen, onCl
                 <i className="fa-solid fa-video text-purple-600" />
                 <span>คลิปวิดีโอหน้าร้าน & การทำงานเครื่องจักร ({videos.length})</span>
               </span>
-              <span className="text-[10px] text-slate-400">อัปโหลดจากมือถือ / ถ่ายวิดีโอสด</span>
+              <span className="text-[10px] text-emerald-700 font-semibold bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
+                ✓ ไม่จำกัดขนาดไฟล์
+              </span>
             </div>
 
             {/* Video preview cards */}
             {videos.length > 0 && (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 py-1">
                 {videos.map((v, i) => (
-                  <div key={i} className="relative rounded-xl overflow-hidden bg-black border border-slate-200 shadow-xs group">
-                    <video
-                      src={v}
-                      controls
-                      playsInline
-                      className="w-full h-36 object-cover bg-black"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setVideos((prev) => prev.filter((_, idx) => idx !== i))}
-                      className="absolute top-2 right-2 w-6 h-6 rounded-full bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold flex items-center justify-center shadow-md transition-all"
-                      title="ลบคลิปนี้"
-                    >
-                      ×
-                    </button>
-                    <div className="absolute bottom-2 left-2 px-2 py-0.5 rounded-md bg-black/70 text-white text-[10px] font-mono">
-                      คลิป #{i + 1}
-                    </div>
-                  </div>
+                  <VideoPlayer
+                    key={i}
+                    src={v}
+                    className="rounded-xl border border-slate-200 shadow-xs h-36"
+                    badgeLabel={`คลิป #${i + 1}`}
+                    onRemove={() => handleRemoveVideo(i)}
+                  />
                 ))}
               </div>
             )}
@@ -775,7 +774,7 @@ export const NewSupplierModal: React.FC<NewSupplierModalProps> = ({ isOpen, onCl
               <span>
                 {isVideoLoading
                   ? 'กำลังประมวลผลคลิปวิดีโอ...'
-                  : '+ เลือกคลิปวิดีโอจากอัลบั้ม / ถ่ายคลิปวิดีโอใหม่ (Video)'}
+                  : '+ เลือกคลิปวิดีโอจากอัลบั้ม / ถ่ายคลิปวิดีโอใหม่ (ไม่จำกัดขนาดไฟล์)'}
               </span>
               <input
                 type="file"
