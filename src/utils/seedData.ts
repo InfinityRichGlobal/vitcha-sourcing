@@ -171,7 +171,7 @@ export const INITIAL_SUPPLIERS: SupplierRecord[] = [
     creator: {
       id: 'user-ice',
       name: 'Ice (ผู้ก่อตั้ง)',
-      alias: 'Ice (Admin)',
+      alias: 'SuperiCez',
       avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
       timestamp: '2026-11-02T14:35:00Z',
     },
@@ -242,7 +242,7 @@ export const INITIAL_SUPPLIERS: SupplierRecord[] = [
     creator: {
       id: 'user-ice',
       name: 'Ice (ผู้ก่อตั้ง)',
-      alias: 'Ice (Admin)',
+      alias: 'SuperiCez',
       avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
       timestamp: '2026-11-03T11:20:00Z',
     },
@@ -296,7 +296,7 @@ export const INITIAL_SUPPLIERS: SupplierRecord[] = [
     creator: {
       id: 'user-ice',
       name: 'Ice (ผู้ก่อตั้ง)',
-      alias: 'Ice (Admin)',
+      alias: 'SuperiCez',
       avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
       timestamp: '2026-11-03T15:40:00Z',
     },
@@ -349,7 +349,7 @@ export const INITIAL_SUPPLIERS: SupplierRecord[] = [
     creator: {
       id: 'user-ice',
       name: 'Ice (ผู้ก่อตั้ง)',
-      alias: 'Ice (Admin)',
+      alias: 'SuperiCez',
       avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
       timestamp: '2026-10-27T10:00:00Z',
     },
@@ -364,7 +364,7 @@ export const INITIAL_SUPPLIERS: SupplierRecord[] = [
         replies: [
           {
             id: 'rep-th-1',
-            author: 'Ice (Admin)',
+            author: 'SuperiCez',
             authorAvatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
             authorRole: 'admin',
             text: 'ดีเลยแอน ลองขอดูตัวอย่างกระสอบล็อตใหม่เลยนะ',
@@ -424,7 +424,7 @@ export const INITIAL_SUPPLIERS: SupplierRecord[] = [
     creator: {
       id: 'user-ice',
       name: 'Ice (ผู้ก่อตั้ง)',
-      alias: 'Ice (Admin)',
+      alias: 'SuperiCez',
       avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
       timestamp: '2026-10-27T15:20:00Z',
     },
@@ -600,7 +600,7 @@ export const INITIAL_DRINK_STORES: StoreInspoRecord[] = [
     creator: {
       id: 'user-ice',
       name: 'Ice (ผู้ก่อตั้ง)',
-      alias: 'Ice (Admin)',
+      alias: 'SuperiCez',
       avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
       timestamp: '2026-11-02T19:20:00Z',
     },
@@ -668,7 +668,7 @@ export const INITIAL_DRINK_STORES: StoreInspoRecord[] = [
     creator: {
       id: 'user-ice',
       name: 'Ice (ผู้ก่อตั้ง)',
-      alias: 'Ice (Admin)',
+      alias: 'SuperiCez',
       avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
       timestamp: '2026-11-03T18:15:00Z',
     },
@@ -740,7 +740,7 @@ export const INITIAL_DRINK_STORES: StoreInspoRecord[] = [
     creator: {
       id: 'user-ice',
       name: 'Ice (ผู้ก่อตั้ง)',
-      alias: 'Ice (Admin)',
+      alias: 'SuperiCez',
       avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
       timestamp: '2026-10-27T14:30:00Z',
     },
@@ -819,7 +819,7 @@ export const INITIAL_DRINK_STORES: StoreInspoRecord[] = [
     city: 'กรุงเทพฯ (Bangkok)',
     phone: '082-991-4512',
     lineId: '@arimatchalab',
-    assignedTo: 'Ice (Admin)',
+    assignedTo: 'SuperiCez',
     handoffStage: 'approved',
     handoffNotes: 'โทนสีร้านขาว-เทาตัดสเตนเลสตรงกับ Mood & Tone ของแบรนด์เรามาก',
     photos: {
@@ -857,7 +857,7 @@ export const INITIAL_DRINK_STORES: StoreInspoRecord[] = [
     creator: {
       id: 'user-ice',
       name: 'Ice (ผู้ก่อตั้ง)',
-      alias: 'Ice (Admin)',
+      alias: 'SuperiCez',
       avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
       timestamp: '2026-10-27T17:50:00Z',
     },

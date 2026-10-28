@@ -27,6 +27,8 @@ import {
   Cloud,
   Server,
   Flame,
+  Globe,
+  RefreshCw,
 } from 'lucide-react';
 
 export const SettingsManagementView: React.FC = () => {
@@ -56,6 +58,11 @@ export const SettingsManagementView: React.FC = () => {
     resetSystemData,
     suppliers,
     drinkStores,
+    renderStatus,
+    renderServerUrl,
+    setRenderServerUrl,
+    testRenderConnection,
+    syncAllDataToRender,
   } = useApp();
 
   // Top 2 roles permission check: Admin & Editor
@@ -93,6 +100,45 @@ export const SettingsManagementView: React.FC = () => {
   const [configJsonInput, setConfigJsonInput] = useState('');
   const [showConfigForm, setShowConfigForm] = useState(false);
   const [firebaseStatusMsg, setFirebaseStatusMsg] = useState<string | null>(null);
+
+  // Render Central Server states
+  const [editingRenderUrl, setEditingRenderUrl] = useState(renderServerUrl);
+  const [renderTestResult, setRenderTestResult] = useState<{ ok: boolean; message: string; count?: any } | null>(null);
+  const [isTestingRender, setIsTestingRender] = useState(false);
+  const [isSyncingRender, setIsSyncingRender] = useState(false);
+  const [renderSyncMsg, setRenderSyncMsg] = useState<string | null>(null);
+
+  const handleTestRender = async () => {
+    setIsTestingRender(true);
+    setRenderTestResult(null);
+    try {
+      const res = await testRenderConnection(editingRenderUrl);
+      setRenderTestResult(res);
+    } finally {
+      setIsTestingRender(false);
+    }
+  };
+
+  const handleSaveRenderUrl = (e: React.FormEvent) => {
+    e.preventDefault();
+    setRenderServerUrl(editingRenderUrl);
+    handleTestRender();
+  };
+
+  const handleForceSyncRender = async () => {
+    setIsSyncingRender(true);
+    setRenderSyncMsg(null);
+    try {
+      const ok = await syncAllDataToRender();
+      if (ok) {
+        setRenderSyncMsg('✅ ซิงค์ข้อมูลทั้งหมดขึ้นเซิร์ฟเวอร์ Render เรียบร้อยแล้ว!');
+      } else {
+        setRenderSyncMsg('❌ ไม่สามารถส่งข้อมูลได้ กรุณาลองใหม่อีกครั้ง');
+      }
+    } finally {
+      setIsSyncingRender(false);
+    }
+  };
 
   if (!hasPermission) {
     return (
@@ -361,6 +407,123 @@ export const SettingsManagementView: React.FC = () => {
             <Trash2 className="w-3.5 h-3.5" />
             <span>ล้างข้อมูลว่างเปล่า (เริ่มจริง)</span>
           </button>
+        </div>
+      </div>
+
+      {/* Central Cloud Server (onrender.com) Card */}
+      <div className="bg-white p-4 sm:p-5 rounded-2xl border-2 border-slate-900/10 shadow-sm space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-slate-950 text-emerald-400 flex items-center justify-center shrink-0 shadow-xs">
+              <Globe className="w-5 h-5" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h3 className="font-extrabold text-sm sm:text-base text-slate-900">
+                  เซิร์ฟเวอร์กลางหลัก VITCHA (Render · onrender.com)
+                </h3>
+                <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 border border-slate-200">
+                  Node.js + REST API
+                </span>
+              </div>
+              <p className="text-[11px] text-slate-500">
+                ฐานข้อมูลกลางคลาวด์ บันทึกข้อมูลขึ้นระบบจริงทันที ข้อมูลมือถือและคอมพิวเตอร์ตรงกัน 100%
+              </p>
+            </div>
+          </div>
+
+          <div>
+            {renderStatus === 'connected' ? (
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-bold">
+                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                <span>🟢 เชื่อมต่อเซิร์ฟเวอร์ Render สำเร็จ</span>
+              </span>
+            ) : renderStatus === 'connecting' ? (
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-50 border border-amber-200 text-amber-800 text-xs font-bold">
+                <RefreshCw className="w-3 h-3 text-amber-600 animate-spin" />
+                <span>🟡 กำลังเชื่อมต่อ Render...</span>
+              </span>
+            ) : (
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-rose-50 border border-rose-200 text-rose-800 text-xs font-bold">
+                <span className="w-2 h-2 rounded-full bg-rose-500" />
+                <span>🔴 ออฟไลน์ (Render กำลัง Wake-up หรือ URL ไม่ตรง)</span>
+              </span>
+            )}
+          </div>
+        </div>
+
+        {/* Server URL Input & Actions */}
+        <div className="bg-slate-50 p-3.5 sm:p-4 rounded-xl border border-slate-200/80 space-y-3">
+          <form onSubmit={handleSaveRenderUrl} className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+            <div className="flex-1 flex items-center bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs focus-within:border-slate-900 transition-colors">
+              <span className="text-slate-400 font-mono select-none mr-1.5">URL:</span>
+              <input
+                type="text"
+                placeholder="https://vitcha-sourcing.onrender.com"
+                value={editingRenderUrl}
+                onChange={(e) => setEditingRenderUrl(e.target.value)}
+                className="w-full bg-transparent font-mono text-xs text-slate-900 focus:outline-none"
+              />
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                type="submit"
+                className="px-3.5 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs shrink-0 active:scale-95 transition-all shadow-2xs"
+              >
+                บันทึก URL
+              </button>
+              <button
+                type="button"
+                onClick={handleTestRender}
+                disabled={isTestingRender}
+                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-white border border-slate-300 hover:bg-slate-100 text-slate-800 font-bold text-xs shrink-0 active:scale-95 transition-all"
+              >
+                <RefreshCw className={`w-3.5 h-3.5 ${isTestingRender ? 'animate-spin' : ''}`} />
+                <span>{isTestingRender ? 'กำลังทดสอบ...' : '📡 ทดสอบเชื่อมต่อ (Ping)'}</span>
+              </button>
+              <button
+                type="button"
+                onClick={handleForceSyncRender}
+                disabled={isSyncingRender}
+                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shrink-0 active:scale-95 transition-all shadow-xs"
+              >
+                <Cloud className={`w-3.5 h-3.5 ${isSyncingRender ? 'animate-pulse' : ''}`} />
+                <span>{isSyncingRender ? 'กำลังซิงค์...' : '☁️ ซิงค์ข้อมูลขึ้น Render ทันที'}</span>
+              </button>
+            </div>
+          </form>
+
+          {renderTestResult && (
+            <div
+              className={`p-3 rounded-xl text-xs font-semibold flex items-center justify-between border ${
+                renderTestResult.ok
+                  ? 'bg-emerald-50 border-emerald-200 text-emerald-800'
+                  : 'bg-rose-50 border-rose-200 text-rose-800'
+              }`}
+            >
+              <div className="flex items-center gap-2">
+                <span>{renderTestResult.ok ? '✅' : '⚠️'}</span>
+                <span>{renderTestResult.message}</span>
+              </div>
+              {renderTestResult.count && (
+                <div className="text-[11px] font-mono text-emerald-700 flex gap-2">
+                  <span>ซัพพลายเออร์: {renderTestResult.count.suppliersCount ?? 0}</span>
+                  <span>· ร้านน้ำ: {renderTestResult.count.drinkStoresCount ?? 0}</span>
+                  <span>· ผู้ใช้: {renderTestResult.count.usersCount ?? 0}</span>
+                </div>
+              )}
+            </div>
+          )}
+
+          {renderSyncMsg && (
+            <div className="p-3 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-xl text-xs font-semibold">
+              {renderSyncMsg}
+            </div>
+          )}
+
+          <div className="text-[11px] text-slate-500 leading-relaxed bg-white p-2.5 rounded-lg border border-slate-200/70">
+            💡 <strong>วิธีนำขึ้น Render (1-Click):</strong> ลิงก์ GitHub Repo <code className="text-slate-800 font-bold bg-slate-100 px-1 py-0.5 rounded">InfinityRichGlobal/vitcha-sourcing</code> เข้ากับ Render.com ผ่าน Blueprint <code className="text-slate-800 font-bold bg-slate-100 px-1 py-0.5 rounded">render.yaml</code> ที่เราเตรียมไว้ให้ เซิร์ฟเวอร์จะเปิดทำงานอัตโนมัติ 24 ชม.
+          </div>
         </div>
       </div>
 

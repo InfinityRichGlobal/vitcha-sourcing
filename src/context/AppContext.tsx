@@ -39,6 +39,19 @@ import {
   saveUserToCloud,
   saveInviteToCloud,
 } from '../services/firebase';
+import {
+  getRenderServerUrl,
+  saveRenderServerUrl,
+  checkServerHealth,
+  fetchCentralData,
+  postSupplierToCentral,
+  deleteSupplierFromCentral,
+  postStoreToCentral,
+  deleteStoreFromCentral,
+  postUserToCentral,
+  postInviteToCentral,
+  syncAllToCentral,
+} from '../services/api';
 
 interface AppContextType {
   currentUser: User;
@@ -161,6 +174,13 @@ interface AppContextType {
     avatar: string,
     fallbackRole?: UserRole
   ) => User;
+
+  // Render Central Server
+  renderStatus: 'connected' | 'connecting' | 'disconnected';
+  renderServerUrl: string;
+  setRenderServerUrl: (url: string) => void;
+  testRenderConnection: (url?: string) => Promise<{ ok: boolean; message: string; count?: any }>;
+  syncAllDataToRender: () => Promise<boolean>;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -168,8 +188,8 @@ const AppContext = createContext<AppContextType | undefined>(undefined);
 const DEFAULT_VIEWED_BY: ViewLogEntry[] = [
   {
     userId: 'user-ice',
-    name: 'Ice (ผู้ก่อตั้ง)',
-    alias: 'Ice (Admin)',
+    name: 'Ice (SuperiCez - ผู้ก่อตั้ง)',
+    alias: 'SuperiCez',
     avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
     role: 'admin',
     lastViewedAt: new Date(Date.now() - 1000 * 60 * 14).toISOString(),
@@ -198,7 +218,7 @@ const DEFAULT_VIEWED_BY: ViewLogEntry[] = [
 const DEFAULT_LIKES: LikeEntry[] = [
   {
     userId: 'user-ice',
-    alias: 'Ice (Admin)',
+    alias: 'SuperiCez',
     avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
     timestamp: new Date(Date.now() - 1000 * 60 * 30).toISOString(),
   },
@@ -272,8 +292,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         if (u.id === 'user-ice') {
           return {
             ...u,
-            alias: u.alias === 'Ice (Admin)' ? 'SuperiCez' : u.alias,
-            emailOrId: u.emailOrId === 'ice@vitcha.com' ? 'supericez' : u.emailOrId,
+            alias: 'SuperiCez',
+            emailOrId: 'supericez',
           };
         }
         return u;
@@ -301,7 +321,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const savedUser = localStorage.getItem('vitcha_current_user_v5');
       if (savedUser) {
         const parsed: User = JSON.parse(savedUser);
-        if (parsed.id === 'user-ice' && parsed.alias === 'Ice (Admin)') {
+        if (parsed.id === 'user-ice') {
           return { ...parsed, alias: 'SuperiCez', emailOrId: 'supericez' };
         }
         return parsed;
@@ -451,6 +471,76 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       unsubStores?.();
       unsubUsers?.();
       unsubInvites?.();
+    };
+  }, []);
+
+  // Render Central Server State & Synchronization
+  const [renderServerUrl, setRenderServerUrlState] = useState<string>(() => getRenderServerUrl());
+  const [renderStatus, setRenderStatus] = useState<'connected' | 'connecting' | 'disconnected'>('connecting');
+
+  const setRenderServerUrl = (url: string) => {
+    saveRenderServerUrl(url);
+    setRenderServerUrlState(url);
+  };
+
+  const testRenderConnection = async (url?: string) => {
+    setRenderStatus('connecting');
+    const result = await checkServerHealth(url || renderServerUrl);
+    setRenderStatus(result.ok ? 'connected' : 'disconnected');
+    return result;
+  };
+
+  const syncAllDataToRender = async () => {
+    return await syncAllToCentral({
+      suppliers,
+      drinkStores,
+      users,
+      invites,
+    });
+  };
+
+  // Fetch Central Server Data on App Startup
+  useEffect(() => {
+    let active = true;
+    setRenderStatus('connecting');
+
+    fetchCentralData()
+      .then((data) => {
+        if (!active) return;
+        if (!data) {
+          setRenderStatus('disconnected');
+          return;
+        }
+        setRenderStatus('connected');
+
+        if (Array.isArray(data.suppliers) && data.suppliers.length > 0) {
+          setSuppliers(normalizeSuppliers(data.suppliers));
+          safeSetLocalStorage('vitcha_suppliers_v5', JSON.stringify(data.suppliers));
+        } else if (suppliers.length > 0) {
+          syncAllToCentral({ suppliers, drinkStores, users, invites });
+        }
+
+        if (Array.isArray(data.drinkStores) && data.drinkStores.length > 0) {
+          setDrinkStores(normalizeStores(data.drinkStores));
+          safeSetLocalStorage('vitcha_drink_stores_v5', JSON.stringify(data.drinkStores));
+        }
+
+        if (Array.isArray(data.users) && data.users.length > 0) {
+          setUsers(data.users);
+          safeSetLocalStorage('vitcha_users_v5', JSON.stringify(data.users));
+        }
+
+        if (Array.isArray(data.invites) && data.invites.length > 0) {
+          setInvites(data.invites);
+          safeSetLocalStorage('vitcha_invites_v5', JSON.stringify(data.invites));
+        }
+      })
+      .catch(() => {
+        if (active) setRenderStatus('disconnected');
+      });
+
+    return () => {
+      active = false;
     };
   }, []);
 
@@ -806,8 +896,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   // Load Full Mockup Data & Reset System Data
   const loadFullMockupData = () => {
-    setSuppliers(normalizeSuppliers(INITIAL_SUPPLIERS));
-    setDrinkStores(normalizeStores(INITIAL_DRINK_STORES));
+    const initialSup = normalizeSuppliers(INITIAL_SUPPLIERS);
+    const initialStores = normalizeStores(INITIAL_DRINK_STORES);
+    setSuppliers(initialSup);
+    setDrinkStores(initialStores);
     setCategories(INITIAL_CATEGORIES);
     setStoreCategories(INITIAL_STORE_CATEGORIES);
     setQuickTagsList(INITIAL_QUICK_TAGS);
@@ -818,6 +910,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setSelectedTag('all');
     setSelectedRating(null);
     setSearchQuery('');
+    syncAllToCentral({ suppliers: initialSup, drinkStores: initialStores, users, invites });
     broadcastNotification(
       '✨ โหลดข้อมูล Mockup เต็มระบบสำเร็จ',
       `ซัพพลายเออร์ ${INITIAL_SUPPLIERS.length} รายการ และ ร้านน้ำเรฟ ${INITIAL_DRINK_STORES.length} รายการ พร้อมทดสอบแล้ว`,
@@ -833,6 +926,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       setSuppliers([]);
       setDrinkStores([]);
       setNotifications([]);
+      syncAllToCentral({ suppliers: [], drinkStores: [] });
       broadcastNotification(
         '🗑️ ล้างข้อมูลเป็นระบบว่างเปล่าสำเร็จ',
         'พร้อมเริ่มบันทึกข้อมูลหน้างานจริงตั้งแต่ศูนย์',
@@ -842,8 +936,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         false
       );
     } else {
-      setSuppliers(normalizeSuppliers(INITIAL_SUPPLIERS));
-      setDrinkStores(normalizeStores(INITIAL_DRINK_STORES));
+      const initialSup = normalizeSuppliers(INITIAL_SUPPLIERS);
+      const initialStores = normalizeStores(INITIAL_DRINK_STORES);
+      setSuppliers(initialSup);
+      setDrinkStores(initialStores);
       setCategories(INITIAL_CATEGORIES);
       setStoreCategories(INITIAL_STORE_CATEGORIES);
       setQuickTagsList(INITIAL_QUICK_TAGS);
@@ -854,6 +950,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       setSelectedTag('all');
       setSelectedRating(null);
       setSearchQuery('');
+      syncAllToCentral({ suppliers: initialSup, drinkStores: initialStores, users, invites });
       broadcastNotification(
         '🔄 รีเซ็ทข้อมูลกลับสู่ค่าเริ่มต้น (Mockup) สำเร็จ',
         'รีเซ็ทข้อมูลซัพพลายเออร์ ร้านน้ำเรฟ และหมวดหมู่ทั้งหมดเรียบร้อยแล้ว',
@@ -977,6 +1074,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     setSuppliers([newRecord, ...suppliers]);
     saveSupplierToCloud(newRecord);
+    postSupplierToCentral(newRecord);
     if (syncStatus === 'offline') {
       setPendingSyncCount((prev) => prev + 1);
     }
@@ -1010,12 +1108,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     });
     setSuppliers(nextSuppliers);
     const target = nextSuppliers.find((s) => s.id === id);
-    if (target) saveSupplierToCloud(target);
+    if (target) {
+      saveSupplierToCloud(target);
+      postSupplierToCentral(target);
+    }
   };
 
   const deleteSupplier = (id: string) => {
     setSuppliers(suppliers.filter((s) => s.id !== id));
     deleteSupplierFromCloud(id);
+    deleteSupplierFromCentral(id);
   };
 
   // Store Inspo CRUD
@@ -1059,6 +1161,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     setDrinkStores([newRecord, ...drinkStores]);
     saveStoreToCloud(newRecord);
+    postStoreToCentral(newRecord);
     if (syncStatus === 'offline') {
       setPendingSyncCount((prev) => prev + 1);
     }
@@ -1092,12 +1195,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     });
     setDrinkStores(nextStores);
     const target = nextStores.find((s) => s.id === id);
-    if (target) saveStoreToCloud(target);
+    if (target) {
+      saveStoreToCloud(target);
+      postStoreToCentral(target);
+    }
   };
 
   const deleteStoreInspo = (id: string) => {
     setDrinkStores(drinkStores.filter((s) => s.id !== id));
     deleteStoreFromCloud(id);
+    deleteStoreFromCentral(id);
   };
 
   // Reviewer Note (หากเราพิมคอมเม้นเอง ไม่ต้องเด้งแจ้งเตือนเรา - suppressToast = true)
@@ -1284,6 +1391,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     safeSetLocalStorage('vitcha_current_user_v5', JSON.stringify(updated));
     safeSetLocalStorage('vitcha_users_v5', JSON.stringify(nextUsers));
     saveUserToCloud(updated);
+    postUserToCentral(updated);
 
     // Propagate updated profile picture and alias across existing posts, viewedBy logs, and comments
     setSuppliers((prev) =>
@@ -1424,6 +1532,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setInvites(nextInvites);
     safeSetLocalStorage('vitcha_invites_v5', JSON.stringify(nextInvites));
     saveInviteToCloud(newInvite);
+    postInviteToCentral(newInvite);
     return newInvite;
   };
 
@@ -1495,6 +1604,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     safeSetLocalStorage('vitcha_current_user_v5', JSON.stringify(finalUser));
     safeSetLocalStorage('vitcha_users_v5', JSON.stringify(nextUsers));
     saveUserToCloud(finalUser);
+    postUserToCentral(finalUser);
     return finalUser;
   };
 
@@ -1588,6 +1698,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         createInvite,
         redeemInvite,
         registerUserWithInvite,
+        renderStatus,
+        renderServerUrl,
+        setRenderServerUrl,
+        testRenderConnection,
+        syncAllDataToRender,
       }}
     >
       {children}

@@ -344,7 +344,7 @@ export const NewSupplierModal: React.FC<NewSupplierModalProps> = ({ isOpen, onCl
         },
         status: 'scouted',
         handoffStage: 'awaiting',
-        assignedTo: country === 'TH' ? 'ช่างบีม (วิศวกร)' : 'Ice (Admin)',
+        assignedTo: country === 'TH' ? 'ช่างบีม (วิศวกร)' : 'SuperiCez',
       });
     }
 

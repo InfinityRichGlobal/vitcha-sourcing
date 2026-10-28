@@ -416,8 +416,13 @@ export const AppDrawerMenu: React.FC<AppDrawerMenuProps> = ({
                         : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
                     }`}
                   >
-                    <img src={u.avatar} className="w-5 h-5 rounded-full object-cover shrink-0" />
-                    <span className="truncate">{u.alias}</span>
+                    <img
+                      src={u.id === currentUser.id ? currentUser.avatar : u.avatar}
+                      className="w-5 h-5 rounded-full object-cover shrink-0"
+                    />
+                    <span className="truncate">
+                      {u.id === currentUser.id ? currentUser.alias : u.alias}
+                    </span>
                   </button>
                 ))}
               </div>

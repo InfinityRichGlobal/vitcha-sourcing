@@ -119,7 +119,7 @@ export const InstallPromptModal: React.FC<InstallPromptModalProps> = ({ isOpen, 
 
     if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
       try {
-        new Notification('📢 ประกาศด่วนจาก Ice (Admin) · ฉันจะเป็นหัวแถว', {
+        new Notification(`📢 ประกาศด่วนจาก ${currentUser.alias} · ฉันจะเป็นหัวแถว`, {
           body: msg,
           icon: './logo.jpg',
         });

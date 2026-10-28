@@ -1,0 +1,111 @@
+{
+  "users": [
+    {
+      "id": "user-ice",
+      "name": "Ice (SuperiCez - ผู้ก่อตั้ง)",
+      "alias": "SuperiCez",
+      "role": "admin",
+      "avatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
+      "pin": "1234",
+      "emailOrId": "supericez",
+      "createdAt": "2026-10-26T10:00:00Z"
+    },
+    {
+      "id": "user-beam",
+      "name": "ช่างบีม (วิศวกรระบบและไฟ)",
+      "alias": "ช่างบีม (วิศวกร)",
+      "role": "reviewer",
+      "avatar": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80",
+      "pin": "2222",
+      "emailOrId": "beam@vitcha.com",
+      "createdAt": "2026-10-26T11:00:00Z"
+    },
+    {
+      "id": "user-ann",
+      "name": "คุณแอน (จัดซื้อและนำเข้า)",
+      "alias": "แอน (จัดซื้อ)",
+      "role": "reviewer",
+      "avatar": "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150&auto=format&fit=crop&q=80",
+      "pin": "3333",
+      "emailOrId": "ann@vitcha.com",
+      "createdAt": "2026-10-26T11:30:00Z"
+    },
+    {
+      "id": "user-mook",
+      "name": "น้องมุก (ทีมสำรวจหน้างาน)",
+      "alias": "มุก (Field Scout)",
+      "role": "editor",
+      "avatar": "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=150&auto=format&fit=crop&q=80",
+      "pin": "4444",
+      "emailOrId": "mook@vitcha.com",
+      "createdAt": "2026-10-26T12:00:00Z"
+    }
+  ],
+  "invites": [
+    {
+      "id": "inv-rkbqs",
+      "code": "VITCHA-RKBQS",
+      "role": "reviewer",
+      "prefilledAlias": "ทีมงานปฏิบัติการ VITCHA",
+      "isUsed": false,
+      "createdAt": "2026-10-28T00:00:00Z",
+      "createdBy": "SuperiCez (ผู้ก่อตั้ง)"
+    },
+    {
+      "id": "inv-1",
+      "code": "VITCHA-TH-REV",
+      "role": "reviewer",
+      "prefilledAlias": "ทีมวิศวกรไทย",
+      "isUsed": false,
+      "createdAt": "2026-10-26T14:00:00Z",
+      "createdBy": "SuperiCez"
+    }
+  ],
+  "suppliers": [],
+  "drinkStores": [],
+  "categories": [
+    "เคาน์เตอร์ & สเตนเลส",
+    "เครื่องซีลแก้ว",
+    "เครื่องจ่ายไซรัป",
+    "ตู้ทำน้ำแข็ง",
+    "เครื่องสกัดชา",
+    "เครื่องปั่นสมูทตี้",
+    "บรรจุภัณฑ์ & แก้ว",
+    "ใบชา & วัตถุดิบ",
+    "วิตามิน & ผงพรีมิกซ์",
+    "อื่นๆ"
+  ],
+  "storeCategories": [
+    "ชานมพรีเมียม & ชาสด",
+    "ชาผลไม้สด & คราฟต์โซดา",
+    "วิตามินบาร์ & สุขภาพ",
+    "มัทฉะ & สเปเชียลตี้",
+    "แฟรนไชส์สตรีทดริงก์",
+    "คาเฟ่ดีไซน์ & แพ็กเกจจิ้ง"
+  ],
+  "quickTagsList": [
+    "โรงงานผลิตเอง (Manufacturer)",
+    "มีโชว์รูมให้ดูของจริง",
+    "คุยภาษาอังกฤษได้",
+    "รองรับส่งออก (Export Ready)",
+    "สั่งขั้นต่ำน้อย (Low MOQ)",
+    "มีสต็อกพร้อมส่งทันที",
+    "มีตัวอย่างให้ทดลอง (Samples)",
+    "เจ้าของคุยง่าย น่าร่วมงาน",
+    "มีบริการจัดส่งในไทย",
+    "มี มอก./อย./COA รับรอง"
+  ],
+  "quickMessages": [
+    {
+      "id": "qm-1",
+      "title": "ขอสเปกไฟ 220V 50Hz",
+      "text": "ช่างบีมช่วยตรวจสอบสเปกมอเตอร์และระบบไฟฟ้า 220V 50Hz ของรุ่นนี้ด้วยครับ ว่าต่อเข้าปลั๊กไฟสาขาในไทยได้เลยไหม"
+    },
+    {
+      "id": "qm-2",
+      "title": "ส่ง RFQ เช็กราคาส่งไทย",
+      "text": "คุณแอนจัดซื้อ ขอใบเสนอราคา FOB กวางโจว และเทียบค่าชิปปิ้งนำเข้าไทยล็อต 5 เครื่องให้ด้วยครับ"
+    }
+  ],
+  "updatedAt": "2026-10-28T07:21:47.396Z"
+}

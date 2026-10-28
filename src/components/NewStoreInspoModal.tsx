@@ -343,7 +343,7 @@ export const NewStoreInspoModal: React.FC<NewStoreInspoModalProps> = ({ isOpen, 
           addressText,
         },
         handoffStage: 'awaiting',
-        assignedTo: country === 'TH' ? 'แอน (จัดซื้อ)' : 'Ice (Admin)',
+        assignedTo: country === 'TH' ? 'แอน (จัดซื้อ)' : 'SuperiCez',
       });
     }
 
