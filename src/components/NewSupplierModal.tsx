@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
-import { CatalogItem } from '../types';
+import { CatalogItem, VoiceNoteEntry } from '../types';
 import { AudioRecorder } from './AudioRecorder';
+import { getItemVoiceNotes } from '../utils/audioHelper';
+import { compressImageFile } from '../utils/imageCompressor';
 import {
   X,
   Camera,
@@ -55,6 +57,7 @@ export const NewSupplierModal: React.FC<NewSupplierModalProps> = ({ isOpen, onCl
   const [memo, setMemo] = useState('');
   const [mainVoiceUrl, setMainVoiceUrl] = useState<string | undefined>();
   const [mainVoiceSec, setMainVoiceSec] = useState<number>(0);
+  const [mainVoiceNotes, setMainVoiceNotes] = useState<VoiceNoteEntry[]>([]);
 
   // Photos
   const [storefrontAndAtmosphere, setStorefrontAndAtmosphere] = useState<string[]>([]);
@@ -86,6 +89,7 @@ export const NewSupplierModal: React.FC<NewSupplierModalProps> = ({ isOpen, onCl
       setMemo(editingSupplier.memo || '');
       setMainVoiceUrl(editingSupplier.voiceNoteUrl);
       setMainVoiceSec(editingSupplier.voiceDurationSec || 0);
+      setMainVoiceNotes(getItemVoiceNotes(editingSupplier));
       setStorefrontAndAtmosphere(editingSupplier.photos?.storefrontAndAtmosphere || []);
       setContactCards(editingSupplier.photos?.contactCards || []);
       setCatalogItems(editingSupplier.catalogItems || []);
@@ -107,6 +111,7 @@ export const NewSupplierModal: React.FC<NewSupplierModalProps> = ({ isOpen, onCl
       setMemo('');
       setMainVoiceUrl(undefined);
       setMainVoiceSec(0);
+      setMainVoiceNotes([]);
       setStorefrontAndAtmosphere([]);
       setContactCards([]);
       setCatalogItems([]);
@@ -131,42 +136,40 @@ export const NewSupplierModal: React.FC<NewSupplierModalProps> = ({ isOpen, onCl
     );
   };
 
-  // Mass batch photo upload for catalog
+  // Mass batch photo upload for catalog (with auto-compression)
   const handleMassCatalogUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
 
-    Array.from(files).forEach((file, idx) => {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const newItem: CatalogItem = {
-          id: `item-${Date.now()}-${idx}-${Math.random().toString(36).substring(2, 5)}`,
-          photo: reader.result as string,
-          name: '',
-          dimensions: '',
-          weightKg: '',
-          priceRmb: undefined,
-          memo: '',
-        };
-        setCatalogItems((prev) => [...prev, newItem]);
+    Array.from(files).forEach(async (file, idx) => {
+      const compressed = await compressImageFile(file, 900, 0.72);
+      if (!compressed) return;
+      const newItem: CatalogItem = {
+        id: `item-${Date.now()}-${idx}-${Math.random().toString(36).substring(2, 5)}`,
+        photo: compressed,
+        name: '',
+        dimensions: '',
+        weightKg: '',
+        priceRmb: undefined,
+        memo: '',
+        voiceNotes: [],
       };
-      reader.readAsDataURL(file);
+      setCatalogItems((prev) => [...prev, newItem]);
     });
   };
 
-  // Generic photo array upload
+  // Generic photo array upload (with auto-compression)
   const handleMultiPhotoUpload = (
     e: React.ChangeEvent<HTMLInputElement>,
     setter: React.Dispatch<React.SetStateAction<string[]>>
   ) => {
     const files = e.target.files;
     if (!files) return;
-    Array.from(files).forEach((file) => {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setter((prev) => [...prev, reader.result as string]);
-      };
-      reader.readAsDataURL(file);
+    Array.from(files).forEach(async (file) => {
+      const compressed = await compressImageFile(file, 960, 0.72);
+      if (compressed) {
+        setter((prev) => [...prev, compressed]);
+      }
     });
   };
 
@@ -265,8 +268,9 @@ export const NewSupplierModal: React.FC<NewSupplierModalProps> = ({ isOpen, onCl
         },
         catalogItems,
         memo: memo.trim() || undefined,
-        voiceNoteUrl: mainVoiceUrl,
-        voiceDurationSec: mainVoiceSec,
+        voiceNoteUrl: mainVoiceNotes[0]?.url || mainVoiceUrl,
+        voiceDurationSec: mainVoiceNotes[0]?.durationSec || mainVoiceSec,
+        voiceNotes: mainVoiceNotes,
         location: {
           lat,
           lng,
@@ -295,8 +299,9 @@ export const NewSupplierModal: React.FC<NewSupplierModalProps> = ({ isOpen, onCl
         },
         catalogItems,
         memo: memo.trim() || undefined,
-        voiceNoteUrl: mainVoiceUrl,
-        voiceDurationSec: mainVoiceSec,
+        voiceNoteUrl: mainVoiceNotes[0]?.url || mainVoiceUrl,
+        voiceDurationSec: mainVoiceNotes[0]?.durationSec || mainVoiceSec,
+        voiceNotes: mainVoiceNotes,
         location: {
           lat,
           lng,
@@ -778,16 +783,14 @@ export const NewSupplierModal: React.FC<NewSupplierModalProps> = ({ isOpen, onCl
                     <input
                       type="file"
                       accept="image/*"
-                      onChange={(e) => {
+                      onChange={async (e) => {
                         const f = e.target.files?.[0];
                         if (!f) return;
-                        const reader = new FileReader();
-                        reader.onloadend = () => {
-                          const updated = [...catalogItems];
-                          updated[idx].photo = reader.result as string;
-                          setCatalogItems(updated);
-                        };
-                        reader.readAsDataURL(f);
+                        const compressed = await compressImageFile(f, 900, 0.72);
+                        if (!compressed) return;
+                        const updated = [...catalogItems];
+                        updated[idx].photo = compressed;
+                        setCatalogItems(updated);
                       }}
                       className="hidden"
                     />
@@ -854,25 +857,35 @@ export const NewSupplierModal: React.FC<NewSupplierModalProps> = ({ isOpen, onCl
                   </div>
                 </div>
 
-                <div className="pt-1 border-t border-slate-100 flex items-center justify-between text-[11px]">
-                  <span className="text-slate-400 font-medium">วอยซ์เสียงเฉพาะรายการนี้:</span>
-                  <div className="flex-1 max-w-[240px]">
-                    <AudioRecorder
-                      initialAudioUrl={item.voiceNoteUrl}
-                      onAudioSaved={(base64, duration) => {
-                        const updated = [...catalogItems];
-                        updated[idx].voiceNoteUrl = base64;
-                        updated[idx].voiceDurationSec = duration;
-                        setCatalogItems(updated);
-                      }}
-                      onAudioDeleted={() => {
-                        const updated = [...catalogItems];
-                        updated[idx].voiceNoteUrl = undefined;
-                        updated[idx].voiceDurationSec = 0;
-                        setCatalogItems(updated);
-                      }}
-                    />
-                  </div>
+                <div className="pt-2 border-t border-slate-100 space-y-1.5 text-[11px]">
+                  <span className="text-slate-600 font-bold block">
+                    🎙️ วอยซ์เสียงเฉพาะรายการนี้ (อัดเพิ่มได้ไม่จำกัดจำนวนคลิป):
+                  </span>
+                  <AudioRecorder
+                    voiceNotes={getItemVoiceNotes(item)}
+                    initialAudioUrl={item.voiceNoteUrl}
+                    initialDurationSec={item.voiceDurationSec}
+                    onVoiceNotesChange={(notes) => {
+                      const updated = [...catalogItems];
+                      updated[idx].voiceNotes = notes;
+                      updated[idx].voiceNoteUrl = notes[0]?.url;
+                      updated[idx].voiceDurationSec = notes[0]?.durationSec || 0;
+                      setCatalogItems(updated);
+                    }}
+                    onAudioSaved={(base64, duration) => {
+                      const updated = [...catalogItems];
+                      updated[idx].voiceNoteUrl = base64;
+                      updated[idx].voiceDurationSec = duration;
+                      setCatalogItems(updated);
+                    }}
+                    onAudioDeleted={() => {
+                      const updated = [...catalogItems];
+                      updated[idx].voiceNoteUrl = undefined;
+                      updated[idx].voiceDurationSec = 0;
+                      updated[idx].voiceNotes = [];
+                      setCatalogItems(updated);
+                    }}
+                  />
                 </div>
               </div>
             ))}
@@ -881,10 +894,17 @@ export const NewSupplierModal: React.FC<NewSupplierModalProps> = ({ isOpen, onCl
           {/* Section 4: Main Voice Memo & General Notes */}
           <div className="bg-slate-50/80 p-4 rounded-2xl border border-slate-100 space-y-3">
             <span className="text-xs font-bold text-slate-800 block">
-              4. วอยซ์เสียงภาพรวม & โน้ตกันลืม
+              4. วอยซ์เสียงภาพรวม & โน้ตกันลืม (อัดเสียงได้หลายรายการไม่จำกัด)
             </span>
             <AudioRecorder
+              voiceNotes={mainVoiceNotes}
               initialAudioUrl={mainVoiceUrl}
+              initialDurationSec={mainVoiceSec}
+              onVoiceNotesChange={(notes) => {
+                setMainVoiceNotes(notes);
+                setMainVoiceUrl(notes[0]?.url);
+                setMainVoiceSec(notes[0]?.durationSec || 0);
+              }}
               onAudioSaved={(base64, duration) => {
                 setMainVoiceUrl(base64);
                 setMainVoiceSec(duration);
@@ -892,6 +912,7 @@ export const NewSupplierModal: React.FC<NewSupplierModalProps> = ({ isOpen, onCl
               onAudioDeleted={() => {
                 setMainVoiceUrl(undefined);
                 setMainVoiceSec(0);
+                setMainVoiceNotes([]);
               }}
             />
 

@@ -191,19 +191,20 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
               )}
             </button>
 
-            {/* User Profile Chip */}
+            {/* User Profile Chip (แสดงรูปโปรไฟล์ + ชื่อจริง/นามแฝง ทั้งบนมือถือและคอม กดเพื่อแก้ไขได้ทันที) */}
             <button
               type="button"
               onClick={onOpenProfile}
-              title="แก้ไขโปรไฟล์ / สลับบัญชีผู้ใช้"
-              className="flex items-center gap-1.5 pl-1 pr-1.5 sm:pr-2 py-1 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-200/80 transition-all"
+              title="กดเพื่อแก้ไขรูปโปรไฟล์ ชื่อ และรหัสผ่าน"
+              className="flex items-center gap-1.5 pl-1 pr-2 py-1 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-200/80 transition-all active:scale-95"
             >
               <img
+                key={currentUser.avatar}
                 src={currentUser.avatar}
                 alt={currentUser.alias}
-                className="w-6 h-6 rounded-lg object-cover ring-1 ring-slate-200"
+                className="w-6 h-6 sm:w-7 sm:h-7 rounded-lg object-cover ring-1 ring-emerald-500/30 shrink-0"
               />
-              <span className="text-xs font-bold text-slate-800 max-w-[68px] truncate hidden sm:inline">
+              <span className="text-[11px] sm:text-xs font-extrabold text-slate-800 max-w-[68px] sm:max-w-[110px] truncate">
                 {currentUser.alias}
               </span>
             </button>

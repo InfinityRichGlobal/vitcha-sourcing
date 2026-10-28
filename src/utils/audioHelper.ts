@@ -1,6 +1,8 @@
 // Utility to generate a valid playable PCM WAV Data URI in-browser
 // Ensures seeded mockup voice notes and fallback voice recordings play real audible sound on all iOS/Android/Desktop devices.
 
+import { VoiceNoteEntry } from '../types';
+
 let cachedDemoWavUri: string | null = null;
 
 export function getDemoVoiceWavDataUri(durationSec = 4): string {
@@ -85,4 +87,28 @@ export function playAlertChime(): void {
   } catch {
     // Ignore audio context restriction errors
   }
+}
+
+export function getItemVoiceNotes(
+  item?: {
+    voiceNotes?: VoiceNoteEntry[];
+    voiceNoteUrl?: string;
+    voiceDurationSec?: number;
+  } | null
+): VoiceNoteEntry[] {
+  if (!item) return [];
+  if (Array.isArray(item.voiceNotes) && item.voiceNotes.length > 0) {
+    return item.voiceNotes;
+  }
+  if (item.voiceNoteUrl || item.voiceDurationSec) {
+    return [
+      {
+        id: 'voice-legacy-1',
+        url: item.voiceNoteUrl || getDemoVoiceWavDataUri(4),
+        durationSec: item.voiceDurationSec || 4,
+        label: 'คลิปเสียง #1',
+      },
+    ];
+  }
+  return [];
 }

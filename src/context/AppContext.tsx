@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { safeSetLocalStorage } from '../utils/imageCompressor';
 import {
   User,
   SupplierRecord,
@@ -124,7 +125,13 @@ interface AppContextType {
   convertCnyToThb: (cny: number) => number;
   convertThbToCny: (thb: number) => number;
 
-  updateCurrentUserProfile: (name: string, alias: string, avatar: string, pin?: string) => void;
+  updateCurrentUserProfile: (
+    name: string,
+    alias: string,
+    avatar: string,
+    pin?: string,
+    emailOrId?: string
+  ) => void;
   switchUser: (userId: string) => void;
   isAuthenticated: boolean;
   logout: () => void;
@@ -235,13 +242,41 @@ function normalizeStores(list: StoreInspoRecord[]): StoreInspoRecord[] {
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [users, setUsers] = useState<User[]>(() => {
-    const saved = localStorage.getItem('vitcha_users_v5');
-    return saved ? JSON.parse(saved) : INITIAL_USERS;
+    try {
+      const saved = localStorage.getItem('vitcha_users_v5');
+      const parsedUsers: User[] = saved ? JSON.parse(saved) : INITIAL_USERS;
+      const savedCurrent = localStorage.getItem('vitcha_current_user_v5');
+      if (savedCurrent) {
+        const parsedCurrent: User = JSON.parse(savedCurrent);
+        const exists = parsedUsers.some((u) => u.id === parsedCurrent.id);
+        if (exists) {
+          return parsedUsers.map((u) =>
+            u.id === parsedCurrent.id ? { ...u, ...parsedCurrent } : u
+          );
+        }
+        return [parsedCurrent, ...parsedUsers];
+      }
+      return parsedUsers;
+    } catch {
+      return INITIAL_USERS;
+    }
   });
 
   const [currentUser, setCurrentUser] = useState<User>(() => {
-    const savedUser = localStorage.getItem('vitcha_current_user_v5');
-    return savedUser ? JSON.parse(savedUser) : INITIAL_USERS[0];
+    try {
+      const savedUser = localStorage.getItem('vitcha_current_user_v5');
+      if (savedUser) {
+        return JSON.parse(savedUser);
+      }
+      const savedUsers = localStorage.getItem('vitcha_users_v5');
+      if (savedUsers) {
+        const parsed: User[] = JSON.parse(savedUsers);
+        if (parsed.length > 0) return parsed[0];
+      }
+      return INITIAL_USERS[0];
+    } catch {
+      return INITIAL_USERS[0];
+    }
   });
 
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
@@ -327,19 +362,19 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   });
 
   useEffect(() => {
-    localStorage.setItem('vitcha_categories_v5', JSON.stringify(categories));
+    safeSetLocalStorage('vitcha_categories_v5', JSON.stringify(categories));
   }, [categories]);
 
   useEffect(() => {
-    localStorage.setItem('vitcha_store_categories_v5', JSON.stringify(storeCategories));
+    safeSetLocalStorage('vitcha_store_categories_v5', JSON.stringify(storeCategories));
   }, [storeCategories]);
 
   useEffect(() => {
-    localStorage.setItem('vitcha_quick_tags_v5', JSON.stringify(quickTagsList));
+    safeSetLocalStorage('vitcha_quick_tags_v5', JSON.stringify(quickTagsList));
   }, [quickTagsList]);
 
   useEffect(() => {
-    localStorage.setItem('vitcha_quick_messages_v5', JSON.stringify(quickMessages));
+    safeSetLocalStorage('vitcha_quick_messages_v5', JSON.stringify(quickMessages));
   }, [quickMessages]);
 
   // Push / Real-time In-App Notifications
@@ -389,7 +424,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [activeToast, setActiveToast] = useState<AppNotification | null>(null);
 
   useEffect(() => {
-    localStorage.setItem('vitcha_notifications_v5', JSON.stringify(notifications));
+    safeSetLocalStorage('vitcha_notifications_v5', JSON.stringify(notifications));
   }, [notifications]);
 
   const dismissToast = () => {
@@ -479,27 +514,27 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   useEffect(() => {
-    localStorage.setItem('vitcha_users_v5', JSON.stringify(users));
+    safeSetLocalStorage('vitcha_users_v5', JSON.stringify(users));
   }, [users]);
 
   useEffect(() => {
-    localStorage.setItem('vitcha_current_user_v5', JSON.stringify(currentUser));
+    safeSetLocalStorage('vitcha_current_user_v5', JSON.stringify(currentUser));
   }, [currentUser]);
 
   useEffect(() => {
-    localStorage.setItem('vitcha_suppliers_v5', JSON.stringify(suppliers));
+    safeSetLocalStorage('vitcha_suppliers_v5', JSON.stringify(suppliers));
   }, [suppliers]);
 
   useEffect(() => {
-    localStorage.setItem('vitcha_drink_stores_v5', JSON.stringify(drinkStores));
+    safeSetLocalStorage('vitcha_drink_stores_v5', JSON.stringify(drinkStores));
   }, [drinkStores]);
 
   useEffect(() => {
-    localStorage.setItem('vitcha_invites_v5', JSON.stringify(invites));
+    safeSetLocalStorage('vitcha_invites_v5', JSON.stringify(invites));
   }, [invites]);
 
   useEffect(() => {
-    localStorage.setItem('vitcha_exchange_rate_v5', JSON.stringify(exchangeRate));
+    safeSetLocalStorage('vitcha_exchange_rate_v5', JSON.stringify(exchangeRate));
   }, [exchangeRate]);
 
   // Currency helpers
@@ -1140,23 +1175,99 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   // User & Invite
-  const updateCurrentUserProfile = (name: string, alias: string, avatar: string, pin?: string) => {
-    const updated = {
+  const updateCurrentUserProfile = (
+    name: string,
+    alias: string,
+    avatar: string,
+    pin?: string,
+    emailOrId?: string
+  ) => {
+    const oldAlias = currentUser.alias;
+    const updated: User = {
       ...currentUser,
-      name,
-      alias,
-      avatar,
+      name: name || currentUser.name,
+      alias: alias || currentUser.alias,
+      avatar: avatar || currentUser.avatar,
       pin: pin ? pin : currentUser.pin,
+      emailOrId: emailOrId ? emailOrId : currentUser.emailOrId,
     };
+
     setCurrentUser(updated);
-    setUsers(users.map((u) => (u.id === currentUser.id ? updated : u)));
+    const nextUsers = users.some((u) => u.id === currentUser.id)
+      ? users.map((u) => (u.id === currentUser.id ? updated : u))
+      : [updated, ...users];
+    setUsers(nextUsers);
+
+    safeSetLocalStorage('vitcha_current_user_v5', JSON.stringify(updated));
+    safeSetLocalStorage('vitcha_users_v5', JSON.stringify(nextUsers));
+
+    // Propagate updated profile picture and alias across existing posts, viewedBy logs, and comments
+    setSuppliers((prev) =>
+      prev.map((s) => ({
+        ...s,
+        creator:
+          s.creator.id === currentUser.id || s.creator.alias === oldAlias
+            ? { ...s.creator, name: updated.name, alias: updated.alias, avatar: updated.avatar }
+            : s.creator,
+        viewedBy: (s.viewedBy || []).map((v) =>
+          v.userId === currentUser.id || v.alias === oldAlias
+            ? { ...v, name: updated.name, alias: updated.alias, avatar: updated.avatar }
+            : v
+        ),
+        likes: (s.likes || []).map((l) =>
+          l.userId === currentUser.id || l.alias === oldAlias
+            ? { ...l, alias: updated.alias, avatar: updated.avatar }
+            : l
+        ),
+        reviewerNotes: (s.reviewerNotes || []).map((n) => ({
+          ...n,
+          author: n.author === oldAlias ? updated.alias : n.author,
+          authorAvatar: n.author === oldAlias ? updated.avatar : n.authorAvatar,
+          replies: (n.replies || []).map((r) => ({
+            ...r,
+            author: r.author === oldAlias ? updated.alias : r.author,
+            authorAvatar: r.author === oldAlias ? updated.avatar : r.authorAvatar,
+          })),
+        })),
+      }))
+    );
+
+    setDrinkStores((prev) =>
+      prev.map((d) => ({
+        ...d,
+        creator:
+          d.creator.id === currentUser.id || d.creator.alias === oldAlias
+            ? { ...d.creator, name: updated.name, alias: updated.alias, avatar: updated.avatar }
+            : d.creator,
+        viewedBy: (d.viewedBy || []).map((v) =>
+          v.userId === currentUser.id || v.alias === oldAlias
+            ? { ...v, name: updated.name, alias: updated.alias, avatar: updated.avatar }
+            : v
+        ),
+        likes: (d.likes || []).map((l) =>
+          l.userId === currentUser.id || l.alias === oldAlias
+            ? { ...l, alias: updated.alias, avatar: updated.avatar }
+            : l
+        ),
+        reviewerNotes: (d.reviewerNotes || []).map((n) => ({
+          ...n,
+          author: n.author === oldAlias ? updated.alias : n.author,
+          authorAvatar: n.author === oldAlias ? updated.avatar : n.authorAvatar,
+          replies: (n.replies || []).map((r) => ({
+            ...r,
+            author: r.author === oldAlias ? updated.alias : r.author,
+            authorAvatar: r.author === oldAlias ? updated.avatar : r.authorAvatar,
+          })),
+        })),
+      }))
+    );
   };
 
   const switchUser = (userId: string) => {
     const found = users.find((u) => u.id === userId);
     if (found) {
       setCurrentUser(found);
-      localStorage.setItem('vitcha_current_user_v5', JSON.stringify(found));
+      safeSetLocalStorage('vitcha_current_user_v5', JSON.stringify(found));
     }
   };
 
@@ -1171,7 +1282,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     if (!rawId || !rawPass) return false;
 
-    const user = users.find((u) => {
+    const candidateList = [
+      currentUser,
+      ...users.filter((u) => u.id !== currentUser.id),
+    ];
+
+    const user = candidateList.find((u) => {
       const email = (u.emailOrId || '').toLowerCase();
       const id = (u.id || '').toLowerCase();
       const alias = (u.alias || '').toLowerCase();
@@ -1185,7 +1301,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         id === `user-${rawId}` ||
         alias.toLowerCase().includes(rawId) ||
         name.toLowerCase().includes(rawId) ||
-        (rawId === 'admin' && u.role === 'admin');
+        (rawId === 'admin' && u.role === 'admin') ||
+        (rawId === 'ice' && u.id === 'user-ice');
 
       const matchesPass = u.pin === rawPass;
       return matchesUser && matchesPass;
@@ -1194,8 +1311,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (user) {
       setCurrentUser(user);
       setIsAuthenticated(true);
-      localStorage.setItem('vitcha_authenticated_session', 'true');
-      localStorage.setItem('vitcha_current_user_v5', JSON.stringify(user));
+      safeSetLocalStorage('vitcha_authenticated_session', 'true');
+      safeSetLocalStorage('vitcha_current_user_v5', JSON.stringify(user));
       return true;
     }
     return false;
@@ -1236,12 +1353,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       createdAt: new Date().toISOString(),
     };
 
-    setUsers([...users, newUser]);
+    const nextUsers = [...users, newUser];
+    setUsers(nextUsers);
     setInvites(invites.map((inv) => (inv.id === invite.id ? { ...inv, isUsed: true } : inv)));
     setCurrentUser(newUser);
     setIsAuthenticated(true);
-    localStorage.setItem('vitcha_authenticated_session', 'true');
-    localStorage.setItem('vitcha_current_user_v5', JSON.stringify(newUser));
+    safeSetLocalStorage('vitcha_authenticated_session', 'true');
+    safeSetLocalStorage('vitcha_current_user_v5', JSON.stringify(newUser));
+    safeSetLocalStorage('vitcha_users_v5', JSON.stringify(nextUsers));
     return newUser;
   };
 

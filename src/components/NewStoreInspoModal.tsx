@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
-import { DrinkDetailItem } from '../types';
+import { DrinkDetailItem, VoiceNoteEntry } from '../types';
 import { AudioRecorder } from './AudioRecorder';
+import { getItemVoiceNotes } from '../utils/audioHelper';
+import { compressImageFile } from '../utils/imageCompressor';
 import {
   X,
   Camera,
@@ -53,6 +55,7 @@ export const NewStoreInspoModal: React.FC<NewStoreInspoModalProps> = ({ isOpen, 
   const [tastingNotes, setTastingNotes] = useState('');
   const [mainVoiceUrl, setMainVoiceUrl] = useState<string | undefined>();
   const [mainVoiceSec, setMainVoiceSec] = useState<number>(0);
+  const [mainVoiceNotes, setMainVoiceNotes] = useState<VoiceNoteEntry[]>([]);
 
   // Photos
   const [storefrontAndAtmosphere, setStorefrontAndAtmosphere] = useState<string[]>([]);
@@ -87,6 +90,7 @@ export const NewStoreInspoModal: React.FC<NewStoreInspoModalProps> = ({ isOpen, 
       setTastingNotes(editingStore.tastingNotes || '');
       setMainVoiceUrl(editingStore.voiceNoteUrl);
       setMainVoiceSec(editingStore.voiceDurationSec || 0);
+      setMainVoiceNotes(getItemVoiceNotes(editingStore));
       setStorefrontAndAtmosphere(editingStore.photos?.storefrontAndAtmosphere || []);
       setMenuBoardPhotos(editingStore.photos?.menuBoard || []);
       setDrinkCupPhotos(editingStore.photos?.drinkCups || []);
@@ -111,6 +115,7 @@ export const NewStoreInspoModal: React.FC<NewStoreInspoModalProps> = ({ isOpen, 
       setTastingNotes('');
       setMainVoiceUrl(undefined);
       setMainVoiceSec(0);
+      setMainVoiceNotes([]);
       setStorefrontAndAtmosphere([]);
       setMenuBoardPhotos([]);
       setDrinkCupPhotos([]);
@@ -134,12 +139,11 @@ export const NewStoreInspoModal: React.FC<NewStoreInspoModalProps> = ({ isOpen, 
   ) => {
     const files = e.target.files;
     if (!files) return;
-    Array.from(files).forEach((file) => {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setter((prev) => [...prev, reader.result as string]);
-      };
-      reader.readAsDataURL(file);
+    Array.from(files).forEach(async (file) => {
+      const compressed = await compressImageFile(file, 960, 0.72);
+      if (compressed) {
+        setter((prev) => [...prev, compressed]);
+      }
     });
   };
 
@@ -147,21 +151,20 @@ export const NewStoreInspoModal: React.FC<NewStoreInspoModalProps> = ({ isOpen, 
     const files = e.target.files;
     if (!files || files.length === 0) return;
 
-    Array.from(files).forEach((file, idx) => {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const newItem: DrinkDetailItem = {
-          id: `drink-${Date.now()}-${idx}-${Math.random().toString(36).substring(2, 5)}`,
-          photo: reader.result as string,
-          name: '',
-          priceRmb: undefined,
-          cupSize: '500ml',
-          fitMenuTarget: '',
-          gimmickNotes: '',
-        };
-        setDrinkItems((prev) => [...prev, newItem]);
+    Array.from(files).forEach(async (file, idx) => {
+      const compressed = await compressImageFile(file, 900, 0.72);
+      if (!compressed) return;
+      const newItem: DrinkDetailItem = {
+        id: `drink-${Date.now()}-${idx}-${Math.random().toString(36).substring(2, 5)}`,
+        photo: compressed,
+        name: '',
+        priceRmb: undefined,
+        cupSize: '500ml',
+        fitMenuTarget: '',
+        gimmickNotes: '',
+        voiceNotes: [],
       };
-      reader.readAsDataURL(file);
+      setDrinkItems((prev) => [...prev, newItem]);
     });
   };
 
@@ -260,8 +263,9 @@ export const NewStoreInspoModal: React.FC<NewStoreInspoModalProps> = ({ isOpen, 
         },
         drinkItems,
         tastingNotes: tastingNotes.trim() || undefined,
-        voiceNoteUrl: mainVoiceUrl,
-        voiceDurationSec: mainVoiceSec,
+        voiceNoteUrl: mainVoiceNotes[0]?.url || mainVoiceUrl,
+        voiceDurationSec: mainVoiceNotes[0]?.durationSec || mainVoiceSec,
+        voiceNotes: mainVoiceNotes,
         location: {
           lat,
           lng,
@@ -295,8 +299,9 @@ export const NewStoreInspoModal: React.FC<NewStoreInspoModalProps> = ({ isOpen, 
         },
         drinkItems,
         tastingNotes: tastingNotes.trim() || undefined,
-        voiceNoteUrl: mainVoiceUrl,
-        voiceDurationSec: mainVoiceSec,
+        voiceNoteUrl: mainVoiceNotes[0]?.url || mainVoiceUrl,
+        voiceDurationSec: mainVoiceNotes[0]?.durationSec || mainVoiceSec,
+        voiceNotes: mainVoiceNotes,
         location: {
           lat,
           lng,
@@ -781,16 +786,14 @@ export const NewStoreInspoModal: React.FC<NewStoreInspoModalProps> = ({ isOpen, 
                     <input
                       type="file"
                       accept="image/*"
-                      onChange={(e) => {
+                      onChange={async (e) => {
                         const f = e.target.files?.[0];
                         if (!f) return;
-                        const reader = new FileReader();
-                        reader.onloadend = () => {
-                          const updated = [...drinkItems];
-                          updated[idx].photo = reader.result as string;
-                          setDrinkItems(updated);
-                        };
-                        reader.readAsDataURL(f);
+                        const compressed = await compressImageFile(f, 900, 0.72);
+                        if (!compressed) return;
+                        const updated = [...drinkItems];
+                        updated[idx].photo = compressed;
+                        setDrinkItems(updated);
                       }}
                       className="hidden"
                     />
@@ -857,23 +860,35 @@ export const NewStoreInspoModal: React.FC<NewStoreInspoModalProps> = ({ isOpen, 
                   </div>
                 </div>
 
-                <div className="pt-1 border-t border-slate-100 flex items-center justify-between text-[11px]">
-                  <span className="text-slate-400 font-medium">วอยซ์เสียงเฉพาะแก้วนี้:</span>
-                  <div className="flex-1 max-w-[240px]">
-                    <AudioRecorder
-                      initialAudioUrl={item.voiceNoteUrl}
-                      onAudioSaved={(base64) => {
-                        const updated = [...drinkItems];
-                        updated[idx].voiceNoteUrl = base64;
-                        setDrinkItems(updated);
-                      }}
-                      onAudioDeleted={() => {
-                        const updated = [...drinkItems];
-                        updated[idx].voiceNoteUrl = undefined;
-                        setDrinkItems(updated);
-                      }}
-                    />
-                  </div>
+                <div className="pt-2 border-t border-slate-100 space-y-1.5 text-[11px]">
+                  <span className="text-slate-600 font-bold block">
+                    🎙️ วอยซ์เสียงเฉพาะแก้วนี้ (อัดเพิ่มได้ไม่จำกัดจำนวนคลิป):
+                  </span>
+                  <AudioRecorder
+                    voiceNotes={getItemVoiceNotes(item)}
+                    initialAudioUrl={item.voiceNoteUrl}
+                    initialDurationSec={item.voiceDurationSec}
+                    onVoiceNotesChange={(notes) => {
+                      const updated = [...drinkItems];
+                      updated[idx].voiceNotes = notes;
+                      updated[idx].voiceNoteUrl = notes[0]?.url;
+                      updated[idx].voiceDurationSec = notes[0]?.durationSec || 0;
+                      setDrinkItems(updated);
+                    }}
+                    onAudioSaved={(base64, duration) => {
+                      const updated = [...drinkItems];
+                      updated[idx].voiceNoteUrl = base64;
+                      updated[idx].voiceDurationSec = duration;
+                      setDrinkItems(updated);
+                    }}
+                    onAudioDeleted={() => {
+                      const updated = [...drinkItems];
+                      updated[idx].voiceNoteUrl = undefined;
+                      updated[idx].voiceDurationSec = 0;
+                      updated[idx].voiceNotes = [];
+                      setDrinkItems(updated);
+                    }}
+                  />
                 </div>
               </div>
             ))}
@@ -882,10 +897,17 @@ export const NewStoreInspoModal: React.FC<NewStoreInspoModalProps> = ({ isOpen, 
           {/* Section 5: Main Voice & Tasting Notes */}
           <div className="bg-slate-50/80 p-4 rounded-2xl border border-slate-100 space-y-3">
             <span className="text-xs font-bold text-slate-800 block">
-              5. วอยซ์เสียงภาพรวม & โน้ตชิม
+              5. วอยซ์เสียงภาพรวม & โน้ตชิม (อัดเสียงได้หลายรายการไม่จำกัด)
             </span>
             <AudioRecorder
+              voiceNotes={mainVoiceNotes}
               initialAudioUrl={mainVoiceUrl}
+              initialDurationSec={mainVoiceSec}
+              onVoiceNotesChange={(notes) => {
+                setMainVoiceNotes(notes);
+                setMainVoiceUrl(notes[0]?.url);
+                setMainVoiceSec(notes[0]?.durationSec || 0);
+              }}
               onAudioSaved={(base64, duration) => {
                 setMainVoiceUrl(base64);
                 setMainVoiceSec(duration);
@@ -893,6 +915,7 @@ export const NewStoreInspoModal: React.FC<NewStoreInspoModalProps> = ({ isOpen, 
               onAudioDeleted={() => {
                 setMainVoiceUrl(undefined);
                 setMainVoiceSec(0);
+                setMainVoiceNotes([]);
               }}
             />
 

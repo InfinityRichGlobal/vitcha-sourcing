@@ -3,7 +3,7 @@ import { SupplierRecord, StoreInspoRecord, PipelineStatus } from '../types';
 import { useApp } from '../context/AppContext';
 import { SeenByBadge } from './SeenByBadge';
 import { openExecutiveReport } from '../utils/exportReport';
-import { getDemoVoiceWavDataUri } from '../utils/audioHelper';
+import { getDemoVoiceWavDataUri, getItemVoiceNotes } from '../utils/audioHelper';
 import {
   X,
   MapPin,
@@ -181,7 +181,9 @@ export const DetailModal: React.FC<DetailModalProps> = ({
     }
   };
 
+  const mainVoiceClips = getItemVoiceNotes(currentItem);
   const mainAudioSrc =
+    mainVoiceClips[0]?.url ||
     (isSupplier ? supplier?.voiceNoteUrl : store?.voiceNoteUrl) ||
     ((isSupplier ? supplier?.voiceDurationSec : store?.voiceDurationSec)
       ? getDemoVoiceWavDataUri(4)
@@ -374,37 +376,59 @@ export const DetailModal: React.FC<DetailModalProps> = ({
             </div>
           </div>
 
-          {/* Voice Memo Player */}
-          {mainAudioSrc && (
-            <div className="p-3 bg-emerald-50/70 border border-emerald-200/80 rounded-xl flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <button
-                  type="button"
-                  onClick={toggleAudio}
-                  className="w-9 h-9 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white flex items-center justify-center shadow-xs transition-colors"
-                >
-                  {isPlayingAudio ? (
-                    <Pause className="w-4 h-4" />
-                  ) : (
-                    <Play className="w-4 h-4 ml-0.5" />
-                  )}
-                </button>
-                <div>
-                  <div className="text-xs font-bold text-emerald-950 flex items-center gap-1.5">
-                    <Volume2 className="w-3.5 h-3.5 text-emerald-600" />
-                    <span>วอยซ์เสียงบันทึกหน้างานจริง</span>
-                  </div>
-                  <div className="text-[11px] text-emerald-700 font-mono">
-                    ความยาว:{' '}
-                    {isSupplier ? supplier?.voiceDurationSec || 4 : store?.voiceDurationSec || 4}{' '}
-                    วินาที · {isPlayingAudio ? 'กำลังเล่นเสียง...' : 'แตะปุ่ม ▶ เพื่อฟังเสียง'}
-                  </div>
-                </div>
+          {/* Voice Memo Player (รองรับหลายคลิปเสียงไม่จำกัด) */}
+          {mainVoiceClips.length > 0 && (
+            <div className="p-3 bg-emerald-50/70 border border-emerald-200/80 rounded-xl space-y-2">
+              <div className="text-xs font-bold text-emerald-950 flex items-center justify-between">
+                <span className="flex items-center gap-1.5">
+                  <Volume2 className="w-3.5 h-3.5 text-emerald-600" />
+                  <span>วอยซ์เสียงบันทึกหน้างานจริง ({mainVoiceClips.length} คลิป)</span>
+                </span>
+                <span className="text-[10px] font-mono text-emerald-700">
+                  แตะ ▶ เพื่อฟังแต่ละคลิป
+                </span>
               </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                {mainVoiceClips.map((clip, cIdx) => {
+                  const isClipPlaying = playingSubAudioId === `main-${clip.id || cIdx}`;
+                  return (
+                    <div
+                      key={clip.id || cIdx}
+                      className="p-2 bg-white border border-emerald-200 rounded-xl flex items-center justify-between gap-2 shadow-2xs"
+                    >
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <button
+                          type="button"
+                          onClick={() => toggleSubAudio(`main-${clip.id || cIdx}`, clip.url)}
+                          className="w-8 h-8 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white flex items-center justify-center shadow-xs transition-colors shrink-0"
+                        >
+                          {isClipPlaying ? (
+                            <Pause className="w-3.5 h-3.5" />
+                          ) : (
+                            <Play className="w-3.5 h-3.5 ml-0.5" />
+                          )}
+                        </button>
+                        <div className="min-w-0">
+                          <div className="text-xs font-bold text-slate-900 truncate">
+                            {clip.label || `คลิปเสียง #${cIdx + 1}`}
+                          </div>
+                          <div className="text-[10px] text-emerald-700 font-mono">
+                            {clip.durationSec || 4} วินาที ·{' '}
+                            {isClipPlaying ? 'กำลังเล่น...' : 'แตะเพื่อฟัง'}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
               <audio
                 ref={audioRef}
                 src={mainAudioSrc}
                 onEnded={() => setIsPlayingAudio(false)}
+                className="hidden"
               />
             </div>
           )}
@@ -526,19 +550,29 @@ export const DetailModal: React.FC<DetailModalProps> = ({
                       {catItem.memo && (
                         <p className="text-[11px] text-slate-600 line-clamp-2">{catItem.memo}</p>
                       )}
-                      {catItem.voiceNoteUrl && (
-                        <button
-                          type="button"
-                          onClick={() => toggleSubAudio(catItem.id, catItem.voiceNoteUrl)}
-                          className="mt-1 inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] font-bold"
-                        >
-                          {playingSubAudioId === catItem.id ? (
-                            <Pause className="w-2.5 h-2.5" />
-                          ) : (
-                            <Play className="w-2.5 h-2.5" />
-                          )}
-                          <span>ฟังเสียงเฉพาะชิ้นนี้</span>
-                        </button>
+                      {getItemVoiceNotes(catItem).length > 0 && (
+                        <div className="flex flex-wrap gap-1 pt-1">
+                          {getItemVoiceNotes(catItem).map((vClip, vIdx) => {
+                            const subKey = `${catItem.id}-v-${vClip.id || vIdx}`;
+                            return (
+                              <button
+                                key={subKey}
+                                type="button"
+                                onClick={() => toggleSubAudio(subKey, vClip.url)}
+                                className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] font-bold"
+                              >
+                                {playingSubAudioId === subKey ? (
+                                  <Pause className="w-2.5 h-2.5" />
+                                ) : (
+                                  <Play className="w-2.5 h-2.5" />
+                                )}
+                                <span>
+                                  {vClip.label || `ฟังเสียง #${vIdx + 1}`} ({vClip.durationSec || 4}s)
+                                </span>
+                              </button>
+                            );
+                          })}
+                        </div>
                       )}
                     </div>
                   </div>
@@ -589,19 +623,29 @@ export const DetailModal: React.FC<DetailModalProps> = ({
                       {drink.gimmickNotes && (
                         <p className="text-[11px] text-slate-600">{drink.gimmickNotes}</p>
                       )}
-                      {drink.voiceNoteUrl && (
-                        <button
-                          type="button"
-                          onClick={() => toggleSubAudio(drink.id, drink.voiceNoteUrl)}
-                          className="mt-1 inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-amber-50 text-amber-800 border border-amber-200 text-[10px] font-bold"
-                        >
-                          {playingSubAudioId === drink.id ? (
-                            <Pause className="w-2.5 h-2.5" />
-                          ) : (
-                            <Play className="w-2.5 h-2.5" />
-                          )}
-                          <span>ฟังเสียงเฉพาะแก้วนี้</span>
-                        </button>
+                      {getItemVoiceNotes(drink).length > 0 && (
+                        <div className="flex flex-wrap gap-1 pt-1">
+                          {getItemVoiceNotes(drink).map((vClip, vIdx) => {
+                            const subKey = `${drink.id}-v-${vClip.id || vIdx}`;
+                            return (
+                              <button
+                                key={subKey}
+                                type="button"
+                                onClick={() => toggleSubAudio(subKey, vClip.url)}
+                                className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-amber-50 text-amber-800 border border-amber-200 text-[10px] font-bold"
+                              >
+                                {playingSubAudioId === subKey ? (
+                                  <Pause className="w-2.5 h-2.5" />
+                                ) : (
+                                  <Play className="w-2.5 h-2.5" />
+                                )}
+                                <span>
+                                  {vClip.label || `ฟังเสียง #${vIdx + 1}`} ({vClip.durationSec || 4}s)
+                                </span>
+                              </button>
+                            );
+                          })}
+                        </div>
                       )}
                     </div>
                   </div>

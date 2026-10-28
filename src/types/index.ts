@@ -48,6 +48,14 @@ export interface User {
 
 export type PipelineStatus = 'scouted' | 'reviewing' | 'rfq_sent' | 'shortlisted' | 'ordered';
 
+export interface VoiceNoteEntry {
+  id: string;
+  url: string;
+  durationSec: number;
+  label?: string;
+  createdAt?: string;
+}
+
 export interface CatalogItem {
   id: string;
   photo: string;
@@ -57,8 +65,9 @@ export interface CatalogItem {
   priceRmb?: number;
   priceThb?: number;
   memo?: string;
-  voiceNoteUrl?: string; // วอยซ์เฉพาะชิ้น
+  voiceNoteUrl?: string; // วอยซ์เฉพาะชิ้น (legacy / primary)
   voiceDurationSec?: number;
+  voiceNotes?: VoiceNoteEntry[]; // รองรับบันทึกเสียงหลายรายการไม่จำกัด
 }
 
 export interface ReviewReply {
@@ -115,6 +124,7 @@ export interface SupplierRecord {
   memo?: string;
   voiceNoteUrl?: string;
   voiceDurationSec?: number;
+  voiceNotes?: VoiceNoteEntry[]; // รองรับบันทึกเสียงหลายรายการไม่จำกัด
   location: {
     lat: number;
     lng: number;
@@ -152,6 +162,8 @@ export interface DrinkDetailItem {
   fitMenuTarget?: string;
   gimmickNotes?: string;
   voiceNoteUrl?: string;
+  voiceDurationSec?: number;
+  voiceNotes?: VoiceNoteEntry[]; // รองรับบันทึกเสียงหลายรายการไม่จำกัด
 }
 
 export interface StoreInspoRecord {
@@ -181,6 +193,7 @@ export interface StoreInspoRecord {
   tastingNotes?: string;
   voiceNoteUrl?: string;
   voiceDurationSec?: number;
+  voiceNotes?: VoiceNoteEntry[]; // รองรับบันทึกเสียงหลายรายการไม่จำกัด
   location: {
     lat: number;
     lng: number;
