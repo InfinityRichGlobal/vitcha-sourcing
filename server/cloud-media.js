@@ -5,15 +5,16 @@ import { pipeline } from 'node:stream/promises';
 // Both providers use a stable application URL. Expiring signed URLs and OAuth
 // access tokens are never written into product records or returned as credentials.
 export function createCloudMedia({ request, url, key, drive = null, fetchImpl = fetch }) {
+  let driveConfig = drive ? { ...drive } : null;
   let accessToken, tokenUntil = 0, tokenPromise;
-  const CENTER_FOLDER_ID = drive?.folderId || process.env.GOOGLE_DRIVE_FOLDER_ID || '1OXmOSXAA7py0ixs6vT3EBjndZCvpkDT1';
+  const getCenterFolderId = () => driveConfig?.folderId || process.env.GOOGLE_DRIVE_FOLDER_ID || '1OXmOSXAA7py0ixs6vT3EBjndZCvpkDT1';
 
   async function googleToken() {
-    if (!drive?.clientId || !drive?.refreshToken) return null;
+    if (!driveConfig?.clientId || !driveConfig?.refreshToken) return null;
     if (accessToken && tokenUntil > Date.now()) return accessToken;
     if (tokenPromise) return tokenPromise;
     tokenPromise = (async () => {
-      const response = await fetchImpl('https://oauth2.googleapis.com/token', { method: 'POST', body: new URLSearchParams({ client_id: drive.clientId, client_secret: drive.clientSecret, refresh_token: drive.refreshToken, grant_type: 'refresh_token' }), signal: AbortSignal.timeout(20000) });
+      const response = await fetchImpl('https://oauth2.googleapis.com/token', { method: 'POST', body: new URLSearchParams({ client_id: driveConfig.clientId, client_secret: driveConfig.clientSecret || '', refresh_token: driveConfig.refreshToken, grant_type: 'refresh_token' }), signal: AbortSignal.timeout(20000) });
       if (!response.ok) throw new Error('กรุณาเชื่อม Google Drive ใหม่');
       const result = await response.json(); accessToken = result.access_token; tokenUntil = Date.now() + (result.expires_in - 120) * 1000; return accessToken;
     })();
@@ -45,39 +46,17 @@ export function createCloudMedia({ request, url, key, drive = null, fetchImpl = 
   }
 
   async function resolveItemFolder({ recordType = 'misc', recordId = 'general', recordTitle = '' }) {
-    const typeFolderId = await getOrCreateFolder(CENTER_FOLDER_ID, recordType);
+    const typeFolderId = await getOrCreateFolder(getCenterFolderId(), recordType);
     const shortTitle = recordTitle ? `-${recordTitle.slice(0, 30).replace(/[/\\?%*:|"<>]/g, '_')}` : '';
     const folderName = `${recordId}${shortTitle}`;
     return await getOrCreateFolder(typeFolderId, folderName);
-  }
-
-  async function makeFilePublic(fileId) {
-    const token = await googleToken();
-    if (!token) return;
-    try {
-      await fetchImpl(`https://www.googleapis.com/drive/v3/files/${encodeURIComponent(fileId)}/permissions`, {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ role: 'reader', type: 'anyone' }),
-        signal: AbortSignal.timeout(15000),
-      });
-    } catch (e) {
-      console.warn('Failed to make Drive file public:', e.message);
-    }
-  }
-
-  function formatPublicDriveUrl(fileId, mimeType) {
-    if (mimeType && mimeType.startsWith('image/')) {
-      return `https://lh3.googleusercontent.com/d/${fileId}`;
-    }
-    return `https://drive.google.com/uc?id=${fileId}&export=download`;
   }
 
   async function createDirectUploadSession({ filename, mimeType, fileSize, recordType, recordId, recordTitle }) {
     const token = await googleToken();
     if (!token) return { directAvailable: false };
     const folderId = await resolveItemFolder({ recordType, recordId, recordTitle });
-    const sessionRes = await fetchImpl('https://www.googleapis.com/upload/drive/v3/files?uploadType=resumable&fields=id,size', {
+    const sessionRes = await fetchImpl('https://www.googleapis.com/upload/drive/v3/files?uploadType=resumable&fields=id,size,md5Checksum', {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${token}`,
@@ -95,9 +74,7 @@ export function createCloudMedia({ request, url, key, drive = null, fetchImpl = 
     return { directAvailable: true, sessionUrl, folderId };
   }
 
-  async function completeDirectUpload({ fileId, folderId, recordId, filename, mimeType, fileSize, md5Checksum }) {
-    await makeFilePublic(fileId);
-    const publicUrl = formatPublicDriveUrl(fileId, mimeType);
+  async function completeDirectUpload({ fileId, mimeType, fileSize, md5Checksum }) {
     const id = randomBytes(24).toString('hex');
     await request('/rest/v1/vitcha_media', {
       method: 'POST',
@@ -106,51 +83,76 @@ export function createCloudMedia({ request, url, key, drive = null, fetchImpl = 
         id,
         provider: 'drive',
         file_id: fileId,
-        folder_id: folderId,
-        record_id: recordId,
-        mime_type: mimeType,
-        bytes: fileSize,
-        sha256: md5Checksum || null,
+        mime_type: mimeType || 'application/octet-stream',
+        bytes: Math.max(1, Number(fileSize) || 1),
+        sha256: md5Checksum || createHash('sha256').update(`${fileId}:${id}`).digest('hex'),
       }),
     });
-    return { success: true, url: publicUrl, mediaId: id };
+    return { success: true, url: `/media/${id}`, mediaId: id };
+  }
+
+  async function configureDrive({ clientId, clientSecret, refreshToken, folderId }) {
+    const next = {
+      clientId: String(clientId || '').trim(),
+      clientSecret: String(clientSecret || '').trim(),
+      refreshToken: String(refreshToken || '').trim(),
+      folderId: String(folderId || '1OXmOSXAA7py0ixs6vT3EBjndZCvpkDT1').trim(),
+    };
+    if (!next.clientId || !next.clientSecret || !next.refreshToken) {
+      throw new Error('กรุณากรอก Client ID, Client Secret และ Refresh Token ให้ครบถ้วน');
+    }
+    driveConfig = next;
+    accessToken = null;
+    tokenUntil = 0;
+    const status = await getDriveStatus();
+    if (!status.connected) {
+      throw new Error(status.error || 'ไม่สามารถเชื่อมต่อ Google Drive ด้วยข้อมูลชุดนี้ได้');
+    }
+    await request('/rest/v1/vitcha_runtime', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Prefer: 'resolution=merge-duplicates,return=minimal' },
+      body: JSON.stringify({ key: 'google_drive', value: next }),
+    });
+    return status;
   }
 
   async function getDriveStatus() {
-    if (!drive?.clientId || !drive?.refreshToken) {
+    const folderId = getCenterFolderId();
+    if (!driveConfig?.clientId || !driveConfig?.refreshToken) {
       return {
         configured: false,
-        folderId: CENTER_FOLDER_ID,
+        connected: false,
+        folderId,
         message: 'Google Drive OAuth credentials are not configured in runtime/environment',
       };
     }
     try {
       const token = await googleToken();
-      if (!token) return { configured: false, folderId: CENTER_FOLDER_ID, message: 'Could not obtain Google token' };
+      if (!token) return { configured: false, connected: false, folderId, message: 'Could not obtain Google token' };
       const aboutRes = await fetchImpl('https://www.googleapis.com/drive/v3/about?fields=storageQuota,user', {
         headers: { Authorization: `Bearer ${token}` },
         signal: AbortSignal.timeout(20000),
       });
-      if (!aboutRes.ok) return { configured: true, connected: false, folderId: CENTER_FOLDER_ID, error: 'About request failed' };
+      if (!aboutRes.ok) return { configured: true, connected: false, folderId, error: 'About request failed' };
       const about = await aboutRes.json();
       return {
         configured: true,
         connected: true,
-        folderId: CENTER_FOLDER_ID,
+        folderId,
         user: about.user,
         storageQuota: about.storageQuota,
       };
     } catch (e) {
-      return { configured: true, connected: false, folderId: CENTER_FOLDER_ID, error: e.message };
+      return { configured: true, connected: false, folderId, error: e.message };
     }
   }
   const headers = () => ({ apikey: key, ...(key.startsWith('sb_secret_') ? {} : { Authorization: `Bearer ${key}` }) });
   async function upload({ filename, bytes, mimeType }) {
     const id = randomBytes(24).toString('hex');
     let fileId, provider;
-    if (drive?.folderId && drive?.refreshToken) {
+    if (driveConfig?.folderId && driveConfig?.refreshToken) {
       const token = await googleToken();
-      const session = await fetchImpl('https://www.googleapis.com/upload/drive/v3/files?uploadType=resumable&fields=id,size,md5Checksum', { method: 'POST', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json', 'X-Upload-Content-Type': mimeType, 'X-Upload-Content-Length': String(bytes.length) }, body: JSON.stringify({ name: `${id}-${filename}`, parents: [drive.folderId] }), signal: AbortSignal.timeout(20000) });
+      const session = await fetchImpl('https://www.googleapis.com/upload/drive/v3/files?uploadType=resumable&fields=id,size,md5Checksum', { method: 'POST', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json', 'X-Upload-Content-Type': mimeType, 'X-Upload-Content-Length': String(bytes.length) }, body: JSON.stringify({ name: `${id}-${filename}`, parents: [driveConfig.folderId] }), signal: AbortSignal.timeout(20000) });
       const location = session.headers.get('location');
       if (!session.ok || !location || new URL(location).origin !== 'https://www.googleapis.com') throw new Error('เริ่มอัปโหลดไป Google Drive ไม่สำเร็จ');
       const result = await fetchImpl(location, { method: 'PUT', headers: { 'Content-Type': mimeType, 'Content-Length': String(bytes.length) }, body: bytes, signal: AbortSignal.timeout(120000) });
@@ -182,12 +184,12 @@ export function createCloudMedia({ request, url, key, drive = null, fetchImpl = 
       if (signed.pathname.startsWith('/object/')) signed.pathname = '/storage/v1' + signed.pathname;
       return res.redirect(307, signed.href);
     }
-    if (!drive?.refreshToken) return res.status(503).send('Media storage is not connected');
+    if (!driveConfig?.refreshToken) return res.status(503).send('Media storage is not connected');
     const response = await fetchImpl(`https://www.googleapis.com/drive/v3/files/${encodeURIComponent(file.file_id)}?alt=media`, { headers: { Authorization: `Bearer ${await googleToken()}`, ...(req.headers.range ? { Range: req.headers.range } : {}) }, signal: AbortSignal.timeout(120000) });
     if (![200,206,416].includes(response.status)) return res.status(502).send('Media unavailable');
     res.status(response.status);
     for (const name of ['content-type','content-length','content-range','accept-ranges']) if (response.headers.has(name)) res.set(name, response.headers.get(name));
     if (response.body) await pipeline(Readable.fromWeb(response.body), res); else res.end();
   }
-  return { upload, serve, createDirectUploadSession, completeDirectUpload, getDriveStatus };
+  return { upload, serve, createDirectUploadSession, completeDirectUpload, configureDrive, getDriveStatus };
 }

@@ -99,7 +99,7 @@ export async function createSupabasePersistence(options) {
           };
           // Uploads do not mutate the database. Keep their authorization snapshot
           // isolated while allowing other users' reads and writes to proceed.
-          if (req.path === '/upload') release();
+          if (req.path === '/upload' || req.path.startsWith('/drive/')) release();
           context.run(state, next);
         } catch (error) { release(); next(error); }
       };

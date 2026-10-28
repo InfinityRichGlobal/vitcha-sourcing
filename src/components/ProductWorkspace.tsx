@@ -134,17 +134,22 @@ export function ProductWorkspace({
   };
   return (
     <div
-      className="mx-auto max-w-6xl space-y-5 px-3 py-5 sm:px-5 sm:py-7"
+      className="mx-auto max-w-6xl space-y-4 px-3 py-4 sm:px-4 animate-in fade-in"
       data-testid="product-workspace"
     >
-      <div className="flex flex-wrap items-start justify-between gap-4">
+      <div className="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/90 shadow-2xs flex flex-wrap items-center justify-between gap-4">
         <div className="flex items-center gap-3">
-          <span className="grid h-12 w-12 place-items-center rounded-2xl bg-emerald-50 text-emerald-700">
-            <Package />
+          <span className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-700 border border-emerald-200/60 flex items-center justify-center shrink-0">
+            <i aria-hidden="true" className="fa-solid fa-boxes-stacked text-base" />
           </span>
           <div>
-            <h1 className="text-2xl font-bold text-slate-950">รายการสินค้า</h1>
-            <p className="mt-1 text-sm text-slate-500">
+            <div className="flex items-center gap-2 flex-wrap">
+              <h1 className="text-base sm:text-lg font-extrabold text-slate-950 tracking-tight">รายการสินค้า</h1>
+              <span className="text-[11px] font-mono font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200">
+                {products.length} ชิ้น
+              </span>
+            </div>
+            <p className="text-xs text-slate-500">
               คัดทีละชิ้น เทียบข้ามซัพพลายเออร์ แล้วจัดเป็นชุดที่ทีมใช้งานต่อได้
             </p>
           </div>
@@ -156,20 +161,20 @@ export function ProductWorkspace({
           </button>
         )}
       </div>
-      <div className="grid grid-cols-4 gap-2">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
         {Object.entries(decisions).map(([key, label]) => (
           <button
             key={key}
             aria-pressed={decision === key}
             onClick={() => setDecision(decision === key ? "all" : key)}
-            className={`rounded-2xl border p-3 text-left ${decision === key ? "border-emerald-500 ring-1 ring-emerald-500" : "border-slate-200"} bg-white`}
+            className={`rounded-2xl border p-3.5 text-left transition-all shadow-2xs ${decision === key ? "border-emerald-500 ring-1 ring-emerald-500 bg-white" : "border-slate-200/90 bg-white hover:border-slate-300"}`}
           >
             <span
-              className={`inline-flex rounded-md px-2 py-1 text-xs font-semibold ${statusStyle[key as keyof typeof decisions]}`}
+              className={`inline-flex rounded-lg px-2 py-0.5 text-[11px] font-bold ${statusStyle[key as keyof typeof decisions]}`}
             >
               {label}
             </span>
-            <strong className="mt-2 block text-2xl text-slate-900">
+            <strong className="mt-2 block text-2xl font-extrabold font-mono text-slate-950">
               {products.filter((item) => item.decision === key).length}
             </strong>
           </button>

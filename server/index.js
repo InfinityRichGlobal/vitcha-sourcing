@@ -27,7 +27,15 @@ if (cloud) {
   persistence = await createSupabasePersistence({ request });
   const runtime = await request('/rest/v1/vitcha_runtime?select=key,value');
   recoveryPasswordHash ||= runtime.find(row => row.key === 'account_recovery')?.value?.passwordHash;
-  mediaStorage = createCloudMedia({ ...config, request, drive: runtime.find(row => row.key === 'google_drive')?.value });
+  const envDrive = process.env.GOOGLE_DRIVE_CLIENT_ID && process.env.GOOGLE_DRIVE_REFRESH_TOKEN
+    ? {
+        clientId: process.env.GOOGLE_DRIVE_CLIENT_ID,
+        clientSecret: process.env.GOOGLE_DRIVE_CLIENT_SECRET || '',
+        refreshToken: process.env.GOOGLE_DRIVE_REFRESH_TOKEN,
+        folderId: process.env.GOOGLE_DRIVE_FOLDER_ID || '1OXmOSXAA7py0ixs6vT3EBjndZCvpkDT1',
+      }
+    : null;
+  mediaStorage = createCloudMedia({ ...config, request, drive: runtime.find(row => row.key === 'google_drive')?.value || envDrive });
 } else if (process.env.NODE_ENV === 'production' && process.env.RENDER) {
   throw new Error('Durable cloud storage must be configured before production startup.');
 }

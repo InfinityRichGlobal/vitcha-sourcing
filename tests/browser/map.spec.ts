@@ -19,7 +19,7 @@ test('China basemap loads with English labels and keeps its zoom across polling'
   const map = page.getByTestId('english-map');
   await map.scrollIntoViewIfNeeded();
   await expect(map).toHaveAttribute('data-map-status', 'ready', { timeout: 60000 });
-  await expect(map.locator('canvas')).toBeVisible();
+  await expect(map.locator('.leaflet-tile-loaded').first()).toBeVisible();
   await expect(map.getByText('Map language: English')).toBeVisible();
   // A marker's projected separation changes with zoom. It must not snap back on polling.
   const markers = map.locator('.leaflet-marker-icon');

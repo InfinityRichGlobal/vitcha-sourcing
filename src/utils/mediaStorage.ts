@@ -62,7 +62,7 @@ export async function readVideoFile(
  */
 export async function resolveVideoSrc(url?: string): Promise<string> {
   if (!url) return '';
-  if (url.startsWith('/uploads/')) {
+  if (url.startsWith('/uploads/') || url.startsWith('/media/')) {
     return `${getRenderServerUrl()}${url}`;
   }
   if (!url.startsWith('idb://')) return url;
@@ -126,8 +126,16 @@ export function isVideoUrl(url?: string): boolean {
 }
 
 /** Upload every processed image before the record can be saved. */
-export async function uploadImageFile(file: File, maxDimension = 1600, quality = 0.82): Promise<string> {
+export async function uploadImageFile(
+  file: File,
+  maxDimension = 1600,
+  quality = 0.82,
+  options?: { recordId?: string; recordType?: string; recordTitle?: string }
+): Promise<string> {
   const compressed = await compressImageFile(file, maxDimension, quality);
   const blob = await (await fetch(compressed)).blob();
-  return uploadMediaToServer(new File([blob], `${file.name.replace(/\.[^.]+$/, '')}.jpg`, { type: 'image/jpeg' }));
+  return uploadMediaToServer(
+    new File([blob], `${file.name.replace(/\.[^.]+$/, '')}.jpg`, { type: 'image/jpeg' }),
+    options
+  );
 }

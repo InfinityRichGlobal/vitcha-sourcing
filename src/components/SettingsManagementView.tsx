@@ -1,6 +1,6 @@
 import { AvatarImage } from './AvatarImage';
-import React, { useState } from 'react';
-import { requestJson, sendJson } from '../services/api';
+import React, { useState, useEffect } from 'react';
+import { requestJson, sendJson, getDriveStatusApi, saveDriveConfigApi } from '../services/api';
 import { useApp } from '../context/AppContext';
 import { UserRole } from '../types';
 
@@ -104,6 +104,59 @@ export const SettingsManagementView: React.FC = () => {
   const [isTestingRender, setIsTestingRender] = useState(false);
   const [isSyncingRender, setIsSyncingRender] = useState(false);
   const [renderSyncMsg, setRenderSyncMsg] = useState<string | null>(null);
+
+  // Google Drive CENTER states (exclusive to primary account)
+  const [driveStatus, setDriveStatus] = useState<{
+    configured?: boolean;
+    connected?: boolean;
+    folderId?: string;
+    user?: { emailAddress?: string; displayName?: string };
+    storageQuota?: { usage?: string; limit?: string };
+    error?: string;
+    message?: string;
+  } | null>(null);
+  const [driveClientId, setDriveClientId] = useState('');
+  const [driveClientSecret, setDriveClientSecret] = useState('');
+  const [driveRefreshToken, setDriveRefreshToken] = useState('');
+  const [driveFolderId, setDriveFolderId] = useState('1OXmOSXAA7py0ixs6vT3EBjndZCvpkDT1');
+  const [isSavingDrive, setIsSavingDrive] = useState(false);
+  const [driveMsg, setDriveMsg] = useState<{ ok: boolean; text: string } | null>(null);
+  const [showDriveForm, setShowDriveForm] = useState(false);
+
+  useEffect(() => {
+    if (currentUser.id === 'user-ice' && !simulatedFromAdmin) {
+      getDriveStatusApi()
+        .then((res) => {
+          setDriveStatus(res);
+          if (res?.folderId) setDriveFolderId(res.folderId);
+        })
+        .catch(() => {});
+    }
+  }, [currentUser.id, simulatedFromAdmin]);
+
+  const handleSaveDriveConfig = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSavingDrive(true);
+    setDriveMsg(null);
+    try {
+      const res = await saveDriveConfigApi({
+        clientId: driveClientId,
+        clientSecret: driveClientSecret,
+        refreshToken: driveRefreshToken,
+        folderId: driveFolderId || '1OXmOSXAA7py0ixs6vT3EBjndZCvpkDT1',
+      });
+      setDriveStatus(res);
+      setDriveMsg({ ok: true, text: '✅ บันทึกและเชื่อมต่อ Google Drive CENTER สำเร็จแล้ว!' });
+      setShowDriveForm(false);
+    } catch (err) {
+      setDriveMsg({
+        ok: false,
+        text: err instanceof Error ? err.message : 'เชื่อมต่อ Google Drive ไม่สำเร็จ',
+      });
+    } finally {
+      setIsSavingDrive(false);
+    }
+  };
 
   const handleTestRender = async () => {
     setIsTestingRender(true);
@@ -420,6 +473,130 @@ export const SettingsManagementView: React.FC = () => {
             </span>
           </div>
         </div>
+      </div>
+
+      {/* Google Drive CENTER Storage Card */}
+      <div className="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/90 shadow-2xs space-y-3.5">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 border border-blue-200/60 flex items-center justify-center shrink-0">
+              <i aria-hidden="true" className="fa-brands fa-google-drive text-base" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2 flex-wrap">
+                <h3 className="font-extrabold text-sm sm:text-base text-slate-900">
+                  พื้นที่จัดเก็บไฟล์ Google Drive CENTER
+                </h3>
+                <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200">
+                  Folder: {driveFolderId}
+                </span>
+              </div>
+              <p className="text-[11px] text-slate-500">
+                รองรับการอัปโหลดรูปภาพ เสียง และวิดีโอ (สูงสุด 100 MB/ไฟล์) แยกโฟลเดอร์ตามหมวดและรายการอัตโนมัติ พร้อมระบบสำรองคลาวด์ไม่ให้การอัปโหลดสะดุด
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 shrink-0">
+            {driveStatus?.connected ? (
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-bold">
+                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                <span>เชื่อมต่อ Google Drive แล้ว ({driveStatus.user?.emailAddress || 'Active'})</span>
+              </span>
+            ) : (
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-50 border border-amber-200 text-amber-800 text-xs font-bold">
+                <span className="w-2 h-2 rounded-full bg-amber-500" />
+                <span>โหมดสำรอง Cloud Storage ทำงานอยู่ · รอผูก OAuth</span>
+              </span>
+            )}
+            <button
+              type="button"
+              onClick={() => setShowDriveForm((v) => !v)}
+              className="px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition-all"
+            >
+              {showDriveForm ? 'ซ่อนฟอร์มตั้งค่า' : 'ตั้งค่า OAuth'}
+            </button>
+          </div>
+        </div>
+
+        {driveMsg && (
+          <div
+            className={`p-3 rounded-xl text-xs font-bold border ${
+              driveMsg.ok
+                ? 'bg-emerald-50 border-emerald-200 text-emerald-800'
+                : 'bg-rose-50 border-rose-200 text-rose-800'
+            }`}
+          >
+            {driveMsg.text}
+          </div>
+        )}
+
+        {showDriveForm && (
+          <form onSubmit={handleSaveDriveConfig} className="bg-slate-50 p-3.5 sm:p-4 rounded-xl border border-slate-200/80 space-y-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+              <div>
+                <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                  Google OAuth Client ID
+                </label>
+                <input
+                  type="text"
+                  required
+                  placeholder="xxxx.apps.googleusercontent.com"
+                  value={driveClientId}
+                  onChange={(e) => setDriveClientId(e.target.value)}
+                  className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-mono text-slate-900"
+                />
+              </div>
+              <div>
+                <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                  Google OAuth Client Secret
+                </label>
+                <input
+                  type="password"
+                  required
+                  placeholder="GOCSPX-..."
+                  value={driveClientSecret}
+                  onChange={(e) => setDriveClientSecret(e.target.value)}
+                  className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-mono text-slate-900"
+                />
+              </div>
+              <div>
+                <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                  Google OAuth Refresh Token
+                </label>
+                <input
+                  type="password"
+                  required
+                  placeholder="1//04..."
+                  value={driveRefreshToken}
+                  onChange={(e) => setDriveRefreshToken(e.target.value)}
+                  className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-mono text-slate-900"
+                />
+              </div>
+              <div>
+                <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                  Google Drive CENTER Folder ID
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={driveFolderId}
+                  onChange={(e) => setDriveFolderId(e.target.value)}
+                  className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-mono text-slate-900"
+                />
+              </div>
+            </div>
+            <div className="flex items-center justify-end gap-2">
+              <button
+                type="submit"
+                disabled={isSavingDrive}
+                className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-xs transition-all"
+              >
+                {isSavingDrive ? 'กำลังตรวจสอบและบันทึก...' : 'บันทึก & เชื่อมต่อ Google Drive ทันที'}
+              </button>
+            </div>
+          </form>
+        )}
       </div>
 
       </>}

@@ -98,6 +98,8 @@ export const deleteInviteFromCentral = (id: string) => sendJson(`/api/invites/${
 export const markNotificationsReadApi = (params: { id?: string; all?: boolean }) => sendJson('/api/notifications/read', params);
 export const clearNotificationsApi = (params: { id?: string; all?: boolean }) => sendJson('/api/notifications/clear', params);
 export const getDriveStatusApi = () => requestJson('/api/drive/status');
+export const saveDriveConfigApi = (config: { clientId: string; clientSecret: string; refreshToken: string; folderId?: string }) =>
+  sendJson('/api/drive/config', config);
 
 export async function uploadMediaToServer(
   file: File,
@@ -139,7 +141,7 @@ export async function uploadMediaToServer(
             md5Checksum: driveData.md5Checksum,
           });
           if (completeRes?.url) {
-            return completeRes.url;
+            return new URL(completeRes.url, getRenderServerUrl()).href;
           }
         }
       }

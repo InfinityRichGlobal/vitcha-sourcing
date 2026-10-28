@@ -58,3 +58,72 @@ test('Supabase transport accepts empty successful inserts and hides upstream err
   response = new Response('{"message":"private upstream details"}', { status: 500 });
   await assert.rejects(request('/rest/v1/vitcha_state'), e => e.status === 503 && !e.message.includes('private'));
 });
+
+test('Google Drive CENTER direct resumable upload and runtime configuration persist to vitcha_media and vitcha_runtime', async () => {
+  const insertedMedia = [], runtimeSaves = [];
+  const media = createCloudMedia({
+    url,
+    key,
+    fetchImpl: async (target) => {
+      if (target === 'https://oauth2.googleapis.com/token') {
+        return new Response(JSON.stringify({ access_token: 'tok-123', expires_in: 3600 }), { status: 200 });
+      }
+      if (target.startsWith('https://www.googleapis.com/drive/v3/about')) {
+        return new Response(JSON.stringify({ user: { emailAddress: 'ice@vitcha.com' }, storageQuota: { usage: '100', limit: '1000' } }), { status: 200 });
+      }
+      if (target.startsWith('https://www.googleapis.com/drive/v3/files?q=')) {
+        return new Response(JSON.stringify({ files: [{ id: 'folder-abc', name: 'suppliers' }] }), { status: 200 });
+      }
+      if (target.startsWith('https://www.googleapis.com/upload/drive/v3/files?uploadType=resumable')) {
+        return new Response('', { status: 200, headers: { location: 'https://www.googleapis.com/upload/drive/v3/files?upload_id=session-xyz' } });
+      }
+      throw new Error(`Unexpected fetch: ${target}`);
+    },
+    request: async (route, options) => {
+      if (route === '/rest/v1/vitcha_runtime') {
+        runtimeSaves.push(JSON.parse(options.body));
+        return null;
+      }
+      if (route === '/rest/v1/vitcha_media') {
+        insertedMedia.push(JSON.parse(options.body));
+        return null;
+      }
+      return [];
+    },
+  });
+
+  const status = await media.configureDrive({
+    clientId: 'cid',
+    clientSecret: 'csec',
+    refreshToken: 'rtok',
+    folderId: '1OXmOSXAA7py0ixs6vT3EBjndZCvpkDT1',
+  });
+  assert.equal(status.connected, true);
+  assert.equal(runtimeSaves.length, 1);
+  assert.equal(runtimeSaves[0].key, 'google_drive');
+  assert.equal(runtimeSaves[0].value.folderId, '1OXmOSXAA7py0ixs6vT3EBjndZCvpkDT1');
+
+  const session = await media.createDirectUploadSession({
+    filename: 'cup.jpg',
+    mimeType: 'image/jpeg',
+    fileSize: 12345,
+    recordType: 'suppliers',
+    recordId: 'sup-01',
+    recordTitle: 'Test Cup Factory',
+  });
+  assert.equal(session.directAvailable, true);
+  assert.ok(session.sessionUrl.startsWith('https://www.googleapis.com/upload/drive/v3/files'));
+
+  const completed = await media.completeDirectUpload({
+    fileId: 'drive-file-999',
+    mimeType: 'image/jpeg',
+    fileSize: 12345,
+    md5Checksum: 'abc123md5',
+  });
+  assert.equal(completed.success, true);
+  assert.match(completed.url, /^\/media\/[a-f0-9]{48}$/);
+  assert.equal(insertedMedia.length, 1);
+  assert.equal(insertedMedia[0].provider, 'drive');
+  assert.equal(insertedMedia[0].file_id, 'drive-file-999');
+  assert.equal(insertedMedia[0].bytes, 12345);
+});

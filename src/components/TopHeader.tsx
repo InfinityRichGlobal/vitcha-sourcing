@@ -105,9 +105,7 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
                 <span className="font-extrabold text-xs sm:text-base tracking-tight text-slate-950 truncate leading-tight">
                   ฉันจะเป็นหัวแถว
                 </span>
-                <span className="inline-flex items-center text-[8.5px] sm:text-[9px] font-bold px-1 sm:px-1.5 py-0.2 sm:py-0.5 rounded-md bg-emerald-50 text-emerald-800 border border-emerald-200/60 shrink-0">
-                  แพลตฟอร์ม
-                </span>
+                <span className="sr-only">แพลตฟอร์ม</span>
                 <span className="hidden lg:inline-flex items-center text-[9px] font-mono font-bold px-1.5 py-0.5 rounded-md bg-slate-100 text-slate-600">
                   CN · TH
                 </span>
@@ -115,9 +113,9 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
               <div className="flex items-center gap-1 text-[9px] sm:text-[11px] text-slate-500 font-medium truncate leading-tight">
                 <i aria-hidden="true" className="fa-solid fa-bars text-[8px] sm:text-[9px] text-slate-400 shrink-0" />
                 <span>
-                  {syncStatus === 'online' && renderStatus === 'connected'
-                    ? 'เมนูแพลตฟอร์ม · ออนไลน์'
-                    : 'เมนูแพลตฟอร์ม'}
+                  {syncStatus === 'online'
+                    ? 'เมนูหลัก · ออนไลน์'
+                    : `ออฟไลน์ (${pendingSyncCount})`}
                 </span>
               </div>
             </div>
@@ -132,10 +130,10 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
                 setActiveTab('dashboard');
                 window.scrollTo({ top: 0, behavior: 'smooth' });
               }}
-              className={`hidden md:flex w-7 h-7 sm:w-8 sm:h-8 items-center justify-center transition-all active:scale-95 shrink-0 ${
+              className={`hidden min-[380px]:flex w-7 h-7 sm:w-8 sm:h-8 items-center justify-center transition-all active:scale-95 shrink-0 ${
                 activeTab === 'dashboard'
-                  ? 'text-slate-500'
-                  : 'text-slate-500 hover:text-slate-700'
+                  ? 'text-emerald-600'
+                  : 'text-slate-600 hover:text-emerald-600'
               }`}
               title="กลับหน้าหลัก (Home)"
             >
@@ -147,7 +145,7 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
               <button
                 type="button"
                 onClick={() => setIsAddPickerOpen(true)}
-                className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-slate-700 hover:bg-slate-800 text-white flex items-center justify-center shadow-xs transition-all active:scale-95 shrink-0"
+                className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-slate-900 hover:bg-emerald-600 text-white flex items-center justify-center shadow-xs transition-all active:scale-95 shrink-0"
                 title="เพิ่มข้อมูลใหม่ (ซัพพลายเออร์ หรือ ร้านน้ำ & เรฟ)"
               >
                 <i aria-hidden="true" className="fa-solid fa-plus text-xs" />
@@ -169,7 +167,7 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
             <button
               type="button"
               onClick={onOpenInstall}
-              className="hidden md:flex relative w-7 h-7 sm:w-8 sm:h-8 rounded-lg hover:bg-slate-100/80 text-slate-600 hover:text-slate-900 flex items-center justify-center transition-all active:scale-95 shrink-0"
+              className="hidden min-[380px]:flex relative w-7 h-7 sm:w-8 sm:h-8 rounded-lg hover:bg-slate-100/80 text-slate-600 hover:text-slate-900 items-center justify-center transition-all active:scale-95 shrink-0"
               title={
                 isPwaInstalled
                   ? 'ติดตั้งแอพลงหน้าจอโฮมแล้ว (✓) · กดเพื่อดู/ทดสอบแจ้งเตือน'

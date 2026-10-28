@@ -540,7 +540,20 @@ export function createApp({ dataDir, defaults = DEFAULT_DATABASE, sessionTtlMs =
       const status = await mediaStorage.getDriveStatus();
       return res.json(status);
     }
-    res.json({ configured: false, message: 'Google Drive integration is not active' });
+    res.json({ configured: false, connected: false, folderId: '1OXmOSXAA7py0ixs6vT3EBjndZCvpkDT1', message: 'Google Drive integration is in local/fallback mode' });
+  });
+
+  app.post('/api/drive/config', async (req, res) => {
+    requireFounder(req);
+    const { clientId, clientSecret, refreshToken, folderId } = req.body || {};
+    if (!clean(clientId) || !clean(clientSecret) || !clean(refreshToken)) {
+      fail(400, 'กรุณากรอก Client ID, Client Secret และ Refresh Token ให้ครบถ้วน');
+    }
+    if (mediaStorage?.configureDrive) {
+      const status = await mediaStorage.configureDrive({ clientId, clientSecret, refreshToken, folderId });
+      return res.json({ success: true, ...status });
+    }
+    fail(503, 'เซิร์ฟเวอร์นี้ไม่ได้เปิดโหมด Cloud Media Storage');
   });
   // Unpredictable media URLs support native video range requests. Never accept HTML/SVG.
   if (mediaStorage?.serve) app.get('/media/:id', mediaStorage.serve);

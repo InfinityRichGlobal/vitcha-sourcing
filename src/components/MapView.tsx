@@ -2,14 +2,9 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useApp } from '../context/AppContext';
 import { SupplierRecord, StoreInspoRecord } from '../types';
 import L from 'leaflet';
-import { maplibreGL } from '@maplibre/maplibre-gl-leaflet';
-import { setWorkerUrl } from 'maplibre-gl';
-import workerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url';
-import 'maplibre-gl/dist/maplibre-gl.css';
 import 'leaflet/dist/leaflet.css';
-import { MAP_STYLE_URL, withEnglishLabels } from '../utils/englishMapStyle';
 
-setWorkerUrl(workerUrl);
+const GOOGLE_TILE_URL = 'https://{s}.google.com/vt/lyrs=m&hl=en&gl=US&x={x}&y={y}&z={z}';
 import { Factory, Coffee, Layers, MapPin, ChevronRight, X, Navigation } from 'lucide-react';
 
 interface MapViewProps {
@@ -55,26 +50,20 @@ export const MapView: React.FC<MapViewProps> = ({
       zoomControl: false,
     });
 
-    const controller = new AbortController();
     let active = true;
-    let vectorLayer: ReturnType<typeof maplibreGL> | undefined;
     let ready = false;
     setMapStatus('loading');
     setMapFailure('');
     lastFocusRef.current = null;
     const loadTimeout = window.setTimeout(() => { if (active && !ready) { setMapFailure('Map loading timed out'); setMapStatus('error'); } }, 25000);
-    fetch(MAP_STYLE_URL, { signal: controller.signal })
-      .then(response => { if (!response.ok) throw new Error('Map style unavailable'); return response.json(); })
-      .then(style => {
-        if (!active) return;
-        vectorLayer = maplibreGL({ style: withEnglishLabels(style), attributionControl: false, renderWorldCopies: false, canvasContextAttributes: { powerPreference: 'low-power' } }).addTo(map);
-        const gl = vectorLayer.getMaplibreMap();
-        gl.on('load', () => { if (active) { ready = true; window.clearTimeout(loadTimeout); setMapFailure(''); setMapStatus('ready'); } });
-        gl.on('error', event => { if (active && !ready) { setMapFailure(event.error?.message || 'Map resource unavailable'); setMapStatus('error'); } });
-        gl.on('webglcontextlost', () => { if (active) { setMapFailure('WebGL context lost'); setMapStatus('error'); } });
-      })
-      .catch(error => { if (active && !controller.signal.aborted) { setMapFailure(error instanceof Error ? error.message : 'Map initialization failed'); setMapStatus('error'); } });
-    map.attributionControl.addAttribution('<a href="https://openfreemap.org/" target="_blank" rel="noopener">OpenFreeMap</a> · <a href="https://openmaptiles.org/" target="_blank" rel="noopener">OpenMapTiles</a> · <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">© OpenStreetMap</a>');
+    // Google Maps road tiles with English labels (hl=en) — readable place names in China.
+    const googleLayer = L.tileLayer(GOOGLE_TILE_URL, {
+      subdomains: ['mt0', 'mt1', 'mt2', 'mt3'],
+      maxZoom: 20,
+      attribution: 'Map data © Google',
+    }).addTo(map);
+    googleLayer.on('load', () => { if (active) { ready = true; window.clearTimeout(loadTimeout); setMapFailure(''); setMapStatus('ready'); } });
+    googleLayer.on('tileerror', () => { if (active && !ready) { setMapFailure('Google Maps tiles unavailable'); setMapStatus('error'); } });
 
     L.control.zoom({ position: 'bottomright' }).addTo(map);
 
@@ -101,7 +90,7 @@ export const MapView: React.FC<MapViewProps> = ({
     }, 200);
 
     return () => {
-      active = false; controller.abort(); window.clearTimeout(loadTimeout);
+      active = false; window.clearTimeout(loadTimeout);
       if (resizeTimer) window.clearTimeout(resizeTimer);
       window.clearTimeout(initTimer);
       window.removeEventListener('resize', handleResize);
@@ -254,7 +243,7 @@ export const MapView: React.FC<MapViewProps> = ({
 
   return (
     <div className="space-y-2" data-testid="english-map" data-map-status={mapStatus} data-map-error={mapFailure}>
-      <p className="text-xs text-slate-500"><span className="font-semibold text-slate-700">Map language: English</span> · ชื่อสถานที่ภาษาอังกฤษ</p>
+      <p className="text-xs text-slate-500"><span className="font-semibold text-slate-700">Map language: English</span> · Google Maps · ชื่อสถานที่ภาษาอังกฤษ</p>
       <div className="relative isolate w-full h-[380px] sm:h-[430px] overflow-hidden rounded-2xl border border-slate-200/90 shadow-2xs bg-slate-100">
         {/* Top Left: Type Filter Bar */}
         <div className="absolute top-2.5 left-2.5 z-[400] flex flex-wrap items-center gap-1 bg-white/95 backdrop-blur-md p-1 rounded-xl border border-slate-200/80 shadow-sm">

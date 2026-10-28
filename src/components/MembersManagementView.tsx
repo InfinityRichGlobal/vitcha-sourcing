@@ -58,37 +58,44 @@ export function MembersManagementView() {
     }
   }
   return (
-    <div className="mx-auto max-w-6xl space-y-6 px-4 py-6 sm:px-6 sm:py-8">
-      <header className="flex items-start justify-between gap-4">
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-emerald-700">
-            VITCHA TEAM
-          </p>
-          <h1 className="mt-1 text-2xl font-bold tracking-tight text-slate-900">
-            สมาชิกและคำเชิญ
-          </h1>
-          <p className="mt-2 text-sm text-slate-500">
-            จัดการสมาชิกในทีมและติดตามคำเชิญในที่เดียว
-          </p>
+    <div className="mx-auto max-w-6xl space-y-4 px-3 py-4 sm:px-4 animate-in fade-in">
+      <div className="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/90 shadow-2xs flex items-center justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-purple-50 text-purple-700 border border-purple-200/60 flex items-center justify-center shrink-0">
+            <i aria-hidden="true" className="fa-solid fa-user-shield text-base" />
+          </div>
+          <div>
+            <div className="flex items-center gap-2 flex-wrap">
+              <h1 className="text-base sm:text-lg font-extrabold tracking-tight text-slate-900">
+                สมาชิกและคำเชิญ
+              </h1>
+              <span className="text-[11px] font-mono font-bold px-2 py-0.5 rounded-full bg-purple-50 text-purple-800 border border-purple-200">
+                {members.length} คน
+              </span>
+            </div>
+            <p className="text-xs text-slate-500">
+              จัดการสมาชิกในทีม ออกลิงก์คำเชิญรายบุคคล และกำหนดสิทธิ์การใช้งาน
+            </p>
+          </div>
         </div>
         <button
           aria-label="รีเฟรชสมาชิก"
           onClick={() => void refreshCentralData()}
-          className="rounded-xl border bg-white p-3 text-slate-600"
+          className="rounded-xl border border-slate-200/90 bg-slate-50 hover:bg-slate-100 p-2.5 text-slate-600 transition-colors"
         >
-          <RefreshCw size={18} />
+          <RefreshCw size={16} />
         </button>
-      </header>
+      </div>
       {error && (
         <p
           role="alert"
-          className="rounded-xl bg-rose-50 p-3 text-sm text-rose-700"
+          className="rounded-xl bg-rose-50 border border-rose-200 p-3 text-xs font-bold text-rose-700"
         >
           {error}
         </p>
       )}
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)]">
-        <section className="rounded-2xl border border-slate-200 bg-white p-5 sm:p-6">
+      <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)]">
+        <section className="rounded-2xl border border-slate-200/90 bg-white p-4 sm:p-5 shadow-2xs">
           <h2 className="flex items-center gap-2 font-bold">
             <UserPlus size={19} className="text-emerald-700" />
             เชิญสมาชิก
