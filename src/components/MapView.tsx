@@ -25,10 +25,15 @@ export const MapView: React.FC<MapViewProps> = ({
     data: SupplierRecord | StoreInspoRecord;
   } | null>(null);
 
-  // Initialize Map with ResizeObserver & multiple invalidateSize calls so tiles never render blank
+  // Initialize Map safely without heavy ResizeObserver loops to prevent freezing
   useEffect(() => {
     if (!mapContainerRef.current) return;
     if (mapInstanceRef.current) return;
+
+    // Check if container already initialized
+    if ((mapContainerRef.current as any)._leaflet_id) {
+      delete (mapContainerRef.current as any)._leaflet_id;
+    }
 
     const map = L.map(mapContainerRef.current, {
       center: [23.115, 113.325],
@@ -36,7 +41,7 @@ export const MapView: React.FC<MapViewProps> = ({
       zoomControl: false,
     });
 
-    // Primary OpenStreetMap Standard Tile Layer (fast & universally reliable)
+    // Primary OpenStreetMap Standard Tile Layer
     L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '&copy; OpenStreetMap contributors',
       maxZoom: 19,
@@ -47,24 +52,34 @@ export const MapView: React.FC<MapViewProps> = ({
     markersLayerRef.current = L.layerGroup().addTo(map);
     mapInstanceRef.current = map;
 
-    const timers = [
-      window.setTimeout(() => map.invalidateSize(), 100),
-      window.setTimeout(() => map.invalidateSize(), 350),
-      window.setTimeout(() => map.invalidateSize(), 800),
-    ];
+    // Gentle throttled resize handler
+    let resizeTimer: number | null = null;
+    const handleResize = () => {
+      if (resizeTimer) window.clearTimeout(resizeTimer);
+      resizeTimer = window.setTimeout(() => {
+        if (mapInstanceRef.current) {
+          mapInstanceRef.current.invalidateSize();
+        }
+      }, 250);
+    };
 
-    let observer: ResizeObserver | null = null;
-    if (typeof ResizeObserver !== 'undefined' && mapContainerRef.current) {
-      observer = new ResizeObserver(() => {
-        map.invalidateSize();
-      });
-      observer.observe(mapContainerRef.current);
-    }
+    window.addEventListener('resize', handleResize);
+
+    const initTimer = window.setTimeout(() => {
+      if (mapInstanceRef.current) {
+        mapInstanceRef.current.invalidateSize();
+      }
+    }, 200);
 
     return () => {
-      timers.forEach((t) => clearTimeout(t));
-      if (observer) observer.disconnect();
-      map.remove();
+      if (resizeTimer) window.clearTimeout(resizeTimer);
+      window.clearTimeout(initTimer);
+      window.removeEventListener('resize', handleResize);
+      try {
+        map.remove();
+      } catch {
+        // ignore cleanup error
+      }
       mapInstanceRef.current = null;
     };
   }, []);
@@ -74,7 +89,6 @@ export const MapView: React.FC<MapViewProps> = ({
     if (!mapInstanceRef.current || !markersLayerRef.current) return;
 
     const map = mapInstanceRef.current;
-    map.invalidateSize();
     markersLayerRef.current.clearLayers();
 
     const bounds = L.latLngBounds([]);
@@ -155,13 +169,14 @@ export const MapView: React.FC<MapViewProps> = ({
 
     if (bounds.isValid()) {
       map.fitBounds(bounds, {
-        padding: [48, 48],
+        padding: [36, 36],
         maxZoom: regionFocus === 'ALL' ? 12 : 13,
+        animate: false,
       });
     } else if (regionFocus === 'CN') {
-      map.setView([23.115, 113.325], 11);
+      map.setView([23.115, 113.325], 11, { animate: false });
     } else if (regionFocus === 'TH') {
-      map.setView([13.7563, 100.5018], 11);
+      map.setView([13.7563, 100.5018], 11, { animate: false });
     }
   }, [suppliers, drinkStores, filterType, regionFocus]);
 

@@ -398,28 +398,33 @@ export const AppDrawerMenu: React.FC<AppDrawerMenuProps> = ({
             <ChevronRight className="w-4 h-4 text-slate-400" />
           </button>
 
-          {/* Quick User Switcher for Testing */}
-          <div className="pt-2">
-            <div className="text-[10px] font-bold text-slate-400 px-2 py-1">
-              สลับผู้ใช้งานเพื่อทดสอบสิทธิ์ (Test Personas):
+          {/* Quick User Switcher for Testing (เฉพาะ Ice / Admin จำลองบทบาทสิทธิ์ในระบบ) */}
+          {currentUser.role === 'admin' && (
+            <div className="pt-2">
+              <div className="text-[10px] font-bold text-slate-400 px-2 py-1 flex items-center justify-between">
+                <span>ตุ๊กตาจำลองสิทธิ์ (Admin Only):</span>
+                <span className="font-mono text-[9px] text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200">
+                  เฉพาะคุณไอซ์
+                </span>
+              </div>
+              <div className="grid grid-cols-2 gap-1.5 pt-1">
+                {users.map((u) => (
+                  <button
+                    key={u.id}
+                    onClick={() => switchUser(u.id)}
+                    className={`p-2 rounded-xl border text-left text-[11px] flex items-center gap-1.5 transition-colors ${
+                      u.id === currentUser.id
+                        ? 'bg-slate-900 text-white border-slate-900 font-bold shadow-2xs'
+                        : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
+                    }`}
+                  >
+                    <img src={u.avatar} className="w-5 h-5 rounded-full object-cover shrink-0" />
+                    <span className="truncate">{u.alias}</span>
+                  </button>
+                ))}
+              </div>
             </div>
-            <div className="grid grid-cols-2 gap-1.5 pt-1">
-              {users.map((u) => (
-                <button
-                  key={u.id}
-                  onClick={() => switchUser(u.id)}
-                  className={`p-2 rounded-xl border text-left text-[11px] flex items-center gap-1.5 transition-colors ${
-                    u.id === currentUser.id
-                      ? 'bg-slate-900 text-white border-slate-900 font-bold'
-                      : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
-                  }`}
-                >
-                  <img src={u.avatar} className="w-5 h-5 rounded-full object-cover shrink-0" />
-                  <span className="truncate">{u.alias}</span>
-                </button>
-              ))}
-            </div>
-          </div>
+          )}
 
           {/* Logout Action */}
           <div className="pt-2">

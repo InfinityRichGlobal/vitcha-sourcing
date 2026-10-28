@@ -128,6 +128,7 @@ interface AppContextType {
   switchUser: (userId: string) => void;
   isAuthenticated: boolean;
   logout: () => void;
+  loginWithCredentials: (usernameOrEmail: string, passOrPin: string) => boolean;
   loginWithPin: (idOrEmail: string, pin: string) => boolean;
   createInvite: (role: UserRole, prefilledAlias?: string) => InviteLink;
   redeemInvite: (code: string, name: string, alias: string, avatar: string, pin: string) => User | null;
@@ -1164,8 +1165,32 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     localStorage.removeItem('vitcha_authenticated_session');
   };
 
-  const loginWithPin = (idOrEmail: string, pin: string) => {
-    const user = users.find((u) => (u.emailOrId === idOrEmail || u.name === idOrEmail || u.id === idOrEmail) && u.pin === pin);
+  const loginWithCredentials = (usernameOrEmail: string, passOrPin: string) => {
+    const rawId = (usernameOrEmail || '').trim().toLowerCase();
+    const rawPass = (passOrPin || '').trim();
+
+    if (!rawId || !rawPass) return false;
+
+    const user = users.find((u) => {
+      const email = (u.emailOrId || '').toLowerCase();
+      const id = (u.id || '').toLowerCase();
+      const alias = (u.alias || '').toLowerCase();
+      const name = (u.name || '').toLowerCase();
+
+      // Flexible matching for username or email
+      const matchesUser =
+        email === rawId ||
+        email.split('@')[0] === rawId ||
+        id === rawId ||
+        id === `user-${rawId}` ||
+        alias.toLowerCase().includes(rawId) ||
+        name.toLowerCase().includes(rawId) ||
+        (rawId === 'admin' && u.role === 'admin');
+
+      const matchesPass = u.pin === rawPass;
+      return matchesUser && matchesPass;
+    });
+
     if (user) {
       setCurrentUser(user);
       setIsAuthenticated(true);
@@ -1174,6 +1199,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       return true;
     }
     return false;
+  };
+
+  const loginWithPin = (idOrEmail: string, pin: string) => {
+    return loginWithCredentials(idOrEmail, pin);
   };
 
   const createInvite = (role: UserRole, prefilledAlias?: string) => {
@@ -1290,6 +1319,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         switchUser,
         isAuthenticated,
         logout,
+        loginWithCredentials,
         loginWithPin,
         createInvite,
         redeemInvite,
