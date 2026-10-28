@@ -23,31 +23,31 @@ export const NavigationTabs: React.FC = () => {
   const navItems: Array<{ key: AppViewTab; label: string; icon: React.ReactNode; badge?: number }> = [
     {
       key: 'dashboard',
-      label: '← หน้าหลักแดชบอร์ด',
-      icon: <LayoutDashboard className="w-3.5 h-3.5" />,
+      label: 'หน้าหลักแดชบอร์ด',
+      icon: <i className="fa-solid fa-house text-xs" />,
     },
     {
       key: 'suppliers',
-      label: '🏭 ซัพพลายเออร์',
-      icon: <Factory className="w-3.5 h-3.5 text-emerald-600" />,
+      label: 'ซัพพลายเออร์',
+      icon: <i className="fa-solid fa-industry text-xs text-emerald-600" />,
       badge: suppliers.length,
     },
     {
       key: 'drink_stores',
-      label: '🧋 ร้านน้ำ & เรฟ',
-      icon: <Coffee className="w-3.5 h-3.5 text-amber-600" />,
+      label: 'ร้านน้ำ & เรฟ',
+      icon: <i className="fa-solid fa-mug-hot text-xs text-amber-600" />,
       badge: drinkStores.length,
     },
     {
       key: 'categories',
       label: 'ส่องตามหมวดหมู่',
-      icon: <Layers className="w-3.5 h-3.5 text-indigo-600" />,
+      icon: <i className="fa-solid fa-layer-group text-xs text-indigo-600" />,
       badge: categories.length + storeCategories.length,
     },
     {
       key: 'handoff',
       label: 'บริหารส่งต่อ',
-      icon: <Users className="w-3.5 h-3.5 text-blue-600" />,
+      icon: <i className="fa-solid fa-people-arrows text-xs text-blue-600" />,
     },
     ...(isTopRole
       ? [

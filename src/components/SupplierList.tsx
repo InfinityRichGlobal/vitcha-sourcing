@@ -40,15 +40,15 @@ export const SupplierList: React.FC<SupplierListProps> = ({
     { key: 'scouted', label: '1. สำรวจแล้ว' },
     { key: 'reviewing', label: '2. เทียบสเปก' },
     { key: 'rfq_sent', label: '3. ส่ง RFQ' },
-    { key: 'shortlisted', label: '4. ตัวเต็ง 🔥' },
-    { key: 'ordered', label: '5. สั่งซื้อแล้ว 🎉' },
+    { key: 'shortlisted', label: '4. ตัวเต็ง (Shortlist)' },
+    { key: 'ordered', label: '5. สั่งซื้อแล้ว (Ordered)' },
   ];
 
   const ratingOptions: Array<{ value: number | null; label: string }> = [
     { value: null, label: 'ทุกระดับดาว' },
-    { value: 5, label: '★ 5 ดาวเต็ม' },
-    { value: 4, label: '★ 4+ ดาวขึ้นไป' },
-    { value: 3, label: '★ 3+ ดาวขึ้นไป' },
+    { value: 5, label: '5 ดาวเต็ม' },
+    { value: 4, label: '4+ ดาวขึ้นไป' },
+    { value: 3, label: '3+ ดาวขึ้นไป' },
   ];
 
   const filtered = suppliers.filter((s) => {
@@ -110,20 +110,22 @@ export const SupplierList: React.FC<SupplierListProps> = ({
               <button
                 type="button"
                 onClick={() => setCountryFilter('CN')}
-                className={`px-2 py-1 rounded-md font-bold transition-all ${
+                className={`px-2 py-1 rounded-md font-bold transition-all flex items-center gap-1 ${
                   countryFilter === 'CN' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-600'
                 }`}
               >
-                🇨🇳 จีน
+                <i className="fa-solid fa-location-dot text-[10px] text-rose-500" />
+                <span>จีน</span>
               </button>
               <button
                 type="button"
                 onClick={() => setCountryFilter('TH')}
-                className={`px-2 py-1 rounded-md font-bold transition-all ${
+                className={`px-2 py-1 rounded-md font-bold transition-all flex items-center gap-1 ${
                   countryFilter === 'TH' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-600'
                 }`}
               >
-                🇹🇭 ไทย
+                <i className="fa-solid fa-location-dot text-[10px] text-sky-600" />
+                <span>ไทย</span>
               </button>
             </div>
 
@@ -154,13 +156,14 @@ export const SupplierList: React.FC<SupplierListProps> = ({
                 key={String(opt.value)}
                 type="button"
                 onClick={() => setSelectedRating(opt.value)}
-                className={`px-2.5 py-1 rounded-lg text-[11px] font-bold whitespace-nowrap transition-all border ${
+                className={`px-2.5 py-1 rounded-lg text-[11px] font-bold whitespace-nowrap transition-all border inline-flex items-center gap-1 ${
                   isActive
                     ? 'bg-amber-500 text-slate-950 border-amber-500 shadow-2xs'
                     : 'bg-amber-50/50 text-amber-900 border-amber-200/70 hover:bg-amber-100/70'
                 }`}
               >
-                {opt.label}
+                {opt.value !== null && <i className="fa-solid fa-star text-[9px] text-amber-600" />}
+                <span>{opt.label}</span>
               </button>
             );
           })}
@@ -190,13 +193,20 @@ export const SupplierList: React.FC<SupplierListProps> = ({
             <button
               key={cat}
               onClick={() => setSelectedCategory(cat)}
-              className={`px-3 py-1.5 rounded-lg whitespace-nowrap transition-all font-semibold text-[11px] border ${
+              className={`px-3 py-1.5 rounded-lg whitespace-nowrap transition-all font-semibold text-[11px] border inline-flex items-center gap-1.5 ${
                 selectedCategory === cat
                   ? 'bg-slate-900 text-white border-slate-900 shadow-xs'
                   : 'bg-slate-50 text-slate-600 border-slate-200/70 hover:bg-slate-100'
               }`}
             >
-              {cat === 'all' ? '🏭 ทุกหมวดซัพพลายเออร์' : cat}
+              {cat === 'all' ? (
+                <>
+                  <i className="fa-solid fa-industry text-[10px]" />
+                  <span>ทุกหมวดซัพพลายเออร์</span>
+                </>
+              ) : (
+                cat
+              )}
             </button>
           ))}
         </div>

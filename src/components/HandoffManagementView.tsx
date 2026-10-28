@@ -232,18 +232,23 @@ export const HandoffManagementView: React.FC<HandoffManagementViewProps> = ({ on
           )}
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-1.5 flex-wrap mb-1">
-              <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-slate-100 text-slate-700">
-                {item.country === 'TH' ? '🇹🇭 ไทย' : '🇨🇳 จีน'}
+              <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 inline-flex items-center gap-1">
+                <i className={`fa-solid fa-location-dot text-[9px] ${item.country === 'TH' ? 'text-sky-600' : 'text-rose-500'}`} />
+                <span>{item.country === 'TH' ? 'ไทย' : 'จีน'}</span>
               </span>
               <span
-                className={`text-[10px] font-bold px-2 py-0.5 rounded-md ${
+                className={`text-[10px] font-bold px-2 py-0.5 rounded-md inline-flex items-center gap-1 ${
                   isSupplier
                     ? 'bg-emerald-50 text-emerald-800 border border-emerald-200/70'
                     : 'bg-amber-50 text-amber-800 border border-amber-200/70'
                 }`}
               >
-                {isSupplier ? '🏭 ' : '🧋 '}
-                {subCategory}
+                {isSupplier ? (
+                  <i className="fa-solid fa-industry text-[9px] text-emerald-600" />
+                ) : (
+                  <i className="fa-solid fa-mug-hot text-[9px] text-amber-600" />
+                )}
+                <span>{subCategory}</span>
               </span>
             </div>
 
@@ -263,8 +268,9 @@ export const HandoffManagementView: React.FC<HandoffManagementViewProps> = ({ on
           <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200/70 text-xs space-y-1.5">
             {sup.catalogItems && sup.catalogItems.length > 0 && (
               <div className="flex items-center justify-between gap-2">
-                <span className="font-bold text-slate-800 truncate">
-                  📦 {sup.catalogItems[0].name || 'สินค้าหลัก'}
+                <span className="font-bold text-slate-800 truncate flex items-center gap-1.5">
+                  <i className="fa-solid fa-box-open text-[11px] text-slate-500" />
+                  <span>{sup.catalogItems[0].name || 'สินค้าหลัก'}</span>
                 </span>
                 {sup.catalogItems[0].priceRmb ? (
                   <span className="font-mono font-extrabold text-emerald-700 shrink-0">
@@ -301,8 +307,9 @@ export const HandoffManagementView: React.FC<HandoffManagementViewProps> = ({ on
           <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200/70 text-xs space-y-1.5">
             {st.drinkItems && st.drinkItems.length > 0 && (
               <div className="flex items-center justify-between gap-2">
-                <span className="font-bold text-slate-800 truncate">
-                  🧋 {st.drinkItems[0].name || 'เมนูชิม'}
+                <span className="font-bold text-slate-800 truncate flex items-center gap-1.5">
+                  <i className="fa-solid fa-mug-hot text-[11px] text-amber-600" />
+                  <span>{st.drinkItems[0].name || 'เมนูชิม'}</span>
                 </span>
                 {st.drinkItems[0].fitMenuTarget && (
                   <span className="text-[11px] font-bold text-amber-800 bg-amber-50 px-2 py-0.5 rounded border border-amber-200 truncate max-w-[160px]">
@@ -413,7 +420,10 @@ export const HandoffManagementView: React.FC<HandoffManagementViewProps> = ({ on
               title="แตะเพื่อแก้ไขโน้ตการส่งมอบงาน"
             >
               <div className="text-[11px] font-bold text-slate-500 flex items-center justify-between">
-                <span>📝 บันทึกการรับช่วงต่อ / ผลเจรจา:</span>
+                <span className="flex items-center gap-1.5">
+                  <i className="fa-solid fa-clipboard-check text-emerald-600 text-[11px]" />
+                  <span>บันทึกการรับช่วงต่อ / ผลเจรจา:</span>
+                </span>
                 <span className="text-emerald-700">แก้ไข</span>
               </div>
               <p className="text-xs text-slate-800 mt-0.5">
@@ -507,20 +517,22 @@ export const HandoffManagementView: React.FC<HandoffManagementViewProps> = ({ on
               <button
                 type="button"
                 onClick={() => setPartTab('suppliers')}
-                className={`px-2.5 py-1 rounded-lg font-bold transition-all ${
+                className={`px-2.5 py-1 rounded-lg font-bold transition-all flex items-center gap-1 ${
                   partTab === 'suppliers' ? 'bg-emerald-600 text-white shadow-2xs' : 'text-slate-600'
                 }`}
               >
-                🏭 ซัพ ({suppliers.length})
+                <i className="fa-solid fa-industry text-[10px]" />
+                <span>ซัพ ({suppliers.length})</span>
               </button>
               <button
                 type="button"
                 onClick={() => setPartTab('drink_stores')}
-                className={`px-2.5 py-1 rounded-lg font-bold transition-all ${
+                className={`px-2.5 py-1 rounded-lg font-bold transition-all flex items-center gap-1 ${
                   partTab === 'drink_stores' ? 'bg-amber-600 text-white shadow-2xs' : 'text-slate-600'
                 }`}
               >
-                🧋 ร้านน้ำ ({drinkStores.length})
+                <i className="fa-solid fa-mug-hot text-[10px]" />
+                <span>ร้านน้ำ ({drinkStores.length})</span>
               </button>
             </div>
 
@@ -537,20 +549,22 @@ export const HandoffManagementView: React.FC<HandoffManagementViewProps> = ({ on
               <button
                 type="button"
                 onClick={() => setCountryFilter('CN')}
-                className={`px-2.5 py-1 rounded-lg font-semibold transition-all ${
+                className={`px-2.5 py-1 rounded-lg font-semibold transition-all flex items-center gap-1 ${
                   countryFilter === 'CN' ? 'bg-white text-slate-900 shadow-2xs' : 'text-slate-600'
                 }`}
               >
-                🇨🇳 จีน
+                <i className="fa-solid fa-location-dot text-[10px] text-rose-500" />
+                <span>จีน</span>
               </button>
               <button
                 type="button"
                 onClick={() => setCountryFilter('TH')}
-                className={`px-2.5 py-1 rounded-lg font-semibold transition-all ${
+                className={`px-2.5 py-1 rounded-lg font-semibold transition-all flex items-center gap-1 ${
                   countryFilter === 'TH' ? 'bg-white text-slate-900 shadow-2xs' : 'text-slate-600'
                 }`}
               >
-                🇹🇭 ไทย
+                <i className="fa-solid fa-location-dot text-[10px] text-sky-600" />
+                <span>ไทย</span>
               </button>
             </div>
 

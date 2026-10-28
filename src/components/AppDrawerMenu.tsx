@@ -2,8 +2,6 @@ import React from 'react';
 import { useApp } from '../context/AppContext';
 import {
   X,
-  Factory,
-  Coffee,
   MapPin,
   ShieldCheck,
   Calculator,
@@ -152,12 +150,12 @@ export const AppDrawerMenu: React.FC<AppDrawerMenuProps> = ({
             }`}
           >
             <div className="flex items-center gap-2.5">
-              <Factory
-                className={`w-4 h-4 ${
+              <i
+                className={`fa-solid fa-industry text-xs ${
                   activeTab === 'suppliers' ? 'text-emerald-400' : 'text-emerald-600'
                 }`}
               />
-              <span>🏭 ซัพพลายเออร์</span>
+              <span>ซัพพลายเออร์</span>
             </div>
             <span
               className={`text-[11px] font-mono px-2 py-0.5 rounded-full ${
@@ -183,12 +181,12 @@ export const AppDrawerMenu: React.FC<AppDrawerMenuProps> = ({
             }`}
           >
             <div className="flex items-center gap-2.5">
-              <Coffee
-                className={`w-4 h-4 ${
+              <i
+                className={`fa-solid fa-mug-hot text-xs ${
                   activeTab === 'drink_stores' ? 'text-amber-400' : 'text-amber-600'
                 }`}
               />
-              <span>🧋 ร้านน้ำ & เรฟไอเดีย</span>
+              <span>ร้านน้ำ & เรฟไอเดีย</span>
             </div>
             <span
               className={`text-[11px] font-mono px-2 py-0.5 rounded-full ${
@@ -304,7 +302,7 @@ export const AppDrawerMenu: React.FC<AppDrawerMenuProps> = ({
             >
               <div className="flex items-center gap-2">
                 <Database className="w-4 h-4 text-emerald-600" />
-                <span>✨ โหลดข้อมูล Mockup เต็มระบบ</span>
+                <span>โหลดข้อมูล Mockup เต็มระบบ</span>
               </div>
               <span className="text-[10px] font-mono bg-emerald-200/70 text-emerald-900 px-1.5 py-0.5 rounded">
                 12 รายการ

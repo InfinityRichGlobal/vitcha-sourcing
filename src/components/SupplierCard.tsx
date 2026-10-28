@@ -118,8 +118,9 @@ export const SupplierCard: React.FC<SupplierCardProps> = ({
                 <span className="font-bold text-xs sm:text-[13px] text-slate-900 truncate">
                   {supplier.creator.alias}
                 </span>
-                <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-slate-100 text-slate-700">
-                  {supplier.country === 'TH' ? '🇹🇭 ไทย' : '🇨🇳 จีน'}
+                <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-slate-100 text-slate-700 inline-flex items-center gap-1">
+                  <i className={`fa-solid fa-location-dot text-[9px] ${supplier.country === 'TH' ? 'text-sky-600' : 'text-rose-500'}`} />
+                  <span>{supplier.country === 'TH' ? 'ไทย' : 'จีน'}</span>
                 </span>
               </div>
               <div className="flex items-center gap-1 text-[11px] text-slate-500 mt-0.5 truncate">
@@ -149,8 +150,9 @@ export const SupplierCard: React.FC<SupplierCardProps> = ({
             <span className={`text-[10px] px-2 py-0.5 rounded-md border ${statusConfig.color}`}>
               {statusConfig.label}
             </span>
-            <span className="text-xs font-mono font-bold text-amber-600 bg-amber-50/70 px-2 py-0.5 rounded-md border border-amber-200/60">
-              ★ {supplier.rating || 5}
+            <span className="text-xs font-mono font-bold text-amber-600 bg-amber-50/70 px-2 py-0.5 rounded-md border border-amber-200/60 inline-flex items-center gap-1">
+              <i className="fa-solid fa-star text-[10px] text-amber-500" />
+              <span>{supplier.rating || 5}</span>
             </span>
           </div>
         </div>
@@ -162,8 +164,9 @@ export const SupplierCard: React.FC<SupplierCardProps> = ({
         >
           <div>
             <div className="flex items-center gap-1.5 flex-wrap mb-1">
-              <span className="text-[11px] font-semibold text-emerald-700 bg-emerald-50/70 px-2 py-0.5 rounded-md">
-                🏭 {supplier.category}
+              <span className="text-[11px] font-semibold text-emerald-700 bg-emerald-50/70 px-2 py-0.5 rounded-md inline-flex items-center gap-1">
+                <i className="fa-solid fa-industry text-[10px] text-emerald-600" />
+                <span>{supplier.category}</span>
               </span>
               {supplier.assignedTo && (
                 <span className="inline-flex items-center gap-1 text-[11px] text-slate-600 bg-slate-100 px-2 py-0.5 rounded-md">
@@ -265,7 +268,10 @@ export const SupplierCard: React.FC<SupplierCardProps> = ({
         <div className="px-4 py-2 flex items-center justify-between gap-2 text-[11px] text-slate-500 border-b border-slate-100">
           <div className="flex items-center gap-3 min-w-0">
             {likes.length > 0 && (
-              <span className="text-slate-700 font-medium">👍 {likes.length}</span>
+              <span className="text-slate-700 font-medium inline-flex items-center gap-1">
+                <i className="fa-solid fa-thumbs-up text-blue-600 text-[10px]" />
+                <span>{likes.length}</span>
+              </span>
             )}
             <button
               type="button"

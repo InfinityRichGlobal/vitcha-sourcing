@@ -374,7 +374,7 @@ export const NewSupplierModal: React.FC<NewSupplierModalProps> = ({ isOpen, onCl
                   : 'text-slate-500 hover:text-slate-800'
               }`}
             >
-              <span className="text-sm">🇨🇳</span>
+              <i className="fa-solid fa-location-dot text-rose-500 text-xs" />
               <span>ค้นคว้าในจีน (China)</span>
             </button>
             <button
@@ -391,7 +391,7 @@ export const NewSupplierModal: React.FC<NewSupplierModalProps> = ({ isOpen, onCl
                   : 'text-slate-500 hover:text-slate-800'
               }`}
             >
-              <span className="text-sm">🇹🇭</span>
+              <i className="fa-solid fa-location-dot text-sky-600 text-xs" />
               <span>ค้นคว้าในไทย (Thailand)</span>
             </button>
           </div>
@@ -403,15 +403,15 @@ export const NewSupplierModal: React.FC<NewSupplierModalProps> = ({ isOpen, onCl
                 1. รูปป้ายหน้าร้าน & บรรยากาศ ({storefrontAndAtmosphere.length})
               </span>
               {/* Star Rating */}
-              <div className="flex items-center gap-0.5">
+              <div className="flex items-center gap-1">
                 {[1, 2, 3, 4, 5].map((star) => (
                   <button
                     type="button"
                     key={star}
                     onClick={() => setRating(star)}
-                    className="p-0.5 text-base"
+                    className="p-0.5"
                   >
-                    <span className={star <= rating ? 'text-amber-400' : 'text-slate-200'}>★</span>
+                    <i className={`fa-solid fa-star text-xs ${star <= rating ? 'text-amber-400' : 'text-slate-200'}`} />
                   </button>
                 ))}
               </div>

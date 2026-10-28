@@ -368,8 +368,8 @@ export const DetailModal: React.FC<DetailModalProps> = ({
                     <option value="scouted">1. สำรวจแล้ว</option>
                     <option value="reviewing">2. เทียบสเปก</option>
                     <option value="rfq_sent">3. ส่ง RFQ</option>
-                    <option value="shortlisted">4. ตัวเต็ง 🔥</option>
-                    <option value="ordered">5. สั่งซื้อแล้ว 🎉</option>
+                    <option value="shortlisted">4. ตัวเต็ง (Shortlist)</option>
+                    <option value="ordered">5. สั่งซื้อแล้ว (Ordered)</option>
                   </select>
                 </div>
               )}
@@ -883,7 +883,8 @@ export const DetailModal: React.FC<DetailModalProps> = ({
                     className="px-2.5 py-1 rounded-lg bg-white border border-slate-200 hover:border-blue-400 text-[11px] text-slate-700 whitespace-nowrap active:scale-95 transition-all shadow-xs"
                     title={qm.text}
                   >
-                    ⚡ {qm.title}
+                    <i className="fa-solid fa-bolt text-amber-500 mr-1 text-[10px]" />
+                    <span>{qm.title}</span>
                   </button>
                 ))}
               </div>

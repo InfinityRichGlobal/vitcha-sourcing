@@ -6,16 +6,10 @@ import { SupplierCard } from './SupplierCard';
 import { StoreInspoCard } from './StoreInspoCard';
 import { SupplierRecord, StoreInspoRecord } from '../types';
 import {
-  Factory,
-  Coffee,
-  Flame,
   MessageSquare,
   ArrowUpRight,
   Layers,
-  Users,
   Settings,
-  Zap,
-  MapPin,
   CornerDownRight,
 } from 'lucide-react';
 
@@ -181,35 +175,38 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
           <button
             type="button"
             onClick={() => setCountryFilter('all')}
-            className={`px-2.5 py-1 rounded-lg font-bold transition-all ${
+            className={`px-2.5 py-1 rounded-lg font-bold transition-all flex items-center gap-1 ${
               countryFilter === 'all'
                 ? 'bg-white text-slate-950 shadow-2xs'
                 : 'text-slate-600 hover:text-slate-950'
             }`}
           >
-            ทั้งหมด ({suppliers.length + drinkStores.length})
+            <i className="fa-solid fa-earth-asia text-[10px] text-slate-500" />
+            <span>ทั้งหมด ({suppliers.length + drinkStores.length})</span>
           </button>
           <button
             type="button"
             onClick={() => setCountryFilter('CN')}
-            className={`px-2.5 py-1 rounded-lg font-bold transition-all ${
+            className={`px-2.5 py-1 rounded-lg font-bold transition-all flex items-center gap-1 ${
               countryFilter === 'CN'
                 ? 'bg-white text-slate-950 shadow-2xs'
                 : 'text-slate-600 hover:text-slate-950'
             }`}
           >
-            🇨🇳 จีน ({suppliers.filter((s) => s.country !== 'TH').length + drinkStores.filter((d) => d.country !== 'TH').length})
+            <i className="fa-solid fa-location-dot text-[10px] text-rose-500" />
+            <span>จีน ({suppliers.filter((s) => s.country !== 'TH').length + drinkStores.filter((d) => d.country !== 'TH').length})</span>
           </button>
           <button
             type="button"
             onClick={() => setCountryFilter('TH')}
-            className={`px-2.5 py-1 rounded-lg font-bold transition-all ${
+            className={`px-2.5 py-1 rounded-lg font-bold transition-all flex items-center gap-1 ${
               countryFilter === 'TH'
                 ? 'bg-white text-slate-950 shadow-2xs'
                 : 'text-slate-600 hover:text-slate-950'
             }`}
           >
-            🇹🇭 ไทย ({suppliers.filter((s) => s.country === 'TH').length + drinkStores.filter((d) => d.country === 'TH').length})
+            <i className="fa-solid fa-location-dot text-[10px] text-sky-600" />
+            <span>ไทย ({suppliers.filter((s) => s.country === 'TH').length + drinkStores.filter((d) => d.country === 'TH').length})</span>
           </button>
         </div>
       </div>
@@ -226,8 +223,8 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
           className="group p-3.5 sm:p-4 rounded-2xl bg-white border border-slate-200/90 hover:border-slate-950/40 text-left transition-all shadow-2xs hover:shadow-sm active:scale-[0.99]"
         >
           <div className="flex items-center justify-between mb-1.5">
-            <span className="p-2 rounded-xl bg-emerald-50 text-emerald-700 border border-emerald-200/60">
-              <Factory className="w-4 h-4" />
+            <span className="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-700 border border-emerald-200/60 flex items-center justify-center">
+              <i className="fa-solid fa-industry text-xs" />
             </span>
             <span className="text-[11px] font-bold text-slate-400 group-hover:text-slate-900 flex items-center gap-0.5 transition-colors">
               <span>เปิดดู</span>
@@ -237,7 +234,10 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
           <div className="text-2xl sm:text-3xl font-extrabold text-slate-950 font-mono tracking-tight">
             {totalSuppliers}
           </div>
-          <div className="text-xs font-bold text-slate-800 mt-0.5">🏭 ซัพพลายเออร์</div>
+          <div className="text-xs font-bold text-slate-800 mt-0.5 flex items-center gap-1.5">
+            <i className="fa-solid fa-industry text-[11px] text-emerald-600" />
+            <span>ซัพพลายเออร์</span>
+          </div>
           <div className="text-[11px] text-slate-400 truncate">โรงงาน อุปกรณ์ & วัตถุดิบ</div>
         </button>
 
@@ -247,8 +247,8 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
           className="group p-3.5 sm:p-4 rounded-2xl bg-white border border-slate-200/90 hover:border-slate-950/40 text-left transition-all shadow-2xs hover:shadow-sm active:scale-[0.99]"
         >
           <div className="flex items-center justify-between mb-1.5">
-            <span className="p-2 rounded-xl bg-amber-50 text-amber-700 border border-amber-200/60">
-              <Coffee className="w-4 h-4" />
+            <span className="w-8 h-8 rounded-xl bg-amber-50 text-amber-700 border border-amber-200/60 flex items-center justify-center">
+              <i className="fa-solid fa-mug-hot text-xs" />
             </span>
             <span className="text-[11px] font-bold text-slate-400 group-hover:text-slate-900 flex items-center gap-0.5 transition-colors">
               <span>เปิดดู</span>
@@ -258,7 +258,10 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
           <div className="text-2xl sm:text-3xl font-extrabold text-slate-950 font-mono tracking-tight">
             {totalStores}
           </div>
-          <div className="text-xs font-bold text-slate-800 mt-0.5">🧋 ร้านน้ำ & เรฟเมนู</div>
+          <div className="text-xs font-bold text-slate-800 mt-0.5 flex items-center gap-1.5">
+            <i className="fa-solid fa-mug-hot text-[11px] text-amber-600" />
+            <span>ร้านน้ำ & เรฟเมนู</span>
+          </div>
           <div className="text-[11px] text-slate-400 truncate">รีวิวรสชาติ แก้ว & กิมมิก</div>
         </button>
 
@@ -271,8 +274,8 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
           className="group p-3.5 sm:p-4 rounded-2xl bg-white border border-slate-200/90 hover:border-orange-400 text-left transition-all shadow-2xs hover:shadow-sm active:scale-[0.99]"
         >
           <div className="flex items-center justify-between mb-1.5">
-            <span className="p-2 rounded-xl bg-orange-50 text-orange-600 border border-orange-200/60">
-              <Flame className="w-4 h-4" />
+            <span className="w-8 h-8 rounded-xl bg-orange-50 text-orange-600 border border-orange-200/60 flex items-center justify-center">
+              <i className="fa-solid fa-fire text-xs" />
             </span>
             <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-orange-50 text-orange-700 border border-orange-200/60">
               ตัวเต็งพร้อมดีล
@@ -281,7 +284,10 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
           <div className="text-2xl sm:text-3xl font-extrabold text-slate-950 font-mono tracking-tight">
             {totalShortlisted}
           </div>
-          <div className="text-xs font-bold text-slate-800 mt-0.5">คัดเข้ารอบ (Shortlisted)</div>
+          <div className="text-xs font-bold text-slate-800 mt-0.5 flex items-center gap-1.5">
+            <i className="fa-solid fa-star text-[11px] text-orange-500" />
+            <span>คัดเข้ารอบ (Shortlisted)</span>
+          </div>
           <div className="text-[11px] text-slate-400 truncate">แตะเพื่อดูรายการตัวเต็ง</div>
         </button>
 
@@ -291,8 +297,8 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
           className="group p-3.5 sm:p-4 rounded-2xl bg-white border border-slate-200/90 hover:border-blue-400 text-left transition-all shadow-2xs hover:shadow-sm active:scale-[0.99]"
         >
           <div className="flex items-center justify-between mb-1.5">
-            <span className="p-2 rounded-xl bg-blue-50 text-blue-600 border border-blue-200/60">
-              <Users className="w-4 h-4" />
+            <span className="w-8 h-8 rounded-xl bg-blue-50 text-blue-600 border border-blue-200/60 flex items-center justify-center">
+              <i className="fa-solid fa-people-arrows text-xs" />
             </span>
             <span className="text-[11px] font-bold text-slate-400 group-hover:text-blue-600 flex items-center gap-0.5 transition-colors">
               <span>ไปหน้าส่งต่อ</span>
@@ -302,7 +308,10 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
           <div className="text-2xl sm:text-3xl font-extrabold text-slate-950 font-mono tracking-tight">
             {totalHandoffActive}
           </div>
-          <div className="text-xs font-bold text-slate-800 mt-0.5">งานรับช่วงต่อทีมไทย</div>
+          <div className="text-xs font-bold text-slate-800 mt-0.5 flex items-center gap-1.5">
+            <i className="fa-solid fa-handshake-angle text-[11px] text-blue-600" />
+            <span>งานรับช่วงต่อทีมไทย</span>
+          </div>
           <div className="text-[11px] text-slate-400 truncate">แยกพาร์ท ซัพ & ร้านน้ำเรฟ</div>
         </button>
       </div>
@@ -310,21 +319,26 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
       {/* 3. แผนที่มอนิเตอร์พิกัดสำรวจจริง (Live Map Monitor — แสดงก่อนหน้าโซเชียลฟีด) */}
       <div id="map-section" className="bg-white rounded-2xl border border-slate-200/90 p-4 sm:p-5 shadow-2xs space-y-3">
         <div className="flex items-center justify-between gap-2 flex-wrap">
-          <div className="flex items-center gap-2">
-            <span className="p-2 rounded-xl bg-emerald-50 text-emerald-700 border border-emerald-200/60">
-              <MapPin className="w-4 h-4" />
+          <div className="flex items-center gap-2.5">
+            <span className="w-9 h-9 rounded-xl bg-emerald-50 text-emerald-700 border border-emerald-200/60 flex items-center justify-center shrink-0">
+              <i className="fa-solid fa-map-location-dot text-sm" />
             </span>
             <div>
-              <h3 className="font-extrabold text-sm sm:text-base text-slate-900">
-                🗺️ แผนที่มอนิเตอร์พิกัดจริง (Live Map Monitor)
+              <h3 className="font-extrabold text-sm sm:text-base text-slate-900 flex items-center gap-1.5">
+                <span>แผนที่มอนิเตอร์พิกัดจริง (Live Map Monitor)</span>
               </h3>
-              <p className="text-[11px] text-slate-500">
-                รวมพิกัดทุกซัพพลายเออร์ (ขอบเขียว 🏭) และทุกร้านน้ำเรฟ (ขอบส้ม 🧋) — แตะที่หมุดรูปภาพเพื่อเปิดดูดีเทลทันที
+              <p className="text-[11px] text-slate-500 flex items-center gap-1 flex-wrap">
+                <span>รวมพิกัดทุกซัพพลายเออร์ (ขอบเขียว</span>
+                <i className="fa-solid fa-industry text-[10px] text-emerald-600" />
+                <span>) และทุกร้านน้ำเรฟ (ขอบส้ม</span>
+                <i className="fa-solid fa-mug-hot text-[10px] text-amber-600" />
+                <span>) — แตะที่หมุดรูปภาพเพื่อเปิดดูดีเทลทันที</span>
               </p>
             </div>
           </div>
-          <span className="text-[11px] font-mono font-bold px-2.5 py-1 rounded-full bg-slate-100 text-slate-700 border border-slate-200">
-            พิกัดทั้งหมด {suppliers.length + drinkStores.length} จุด
+          <span className="text-[11px] font-mono font-bold px-2.5 py-1 rounded-full bg-slate-100 text-slate-700 border border-slate-200 flex items-center gap-1">
+            <i className="fa-solid fa-location-crosshairs text-[10px] text-emerald-600" />
+            <span>พิกัดทั้งหมด {suppliers.length + drinkStores.length} จุด</span>
           </span>
         </div>
 
@@ -337,45 +351,53 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
       {/* 4. รายการสำรวจล่าสุด (วางไว้ใต้แผนที่ รูปแบบ Facebook Feed) */}
       <div className="bg-white rounded-2xl border border-slate-200/90 p-4 sm:p-5 shadow-2xs space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2 border-b border-slate-100">
-          <div>
-            <h2 className="font-extrabold text-sm sm:text-base text-slate-950 flex items-center gap-2">
-              <span>📰 ฟีดรายการสำรวจล่าสุด (Social Feed)</span>
-              <span className="text-[11px] font-mono font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200">
-                {combinedFeed.length} โพสต์
-              </span>
-            </h2>
-            <p className="text-xs text-slate-500">
-              กดถูกใจ คอมเมนต์โต้ตอบแบบต่อเนื่อง ดูภาพอัลบั้มทั้งหมด และเช็กสถานะ "อ่านแล้ว" ได้ทันที
-            </p>
+          <div className="flex items-start gap-2.5">
+            <span className="w-9 h-9 rounded-xl bg-slate-100 text-slate-700 border border-slate-200/80 flex items-center justify-center shrink-0 mt-0.5">
+              <i className="fa-solid fa-newspaper text-sm" />
+            </span>
+            <div>
+              <h2 className="font-extrabold text-sm sm:text-base text-slate-950 flex items-center gap-2 flex-wrap">
+                <span>ฟีดรายการสำรวจล่าสุด (Social Feed)</span>
+                <span className="text-[11px] font-mono font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200">
+                  {combinedFeed.length} โพสต์
+                </span>
+              </h2>
+              <p className="text-xs text-slate-500">
+                กดถูกใจ คอมเมนต์โต้ตอบแบบต่อเนื่อง ดูภาพอัลบั้มทั้งหมด และเช็กสถานะ "อ่านแล้ว" ได้ทันที
+              </p>
+            </div>
           </div>
 
           <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl border border-slate-200/80 text-xs self-start sm:self-auto">
             <button
               type="button"
               onClick={() => setFeedFilter('all')}
-              className={`px-2.5 py-1 rounded-lg font-bold transition-all ${
+              className={`px-2.5 py-1 rounded-lg font-bold transition-all flex items-center gap-1 ${
                 feedFilter === 'all' ? 'bg-white text-slate-900 shadow-2xs' : 'text-slate-600'
               }`}
             >
-              ทั้งหมด ({activeSuppliers.length + activeStores.length})
+              <i className="fa-solid fa-layer-group text-[10px]" />
+              <span>ทั้งหมด ({activeSuppliers.length + activeStores.length})</span>
             </button>
             <button
               type="button"
               onClick={() => setFeedFilter('suppliers')}
-              className={`px-2.5 py-1 rounded-lg font-bold transition-all ${
+              className={`px-2.5 py-1 rounded-lg font-bold transition-all flex items-center gap-1 ${
                 feedFilter === 'suppliers' ? 'bg-white text-emerald-800 shadow-2xs' : 'text-slate-600'
               }`}
             >
-              🏭 ซัพ ({activeSuppliers.length})
+              <i className="fa-solid fa-industry text-[10px] text-emerald-600" />
+              <span>ซัพ ({activeSuppliers.length})</span>
             </button>
             <button
               type="button"
               onClick={() => setFeedFilter('drink_stores')}
-              className={`px-2.5 py-1 rounded-lg font-bold transition-all ${
+              className={`px-2.5 py-1 rounded-lg font-bold transition-all flex items-center gap-1 ${
                 feedFilter === 'drink_stores' ? 'bg-white text-amber-800 shadow-2xs' : 'text-slate-600'
               }`}
             >
-              🧋 ร้านน้ำ ({activeStores.length})
+              <i className="fa-solid fa-mug-hot text-[10px] text-amber-600" />
+              <span>ร้านน้ำ ({activeStores.length})</span>
             </button>
           </div>
         </div>
@@ -534,8 +556,9 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
 
             {/* Supplier Categories */}
             <div>
-              <div className="text-[10px] font-bold text-emerald-700 uppercase tracking-wider mb-1.5">
-                🏭 หมวดซัพพลายเออร์ ({categories.length})
+              <div className="text-[10px] font-bold text-emerald-700 uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
+                <i className="fa-solid fa-industry text-[10px]" />
+                <span>หมวดซัพพลายเออร์ ({categories.length})</span>
               </div>
               <div className="grid grid-cols-2 gap-1.5">
                 {categories.slice(0, 4).map((cat) => {
@@ -562,8 +585,9 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
 
             {/* Drink Store Categories */}
             <div>
-              <div className="text-[10px] font-bold text-amber-700 uppercase tracking-wider mb-1.5">
-                🧋 หมวดร้านน้ำ & เรฟ ({storeCategories.length})
+              <div className="text-[10px] font-bold text-amber-700 uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
+                <i className="fa-solid fa-mug-hot text-[10px]" />
+                <span>หมวดร้านน้ำ & เรฟ ({storeCategories.length})</span>
               </div>
               <div className="grid grid-cols-2 gap-1.5">
                 {storeCategories.slice(0, 4).map((cat) => {
@@ -592,8 +616,8 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
           {/* Bottom: Dynamic Quick-Tap Tags */}
           <div className="pt-3 border-t border-slate-100 space-y-2">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-bold text-slate-800 flex items-center gap-1">
-                <Zap className="w-3.5 h-3.5 text-amber-500" />
+              <span className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                <i className="fa-solid fa-bolt text-amber-500 text-xs" />
                 <span>แตะเลือกจุดเด่นทางลัด:</span>
               </span>
               {(currentUser.role === 'admin' || currentUser.role === 'editor') && (
@@ -619,13 +643,14 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
                       setSelectedTag(isSelected ? 'all' : tag);
                       setActiveTab('suppliers');
                     }}
-                    className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-all border ${
+                    className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-all border flex items-center gap-1 ${
                       isSelected
                         ? 'bg-slate-950 text-white border-slate-950'
                         : 'bg-slate-50 hover:bg-slate-100 text-slate-700 border-slate-200/80'
                     }`}
                   >
-                    ✓ {tag}
+                    <i className="fa-solid fa-check text-[9px] text-emerald-600" />
+                    <span>{tag}</span>
                   </button>
                 );
               })}

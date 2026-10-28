@@ -377,7 +377,7 @@ export const NewStoreInspoModal: React.FC<NewStoreInspoModalProps> = ({ isOpen, 
                   : 'text-slate-500 hover:text-slate-800'
               }`}
             >
-              <span className="text-sm">🇨🇳</span>
+              <i className="fa-solid fa-location-dot text-rose-500 text-xs" />
               <span>ค้นคว้าในจีน (China)</span>
             </button>
             <button
@@ -394,7 +394,7 @@ export const NewStoreInspoModal: React.FC<NewStoreInspoModalProps> = ({ isOpen, 
                   : 'text-slate-500 hover:text-slate-800'
               }`}
             >
-              <span className="text-sm">🇹🇭</span>
+              <i className="fa-solid fa-location-dot text-sky-600 text-xs" />
               <span>ค้นคว้าในไทย (Thailand)</span>
             </button>
           </div>
@@ -442,8 +442,9 @@ export const NewStoreInspoModal: React.FC<NewStoreInspoModalProps> = ({ isOpen, 
 
             {/* หมวดหมู่เฉพาะร้านน้ำ & เรฟ */}
             <div className="pt-1">
-              <label className="text-[11px] font-bold text-slate-700 block mb-1.5">
-                🧋 หมวดหมู่ร้านน้ำ & เรฟ (เลือกประเภท):
+              <label className="text-[11px] font-bold text-slate-700 block mb-1.5 flex items-center gap-1.5">
+                <i className="fa-solid fa-mug-hot text-amber-600 text-[10px]" />
+                <span>หมวดหมู่ร้านน้ำ & เรฟ (เลือกประเภท):</span>
               </label>
               <div className="flex flex-wrap gap-1.5">
                 {storeCategories.map((cat) => (

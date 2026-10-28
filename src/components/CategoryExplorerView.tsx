@@ -119,20 +119,22 @@ export const CategoryExplorerView: React.FC<CategoryExplorerViewProps> = ({
               <button
                 type="button"
                 onClick={() => setCountryFilter('CN')}
-                className={`px-2.5 py-1 rounded-lg font-bold transition-all ${
+                className={`px-2.5 py-1 rounded-lg font-bold transition-all flex items-center gap-1 ${
                   countryFilter === 'CN' ? 'bg-white text-slate-900 shadow-2xs' : 'text-slate-600'
                 }`}
               >
-                🇨🇳 จีน
+                <i className="fa-solid fa-location-dot text-[10px] text-rose-500" />
+                <span>จีน</span>
               </button>
               <button
                 type="button"
                 onClick={() => setCountryFilter('TH')}
-                className={`px-2.5 py-1 rounded-lg font-bold transition-all ${
+                className={`px-2.5 py-1 rounded-lg font-bold transition-all flex items-center gap-1 ${
                   countryFilter === 'TH' ? 'bg-white text-slate-900 shadow-2xs' : 'text-slate-600'
                 }`}
               >
-                🇹🇭 ไทย
+                <i className="fa-solid fa-location-dot text-[10px] text-sky-600" />
+                <span>ไทย</span>
               </button>
             </div>
 
@@ -161,8 +163,8 @@ export const CategoryExplorerView: React.FC<CategoryExplorerViewProps> = ({
                   : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
               }`}
             >
-              <Factory className="w-4 h-4 text-emerald-400" />
-              <span>🏭 หมวดหมู่ซัพพลายเออร์ ({categories.length} หมวด · {filteredSuppliers.length} รายการ)</span>
+              <i className="fa-solid fa-industry text-emerald-400" />
+              <span>หมวดหมู่ซัพพลายเออร์ ({categories.length} หมวด · {filteredSuppliers.length} รายการ)</span>
             </button>
 
             <button
@@ -174,8 +176,8 @@ export const CategoryExplorerView: React.FC<CategoryExplorerViewProps> = ({
                   : 'bg-amber-50/50 text-amber-900 border-amber-200 hover:bg-amber-100/60'
               }`}
             >
-              <Coffee className="w-4 h-4" />
-              <span>🧋 หมวดหมู่ร้านน้ำ & เรฟ ({storeCategories.length} หมวด · {filteredStores.length} ร้าน)</span>
+              <i className="fa-solid fa-mug-hot" />
+              <span>หมวดหมู่ร้านน้ำ & เรฟ ({storeCategories.length} หมวด · {filteredStores.length} ร้าน)</span>
             </button>
           </div>
 
@@ -187,21 +189,22 @@ export const CategoryExplorerView: React.FC<CategoryExplorerViewProps> = ({
             </span>
             {[
               { val: null, label: 'ทั้งหมด' },
-              { val: 5, label: '★ 5 ดาว' },
-              { val: 4.5, label: '★ 4.5+' },
-              { val: 4, label: '★ 4+' },
+              { val: 5, label: '5 ดาว' },
+              { val: 4.5, label: '4.5+' },
+              { val: 4, label: '4+' },
             ].map((st) => (
               <button
                 key={String(st.val)}
                 type="button"
                 onClick={() => setSelectedRating(st.val)}
-                className={`px-2.5 py-1 rounded-lg text-[11px] font-bold border transition-all ${
+                className={`px-2.5 py-1 rounded-lg text-[11px] font-bold border transition-all inline-flex items-center gap-1 ${
                   selectedRating === st.val
                     ? 'bg-amber-500 text-slate-950 border-amber-500'
                     : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
                 }`}
               >
-                {st.label}
+                {st.val !== null && <i className="fa-solid fa-star text-[9px] text-amber-600" />}
+                <span>{st.label}</span>
               </button>
             ))}
           </div>
@@ -230,7 +233,10 @@ export const CategoryExplorerView: React.FC<CategoryExplorerViewProps> = ({
                 </span>
               </div>
               <div>
-                <div className="font-bold text-xs sm:text-sm truncate">🏭 ทุกหมวดซัพพลายเออร์</div>
+                <div className="font-bold text-xs sm:text-sm truncate flex items-center gap-1.5">
+                  <i className="fa-solid fa-industry text-xs text-emerald-400" />
+                  <span>ทุกหมวดซัพพลายเออร์</span>
+                </div>
                 <div className="text-[10px] opacity-75 mt-0.5">แสดงแยกตามประเภทซัพพลายเออร์</div>
               </div>
             </button>
@@ -329,8 +335,9 @@ export const CategoryExplorerView: React.FC<CategoryExplorerViewProps> = ({
                 return (
                   <>
                     <div className="flex items-center justify-between">
-                      <h3 className="font-extrabold text-sm sm:text-base text-slate-900">
-                        🏭 หมวดหมู่ซัพพลายเออร์: {activeSupplierCat} ({catItems.length} รายการ)
+                      <h3 className="font-extrabold text-sm sm:text-base text-slate-900 flex items-center gap-1.5">
+                        <i className="fa-solid fa-industry text-xs text-emerald-600" />
+                        <span>หมวดหมู่ซัพพลายเออร์: {activeSupplierCat} ({catItems.length} รายการ)</span>
                       </h3>
                       <button
                         type="button"
@@ -379,7 +386,10 @@ export const CategoryExplorerView: React.FC<CategoryExplorerViewProps> = ({
                 </span>
               </div>
               <div>
-                <div className="font-bold text-xs sm:text-sm truncate">🧋 ทุกหมวดร้านน้ำ & เรฟ</div>
+                <div className="font-bold text-xs sm:text-sm truncate flex items-center gap-1.5">
+                  <i className="fa-solid fa-mug-hot text-xs text-amber-500" />
+                  <span>ทุกหมวดร้านน้ำ & เรฟ</span>
+                </div>
                 <div className="text-[10px] opacity-85 mt-0.5">แยกตามคอนเซปต์และสไตล์ร้านน้ำ</div>
               </div>
             </button>
@@ -478,8 +488,9 @@ export const CategoryExplorerView: React.FC<CategoryExplorerViewProps> = ({
                 return (
                   <>
                     <div className="flex items-center justify-between">
-                      <h3 className="font-extrabold text-sm sm:text-base text-slate-900">
-                        🧋 หมวดหมู่ร้านน้ำ & เรฟ: {activeStoreCat} ({catItems.length} ร้าน)
+                      <h3 className="font-extrabold text-sm sm:text-base text-slate-900 flex items-center gap-1.5">
+                        <i className="fa-solid fa-mug-hot text-xs text-amber-600" />
+                        <span>หมวดหมู่ร้านน้ำ & เรฟ: {activeStoreCat} ({catItems.length} ร้าน)</span>
                       </h3>
                       <button
                         type="button"

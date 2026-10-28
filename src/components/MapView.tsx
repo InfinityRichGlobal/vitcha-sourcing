@@ -109,7 +109,7 @@ export const MapView: React.FC<MapViewProps> = ({
           html: `
             <div style="position: relative; width: 46px; height: 46px; border-radius: 50%; border: 3px solid #059669; box-shadow: 0 4px 14px rgba(0,0,0,0.28); overflow: hidden; background: #fff; cursor: pointer;">
               <img src="${photo}" style="width: 100%; height: 100%; object-fit: cover;" />
-              <div style="position: absolute; bottom: 0; right: 0; width: 17px; height: 17px; border-radius: 50%; background: #059669; border: 1.5px solid #fff; display: flex; align-items: center; justify-content: center; font-size: 9px; color: #fff;">🏭</div>
+              <div style="position: absolute; bottom: 0; right: 0; width: 17px; height: 17px; border-radius: 50%; background: #059669; border: 1.5px solid #fff; display: flex; align-items: center; justify-content: center; font-size: 8px; color: #fff;"><i class="fa-solid fa-industry"></i></div>
             </div>
           `,
           iconSize: [46, 46],
@@ -146,7 +146,7 @@ export const MapView: React.FC<MapViewProps> = ({
           html: `
             <div style="position: relative; width: 46px; height: 46px; border-radius: 50%; border: 3px solid #D97706; box-shadow: 0 4px 14px rgba(0,0,0,0.28); overflow: hidden; background: #fff; cursor: pointer;">
               <img src="${photo}" style="width: 100%; height: 100%; object-fit: cover;" />
-              <div style="position: absolute; bottom: 0; right: 0; width: 17px; height: 17px; border-radius: 50%; background: #D97706; border: 1.5px solid #fff; display: flex; align-items: center; justify-content: center; font-size: 9px; color: #fff;">🧋</div>
+              <div style="position: absolute; bottom: 0; right: 0; width: 17px; height: 17px; border-radius: 50%; background: #D97706; border: 1.5px solid #fff; display: flex; align-items: center; justify-content: center; font-size: 8px; color: #fff;"><i class="fa-solid fa-mug-hot"></i></div>
             </div>
           `,
           iconSize: [46, 46],
@@ -263,35 +263,38 @@ export const MapView: React.FC<MapViewProps> = ({
           <button
             type="button"
             onClick={() => setRegionFocus('CN')}
-            className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all ${
+            className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all flex items-center gap-1 ${
               regionFocus === 'CN'
                 ? 'bg-rose-600 text-white shadow-xs'
                 : 'text-slate-700 hover:bg-slate-100'
             }`}
           >
-            🇨🇳 โซนจีน (กวางโจว/เซินเจิ้น)
+            <i className="fa-solid fa-location-dot text-[10px]" />
+            <span>โซนจีน (กวางโจว/เซินเจิ้น)</span>
           </button>
           <button
             type="button"
             onClick={() => setRegionFocus('TH')}
-            className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all ${
+            className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all flex items-center gap-1 ${
               regionFocus === 'TH'
                 ? 'bg-sky-600 text-white shadow-xs'
                 : 'text-slate-700 hover:bg-slate-100'
             }`}
           >
-            🇹🇭 โซนไทย (กทม.)
+            <i className="fa-solid fa-location-dot text-[10px]" />
+            <span>โซนไทย (กทม.)</span>
           </button>
           <button
             type="button"
             onClick={() => setRegionFocus('ALL')}
-            className={`px-2 py-1 rounded-lg text-[11px] font-bold transition-all ${
+            className={`px-2 py-1 rounded-lg text-[11px] font-bold transition-all flex items-center gap-1 ${
               regionFocus === 'ALL'
                 ? 'bg-slate-900 text-white shadow-xs'
                 : 'text-slate-700 hover:bg-slate-100'
             }`}
           >
-            🌏 รวม
+            <i className="fa-solid fa-earth-asia text-[10px]" />
+            <span>รวม</span>
           </button>
         </div>
 
@@ -303,13 +306,23 @@ export const MapView: React.FC<MapViewProps> = ({
           <div className="absolute bottom-3 left-3 right-3 sm:left-auto sm:right-3 sm:w-88 z-[450] bg-white/95 backdrop-blur-md border border-slate-200 rounded-xl p-3.5 shadow-lg animate-in slide-in-from-bottom-2">
             <div className="flex items-start justify-between gap-2 mb-2">
               <span
-                className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                className={`text-[10px] font-bold px-2 py-0.5 rounded-full inline-flex items-center gap-1 ${
                   selectedPin.type === 'supplier'
                     ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
                     : 'bg-amber-50 text-amber-800 border border-amber-200'
                 }`}
               >
-                {selectedPin.type === 'supplier' ? '🏭 ซัพพลายเออร์' : '🧋 เรฟร้านน้ำ'}
+                {selectedPin.type === 'supplier' ? (
+                  <>
+                    <i className="fa-solid fa-industry text-[9px] text-emerald-600" />
+                    <span>ซัพพลายเออร์</span>
+                  </>
+                ) : (
+                  <>
+                    <i className="fa-solid fa-mug-hot text-[9px] text-amber-600" />
+                    <span>เรฟร้านน้ำ</span>
+                  </>
+                )}
               </span>
               <button
                 onClick={() => setSelectedPin(null)}
@@ -385,14 +398,20 @@ export const MapView: React.FC<MapViewProps> = ({
             key={p.id}
             type="button"
             onClick={() => handleFlyToItem(p)}
-            className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold border whitespace-nowrap transition-all flex items-center gap-1 shrink-0 ${
+            className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold border whitespace-nowrap transition-all flex items-center gap-1.5 shrink-0 ${
               selectedPin?.data.id === p.id
                 ? 'bg-slate-900 text-white border-slate-900 shadow-2xs'
                 : 'bg-white text-slate-700 border-slate-200/90 hover:border-slate-400'
             }`}
           >
-            <span>{p.country === 'TH' ? '🇹🇭' : '🇨🇳'}</span>
-            <span>{p.type === 'supplier' ? '🏭' : '🧋'}</span>
+            <span className="text-[9px] font-mono font-bold px-1 py-0.2 rounded bg-slate-100 text-slate-600">
+              {p.country === 'TH' ? 'TH' : 'CN'}
+            </span>
+            {p.type === 'supplier' ? (
+              <i className="fa-solid fa-industry text-[10px] text-emerald-600" />
+            ) : (
+              <i className="fa-solid fa-mug-hot text-[10px] text-amber-600" />
+            )}
             <span className="max-w-[160px] truncate">{p.title}</span>
           </button>
         ))}
