@@ -26,6 +26,19 @@ import {
   INITIAL_QUICK_TAGS,
   INITIAL_QUICK_MESSAGES,
 } from '../utils/seedData';
+import {
+  isFirebaseConfigured,
+  subscribeCloudSuppliers,
+  subscribeCloudDrinkStores,
+  subscribeCloudUsers,
+  subscribeCloudInvites,
+  saveSupplierToCloud,
+  deleteSupplierFromCloud,
+  saveStoreToCloud,
+  deleteStoreFromCloud,
+  saveUserToCloud,
+  saveInviteToCloud,
+} from '../services/firebase';
 
 interface AppContextType {
   currentUser: User;
@@ -408,6 +421,38 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   useEffect(() => {
     safeSetLocalStorage('vitcha_quick_messages_v5', JSON.stringify(quickMessages));
   }, [quickMessages]);
+
+  // Real-time Cloud Synchronization with Firebase Firestore
+  useEffect(() => {
+    if (!isFirebaseConfigured()) return;
+
+    const unsubSuppliers = subscribeCloudSuppliers((cloudSuppliers) => {
+      setSuppliers(normalizeSuppliers(cloudSuppliers));
+      safeSetLocalStorage('vitcha_suppliers_v5', JSON.stringify(cloudSuppliers));
+    });
+
+    const unsubStores = subscribeCloudDrinkStores((cloudStores) => {
+      setDrinkStores(normalizeStores(cloudStores));
+      safeSetLocalStorage('vitcha_drink_stores_v5', JSON.stringify(cloudStores));
+    });
+
+    const unsubUsers = subscribeCloudUsers((cloudUsers) => {
+      setUsers(cloudUsers);
+      safeSetLocalStorage('vitcha_users_v5', JSON.stringify(cloudUsers));
+    });
+
+    const unsubInvites = subscribeCloudInvites((cloudInvites) => {
+      setInvites(cloudInvites);
+      safeSetLocalStorage('vitcha_invites_v5', JSON.stringify(cloudInvites));
+    });
+
+    return () => {
+      unsubSuppliers?.();
+      unsubStores?.();
+      unsubUsers?.();
+      unsubInvites?.();
+    };
+  }, []);
 
   // Push / Real-time In-App Notifications
   const [notifications, setNotifications] = useState<AppNotification[]>(() => {
@@ -931,6 +976,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     };
 
     setSuppliers([newRecord, ...suppliers]);
+    saveSupplierToCloud(newRecord);
     if (syncStatus === 'offline') {
       setPendingSyncCount((prev) => prev + 1);
     }
@@ -946,28 +992,30 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const updateSupplier = (id: string, updates: Partial<SupplierRecord>) => {
-    setSuppliers(
-      suppliers.map((s) => {
-        if (s.id !== id) return s;
-        return {
-          ...s,
-          ...updates,
-          history: [
-            ...s.history,
-            {
-              action: `อัปเดตข้อมูล`,
-              user: currentUser.alias,
-              timestamp: new Date().toISOString(),
-            },
-          ],
-          updatedAt: new Date().toISOString(),
-        };
-      })
-    );
+    const nextSuppliers = suppliers.map((s) => {
+      if (s.id !== id) return s;
+      return {
+        ...s,
+        ...updates,
+        history: [
+          ...s.history,
+          {
+            action: `อัปเดตข้อมูล`,
+            user: currentUser.alias,
+            timestamp: new Date().toISOString(),
+          },
+        ],
+        updatedAt: new Date().toISOString(),
+      };
+    });
+    setSuppliers(nextSuppliers);
+    const target = nextSuppliers.find((s) => s.id === id);
+    if (target) saveSupplierToCloud(target);
   };
 
   const deleteSupplier = (id: string) => {
     setSuppliers(suppliers.filter((s) => s.id !== id));
+    deleteSupplierFromCloud(id);
   };
 
   // Store Inspo CRUD
@@ -1010,6 +1058,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     };
 
     setDrinkStores([newRecord, ...drinkStores]);
+    saveStoreToCloud(newRecord);
     if (syncStatus === 'offline') {
       setPendingSyncCount((prev) => prev + 1);
     }
@@ -1025,28 +1074,30 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const updateStoreInspo = (id: string, updates: Partial<StoreInspoRecord>) => {
-    setDrinkStores(
-      drinkStores.map((s) => {
-        if (s.id !== id) return s;
-        return {
-          ...s,
-          ...updates,
-          history: [
-            ...s.history,
-            {
-              action: `อัปเดตข้อมูล`,
-              user: currentUser.alias,
-              timestamp: new Date().toISOString(),
-            },
-          ],
-          updatedAt: new Date().toISOString(),
-        };
-      })
-    );
+    const nextStores = drinkStores.map((s) => {
+      if (s.id !== id) return s;
+      return {
+        ...s,
+        ...updates,
+        history: [
+          ...s.history,
+          {
+            action: `อัปเดตข้อมูล`,
+            user: currentUser.alias,
+            timestamp: new Date().toISOString(),
+          },
+        ],
+        updatedAt: new Date().toISOString(),
+      };
+    });
+    setDrinkStores(nextStores);
+    const target = nextStores.find((s) => s.id === id);
+    if (target) saveStoreToCloud(target);
   };
 
   const deleteStoreInspo = (id: string) => {
     setDrinkStores(drinkStores.filter((s) => s.id !== id));
+    deleteStoreFromCloud(id);
   };
 
   // Reviewer Note (หากเราพิมคอมเม้นเอง ไม่ต้องเด้งแจ้งเตือนเรา - suppressToast = true)
@@ -1232,6 +1283,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     safeSetLocalStorage('vitcha_current_user_v5', JSON.stringify(updated));
     safeSetLocalStorage('vitcha_users_v5', JSON.stringify(nextUsers));
+    saveUserToCloud(updated);
 
     // Propagate updated profile picture and alias across existing posts, viewedBy logs, and comments
     setSuppliers((prev) =>
@@ -1371,6 +1423,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const nextInvites = [newInvite, ...invites];
     setInvites(nextInvites);
     safeSetLocalStorage('vitcha_invites_v5', JSON.stringify(nextInvites));
+    saveInviteToCloud(newInvite);
     return newInvite;
   };
 
@@ -1441,6 +1494,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     safeSetLocalStorage('vitcha_authenticated_session', 'true');
     safeSetLocalStorage('vitcha_current_user_v5', JSON.stringify(finalUser));
     safeSetLocalStorage('vitcha_users_v5', JSON.stringify(nextUsers));
+    saveUserToCloud(finalUser);
     return finalUser;
   };
 

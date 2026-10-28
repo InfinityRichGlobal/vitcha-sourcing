@@ -2,6 +2,12 @@ import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
 import { UserRole } from '../types';
 import {
+  getSavedFirebaseConfig,
+  saveFirebaseConfig,
+  removeFirebaseConfig,
+  FirebaseConfig,
+} from '../services/firebase';
+import {
   Settings,
   Plus,
   Trash2,
@@ -18,6 +24,9 @@ import {
   Coffee,
   Database,
   RotateCcw,
+  Cloud,
+  Server,
+  Flame,
 } from 'lucide-react';
 
 export const SettingsManagementView: React.FC = () => {
@@ -79,6 +88,12 @@ export const SettingsManagementView: React.FC = () => {
   const [inviteAlias, setInviteAlias] = useState('');
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
+  // Firebase Cloud Server states
+  const [firebaseConfig, setFirebaseConfig] = useState<FirebaseConfig | null>(() => getSavedFirebaseConfig());
+  const [configJsonInput, setConfigJsonInput] = useState('');
+  const [showConfigForm, setShowConfigForm] = useState(false);
+  const [firebaseStatusMsg, setFirebaseStatusMsg] = useState<string | null>(null);
+
   if (!hasPermission) {
     return (
       <div className="max-w-4xl mx-auto px-4 py-12 text-center space-y-3">
@@ -95,6 +110,57 @@ export const SettingsManagementView: React.FC = () => {
       </div>
     );
   }
+
+  const handleSaveFirebaseConfig = (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      let parsed: any;
+      if (configJsonInput.trim().startsWith('{')) {
+        parsed = JSON.parse(configJsonInput);
+      } else {
+        const lines = configJsonInput.split('\n');
+        parsed = {};
+        lines.forEach((line) => {
+          const [k, v] = line.split(':');
+          if (k && v) {
+            const key = k.trim().replace(/['",]/g, '');
+            const val = v.trim().replace(/['",]/g, '');
+            parsed[key] = val;
+          }
+        });
+      }
+
+      const cleanConfig: FirebaseConfig = {
+        apiKey: parsed.apiKey || '',
+        authDomain: parsed.authDomain || '',
+        projectId: parsed.projectId || '',
+        storageBucket: parsed.storageBucket || '',
+        messagingSenderId: parsed.messagingSenderId || '',
+        appId: parsed.appId || '',
+      };
+
+      if (!cleanConfig.projectId || !cleanConfig.apiKey) {
+        alert('กรุณากรอก apiKey และ projectId ให้ถูกต้อง');
+        return;
+      }
+
+      saveFirebaseConfig(cleanConfig);
+      setFirebaseConfig(cleanConfig);
+      setShowConfigForm(false);
+      setFirebaseStatusMsg('เชื่อมต่อ Firebase Firestore สำเร็จ! ระบบกำลังซิงค์ข้อมูลกับเซิร์ฟเวอร์...');
+      setTimeout(() => window.location.reload(), 1200);
+    } catch {
+      alert('รูปแบบ Firebase Config ไม่ถูกต้อง กรุณาคัดลอก JSON มาวาง');
+    }
+  };
+
+  const handleDisconnectFirebase = () => {
+    if (window.confirm('ยืนยันตัดการเชื่อมต่อกับ Firebase หรือไม่?')) {
+      removeFirebaseConfig();
+      setFirebaseConfig(null);
+      window.location.reload();
+    }
+  };
 
   const handleAddCategory = (e: React.FormEvent) => {
     e.preventDefault();
@@ -296,6 +362,117 @@ export const SettingsManagementView: React.FC = () => {
             <span>ล้างข้อมูลว่างเปล่า (เริ่มจริง)</span>
           </button>
         </div>
+      </div>
+
+      {/* Cloud Server Database Card (Google Firebase Firestore) */}
+      <div className="bg-white p-4 sm:p-5 rounded-2xl border-2 border-emerald-500/30 shadow-sm space-y-3.5">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+          <div className="flex items-center gap-2.5">
+            <div className="w-9 h-9 rounded-xl bg-amber-500/10 text-amber-600 flex items-center justify-center shrink-0">
+              <Flame className="w-5 h-5 text-amber-500" />
+            </div>
+            <div>
+              <h3 className="font-extrabold text-sm sm:text-base text-slate-900 flex items-center gap-1.5">
+                <span>เซิร์ฟเวอร์ฐานข้อมูลกลาง (Google Firebase Firestore)</span>
+              </h3>
+              <p className="text-[11px] text-slate-500">
+                ระบบเซิร์ฟเวอร์คลาวด์สำหรับซิงค์ข้อมูล Real-time ตรงกันทุกเครื่อง ทั้งมือถือ คอมพิวเตอร์ และสมาชิกทีม
+              </p>
+            </div>
+          </div>
+
+          <div>
+            {firebaseConfig ? (
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-bold">
+                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                <span>เชื่อมต่อ Cloud สำเร็จ: {firebaseConfig.projectId}</span>
+              </span>
+            ) : (
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-50 border border-amber-200 text-amber-800 text-xs font-bold">
+                <span className="w-2 h-2 rounded-full bg-amber-500" />
+                <span>โหมดออฟไลน์ (ยังไม่ได้ต่อ Cloud)</span>
+              </span>
+            )}
+          </div>
+        </div>
+
+        {firebaseStatusMsg && (
+          <div className="p-3 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-xl text-xs font-semibold">
+            {firebaseStatusMsg}
+          </div>
+        )}
+
+        {firebaseConfig ? (
+          <div className="bg-slate-50 p-3.5 rounded-xl border border-slate-200/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+            <div className="space-y-0.5">
+              <div className="font-bold text-slate-800">
+                สถานะการทำงาน: ข้อมูลบันทึกยิงตรงเข้าเซิร์ฟเวอร์ Google Firebase ทันที
+              </div>
+              <div className="text-slate-500 text-[11px]">
+                Project ID: <span className="font-mono font-bold text-slate-700">{firebaseConfig.projectId}</span> · Auth Domain: <span className="font-mono text-slate-700">{firebaseConfig.authDomain || '-'}</span>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={handleDisconnectFirebase}
+              className="px-3 py-1.5 rounded-lg bg-white border border-rose-200 hover:bg-rose-50 text-rose-600 font-bold text-xs shrink-0 transition-colors"
+            >
+              ตัดการเชื่อมต่อ Cloud
+            </button>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <p className="text-xs text-slate-600">
+                คัดลอกค่า Firebase Config จาก Firebase Console มาวาง เพื่อเชื่อมต่อเซิร์ฟเวอร์กลางทันที
+              </p>
+              <button
+                type="button"
+                onClick={() => setShowConfigForm(!showConfigForm)}
+                className="px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold shrink-0 transition-all"
+              >
+                {showConfigForm ? 'ซ่อนแบบฟอร์ม' : '+ เชื่อมต่อ Firebase Project'}
+              </button>
+            </div>
+
+            {showConfigForm && (
+              <form onSubmit={handleSaveFirebaseConfig} className="p-4 bg-slate-50 rounded-xl border border-slate-200/90 space-y-3 animate-in fade-in">
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-slate-700 block">
+                    วาง Firebase Config (JSON หรือตัวแปร) *
+                  </label>
+                  <textarea
+                    rows={5}
+                    placeholder={`{\n  "apiKey": "AIzaSy...",\n  "authDomain": "vitcha-china.firebaseapp.com",\n  "projectId": "vitcha-china",\n  "storageBucket": "vitcha-china.firebasestorage.app"\n}`}
+                    value={configJsonInput}
+                    onChange={(e) => setConfigJsonInput(e.target.value)}
+                    className="w-full bg-white border border-slate-300 rounded-xl p-3 font-mono text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                    required
+                  />
+                  <p className="text-[10px] text-slate-400">
+                    วิธีดู: เข้า console.firebase.google.com &gt; Project settings &gt; General &gt; Your apps &gt; SDK setup and configuration &gt; Config
+                  </p>
+                </div>
+
+                <div className="flex justify-end gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setShowConfigForm(false)}
+                    className="px-3 py-1.5 rounded-lg text-xs font-bold text-slate-500 hover:text-slate-700"
+                  >
+                    ยกเลิก
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-sm transition-all"
+                  >
+                    บันทึกและเชื่อมต่อ Cloud ทันที
+                  </button>
+                </div>
+              </form>
+            )}
+          </div>
+        )}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
