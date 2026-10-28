@@ -4,6 +4,7 @@ import { DrinkDetailItem, VoiceNoteEntry } from '../types';
 import { AudioRecorder } from './AudioRecorder';
 import { getItemVoiceNotes } from '../utils/audioHelper';
 import { compressImageFile } from '../utils/imageCompressor';
+import { readVideoFile } from '../utils/mediaStorage';
 import {
   X,
   Camera,
@@ -57,10 +58,12 @@ export const NewStoreInspoModal: React.FC<NewStoreInspoModalProps> = ({ isOpen, 
   const [mainVoiceSec, setMainVoiceSec] = useState<number>(0);
   const [mainVoiceNotes, setMainVoiceNotes] = useState<VoiceNoteEntry[]>([]);
 
-  // Photos
+  // Photos & Videos
   const [storefrontAndAtmosphere, setStorefrontAndAtmosphere] = useState<string[]>([]);
   const [menuBoardPhotos, setMenuBoardPhotos] = useState<string[]>([]);
   const [drinkCupPhotos, setDrinkCupPhotos] = useState<string[]>([]);
+  const [videos, setVideos] = useState<string[]>([]);
+  const [isVideoLoading, setIsVideoLoading] = useState(false);
 
   // Drink Items
   const [drinkItems, setDrinkItems] = useState<DrinkDetailItem[]>([]);
@@ -94,6 +97,7 @@ export const NewStoreInspoModal: React.FC<NewStoreInspoModalProps> = ({ isOpen, 
       setStorefrontAndAtmosphere(editingStore.photos?.storefrontAndAtmosphere || []);
       setMenuBoardPhotos(editingStore.photos?.menuBoard || []);
       setDrinkCupPhotos(editingStore.photos?.drinkCups || []);
+      setVideos(editingStore.videos || []);
       setDrinkItems(editingStore.drinkItems || []);
       setLat(editingStore.location?.lat || 23.1322);
       setLng(editingStore.location?.lng || 113.3274);
@@ -119,6 +123,7 @@ export const NewStoreInspoModal: React.FC<NewStoreInspoModalProps> = ({ isOpen, 
       setStorefrontAndAtmosphere([]);
       setMenuBoardPhotos([]);
       setDrinkCupPhotos([]);
+      setVideos([]);
       setDrinkItems([]);
       setLat(23.1322);
       setLng(113.3274);
@@ -145,6 +150,25 @@ export const NewStoreInspoModal: React.FC<NewStoreInspoModalProps> = ({ isOpen, 
         setter((prev) => [...prev, compressed]);
       }
     });
+  };
+
+  const handleVideoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+    setIsVideoLoading(true);
+    try {
+      for (const file of Array.from(files)) {
+        const videoData = await readVideoFile(file);
+        if (videoData) {
+          setVideos((prev) => [...prev, videoData]);
+        }
+      }
+    } catch (err: any) {
+      alert(err.message || 'ไม่สามารถอัปโหลดวิดีโอได้');
+    } finally {
+      setIsVideoLoading(false);
+      e.target.value = '';
+    }
   };
 
   const handleMassDrinkUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -255,6 +279,7 @@ export const NewStoreInspoModal: React.FC<NewStoreInspoModalProps> = ({ isOpen, 
           menuBoard: menuBoardPhotos,
           drinkCups: drinkCupPhotos,
         },
+        videos,
         ratings: {
           taste: tasteRating,
           aesthetics: aestheticsRating,
@@ -291,6 +316,7 @@ export const NewStoreInspoModal: React.FC<NewStoreInspoModalProps> = ({ isOpen, 
           menuBoard: menuBoardPhotos,
           drinkCups: drinkCupPhotos,
         },
+        videos,
         ratings: {
           taste: tasteRating,
           aesthetics: aestheticsRating,
@@ -710,6 +736,62 @@ export const NewStoreInspoModal: React.FC<NewStoreInspoModalProps> = ({ isOpen, 
                 />
               </label>
             </div>
+          </div>
+
+          {/* Section: Videos (คลิปวิดีโอบรรยากาศร้าน & การชงเครื่องดื่ม) */}
+          <div className="bg-slate-50/80 p-4 rounded-2xl border border-slate-100 space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                <i className="fa-solid fa-video text-purple-600" />
+                <span>คลิปวิดีโอบรรยากาศร้าน & การชงเครื่องดื่ม ({videos.length})</span>
+              </span>
+              <span className="text-[10px] text-slate-400">อัปโหลดจากมือถือ / ถ่ายวิดีโอสด</span>
+            </div>
+
+            {/* Video preview cards */}
+            {videos.length > 0 && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 py-1">
+                {videos.map((v, i) => (
+                  <div key={i} className="relative rounded-xl overflow-hidden bg-black border border-slate-200 shadow-xs group">
+                    <video
+                      src={v}
+                      controls
+                      playsInline
+                      className="w-full h-36 object-cover bg-black"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setVideos((prev) => prev.filter((_, idx) => idx !== i))}
+                      className="absolute top-2 right-2 w-6 h-6 rounded-full bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold flex items-center justify-center shadow-md transition-all"
+                      title="ลบคลิปนี้"
+                    >
+                      ×
+                    </button>
+                    <div className="absolute bottom-2 left-2 px-2 py-0.5 rounded-md bg-black/70 text-white text-[10px] font-mono">
+                      คลิป #{i + 1}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Video Upload Button */}
+            <label className="flex items-center justify-center gap-2 py-2.5 px-4 bg-white border border-slate-200 hover:border-purple-500 rounded-xl text-xs font-semibold text-slate-700 cursor-pointer shadow-sm active:scale-[0.99] transition-all">
+              <i className="fa-solid fa-video text-purple-600" />
+              <span>
+                {isVideoLoading
+                  ? 'กำลังประมวลผลคลิปวิดีโอ...'
+                  : '+ เลือกคลิปวิดีโอจากอัลบั้ม / ถ่ายคลิปวิดีโอใหม่ (Video)'}
+              </span>
+              <input
+                type="file"
+                accept="video/*"
+                multiple
+                disabled={isVideoLoading}
+                onChange={handleVideoUpload}
+                className="hidden"
+              />
+            </label>
           </div>
 
           {/* Section 4: Mass Drink Upload */}

@@ -45,6 +45,8 @@ export const SettingsManagementView: React.FC = () => {
     createInvite,
     loadFullMockupData,
     resetSystemData,
+    suppliers,
+    drinkStores,
   } = useApp();
 
   // Top 2 roles permission check: Admin & Editor
@@ -129,6 +131,51 @@ export const SettingsManagementView: React.FC = () => {
     setNewQuickTag('');
   };
 
+  const handleExportJson = () => {
+    const backupData = {
+      suppliers,
+      drinkStores,
+      categories,
+      storeCategories,
+      quickTagsList,
+      quickMessages,
+      users,
+      invites,
+      exportedAt: new Date().toISOString(),
+    };
+    const blob = new Blob([JSON.stringify(backupData, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `vitcha_backup_${new Date().toISOString().slice(0, 10)}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const handleImportJson = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      try {
+        const data = JSON.parse(event.target?.result as string);
+        if (data.suppliers) localStorage.setItem('vitcha_suppliers_v5', JSON.stringify(data.suppliers));
+        if (data.drinkStores) localStorage.setItem('vitcha_drink_stores_v5', JSON.stringify(data.drinkStores));
+        if (data.users) localStorage.setItem('vitcha_users_v5', JSON.stringify(data.users));
+        if (data.invites) localStorage.setItem('vitcha_invites_v5', JSON.stringify(data.invites));
+        if (data.categories) localStorage.setItem('vitcha_categories_v5', JSON.stringify(data.categories));
+        if (data.storeCategories) localStorage.setItem('vitcha_store_categories_v5', JSON.stringify(data.storeCategories));
+        if (data.quickTagsList) localStorage.setItem('vitcha_quick_tags_v5', JSON.stringify(data.quickTagsList));
+        if (data.quickMessages) localStorage.setItem('vitcha_quick_messages_v5', JSON.stringify(data.quickMessages));
+        alert('นำเข้าข้อมูลสำเร็จ! ระบบจะรีเฟรชเพื่อโหลดข้อมูลใหม่');
+        window.location.reload();
+      } catch {
+        alert('ไฟล์ข้อมูลไม่ถูกต้อง');
+      }
+    };
+    reader.readAsText(file);
+  };
+
   const handleSaveTagEdit = (oldTag: string) => {
     if (editTagValue.trim() && editTagValue.trim() !== oldTag) {
       editQuickTag(oldTag, editTagValue.trim());
@@ -190,6 +237,30 @@ export const SettingsManagementView: React.FC = () => {
 
         {/* Mockup Load & Reset System Buttons ("จำลองข้อมูล mockup แบบเต็ม กับ ปุ่ม reset ข้อมูลทั้งระบบ") */}
         <div className="flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            onClick={handleExportJson}
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-200 text-xs font-bold active:scale-95 transition-all"
+            title="ดาวน์โหลดไฟล์สำรองข้อมูลทั้งหมด เพื่อนำไปเปิดในเครื่องอื่น"
+          >
+            <i className="fa-solid fa-download text-xs text-purple-600" />
+            <span>💾 สำรองข้อมูล (.json)</span>
+          </button>
+
+          <label
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 text-xs font-bold active:scale-95 transition-all cursor-pointer"
+            title="นำเข้าไฟล์สำรองข้อมูลที่ดาวน์โหลดมาจากเครื่องอื่น"
+          >
+            <i className="fa-solid fa-upload text-xs text-blue-600" />
+            <span>📥 นำเข้าข้อมูลสำรอง</span>
+            <input
+              type="file"
+              accept=".json"
+              onChange={handleImportJson}
+              className="hidden"
+            />
+          </label>
+
           <button
             type="button"
             onClick={loadFullMockupData}

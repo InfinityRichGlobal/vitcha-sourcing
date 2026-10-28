@@ -67,12 +67,12 @@ export const INITIAL_QUICK_MESSAGES: QuickMessageTemplate[] = [
 export const INITIAL_USERS: User[] = [
   {
     id: 'user-ice',
-    name: 'Ice (ผู้ก่อตั้ง)',
-    alias: 'Ice (Admin)',
+    name: 'Ice (SuperiCez - ผู้ก่อตั้ง)',
+    alias: 'SuperiCez',
     role: 'admin',
     avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
     pin: '1234',
-    emailOrId: 'ice@vitcha.com',
+    emailOrId: 'supericez',
     createdAt: '2026-10-26T10:00:00Z',
   },
   {
@@ -134,6 +134,9 @@ export const INITIAL_SUPPLIERS: SupplierRecord[] = [
         'https://images.unsplash.com/photo-1589829545856-d10d557cf95f?w=800&auto=format&fit=crop&q=80',
       ],
     },
+    videos: [
+      'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
+    ],
     catalogItems: [
       {
         id: 'cat-1-1',
@@ -565,6 +568,9 @@ export const INITIAL_DRINK_STORES: StoreInspoRecord[] = [
         'https://images.unsplash.com/photo-1576092768241-dec231879fc3?w=800&auto=format&fit=crop&q=80',
       ],
     },
+    videos: [
+      'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
+    ],
     ratings: {
       taste: 5,
       aesthetics: 5,
@@ -705,6 +711,9 @@ export const INITIAL_DRINK_STORES: StoreInspoRecord[] = [
         'https://images.unsplash.com/photo-1576092768241-dec231879fc3?w=800&auto=format&fit=crop&q=80',
       ],
     },
+    videos: [
+      'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
+    ],
     ratings: {
       taste: 5,
       aesthetics: 5,
@@ -860,13 +869,22 @@ export const INITIAL_DRINK_STORES: StoreInspoRecord[] = [
 
 export const INITIAL_INVITES: InviteLink[] = [
   {
+    id: 'inv-rkbqs',
+    code: 'VITCHA-RKBQS',
+    role: 'reviewer',
+    prefilledAlias: 'ทีมงานปฏิบัติการ VITCHA',
+    isUsed: false,
+    createdAt: '2026-10-28T00:00:00Z',
+    createdBy: 'SuperiCez (ผู้ก่อตั้ง)',
+  },
+  {
     id: 'inv-1',
     code: 'VITCHA-TH-REV',
     role: 'reviewer',
     prefilledAlias: 'ทีมวิศวกรไทย',
     isUsed: false,
     createdAt: '2026-10-26T14:00:00Z',
-    createdBy: 'Ice',
+    createdBy: 'SuperiCez',
   },
   {
     id: 'inv-2',

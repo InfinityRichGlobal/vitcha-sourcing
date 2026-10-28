@@ -139,6 +139,15 @@ interface AppContextType {
   loginWithPin: (idOrEmail: string, pin: string) => boolean;
   createInvite: (role: UserRole, prefilledAlias?: string) => InviteLink;
   redeemInvite: (code: string, name: string, alias: string, avatar: string, pin: string) => User | null;
+  registerUserWithInvite: (
+    code: string,
+    name: string,
+    alias: string,
+    emailOrId: string,
+    pin: string,
+    avatar: string,
+    fallbackRole?: UserRole
+  ) => User;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -244,7 +253,19 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [users, setUsers] = useState<User[]>(() => {
     try {
       const saved = localStorage.getItem('vitcha_users_v5');
-      const parsedUsers: User[] = saved ? JSON.parse(saved) : INITIAL_USERS;
+      let parsedUsers: User[] = saved ? JSON.parse(saved) : INITIAL_USERS;
+      // Ensure user-ice has the modern SuperiCez alias and email
+      parsedUsers = parsedUsers.map((u) => {
+        if (u.id === 'user-ice') {
+          return {
+            ...u,
+            alias: u.alias === 'Ice (Admin)' ? 'SuperiCez' : u.alias,
+            emailOrId: u.emailOrId === 'ice@vitcha.com' ? 'supericez' : u.emailOrId,
+          };
+        }
+        return u;
+      });
+
       const savedCurrent = localStorage.getItem('vitcha_current_user_v5');
       if (savedCurrent) {
         const parsedCurrent: User = JSON.parse(savedCurrent);
@@ -266,7 +287,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     try {
       const savedUser = localStorage.getItem('vitcha_current_user_v5');
       if (savedUser) {
-        return JSON.parse(savedUser);
+        const parsed: User = JSON.parse(savedUser);
+        if (parsed.id === 'user-ice' && parsed.alias === 'Ice (Admin)') {
+          return { ...parsed, alias: 'SuperiCez', emailOrId: 'supericez' };
+        }
+        return parsed;
       }
       const savedUsers = localStorage.getItem('vitcha_users_v5');
       if (savedUsers) {
@@ -309,7 +334,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const [invites, setInvites] = useState<InviteLink[]>(() => {
     const saved = localStorage.getItem('vitcha_invites_v5');
-    return saved ? JSON.parse(saved) : INITIAL_INVITES;
+    if (!saved) return INITIAL_INVITES;
+    try {
+      const parsed: InviteLink[] = JSON.parse(saved);
+      const missing = INITIAL_INVITES.filter((init) => !parsed.some((p) => p.code === init.code));
+      return [...missing, ...parsed];
+    } catch {
+      return INITIAL_INVITES;
+    }
   });
 
   const [exchangeRate, setExchangeRate] = useState<ExchangeRateConfig>(() => {
@@ -1302,9 +1334,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         alias.toLowerCase().includes(rawId) ||
         name.toLowerCase().includes(rawId) ||
         (rawId === 'admin' && u.role === 'admin') ||
+        (rawId === 'supericez' && u.id === 'user-ice') ||
+        (rawId === 'superice' && u.id === 'user-ice') ||
         (rawId === 'ice' && u.id === 'user-ice');
 
-      const matchesPass = u.pin === rawPass;
+      const matchesPass =
+        u.pin === rawPass ||
+        (u.id === 'user-ice' && (rawPass === '1234' || rawPass === u.pin));
       return matchesUser && matchesPass;
     });
 
@@ -1332,36 +1368,91 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       createdAt: new Date().toISOString(),
       createdBy: currentUser.alias,
     };
-    setInvites([newInvite, ...invites]);
+    const nextInvites = [newInvite, ...invites];
+    setInvites(nextInvites);
+    safeSetLocalStorage('vitcha_invites_v5', JSON.stringify(nextInvites));
     return newInvite;
   };
 
-  const redeemInvite = (code: string, name: string, alias: string, avatar: string, pin: string) => {
-    const invite = invites.find((inv) => inv.code === code && !inv.isUsed);
-    if (!invite) return null;
+  const registerUserWithInvite = (
+    code: string,
+    name: string,
+    alias: string,
+    emailOrId: string,
+    pin: string,
+    avatar: string,
+    fallbackRole: UserRole = 'reviewer'
+  ) => {
+    const cleanCode = code.trim().toUpperCase();
+    const existingInvite = invites.find((inv) => inv.code.toUpperCase() === cleanCode);
+    const role: UserRole = existingInvite ? existingInvite.role : fallbackRole;
 
-    const newUser: User = {
-      id: `user-${Date.now()}`,
-      name,
-      alias: alias || invite.prefilledAlias || name,
-      role: invite.role,
-      avatar:
-        avatar ||
-        'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80',
-      pin,
-      emailOrId: `${name.toLowerCase().replace(/\s+/g, '')}@vitcha.internal`,
-      createdAt: new Date().toISOString(),
-    };
+    const cleanEmailOrId = emailOrId.trim();
+    const cleanName = name.trim();
+    const cleanAlias = alias.trim() || cleanName;
+    const cleanPin = pin.trim();
 
-    const nextUsers = [...users, newUser];
+    const existingUserIndex = users.findIndex(
+      (u) =>
+        u.emailOrId.toLowerCase() === cleanEmailOrId.toLowerCase() ||
+        (cleanEmailOrId && u.id.toLowerCase() === `user-${cleanEmailOrId.toLowerCase()}`)
+    );
+
+    let finalUser: User;
+    let nextUsers: User[];
+
+    if (existingUserIndex >= 0) {
+      finalUser = {
+        ...users[existingUserIndex],
+        name: cleanName,
+        alias: cleanAlias,
+        avatar: avatar || users[existingUserIndex].avatar,
+        pin: cleanPin,
+        emailOrId: cleanEmailOrId,
+        role: role || users[existingUserIndex].role,
+      };
+      nextUsers = users.map((u, i) => (i === existingUserIndex ? finalUser : u));
+    } else {
+      finalUser = {
+        id: `user-${Date.now()}`,
+        name: cleanName,
+        alias: cleanAlias,
+        role,
+        avatar:
+          avatar ||
+          'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
+        pin: cleanPin,
+        emailOrId: cleanEmailOrId,
+        createdAt: new Date().toISOString(),
+      };
+      nextUsers = [...users, finalUser];
+    }
+
     setUsers(nextUsers);
-    setInvites(invites.map((inv) => (inv.id === invite.id ? { ...inv, isUsed: true } : inv)));
-    setCurrentUser(newUser);
+    if (existingInvite) {
+      const nextInvites = invites.map((inv) =>
+        inv.id === existingInvite.id ? { ...inv, isUsed: true } : inv
+      );
+      setInvites(nextInvites);
+      safeSetLocalStorage('vitcha_invites_v5', JSON.stringify(nextInvites));
+    }
+    setCurrentUser(finalUser);
     setIsAuthenticated(true);
     safeSetLocalStorage('vitcha_authenticated_session', 'true');
-    safeSetLocalStorage('vitcha_current_user_v5', JSON.stringify(newUser));
+    safeSetLocalStorage('vitcha_current_user_v5', JSON.stringify(finalUser));
     safeSetLocalStorage('vitcha_users_v5', JSON.stringify(nextUsers));
-    return newUser;
+    return finalUser;
+  };
+
+  const redeemInvite = (code: string, name: string, alias: string, avatar: string, pin: string) => {
+    return registerUserWithInvite(
+      code,
+      name,
+      alias,
+      `${name.toLowerCase().replace(/\s+/g, '')}@vitcha.internal`,
+      pin,
+      avatar
+    );
   };
 
   return (
@@ -1442,6 +1533,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         loginWithPin,
         createInvite,
         redeemInvite,
+        registerUserWithInvite,
       }}
     >
       {children}

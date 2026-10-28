@@ -222,6 +222,13 @@ export const SupplierCard: React.FC<SupplierCardProps> = ({
 
         {/* 3. Clean Single Photo Carousel with Left / Right Slide Controls */}
         <div className="relative h-52 w-full bg-slate-100 border-y border-slate-100 overflow-hidden group">
+          {supplier.videos && supplier.videos.length > 0 && (
+            <div className="absolute top-2.5 left-2.5 z-10 px-2 py-0.5 rounded-lg bg-purple-600/90 backdrop-blur-xs text-white text-[10px] font-bold inline-flex items-center gap-1 shadow-sm">
+              <i className="fa-solid fa-video text-[9px]" />
+              <span>{supplier.videos.length} คลิป</span>
+            </div>
+          )}
+
           <img
             src={displayPhotos[safePhotoIdx]}
             alt={supplier.name}

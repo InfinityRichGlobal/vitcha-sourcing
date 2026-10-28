@@ -19,6 +19,7 @@ import { CurrencyCalculatorModal } from './components/CurrencyCalculatorModal';
 import { InstallPromptModal } from './components/InstallPromptModal';
 import { NotificationSheetModal } from './components/NotificationSheetModal';
 import { NotificationToast } from './components/NotificationToast';
+import { RegisterWithInviteModal } from './components/RegisterWithInviteModal';
 import { SupplierRecord, StoreInspoRecord } from './types';
 
 const MainApp: React.FC = () => {
@@ -35,6 +36,16 @@ const MainApp: React.FC = () => {
   const [shareLineItem, setShareLineItem] = useState<SupplierRecord | StoreInspoRecord | null>(null);
   const [isPinLoginOpen, setIsPinLoginOpen] = useState(false);
 
+  // Parse invite param from URL immediately
+  const [inviteCodeUrl, setInviteCodeUrl] = useState<string | null>(() => {
+    const params = new URLSearchParams(window.location.search);
+    return params.get('invite');
+  });
+  const [authView, setAuthView] = useState<'login' | 'invite'>(() => {
+    const params = new URLSearchParams(window.location.search);
+    return params.get('invite') ? 'invite' : 'login';
+  });
+
   // Check URL query parameters (e.g. ?invite=CODE or ?view=ITEM_ID)
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -43,7 +54,8 @@ const MainApp: React.FC = () => {
     const typeParam = params.get('type');
 
     if (inviteParam) {
-      setIsInviteModalOpen(true);
+      setInviteCodeUrl(inviteParam);
+      setAuthView('invite');
     }
 
     if (viewParam) {
@@ -95,18 +107,30 @@ const MainApp: React.FC = () => {
   };
 
   // Lockscreen Gate: ทุกคนต้องล็อกอินก่อนเข้าถึงหน้าหลักและข้อมูล
+  // หากมีรหัสคำเชิญ (?invite=...) จะพาเข้าสู่หน้าสมัครสมาชิกทันที
   if (!isAuthenticated) {
     return (
       <div className="min-h-screen bg-slate-950 flex flex-col font-sans selection:bg-emerald-500 selection:text-white">
-        <PinLoginModal
-          isOpen={true}
-          isGate={true}
-          onOpenInvite={() => setIsInviteModalOpen(true)}
-        />
-        <InviteManagerModal
-          isOpen={isInviteModalOpen}
-          onClose={() => setIsInviteModalOpen(false)}
-        />
+        {authView === 'invite' && inviteCodeUrl ? (
+          <RegisterWithInviteModal
+            isOpen={true}
+            inviteCode={inviteCodeUrl}
+            onClose={() => {
+              setInviteCodeUrl(null);
+              setAuthView('login');
+            }}
+            onSwitchToLogin={() => setAuthView('login')}
+          />
+        ) : (
+          <PinLoginModal
+            isOpen={true}
+            isGate={true}
+            onOpenInvite={() => {
+              setAuthView('invite');
+              if (!inviteCodeUrl) setInviteCodeUrl('VITCHA-RKBQS');
+            }}
+          />
+        )}
       </div>
     );
   }
@@ -234,6 +258,14 @@ const MainApp: React.FC = () => {
         isOpen={isInviteModalOpen}
         onClose={() => setIsInviteModalOpen(false)}
       />
+
+      {inviteCodeUrl && (
+        <RegisterWithInviteModal
+          isOpen={true}
+          inviteCode={inviteCodeUrl}
+          onClose={() => setInviteCodeUrl(null)}
+        />
+      )}
     </div>
   );
 };

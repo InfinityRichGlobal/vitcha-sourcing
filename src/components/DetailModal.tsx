@@ -687,6 +687,32 @@ export const DetailModal: React.FC<DetailModalProps> = ({
             </div>
           </div>
 
+          {/* Video Gallery Section */}
+          {currentItem.videos && currentItem.videos.length > 0 && (
+            <div className="space-y-2 pt-1">
+              <span className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                <i className="fa-solid fa-video text-purple-600" />
+                <span>คลิปวิดีโอของรายการนี้ ({currentItem.videos.length} คลิป):</span>
+              </span>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {currentItem.videos.map((vid, idx) => (
+                  <div key={idx} className="relative rounded-2xl overflow-hidden bg-black border border-slate-200 shadow-sm">
+                    <video
+                      src={vid}
+                      controls
+                      playsInline
+                      preload="metadata"
+                      className="w-full h-48 sm:h-52 object-contain bg-black"
+                    />
+                    <div className="absolute top-2 left-2 px-2.5 py-0.5 rounded-md bg-black/70 text-white text-[10px] font-mono font-bold">
+                      คลิปที่ {idx + 1}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* Threaded Reviewer Notes Section (รีพายต่อกันได้เรื่อยๆ และย่อ/ขยายได้) */}
           <div
             id="detail-comments-section"

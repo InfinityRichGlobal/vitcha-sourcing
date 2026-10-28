@@ -4,6 +4,7 @@ import { CatalogItem, VoiceNoteEntry } from '../types';
 import { AudioRecorder } from './AudioRecorder';
 import { getItemVoiceNotes } from '../utils/audioHelper';
 import { compressImageFile } from '../utils/imageCompressor';
+import { readVideoFile } from '../utils/mediaStorage';
 import {
   X,
   Camera,
@@ -59,9 +60,11 @@ export const NewSupplierModal: React.FC<NewSupplierModalProps> = ({ isOpen, onCl
   const [mainVoiceSec, setMainVoiceSec] = useState<number>(0);
   const [mainVoiceNotes, setMainVoiceNotes] = useState<VoiceNoteEntry[]>([]);
 
-  // Photos
+  // Photos & Videos
   const [storefrontAndAtmosphere, setStorefrontAndAtmosphere] = useState<string[]>([]);
   const [contactCards, setContactCards] = useState<string[]>([]);
+  const [videos, setVideos] = useState<string[]>([]);
+  const [isVideoLoading, setIsVideoLoading] = useState(false);
 
   // Batch Catalog Items
   const [catalogItems, setCatalogItems] = useState<CatalogItem[]>([]);
@@ -92,6 +95,7 @@ export const NewSupplierModal: React.FC<NewSupplierModalProps> = ({ isOpen, onCl
       setMainVoiceNotes(getItemVoiceNotes(editingSupplier));
       setStorefrontAndAtmosphere(editingSupplier.photos?.storefrontAndAtmosphere || []);
       setContactCards(editingSupplier.photos?.contactCards || []);
+      setVideos(editingSupplier.videos || []);
       setCatalogItems(editingSupplier.catalogItems || []);
       setLat(editingSupplier.location?.lat || 23.0965);
       setLng(editingSupplier.location?.lng || 113.3644);
@@ -114,6 +118,7 @@ export const NewSupplierModal: React.FC<NewSupplierModalProps> = ({ isOpen, onCl
       setMainVoiceNotes([]);
       setStorefrontAndAtmosphere([]);
       setContactCards([]);
+      setVideos([]);
       setCatalogItems([]);
       setLat(23.0965);
       setLng(113.3644);
@@ -171,6 +176,25 @@ export const NewSupplierModal: React.FC<NewSupplierModalProps> = ({ isOpen, onCl
         setter((prev) => [...prev, compressed]);
       }
     });
+  };
+
+  const handleVideoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+    setIsVideoLoading(true);
+    try {
+      for (const file of Array.from(files)) {
+        const videoData = await readVideoFile(file);
+        if (videoData) {
+          setVideos((prev) => [...prev, videoData]);
+        }
+      }
+    } catch (err: any) {
+      alert(err.message || 'ไม่สามารถอัปโหลดวิดีโอได้');
+    } finally {
+      setIsVideoLoading(false);
+      e.target.value = '';
+    }
   };
 
   const addManualCatalogItem = () => {
@@ -266,6 +290,7 @@ export const NewSupplierModal: React.FC<NewSupplierModalProps> = ({ isOpen, onCl
               : ['https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80'],
           contactCards,
         },
+        videos,
         catalogItems,
         memo: memo.trim() || undefined,
         voiceNoteUrl: mainVoiceNotes[0]?.url || mainVoiceUrl,
@@ -297,6 +322,7 @@ export const NewSupplierModal: React.FC<NewSupplierModalProps> = ({ isOpen, onCl
               : ['https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80'],
           contactCards,
         },
+        videos,
         catalogItems,
         memo: memo.trim() || undefined,
         voiceNoteUrl: mainVoiceNotes[0]?.url || mainVoiceUrl,
@@ -704,6 +730,62 @@ export const NewSupplierModal: React.FC<NewSupplierModalProps> = ({ isOpen, onCl
                 />
               </div>
             </div>
+          </div>
+
+          {/* Section: Videos (คลิปวิดีโอหน้าร้าน & เครื่องจักร) */}
+          <div className="bg-slate-50/80 p-4 rounded-2xl border border-slate-100 space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                <i className="fa-solid fa-video text-purple-600" />
+                <span>คลิปวิดีโอหน้าร้าน & การทำงานเครื่องจักร ({videos.length})</span>
+              </span>
+              <span className="text-[10px] text-slate-400">อัปโหลดจากมือถือ / ถ่ายวิดีโอสด</span>
+            </div>
+
+            {/* Video preview cards */}
+            {videos.length > 0 && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 py-1">
+                {videos.map((v, i) => (
+                  <div key={i} className="relative rounded-xl overflow-hidden bg-black border border-slate-200 shadow-xs group">
+                    <video
+                      src={v}
+                      controls
+                      playsInline
+                      className="w-full h-36 object-cover bg-black"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setVideos((prev) => prev.filter((_, idx) => idx !== i))}
+                      className="absolute top-2 right-2 w-6 h-6 rounded-full bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold flex items-center justify-center shadow-md transition-all"
+                      title="ลบคลิปนี้"
+                    >
+                      ×
+                    </button>
+                    <div className="absolute bottom-2 left-2 px-2 py-0.5 rounded-md bg-black/70 text-white text-[10px] font-mono">
+                      คลิป #{i + 1}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Video Upload Button */}
+            <label className="flex items-center justify-center gap-2 py-2.5 px-4 bg-white border border-slate-200 hover:border-purple-500 rounded-xl text-xs font-semibold text-slate-700 cursor-pointer shadow-sm active:scale-[0.99] transition-all">
+              <i className="fa-solid fa-video text-purple-600" />
+              <span>
+                {isVideoLoading
+                  ? 'กำลังประมวลผลคลิปวิดีโอ...'
+                  : '+ เลือกคลิปวิดีโอจากอัลบั้ม / ถ่ายคลิปวิดีโอใหม่ (Video)'}
+              </span>
+              <input
+                type="file"
+                accept="video/*"
+                multiple
+                disabled={isVideoLoading}
+                onChange={handleVideoUpload}
+                className="hidden"
+              />
+            </label>
           </div>
 
           {/* Section 3: Mass Batch Catalog Upload */}

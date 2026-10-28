@@ -120,6 +120,7 @@ export interface SupplierRecord {
     storefrontAndAtmosphere: string[];
     contactCards: string[];
   };
+  videos?: string[]; // รองรับการอัปโหลดและเปิดดูคลิปวิดีโอ
   catalogItems: CatalogItem[];
   memo?: string;
   voiceNoteUrl?: string;
@@ -183,6 +184,7 @@ export interface StoreInspoRecord {
     menuBoard: string[];
     drinkCups: string[];
   };
+  videos?: string[]; // รองรับการอัปโหลดและเปิดดูคลิปวิดีโอร้านน้ำ
   ratings: {
     taste: number;        // 1-5 stars รสชาติ
     aesthetics: number;   // 1-5 stars ความสวยงาม & แพ็กเกจจิ้ง

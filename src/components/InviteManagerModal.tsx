@@ -52,8 +52,15 @@ export const InviteManagerModal: React.FC<InviteManagerModalProps> = ({
   };
 
   const handleCopy = (code: string) => {
+    const inv = invites.find((i) => i.code === code);
     const baseUrl = `${window.location.origin}${window.location.pathname}`;
-    const fullLink = `${baseUrl}?invite=${code}`;
+    let fullLink = `${baseUrl}?invite=${code}`;
+    if (inv) {
+      fullLink += `&role=${inv.role}`;
+      if (inv.prefilledAlias) {
+        fullLink += `&alias=${encodeURIComponent(inv.prefilledAlias)}`;
+      }
+    }
     navigator.clipboard.writeText(fullLink);
     setCopiedCode(code);
     setTimeout(() => setCopiedCode(null), 2000);
