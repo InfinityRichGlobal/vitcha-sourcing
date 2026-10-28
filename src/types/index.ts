@@ -44,6 +44,8 @@ export interface User {
   pin: string; // 4-digit PIN
   emailOrId: string;
   createdAt: string;
+  lastActiveAt?: string;
+  statusNote?: string;
 }
 
 export type PipelineStatus = 'scouted' | 'reviewing' | 'rfq_sent' | 'shortlisted' | 'ordered';

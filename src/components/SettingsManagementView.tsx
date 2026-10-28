@@ -347,24 +347,24 @@ export const SettingsManagementView: React.FC = () => {
           </div>
         </div>
 
-        {/* Mockup Load & Reset System Buttons ("จำลองข้อมูล mockup แบบเต็ม กับ ปุ่ม reset ข้อมูลทั้งระบบ") */}
-        <div className="flex flex-wrap items-center gap-2">
+        {/* Mockup Load & Reset System Buttons */}
+        <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-2">
           <button
             type="button"
             onClick={handleExportJson}
-            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-200 text-xs font-bold active:scale-95 transition-all"
+            className="inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-200 text-xs font-bold active:scale-95 transition-all"
             title="ดาวน์โหลดไฟล์สำรองข้อมูลทั้งหมด เพื่อนำไปเปิดในเครื่องอื่น"
           >
             <i className="fa-solid fa-download text-xs text-purple-600" />
-            <span>💾 สำรองข้อมูล (.json)</span>
+            <span>สำรองข้อมูล (.json)</span>
           </button>
 
           <label
-            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 text-xs font-bold active:scale-95 transition-all cursor-pointer"
+            className="inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 text-xs font-bold active:scale-95 transition-all cursor-pointer"
             title="นำเข้าไฟล์สำรองข้อมูลที่ดาวน์โหลดมาจากเครื่องอื่น"
           >
             <i className="fa-solid fa-upload text-xs text-blue-600" />
-            <span>📥 นำเข้าข้อมูลสำรอง</span>
+            <span>นำเข้าข้อมูลสำรอง</span>
             <input
               type="file"
               accept=".json"
@@ -376,19 +376,19 @@ export const SettingsManagementView: React.FC = () => {
           <button
             type="button"
             onClick={loadFullMockupData}
-            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-extrabold shadow-xs active:scale-95 transition-all"
+            className="col-span-2 sm:col-auto inline-flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-extrabold shadow-xs active:scale-95 transition-all"
           >
             <Database className="w-3.5 h-3.5" />
-            <span>✨ โหลดข้อมูล Mockup เต็มระบบ (12 รายการ)</span>
+            <span>โหลด Mockup เต็ม (12 รายการ)</span>
           </button>
 
           <button
             type="button"
             onClick={() => resetSystemData(false)}
-            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-200 text-xs font-bold active:scale-95 transition-all"
+            className="inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-200 text-xs font-bold active:scale-95 transition-all"
           >
             <RotateCcw className="w-3.5 h-3.5" />
-            <span>🔄 รีเซ็ทกลับเป็น Mockup เริ่มต้น</span>
+            <span>รีเซ็ท Mockup เริ่มต้น</span>
           </button>
 
           <button
@@ -402,10 +402,10 @@ export const SettingsManagementView: React.FC = () => {
                 resetSystemData(true);
               }
             }}
-            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-xs font-bold active:scale-95 transition-all"
+            className="inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-xs font-bold active:scale-95 transition-all"
           >
             <Trash2 className="w-3.5 h-3.5" />
-            <span>ล้างข้อมูลว่างเปล่า (เริ่มจริง)</span>
+            <span>ล้างข้อมูลว่างเปล่า</span>
           </button>
         </div>
       </div>
@@ -454,8 +454,8 @@ export const SettingsManagementView: React.FC = () => {
 
         {/* Server URL Input & Actions */}
         <div className="bg-slate-50 p-3.5 sm:p-4 rounded-xl border border-slate-200/80 space-y-3">
-          <form onSubmit={handleSaveRenderUrl} className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
-            <div className="flex-1 flex items-center bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs focus-within:border-slate-900 transition-colors">
+          <form onSubmit={handleSaveRenderUrl} className="space-y-2.5">
+            <div className="flex items-center bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs focus-within:border-slate-900 transition-colors">
               <span className="text-slate-400 font-mono select-none mr-1.5">URL:</span>
               <input
                 type="text"
@@ -465,10 +465,10 @@ export const SettingsManagementView: React.FC = () => {
                 className="w-full bg-transparent font-mono text-xs text-slate-900 focus:outline-none"
               />
             </div>
-            <div className="flex items-center gap-2">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
               <button
                 type="submit"
-                className="px-3.5 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs shrink-0 active:scale-95 transition-all shadow-2xs"
+                className="w-full py-2.5 px-3 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs active:scale-95 transition-all shadow-2xs text-center"
               >
                 บันทึก URL
               </button>
@@ -476,26 +476,26 @@ export const SettingsManagementView: React.FC = () => {
                 type="button"
                 onClick={handleTestRender}
                 disabled={isTestingRender}
-                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-white border border-slate-300 hover:bg-slate-100 text-slate-800 font-bold text-xs shrink-0 active:scale-95 transition-all"
+                className="w-full inline-flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl bg-white border border-slate-300 hover:bg-slate-100 text-slate-800 font-bold text-xs active:scale-95 transition-all"
               >
                 <RefreshCw className={`w-3.5 h-3.5 ${isTestingRender ? 'animate-spin' : ''}`} />
-                <span>{isTestingRender ? 'กำลังทดสอบ...' : '📡 ทดสอบเชื่อมต่อ (Ping)'}</span>
+                <span>{isTestingRender ? 'กำลังทดสอบ...' : 'ทดสอบเชื่อมต่อ (Ping)'}</span>
               </button>
               <button
                 type="button"
                 onClick={handleForceSyncRender}
                 disabled={isSyncingRender}
-                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shrink-0 active:scale-95 transition-all shadow-xs"
+                className="w-full inline-flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs active:scale-95 transition-all shadow-xs"
               >
                 <Cloud className={`w-3.5 h-3.5 ${isSyncingRender ? 'animate-pulse' : ''}`} />
-                <span>{isSyncingRender ? 'กำลังซิงค์...' : '☁️ ซิงค์ข้อมูลขึ้น Render ทันที'}</span>
+                <span>{isSyncingRender ? 'กำลังซิงค์...' : 'ซิงค์ขึ้น Render ทันที'}</span>
               </button>
             </div>
           </form>
 
           {renderTestResult && (
             <div
-              className={`p-3 rounded-xl text-xs font-semibold flex items-center justify-between border ${
+              className={`p-3 rounded-xl text-xs font-semibold flex flex-col sm:flex-row sm:items-center justify-between gap-2 border ${
                 renderTestResult.ok
                   ? 'bg-emerald-50 border-emerald-200 text-emerald-800'
                   : 'bg-rose-50 border-rose-200 text-rose-800'
@@ -521,121 +521,13 @@ export const SettingsManagementView: React.FC = () => {
             </div>
           )}
 
-          <div className="text-[11px] text-slate-500 leading-relaxed bg-white p-2.5 rounded-lg border border-slate-200/70">
-            💡 <strong>วิธีนำขึ้น Render (1-Click):</strong> ลิงก์ GitHub Repo <code className="text-slate-800 font-bold bg-slate-100 px-1 py-0.5 rounded">InfinityRichGlobal/vitcha-sourcing</code> เข้ากับ Render.com ผ่าน Blueprint <code className="text-slate-800 font-bold bg-slate-100 px-1 py-0.5 rounded">render.yaml</code> ที่เราเตรียมไว้ให้ เซิร์ฟเวอร์จะเปิดทำงานอัตโนมัติ 24 ชม.
+          <div className="text-[11px] text-slate-600 leading-relaxed bg-white p-3 rounded-xl border border-slate-200/80 flex items-center gap-2">
+            <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 shrink-0" />
+            <span>
+              <strong>เซิร์ฟเวอร์หลักออนไลน์ 24 ชม.:</strong> ทุกการบันทึกข้อมูลหน้างาน ซัพพลายเออร์ ร้านน้ำเรฟ รูปภาพ และวิดีโอ จะถูกส่งขึ้นเซิร์ฟเวอร์ Render กลางทันที ข้อมูลบนมือถือและคอมพิวเตอร์จะตรงกัน 100%
+            </span>
           </div>
         </div>
-      </div>
-
-      {/* Cloud Server Database Card (Google Firebase Firestore) */}
-      <div className="bg-white p-4 sm:p-5 rounded-2xl border-2 border-emerald-500/30 shadow-sm space-y-3.5">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
-          <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-xl bg-amber-500/10 text-amber-600 flex items-center justify-center shrink-0">
-              <Flame className="w-5 h-5 text-amber-500" />
-            </div>
-            <div>
-              <h3 className="font-extrabold text-sm sm:text-base text-slate-900 flex items-center gap-1.5">
-                <span>เซิร์ฟเวอร์ฐานข้อมูลกลาง (Google Firebase Firestore)</span>
-              </h3>
-              <p className="text-[11px] text-slate-500">
-                ระบบเซิร์ฟเวอร์คลาวด์สำหรับซิงค์ข้อมูล Real-time ตรงกันทุกเครื่อง ทั้งมือถือ คอมพิวเตอร์ และสมาชิกทีม
-              </p>
-            </div>
-          </div>
-
-          <div>
-            {firebaseConfig ? (
-              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-bold">
-                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                <span>เชื่อมต่อ Cloud สำเร็จ: {firebaseConfig.projectId}</span>
-              </span>
-            ) : (
-              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-50 border border-amber-200 text-amber-800 text-xs font-bold">
-                <span className="w-2 h-2 rounded-full bg-amber-500" />
-                <span>โหมดออฟไลน์ (ยังไม่ได้ต่อ Cloud)</span>
-              </span>
-            )}
-          </div>
-        </div>
-
-        {firebaseStatusMsg && (
-          <div className="p-3 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-xl text-xs font-semibold">
-            {firebaseStatusMsg}
-          </div>
-        )}
-
-        {firebaseConfig ? (
-          <div className="bg-slate-50 p-3.5 rounded-xl border border-slate-200/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
-            <div className="space-y-0.5">
-              <div className="font-bold text-slate-800">
-                สถานะการทำงาน: ข้อมูลบันทึกยิงตรงเข้าเซิร์ฟเวอร์ Google Firebase ทันที
-              </div>
-              <div className="text-slate-500 text-[11px]">
-                Project ID: <span className="font-mono font-bold text-slate-700">{firebaseConfig.projectId}</span> · Auth Domain: <span className="font-mono text-slate-700">{firebaseConfig.authDomain || '-'}</span>
-              </div>
-            </div>
-            <button
-              type="button"
-              onClick={handleDisconnectFirebase}
-              className="px-3 py-1.5 rounded-lg bg-white border border-rose-200 hover:bg-rose-50 text-rose-600 font-bold text-xs shrink-0 transition-colors"
-            >
-              ตัดการเชื่อมต่อ Cloud
-            </button>
-          </div>
-        ) : (
-          <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <p className="text-xs text-slate-600">
-                คัดลอกค่า Firebase Config จาก Firebase Console มาวาง เพื่อเชื่อมต่อเซิร์ฟเวอร์กลางทันที
-              </p>
-              <button
-                type="button"
-                onClick={() => setShowConfigForm(!showConfigForm)}
-                className="px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold shrink-0 transition-all"
-              >
-                {showConfigForm ? 'ซ่อนแบบฟอร์ม' : '+ เชื่อมต่อ Firebase Project'}
-              </button>
-            </div>
-
-            {showConfigForm && (
-              <form onSubmit={handleSaveFirebaseConfig} className="p-4 bg-slate-50 rounded-xl border border-slate-200/90 space-y-3 animate-in fade-in">
-                <div className="space-y-1">
-                  <label className="text-xs font-bold text-slate-700 block">
-                    วาง Firebase Config (JSON หรือตัวแปร) *
-                  </label>
-                  <textarea
-                    rows={5}
-                    placeholder={`{\n  "apiKey": "AIzaSy...",\n  "authDomain": "vitcha-china.firebaseapp.com",\n  "projectId": "vitcha-china",\n  "storageBucket": "vitcha-china.firebasestorage.app"\n}`}
-                    value={configJsonInput}
-                    onChange={(e) => setConfigJsonInput(e.target.value)}
-                    className="w-full bg-white border border-slate-300 rounded-xl p-3 font-mono text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                    required
-                  />
-                  <p className="text-[10px] text-slate-400">
-                    วิธีดู: เข้า console.firebase.google.com &gt; Project settings &gt; General &gt; Your apps &gt; SDK setup and configuration &gt; Config
-                  </p>
-                </div>
-
-                <div className="flex justify-end gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setShowConfigForm(false)}
-                    className="px-3 py-1.5 rounded-lg text-xs font-bold text-slate-500 hover:text-slate-700"
-                  >
-                    ยกเลิก
-                  </button>
-                  <button
-                    type="submit"
-                    className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-sm transition-all"
-                  >
-                    บันทึกและเชื่อมต่อ Cloud ทันที
-                  </button>
-                </div>
-              </form>
-            )}
-          </div>
-        )}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -664,7 +556,7 @@ export const SettingsManagementView: React.FC = () => {
               className="px-3.5 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold flex items-center gap-1 shrink-0 transition-colors"
             >
               <Plus className="w-3.5 h-3.5" />
-              <span>เพิ่มหมวดซัพ</span>
+              <span>เพิ่ม</span>
             </button>
           </form>
 
@@ -752,7 +644,7 @@ export const SettingsManagementView: React.FC = () => {
               className="px-3.5 py-2 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold flex items-center gap-1 shrink-0 transition-colors"
             >
               <Plus className="w-3.5 h-3.5" />
-              <span>เพิ่มหมวดร้านน้ำ</span>
+              <span>เพิ่ม</span>
             </button>
           </form>
 

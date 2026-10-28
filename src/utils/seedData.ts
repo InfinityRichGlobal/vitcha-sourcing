@@ -74,6 +74,8 @@ export const INITIAL_USERS: User[] = [
     pin: '1234',
     emailOrId: 'supericez',
     createdAt: '2026-10-26T10:00:00Z',
+    lastActiveAt: '2026-10-28T15:45:00Z',
+    statusNote: 'ออนไลน์อยู่ขณะนี้ · เซิร์ฟเวอร์ Render กลาง',
   },
   {
     id: 'user-beam',
@@ -84,6 +86,8 @@ export const INITIAL_USERS: User[] = [
     pin: '2222',
     emailOrId: 'beam@vitcha.com',
     createdAt: '2026-10-26T11:00:00Z',
+    lastActiveAt: '2026-10-28T15:25:00Z',
+    statusNote: 'ออนไลน์เมื่อ 20 นาทีที่แล้ว · ตรวจสเปกมอเตอร์ 220V',
   },
   {
     id: 'user-ann',
@@ -94,6 +98,8 @@ export const INITIAL_USERS: User[] = [
     pin: '3333',
     emailOrId: 'ann@vitcha.com',
     createdAt: '2026-10-26T11:30:00Z',
+    lastActiveAt: '2026-10-28T14:50:00Z',
+    statusNote: 'ออนไลน์เมื่อ 55 นาทีที่แล้ว · คำนวณราคาชิปปิ้ง FOB',
   },
   {
     id: 'user-mook',
@@ -104,6 +110,8 @@ export const INITIAL_USERS: User[] = [
     pin: '4444',
     emailOrId: 'mook@vitcha.com',
     createdAt: '2026-10-26T12:00:00Z',
+    lastActiveAt: '2026-10-28T14:15:00Z',
+    statusNote: 'ออนไลน์เมื่อ 1.5 ชม. ที่แล้ว · สำรวจตลาดผานหยู กวางโจว',
   },
 ];
 
