@@ -36,9 +36,27 @@ jobs:
           name: vitcha-frontend
           path: dist/
           retention-days: 7
+      - uses: actions/upload-pages-artifact@v3
+        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+        with:
+          path: dist/
       - uses: actions/upload-artifact@v4
         if: failure()
         with:
           name: browser-test-diagnostics
           path: test-results/
           retention-days: 3
+
+  publish-pages:
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    needs: verify
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/deploy-pages@v4
+        id: deployment

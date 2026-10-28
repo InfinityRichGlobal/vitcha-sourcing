@@ -93,3 +93,18 @@ test('HTTP failure cannot report a successful mutation and IDs are encoded', asy
   });
   await assert.rejects(api.deleteSupplierFromCentral('a/b', 1), /Unavailable/);
 });
+
+test('saved legacy endpoints converge on the migrated service without changing unrelated servers', t => {
+  const previousWindow = Object.getOwnPropertyDescriptor(globalThis, 'window');
+  const previousStorage = Object.getOwnPropertyDescriptor(globalThis, 'localStorage');
+  t.after(() => {
+    for (const [key, descriptor] of [['window', previousWindow], ['localStorage', previousStorage]]) {
+      if (descriptor) Object.defineProperty(globalThis, key, descriptor); else delete globalThis[key];
+    }
+  });
+  Object.defineProperty(globalThis, 'window', { configurable: true, value: { location: { hostname: 'infinityrichglobal.github.io', origin: 'https://infinityrichglobal.github.io' } } });
+  let saved = 'https://vitcha-sourcing.onrender.com/';
+  Object.defineProperty(globalThis, 'localStorage', { configurable: true, value: { getItem: () => saved } });
+  assert.equal(api.getRenderServerUrl(), 'https://vitcha-sourcing-fxjw.onrender.com');
+  saved = 'https://custom.example'; assert.equal(api.getRenderServerUrl(), saved);
+});

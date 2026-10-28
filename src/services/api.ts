@@ -1,17 +1,23 @@
 import { SupplierRecord, StoreInspoRecord, User, InviteLink, AppNotification } from '../types';
 
 const RENDER_CONFIG_KEY = 'vitcha_render_server_url';
-// Default Render service name convention
-export const DEFAULT_RENDER_URL = 'https://vitcha-sourcing.onrender.com';
+// The migrated service uses durable Supabase storage. Retire saved settings
+// pointing at the old file-backed endpoint so devices share one database.
+export const DEFAULT_RENDER_URL = 'https://vitcha-sourcing-fxjw.onrender.com';
+const LEGACY_RENDER_URL = 'https://vitcha-sourcing.onrender.com';
 
 export function getRenderServerUrl(): string {
   // If hosted directly on Render or same domain
   if (typeof window !== 'undefined') {
+    if (window.location.origin === LEGACY_RENDER_URL) return DEFAULT_RENDER_URL;
     if (window.location.hostname.endsWith('onrender.com') || ['localhost', '127.0.0.1'].includes(window.location.hostname)) {
       return window.location.origin;
     }
     const saved = localStorage.getItem(RENDER_CONFIG_KEY);
-    if (saved) return saved.trim().replace(/\/+$/, '');
+    if (saved) {
+      const normalized = saved.trim().replace(/\/+$/, '');
+      return normalized === LEGACY_RENDER_URL ? DEFAULT_RENDER_URL : normalized;
+    }
   }
   return DEFAULT_RENDER_URL;
 }
