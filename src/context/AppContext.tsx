@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { User, SupplierRecord, StoreInspoRecord, ExchangeRateConfig, InviteLink, PipelineStatus, UserRole, AppNotification, HandoffStage, AppViewTab, QuickMessageTemplate, CuratedProduct, ProductTaxon, ProductSet, ProductChanges } from '../types';
 import { INITIAL_SUPPLIERS, INITIAL_DRINK_STORES, INITIAL_CATEGORIES, INITIAL_STORE_CATEGORIES, INITIAL_QUICK_TAGS, INITIAL_QUICK_MESSAGES } from '../utils/seedData';
-import { getRenderServerUrl, saveRenderServerUrl, checkServerHealth, fetchCentralData, sendJson, requestJson, getSessionToken, setSessionToken, loginUserApi, ApiError } from '../services/api';
+import { getRenderServerUrl, saveRenderServerUrl, checkServerHealth, fetchCentralData, sendJson, requestJson, getSessionToken, setSessionToken, loginUserApi, ApiError, markNotificationsReadApi, clearNotificationsApi } from '../services/api';
 
 interface AppContextType {
   products: CuratedProduct[];
@@ -47,7 +47,10 @@ interface AppContextType {
   setSelectedTag: (tag: string) => void;
   setSelectedRating: (rating: number | null) => void;
   dismissToast: () => void;
-  markAllNotificationsRead: () => void;
+  markAllNotificationsRead: () => Promise<void>;
+  markNotificationRead: (id: string) => Promise<void>;
+  clearAllNotifications: () => Promise<void>;
+  clearNotification: (id: string) => Promise<void>;
   broadcastNotification: (
     title: string,
     message: string,
@@ -115,8 +118,8 @@ interface AppContextType {
   openEditItem: (item: SupplierRecord | StoreInspoRecord) => void;
   closeEditItem: () => void;
 
-  addReviewerNote: (targetId: string, type: 'supplier' | 'drink_store', noteText: string) => Promise<boolean>;
-  addReviewReply: (targetId: string, type: 'supplier' | 'drink_store', noteId: string, replyText: string, replyToAuthor?: string) => Promise<boolean>;
+  addReviewerNote: (targetId: string, type: 'supplier' | 'drink_store', noteText: string, extra?: { voiceUrl?: string; photoUrl?: string; duration?: number }) => Promise<boolean>;
+  addReviewReply: (targetId: string, type: 'supplier' | 'drink_store', noteId: string, replyText: string, replyToAuthor?: string, extra?: { voiceUrl?: string; photoUrl?: string; duration?: number; replyToId?: string }) => Promise<boolean>;
   updatePipelineStatus: (supplierId: string, status: PipelineStatus) => Promise<boolean>;
 
   updateExchangeRate: (rate: number, isAuto?: boolean) => void;
@@ -345,8 +348,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const deleteItem = (id: string, type: 'supplier' | 'drink_store') => perform(`${id}:delete`, () => sendJson(`/api/${routeFor(type)}/${encodeURIComponent(id)}`, { revision: itemById(id, type)?.revision || 0 }, 'DELETE'));
   const deleteSupplier = (id: string) => deleteItem(id, 'supplier');
   const deleteStoreInspo = (id: string) => deleteItem(id, 'drink_store');
-  const addReviewerNote = (id: string, type: 'supplier' | 'drink_store', text: string) => itemAction(id, type, 'comment', { text });
-  const addReviewReply = (id: string, type: 'supplier' | 'drink_store', noteId: string, text: string, replyToAuthor?: string) => itemAction(id, type, 'reply', { noteId, text, replyToAuthor });
+  const addReviewerNote = (id: string, type: 'supplier' | 'drink_store', text: string, extra?: { voiceUrl?: string; photoUrl?: string; duration?: number }) => itemAction(id, type, 'comment', { text, ...extra });
+  const addReviewReply = (id: string, type: 'supplier' | 'drink_store', noteId: string, text: string, replyToAuthor?: string, extra?: { voiceUrl?: string; photoUrl?: string; duration?: number; replyToId?: string }) => itemAction(id, type, 'reply', { noteId, text, replyToAuthor, ...extra });
   const updateHandoff: AppContextType['updateHandoff'] = (id, type, data) => itemAction(id, type, 'handoff', data);
   const updatePipelineStatus = (id: string, status: PipelineStatus) => itemAction(id, 'supplier', 'handoff', { status });
   // View logging is telemetry; failure must not prevent opening a record.
@@ -422,7 +425,22 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return false;
   };
   const dismissToast = () => setActiveToast(null);
-  const markAllNotificationsRead = () => setNotifications(p => p.map(n => ({ ...n, read: true })));
+  const markAllNotificationsRead = async () => {
+    setNotifications(p => p.map(n => ({ ...n, read: true })));
+    try { await markNotificationsReadApi({ all: true }); } catch (e) { console.warn('Failed to sync notification read:', e); }
+  };
+  const markNotificationRead = async (id: string) => {
+    setNotifications(p => p.map(n => n.id === id ? { ...n, read: true } : n));
+    try { await markNotificationsReadApi({ id }); } catch (e) { console.warn('Failed to sync notification read:', e); }
+  };
+  const clearAllNotifications = async () => {
+    setNotifications([]);
+    try { await clearNotificationsApi({ all: true }); } catch (e) { console.warn('Failed to sync notification clear:', e); }
+  };
+  const clearNotification = async (id: string) => {
+    setNotifications(p => p.filter(n => n.id !== id));
+    try { await clearNotificationsApi({ id }); } catch (e) { console.warn('Failed to sync notification clear:', e); }
+  };
   const updateExchangeRate = (rate: number, isAuto = false) => { if (rate > 0 && Number.isFinite(rate)) setExchangeRate(p => ({ ...p, rate, isAuto, lastUpdated: new Date().toLocaleTimeString('th-TH') })); };
   const toggleCurrencyMode = () => setExchangeRate(p => ({ ...p, currencyMode: p.currencyMode === 'CNY_TO_THB' ? 'THB_TO_CNY' : 'CNY_TO_THB' }));
   const convertCnyToThb = (n: number) => Math.round(n * exchangeRate.rate * 100) / 100;
@@ -436,7 +454,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     activeTab, filterResetVersion, countryFilter, searchQuery, selectedCategory, selectedStatus, selectedTag, selectedRating, notifications, activeToast,
     actionError, clearActionError: () => setActionError(null), isMutating: mutationCount > 0,
     setActiveTab, setCountryFilter, setSearchQuery, setSelectedCategory, setSelectedStatus, setSelectedTag, setSelectedRating,
-    dismissToast, markAllNotificationsRead, broadcastNotification, addCategory, editCategory, deleteCategory, addStoreCategory, editStoreCategory, deleteStoreCategory,
+    dismissToast, markAllNotificationsRead, markNotificationRead, clearAllNotifications, clearNotification, broadcastNotification, addCategory, editCategory, deleteCategory, addStoreCategory, editStoreCategory, deleteStoreCategory,
     addQuickTag, editQuickTag, deleteQuickTag, addQuickMessage, editQuickMessage, deleteQuickMessage, updateUserRole, recordItemView, toggleLikeItem, loadFullMockupData, resetSystemData,
     updateHandoff, addSupplier, updateSupplier, deleteSupplier, addStoreInspo, updateStoreInspo, deleteStoreInspo, canEditItems, canDeleteItems, canComment, canAddItems,
     editingSupplier, editingStore, openEditItem, closeEditItem, addReviewerNote, addReviewReply, updatePipelineStatus, updateExchangeRate, toggleCurrencyMode, convertCnyToThb, convertThbToCny,

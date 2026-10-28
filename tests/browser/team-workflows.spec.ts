@@ -20,8 +20,18 @@ async function login(page: Page, id = "qa-admin") {
     token,
   );
   await page.goto("/");
-  await expect(page.getByRole("navigation")).toBeVisible();
+  await expect(page.getByRole("banner")).toBeVisible();
   return token;
+}
+async function navigateTab(page: Page, name: string) {
+  const topNav = page.getByRole("navigation").getByRole("button", { name: new RegExp(name) });
+  if (await topNav.isVisible().catch(() => false)) {
+    await topNav.click();
+    return;
+  }
+  await page.getByRole("button", { name: /แพลตฟอร์ม/ }).click();
+  const drawer = page.locator(".fixed.inset-0");
+  await drawer.getByRole("button", { name: new RegExp(name) }).first().click();
 }
 async function data(page: Page, token: string) {
   return (
@@ -35,26 +45,22 @@ test("other admins cannot see private tools, Render settings or private wording;
   page,
 }) => {
   await login(page);
-  await page
-    .getByRole("navigation")
-    .getByRole("button", { name: "ตั้งค่าเนื้อหา" })
-    .click();
+  await navigateTab(page, "ตั้งค่าเนื้อหา");
   await expect(
     page.getByRole("heading", { name: "ตั้งค่าเนื้อหา", exact: true }),
   ).toBeVisible();
   await expect(page.locator("main")).not.toContainText(
     /Mockup|รีเซ็ต|Render|ผู้ก่อตั้ง|คุณไอซ์|เจ้าของระบบ|จัดการสิทธิ์สมาชิก/i,
   );
-  await page
-    .getByRole("navigation")
-    .getByRole("button", { name: "สมาชิก", exact: true })
-    .click();
+  await navigateTab(page, "สมาชิก");
   await expect(
     page.getByRole("heading", { name: "สมาชิกและคำเชิญ" }),
   ).toBeVisible();
-  await expect(
-    page.getByTestId("member-row").filter({ hasText: "SuperiCez" }),
-  ).toHaveCount(0);
+  const iceRow = page.getByTestId("member-row").filter({ hasText: "SuperiCez" });
+  await expect(iceRow).toBeVisible();
+  await expect(iceRow).toContainText("Admin");
+  await expect(iceRow).not.toContainText(/ผู้ก่อตั้ง|เจ้าของระบบ|👑/);
+  await expect(iceRow.locator("select")).toHaveCount(0);
   await page.getByLabel("ระดับสมาชิก QA viewer").selectOption("reviewer");
   await expect(page.getByLabel("ระดับสมาชิก QA viewer")).toHaveValue(
     "reviewer",
@@ -74,10 +80,7 @@ test("private maintenance controls appear only in the actual primary session", a
   page,
 }) => {
   await login(page, "ice");
-  await page
-    .getByRole("navigation")
-    .getByRole("button", { name: "ตั้งค่าเนื้อหา" })
-    .click();
+  await navigateTab(page, "ตั้งค่าเนื้อหา");
   await expect(
     page.getByText("เซิร์ฟเวอร์กลางหลัก VITCHA (Render · onrender.com)"),
   ).toBeVisible();
@@ -98,10 +101,7 @@ test("invitation copy contains spaced greeting, recipient and a unique link; exi
 }) => {
   await context.grantPermissions(["clipboard-read", "clipboard-write"]);
   const token = await login(page);
-  await page
-    .getByRole("navigation")
-    .getByRole("button", { name: "สมาชิก", exact: true })
-    .click();
+  await navigateTab(page, "สมาชิก");
   const links: string[] = [];
   for (const name of ["คุณเอ QA", "คุณบี QA", "คุณซี QA"]) {
     await page.getByLabel("ชื่อผู้รับคำเชิญ").fill(name);
@@ -172,10 +172,7 @@ test("reviewer curates a product, adds category and tag, creates and reorders a 
   page,
 }) => {
   const token = await login(page, "qa-reviewer");
-  await page
-    .getByRole("navigation")
-    .getByRole("button", { name: "รายการสินค้า", exact: true })
-    .click();
+  await navigateTab(page, "รายการสินค้า");
   const ws = page.getByTestId("product-workspace");
   await expect(ws).toBeVisible();
   const before = await data(page, token);
@@ -243,10 +240,7 @@ test("reviewer curates a product, adds category and tag, creates and reorders a 
     fullPage: true,
   });
   await page.reload();
-  await page
-    .getByRole("navigation")
-    .getByRole("button", { name: "รายการสินค้า", exact: true })
-    .click();
+  await navigateTab(page, "รายการสินค้า");
   await expect(
     page
       .getByRole("button", { name: "QA curated machine", exact: true })
@@ -351,10 +345,7 @@ test("viewer product page is read-only and announcement controls are private", a
   page,
 }) => {
   await login(page, "qa-viewer");
-  await page
-    .getByRole("navigation")
-    .getByRole("button", { name: "รายการสินค้า", exact: true })
-    .click();
+  await navigateTab(page, "รายการสินค้า");
   const ws = page.getByTestId("product-workspace");
   await expect(
     ws.getByRole("button", { name: "หมวดหมู่และแท็ก", exact: true }),

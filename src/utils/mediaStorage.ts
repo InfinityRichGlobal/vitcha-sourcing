@@ -38,17 +38,23 @@ const objectUrlCache = new Map<string, string>();
  * Save video file: Uploads to central server first so team can view it.
  * Upload failure is reported to the form; there is no local fallback.
  */
-export async function saveVideoFile(file: File): Promise<string> {
+export async function saveVideoFile(
+  file: File,
+  options?: { recordId?: string; recordType?: string; recordTitle?: string }
+): Promise<string> {
   // No local fallback: every new record must reference media shared with the team.
-  return await uploadMediaToServer(file);
+  return await uploadMediaToServer(file, options);
 }
 
 /**
  * Backwards compatibility helper for existing callers.
- * Returns the shared URL after upload (50 MB maximum).
+ * Returns the shared URL after upload (Google Drive direct / 100 MB max).
  */
-export async function readVideoFile(file: File): Promise<string> {
-  return saveVideoFile(file);
+export async function readVideoFile(
+  file: File,
+  options?: { recordId?: string; recordType?: string; recordTitle?: string }
+): Promise<string> {
+  return saveVideoFile(file, options);
 }
 
 /**

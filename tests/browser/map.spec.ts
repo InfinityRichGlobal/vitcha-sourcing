@@ -9,7 +9,7 @@ async function signIn(page: Page) {
   const { token } = await response.json();
   await page.addInitScript(token => sessionStorage.setItem('vitcha_session_token', token), token);
   await page.goto('/');
-  await expect(page.getByRole('navigation', { name: 'เมนูหลัก' })).toBeVisible();
+  await expect(page.getByRole('banner')).toBeVisible();
 }
 
 test('China basemap loads with English labels and keeps its zoom across polling', async ({ page }) => {

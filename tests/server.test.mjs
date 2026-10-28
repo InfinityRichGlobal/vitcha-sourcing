@@ -336,3 +336,127 @@ test('sample loading is private, atomic and does not duplicate on retry',async t
   assert.equal((await call('/api/system/samples',owner,base)).status,200);
   assert.equal((await call('/api/data',owner,undefined,'GET')).data.suppliers.length,1);
 });
+
+test('users manage their own notifications independently: marking read and clearing does not affect other users', async t => {
+  const { call, login } = await setup(t);
+  const owner = await login('ice');
+  const reviewer = await login('review');
+  const viewer = await login('view');
+
+  // Create a supplier record as reviewer to trigger notification
+  await call('/api/suppliers', reviewer, { ...item, id: 'sup-notif-1' });
+
+  // Add a comment to trigger a notification
+  await call('/api/suppliers/sup-notif-1/actions', reviewer, {
+    action: 'comment',
+    operationId: 'c-notif-1',
+    data: { text: 'New reviewer comment' },
+  });
+
+  // Owner reads data: should have notification, marked unread
+  let ownerData = (await call('/api/data', owner, undefined, 'GET')).data;
+  assert.ok(ownerData.notifications.length > 0);
+  const notifId = ownerData.notifications[0].id;
+  assert.equal(ownerData.notifications[0].read, false);
+
+  // Viewer reads data: should also have notification, marked unread
+  let viewerData = (await call('/api/data', viewer, undefined, 'GET')).data;
+  assert.ok(viewerData.notifications.length > 0);
+  assert.equal(viewerData.notifications[0].read, false);
+
+  // Owner marks the notification as read
+  assert.equal((await call('/api/notifications/read', owner, { id: notifId })).status, 200);
+
+  // Owner data now has read: true
+  ownerData = (await call('/api/data', owner, undefined, 'GET')).data;
+  assert.equal(ownerData.notifications.find(n => n.id === notifId).read, true);
+
+  // Viewer data STILL has read: false (isolated!)
+  viewerData = (await call('/api/data', viewer, undefined, 'GET')).data;
+  assert.equal(viewerData.notifications.find(n => n.id === notifId).read, false);
+
+  // Viewer clears notifications for themselves
+  assert.equal((await call('/api/notifications/clear', viewer, { id: notifId })).status, 200);
+
+  // Viewer now has 0 notifications
+  viewerData = (await call('/api/data', viewer, undefined, 'GET')).data;
+  assert.ok(!viewerData.notifications.some(n => n.id === notifId));
+
+  // Owner STILL has the notification in their box (not deleted for everyone!)
+  ownerData = (await call('/api/data', owner, undefined, 'GET')).data;
+  assert.ok(ownerData.notifications.some(n => n.id === notifId));
+});
+
+test('comments and replies support photoUrl and voiceUrl attachments and send reply notifications', async t => {
+  const { call, login } = await setup(t);
+  const reviewer = await login('review');
+  const admin = await login('admin');
+
+  // Create supplier
+  await call('/api/suppliers', reviewer, { ...item, id: 'sup-rich-comment' });
+
+  // Add comment with photoUrl and voiceUrl
+  const commentRes = await call('/api/suppliers/sup-rich-comment/actions', reviewer, {
+    action: 'comment',
+    operationId: 'note-rich-1',
+    data: {
+      text: 'ตรวจสอบตัวอย่างสินค้าแล้ว',
+      photoUrl: 'https://lh3.googleusercontent.com/d/photo-123',
+      voiceUrl: 'https://drive.google.com/uc?id=voice-456&export=download',
+      duration: 12,
+    },
+  });
+  assert.equal(commentRes.status, 200);
+
+  // Reply to note with attachment
+  const replyRes = await call('/api/suppliers/sup-rich-comment/actions', admin, {
+    action: 'reply',
+    operationId: 'reply-rich-1',
+    data: {
+      noteId: 'note-rich-1',
+      text: 'รับทราบ พร้อมอนุมัติต่อ',
+      replyToAuthor: 'ช่างบีม (วิศวกร)',
+      photoUrl: 'https://lh3.googleusercontent.com/d/reply-photo-789',
+    },
+  });
+  assert.equal(replyRes.status, 200);
+
+  const data = (await call('/api/data', reviewer, undefined, 'GET')).data;
+  const supplier = data.suppliers.find(s => s.id === 'sup-rich-comment');
+  assert.equal(supplier.reviewerNotes.length, 1);
+  const note = supplier.reviewerNotes[0];
+  assert.equal(note.photoUrl, 'https://lh3.googleusercontent.com/d/photo-123');
+  assert.equal(note.voiceUrl, 'https://drive.google.com/uc?id=voice-456&export=download');
+  assert.equal(note.duration, 12);
+  assert.equal(note.replies.length, 1);
+  assert.equal(note.replies[0].photoUrl, 'https://lh3.googleusercontent.com/d/reply-photo-789');
+
+  // Reviewer should receive reply notification
+  const reviewerNotifs = data.notifications;
+  assert.ok(reviewerNotifs.some(n => n.type === 'reply' && n.title === 'ตอบกลับความคิดเห็น'));
+});
+
+test('Google Drive session endpoint enforces file size and provides upload details or fallback', async t => {
+  const { call, login } = await setup(t);
+  const token = await login('review');
+
+  // Reject files over 100 MB
+  const overSize = await call('/api/drive/session', token, {
+    filename: 'big.mp4',
+    mimeType: 'video/mp4',
+    fileSize: 150 * 1024 * 1024,
+  });
+  assert.equal(overSize.status, 413);
+
+  // Valid size returns direct upload session or clean fallback
+  const valid = await call('/api/drive/session', token, {
+    filename: 'sample.jpg',
+    mimeType: 'image/jpeg',
+    fileSize: 500 * 1024,
+    recordType: 'suppliers',
+    recordId: 'sup-001',
+    recordTitle: 'Test Supplier',
+  });
+  assert.equal(valid.status, 200);
+  assert.equal(typeof valid.data.directAvailable, 'boolean');
+});

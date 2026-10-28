@@ -242,6 +242,29 @@ export const AppDrawerMenu: React.FC<AppDrawerMenuProps> = ({
             </span>
           </button>
 
+          {/* Tab 3.5: สมาชิก & คำเชิญ (Admin only) */}
+          {currentUser.role === 'admin' && (
+            <button
+              onClick={() => {
+                setActiveTab('members');
+                onClose();
+              }}
+              className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-bold transition-colors ${
+                activeTab === 'members'
+                  ? 'bg-slate-900 text-white shadow-xs'
+                  : 'text-slate-700 hover:bg-slate-50'
+              }`}
+            >
+              <div className="flex items-center gap-2.5">
+                <Users className="w-4 h-4 text-purple-600" />
+                <span>สมาชิกและคำเชิญ</span>
+              </div>
+              <span className="text-[10px] text-purple-700 font-bold bg-purple-50 px-1.5 py-0.5 rounded">
+                Admin
+              </span>
+            </button>
+          )}
+
           {/* Tab 4: ตั้งค่า & สิทธิ์ (Top 2 roles) */}
           {(currentUser.role === 'admin') && (
             <button
@@ -257,7 +280,7 @@ export const AppDrawerMenu: React.FC<AppDrawerMenuProps> = ({
             >
               <div className="flex items-center gap-2.5">
                 <ShieldCheck className="w-4 h-4 text-emerald-600" />
-                <span>การตั้งค่าเนื้อหา & สิทธิ์</span>
+                <span>ตั้งค่าเนื้อหา</span>
               </div>
               <span className="text-[10px] text-emerald-700 font-bold bg-emerald-50 px-1.5 py-0.5 rounded">
                 Admin
@@ -406,7 +429,7 @@ export const AppDrawerMenu: React.FC<AppDrawerMenuProps> = ({
                   className="w-full p-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-700 hover:from-emerald-500 text-white shadow-xs active:scale-[0.98] transition-all flex items-center justify-between font-bold text-xs"
                 >
                   <div className="flex items-center gap-2">
-                    <span className="text-sm">👑</span>
+                    <ShieldCheck className="w-4 h-4 text-white" />
                     <span className="truncate">กลับสู่บัญชีหลัก ↩</span>
                   </div>
                   <span className="text-[10px] bg-white text-emerald-900 font-extrabold px-2 py-0.5 rounded shrink-0">
@@ -435,11 +458,11 @@ export const AppDrawerMenu: React.FC<AppDrawerMenuProps> = ({
                       ? 'bg-slate-900 text-white border-slate-900 shadow-xs'
                       : 'bg-white hover:bg-slate-50 text-slate-800 border-slate-200'
                   }`}
-                  title="ระดับบนสุด: จัดการทุกอย่าง + เมนูจำลองนี้"
+                  title="ระดับผู้ดูแลระบบหลัก"
                 >
-                  <span className="truncate">👑 SuperiCez</span>
-                  <span className="text-[9px] uppercase font-mono px-1 py-0.5 rounded bg-amber-100 text-amber-800 shrink-0">
-                    บนสุด
+                  <span className="truncate">SuperiCez</span>
+                  <span className="text-[9px] uppercase font-mono px-1 py-0.5 rounded bg-slate-100 text-slate-700 shrink-0">
+                    Admin
                   </span>
                 </button>
 

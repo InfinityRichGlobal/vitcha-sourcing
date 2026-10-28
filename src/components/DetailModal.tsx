@@ -28,7 +28,14 @@ import {
   ChevronRight,
   Volume2,
   Pencil,
+  Image as ImageIcon,
+  Mic,
+  Paperclip,
+  Loader2,
+  PlayCircle,
+  Music,
 } from 'lucide-react';
+import { uploadMediaToServer } from '../services/api';
 
 interface DetailModalProps {
   item: SupplierRecord | StoreInspoRecord | null;
@@ -77,6 +84,16 @@ export const DetailModal: React.FC<DetailModalProps> = ({
   const [replyTarget, setReplyTarget] = useState<{ noteId: string; author: string } | null>(null);
   const [replyInputs, setReplyInputs] = useState<Record<string, string>>({});
   const [collapsedReplies, setCollapsedReplies] = useState<Record<string, boolean>>({});
+
+  // Rich comment & reply attachments (Photos & Voice notes to Google Drive CENTER)
+  const [commentPhotoUrl, setCommentPhotoUrl] = useState<string | null>(null);
+  const [commentVoiceUrl, setCommentVoiceUrl] = useState<string | null>(null);
+  const [isUploadingCommentAttachment, setIsUploadingCommentAttachment] = useState(false);
+  const [replyAttachments, setReplyAttachments] = useState<Record<string, { photoUrl?: string; voiceUrl?: string }>>({});
+  const commentPhotoInputRef = React.useRef<HTMLInputElement | null>(null);
+  const commentVoiceInputRef = React.useRef<HTMLInputElement | null>(null);
+  const replyPhotoInputRef = React.useRef<HTMLInputElement | null>(null);
+  const replyVoiceInputRef = React.useRef<HTMLInputElement | null>(null);
 
   // Automatically log "Read / Seen By" when modal opens
   useEffect(() => {
@@ -163,18 +180,59 @@ export const DetailModal: React.FC<DetailModalProps> = ({
     setActiveImageIndex(idx >= 0 ? idx : 0);
   };
 
-  const handleAddReview = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newReviewText.trim()) return;
-    if (!await addReviewerNote(currentItem.id, currentItem.type, newReviewText.trim())) return;
-    setNewReviewText('');
+  const handleUploadAttachment = async (file: File, type: 'photo' | 'audio', noteId?: string) => {
+    try {
+      setIsUploadingCommentAttachment(true);
+      const url = await uploadMediaToServer(file, {
+        recordId: currentItem.id,
+        recordType: currentItem.type,
+        recordTitle: isSupplier ? supplier?.name : store?.storeName,
+      });
+      if (noteId) {
+        setReplyAttachments((prev) => ({
+          ...prev,
+          [noteId]: {
+            ...prev[noteId],
+            ...(type === 'photo' ? { photoUrl: url } : { voiceUrl: url }),
+          },
+        }));
+      } else {
+        if (type === 'photo') setCommentPhotoUrl(url);
+        else setCommentVoiceUrl(url);
+      }
+    } catch (err: any) {
+      alert(err.message || 'อัปโหลดไฟล์แนบไม่สำเร็จ');
+    } finally {
+      setIsUploadingCommentAttachment(false);
+    }
   };
 
-  const handleSendReply = async (noteId: string, replyToAuthor?: string) => {
+  const handleAddReview = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const text = newReviewText.trim();
+    if (!text && !commentPhotoUrl && !commentVoiceUrl) return;
+    const ok = await addReviewerNote(currentItem.id, currentItem.type, text, {
+      photoUrl: commentPhotoUrl || undefined,
+      voiceUrl: commentVoiceUrl || undefined,
+    });
+    if (!ok) return;
+    setNewReviewText('');
+    setCommentPhotoUrl(null);
+    setCommentVoiceUrl(null);
+  };
+
+  const handleSendReply = async (noteId: string, replyToAuthor?: string, replyToId?: string) => {
     const text = (replyInputs[noteId] || '').trim();
-    if (!text) return;
-    if (!await addReviewReply(currentItem.id, currentItem.type, noteId, text, replyToAuthor)) return;
+    const att = replyAttachments[noteId];
+    if (!text && !att?.photoUrl && !att?.voiceUrl) return;
+    const ok = await addReviewReply(currentItem.id, currentItem.type, noteId, text, replyToAuthor, {
+      photoUrl: att?.photoUrl,
+      voiceUrl: att?.voiceUrl,
+      replyToId,
+    });
+    if (!ok) return;
     setReplyInputs({ ...replyInputs, [noteId]: '' });
+    setReplyAttachments((prev) => ({ ...prev, [noteId]: {} }));
     setReplyTarget(null);
   };
 
@@ -759,6 +817,24 @@ export const DetailModal: React.FC<DetailModalProps> = ({
                           </div>
                           <p className="text-xs text-slate-700 leading-relaxed">{note.text}</p>
 
+                          {note.photoUrl && (
+                            <div className="mt-1.5">
+                              <img
+                                src={note.photoUrl}
+                                alt="ภาพแนบ"
+                                className="max-h-48 max-w-xs rounded-xl border border-slate-200 object-cover cursor-pointer hover:opacity-95 shadow-2xs"
+                                onClick={() => window.open(note.photoUrl, '_blank')}
+                              />
+                            </div>
+                          )}
+
+                          {(note.voiceUrl || note.audioUrl) && (
+                            <div className="mt-1.5 flex items-center gap-2 bg-slate-50 p-2 rounded-xl border border-slate-200/80 max-w-sm">
+                              <Volume2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                              <audio controls src={note.voiceUrl || note.audioUrl} className="h-7 w-full" />
+                            </div>
+                          )}
+
                           <div className="flex items-center gap-3 mt-1.5 text-[11px] font-bold">
                             {canComment && (
                             <button
@@ -835,6 +911,22 @@ export const DetailModal: React.FC<DetailModalProps> = ({
                                 </span>
                               </div>
                               <p className="text-slate-700 leading-snug">{reply.text}</p>
+                              {reply.photoUrl && (
+                                <div className="mt-1">
+                                  <img
+                                    src={reply.photoUrl}
+                                    alt="ภาพแนบ"
+                                    className="max-h-36 max-w-[200px] rounded-lg border border-slate-200 object-cover cursor-pointer hover:opacity-95 shadow-2xs"
+                                    onClick={() => window.open(reply.photoUrl, '_blank')}
+                                  />
+                                </div>
+                              )}
+                              {(reply.voiceUrl || reply.audioUrl) && (
+                                <div className="mt-1 flex items-center gap-1.5 bg-white p-1.5 rounded-lg border border-slate-200 max-w-[240px]">
+                                  <Volume2 className="w-3.5 h-3.5 text-blue-600 shrink-0" />
+                                  <audio controls src={reply.voiceUrl || reply.audioUrl} className="h-6 w-full" />
+                                </div>
+                              )}
                               <div>
                                 {canComment && (
                             <button
@@ -856,39 +948,91 @@ export const DetailModal: React.FC<DetailModalProps> = ({
 
                       {/* Inline Reply Form */}
                       {canComment && replyTarget?.noteId === note.id && (
-                        <div className="mt-2 pt-2 border-t border-slate-100 flex gap-1.5 animate-in fade-in">
-                          <input
-                            type="text"
-                            placeholder={`ตอบกลับ @${replyTarget.author} ในฐานะ ${currentUser.alias}...`}
-                            value={replyInputs[note.id] || ''}
-                            onChange={(e) =>
-                              setReplyInputs({ ...replyInputs, [note.id]: e.target.value })
-                            }
-                            className="flex-1 bg-slate-50 border border-blue-300 rounded-lg px-2.5 py-1.5 text-xs text-slate-900 focus:outline-none focus:border-blue-500"
-                            autoFocus
-                            onKeyDown={(e) => {
-                              if (e.key === 'Enter') {
-                                e.preventDefault();
-                                handleSendReply(note.id, replyTarget.author);
+                        <div className="mt-2 pt-2 border-t border-slate-100 space-y-1.5 animate-in fade-in">
+                          {(replyAttachments[note.id]?.photoUrl || replyAttachments[note.id]?.voiceUrl) && (
+                            <div className="flex flex-wrap items-center gap-1.5 text-[10px]">
+                              {replyAttachments[note.id]?.photoUrl && (
+                                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-800 border border-emerald-200">
+                                  <ImageIcon className="w-3 h-3" /> ภาพพร้อมแนบ
+                                  <button type="button" onClick={() => setReplyAttachments(p => ({ ...p, [note.id]: { ...p[note.id], photoUrl: undefined } }))}><X className="w-2.5 h-2.5" /></button>
+                                </span>
+                              )}
+                              {replyAttachments[note.id]?.voiceUrl && (
+                                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-blue-50 text-blue-800 border border-blue-200">
+                                  <Mic className="w-3 h-3" /> เสียงพร้อมแนบ
+                                  <button type="button" onClick={() => setReplyAttachments(p => ({ ...p, [note.id]: { ...p[note.id], voiceUrl: undefined } }))}><X className="w-2.5 h-2.5" /></button>
+                                </span>
+                              )}
+                            </div>
+                          )}
+                          <div className="flex gap-1.5">
+                            <input
+                              type="text"
+                              placeholder={`ตอบกลับ @${replyTarget.author} ในฐานะ ${currentUser.alias}...`}
+                              value={replyInputs[note.id] || ''}
+                              onChange={(e) =>
+                                setReplyInputs({ ...replyInputs, [note.id]: e.target.value })
                               }
-                            }}
-                          />
-                          <button
-                            type="button"
-                            onClick={() => handleSendReply(note.id, replyTarget.author)}
-                            className="px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold"
-                          >
-                            ส่ง
-                          </button>
-                          {canComment && (
+                              className="flex-1 bg-slate-50 border border-blue-300 rounded-lg px-2.5 py-1.5 text-xs text-slate-900 focus:outline-none focus:border-blue-500"
+                              autoFocus
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                  e.preventDefault();
+                                  handleSendReply(note.id, replyTarget.author);
+                                }
+                              }}
+                            />
                             <button
-                            type="button"
-                            onClick={() => setReplyTarget(null)}
-                            className="px-2 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs"
-                          >
-                            ยกเลิก
-                          </button>
+                              type="button"
+                              title="แนบรูปภาพในคำตอบกลับ"
+                              onClick={() => {
+                                const input = document.createElement('input');
+                                input.type = 'file';
+                                input.accept = 'image/*';
+                                input.onchange = (e: any) => {
+                                  const f = e.target?.files?.[0];
+                                  if (f) handleUploadAttachment(f, 'photo', note.id);
+                                };
+                                input.click();
+                              }}
+                              className="p-1.5 rounded-lg border border-slate-200 hover:bg-slate-100 text-slate-500"
+                            >
+                              <ImageIcon className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              type="button"
+                              title="แนบเสียงในคำตอบกลับ"
+                              onClick={() => {
+                                const input = document.createElement('input');
+                                input.type = 'file';
+                                input.accept = 'audio/*';
+                                input.onchange = (e: any) => {
+                                  const f = e.target?.files?.[0];
+                                  if (f) handleUploadAttachment(f, 'audio', note.id);
+                                };
+                                input.click();
+                              }}
+                              className="p-1.5 rounded-lg border border-slate-200 hover:bg-slate-100 text-slate-500"
+                            >
+                              <Mic className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleSendReply(note.id, replyTarget.author)}
+                              className="px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold"
+                            >
+                              ส่ง
+                            </button>
+                            {canComment && (
+                              <button
+                                type="button"
+                                onClick={() => setReplyTarget(null)}
+                                className="px-2 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs"
+                              >
+                                ยกเลิก
+                              </button>
                             )}
+                          </div>
                         </div>
                       )}
                     </div>
@@ -922,21 +1066,106 @@ export const DetailModal: React.FC<DetailModalProps> = ({
 
             {/* Post New Top-Level Comment */}
             {currentUser.role === 'viewer' ? null : (
-              <form onSubmit={handleAddReview} className="flex gap-2 pt-1">
-                <input
-                  type="text"
-                  placeholder={`พิมพ์ข้อคิดเห็นใหม่ในฐานะ ${currentUser.alias}...`}
-                  value={newReviewText}
-                  onChange={(e) => setNewReviewText(e.target.value)}
-                  className="flex-1 bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 focus:outline-none focus:border-blue-500"
-                />
-                <button
-                  type="submit"
-                  className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold shadow-xs active:scale-95 transition-all flex items-center gap-1"
-                >
-                  <Send className="w-3 h-3" />
-                  <span>โพสต์</span>
-                </button>
+              <form onSubmit={handleAddReview} className="space-y-2 pt-1">
+                {/* Pending Attachment Previews */}
+                {(commentPhotoUrl || commentVoiceUrl || isUploadingCommentAttachment) && (
+                  <div className="flex flex-wrap items-center gap-2 px-1">
+                    {commentPhotoUrl && (
+                      <div className="flex items-center gap-1.5 px-2 py-1 bg-emerald-50 border border-emerald-200 rounded-lg text-xs text-emerald-800">
+                        <ImageIcon className="w-3.5 h-3.5 text-emerald-600" />
+                        <span className="truncate max-w-[120px]">รูปภาพพร้อมแนบ</span>
+                        <button
+                          type="button"
+                          onClick={() => setCommentPhotoUrl(null)}
+                          className="text-slate-400 hover:text-rose-600"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      </div>
+                    )}
+                    {commentVoiceUrl && (
+                      <div className="flex items-center gap-1.5 px-2 py-1 bg-blue-50 border border-blue-200 rounded-lg text-xs text-blue-800">
+                        <Mic className="w-3.5 h-3.5 text-blue-600" />
+                        <span className="truncate max-w-[120px]">เสียงพร้อมแนบ</span>
+                        <button
+                          type="button"
+                          onClick={() => setCommentVoiceUrl(null)}
+                          className="text-slate-400 hover:text-rose-600"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      </div>
+                    )}
+                    {isUploadingCommentAttachment && (
+                      <div className="flex items-center gap-1.5 text-xs text-blue-600 font-medium">
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        <span>กำลังอัปโหลดไฟล์สื่อเข้า Google Drive...</span>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                <div className="flex gap-1.5">
+                  <input
+                    ref={commentPhotoInputRef}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(e) => {
+                      const f = e.target.files?.[0];
+                      if (f) handleUploadAttachment(f, 'photo');
+                      e.target.value = '';
+                    }}
+                  />
+                  <input
+                    ref={commentVoiceInputRef}
+                    type="file"
+                    accept="audio/*"
+                    className="hidden"
+                    onChange={(e) => {
+                      const f = e.target.files?.[0];
+                      if (f) handleUploadAttachment(f, 'audio');
+                      e.target.value = '';
+                    }}
+                  />
+
+                  <input
+                    type="text"
+                    placeholder={`พิมพ์ข้อคิดเห็นใหม่ในฐานะ ${currentUser.alias}...`}
+                    value={newReviewText}
+                    onChange={(e) => setNewReviewText(e.target.value)}
+                    className="flex-1 bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 focus:outline-none focus:border-blue-500 shadow-2xs"
+                  />
+
+                  <button
+                    type="button"
+                    title="แนบรูปภาพเข้า Google Drive"
+                    disabled={isUploadingCommentAttachment}
+                    onClick={() => commentPhotoInputRef.current?.click()}
+                    className="p-2 rounded-xl border border-slate-200 hover:border-emerald-500 hover:bg-emerald-50 text-slate-500 hover:text-emerald-700 transition-colors"
+                  >
+                    <ImageIcon className="w-4 h-4" />
+                  </button>
+
+                  <button
+                    type="button"
+                    title="แนบเสียง/บันทึกเสียงเข้า Google Drive"
+                    disabled={isUploadingCommentAttachment}
+                    onClick={() => commentVoiceInputRef.current?.click()}
+                    className="p-2 rounded-xl border border-slate-200 hover:border-blue-500 hover:bg-blue-50 text-slate-500 hover:text-blue-700 transition-colors"
+                  >
+                    <Mic className="w-4 h-4" />
+                  </button>
+
+                  <button
+                    type="submit"
+                    disabled={isUploadingCommentAttachment}
+                    className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold shadow-xs active:scale-95 transition-all flex items-center gap-1 shrink-0 disabled:opacity-50"
+                  >
+                    <Send className="w-3 h-3" />
+                    <span>โพสต์</span>
+                  </button>
+                </div>
               </form>
             )}
           </div>

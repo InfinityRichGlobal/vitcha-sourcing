@@ -87,7 +87,7 @@ export function createApp({ dataDir, defaults = DEFAULT_DATABASE, sessionTtlMs =
   // read and save). Run one Node writer per DATA_DIR; revisions protect stale clients.
   const save = db => { db.updatedAt = now(); db.revision = revision(db) + 1; storage.save(db); };
   const notify = (db, user, type, title, message, targetId) => {
-    db.notifications = [{ id: randomUUID(), actorId: user.id, actorAlias: user.alias, avatar: user.avatar, type, title, message, targetId, timestamp: now(), read: false }, ...(db.notifications || [])].slice(0, 80);
+    db.notifications = [{ id: randomUUID(), actorId: user.id, actorAlias: user.alias, avatar: user.avatar, type, title, message, targetId, timestamp: now(), read: false, readBy: [user.id], clearedBy: [] }, ...(db.notifications || [])].slice(0, 80);
   };
   const touch = item => { item.revision = revision(item) + 1; item.updatedAt = now(); };
   // One-time migration of legacy plaintext credentials before serving requests.
@@ -214,7 +214,17 @@ export function createApp({ dataDir, defaults = DEFAULT_DATABASE, sessionTtlMs =
     const version = `${revision(db)}:${req.user.id}:${!!req.session.simulatedId}`;
     if (req.query.since === version) return res.json({ unchanged: true, version });
     res.set('X-Vitcha-Version', version);
-    res.json({ version, ...productData(db), ...pick(db, ['suppliers', 'drinkStores', 'categories', 'storeCategories', 'quickTagsList', 'quickMessages', 'updatedAt', 'revision']), suppliers: (db.suppliers || []).map(item => currentRecord(db, item)), drinkStores: (db.drinkStores || []).map(item => currentRecord(db, item)), users: db.users.filter(u => !MOCK_IDS.has(u.id)).map(publicUser), invites: req.user.role === 'admin' ? db.invites : [], notifications: (db.notifications || []).filter(n => !n.forAdminOnly || req.user.id === 'user-ice').map(n => { const actor = db.users.find(u => u.id === n.actorId); return actor ? { ...n, avatar: actor.avatar, actorAlias: actor.alias } : n; }), ...sessionResult(req.session, db) });
+    const userNotifications = (db.notifications || [])
+      .filter(n => (!n.forAdminOnly || req.user.id === 'user-ice') && !(n.clearedBy || []).includes(req.user.id))
+      .map(n => {
+        const actor = db.users.find(u => u.id === n.actorId);
+        const isRead = Boolean(n.read || (n.readBy || []).includes(req.user.id));
+        return {
+          ...(actor ? { ...n, avatar: actor.avatar, actorAlias: actor.alias } : n),
+          read: isRead,
+        };
+      });
+    res.json({ version, ...productData(db), ...pick(db, ['suppliers', 'drinkStores', 'categories', 'storeCategories', 'quickTagsList', 'quickMessages', 'updatedAt', 'revision']), suppliers: (db.suppliers || []).map(item => currentRecord(db, item)), drinkStores: (db.drinkStores || []).map(item => currentRecord(db, item)), users: db.users.filter(u => !MOCK_IDS.has(u.id)).map(publicUser), invites: req.user.role === 'admin' ? db.invites : [], notifications: userNotifications, ...sessionResult(req.session, db) });
   });
   app.get('/api/backup', (req, res) => { requireFounder(req); res.json(read()); });
   for (const [route, collection] of [['suppliers', 'suppliers'], ['drink-stores', 'drinkStores']]) {
@@ -263,14 +273,22 @@ export function createApp({ dataDir, defaults = DEFAULT_DATABASE, sessionTtlMs =
       if ((item.appliedOperations || []).includes(operationId)) return res.json({ success: true });
       const author = { authorId: req.user.id, author: req.user.alias, authorAvatar: req.user.avatar, authorRole: req.user.role, timestamp: now() };
       if (action === 'comment' || action === 'reply') {
-        const text = clean(data.text);
+        const rawText = clean(data.text);
+        const voiceUrl = clean(data.voiceUrl || data.audioUrl);
+        const photoUrl = clean(data.photoUrl || data.imageUrl);
+        const duration = typeof data.duration === 'number' && data.duration > 0 ? Math.round(data.duration) : undefined;
+        let text = rawText;
+        if (!text && (voiceUrl || photoUrl)) {
+          text = photoUrl && voiceUrl ? '📷 แนบรูปภาพและเสียง' : photoUrl ? '📷 แนบรูปภาพ' : '🎙️ ข้อความเสียง';
+        }
         if (!text || text.length > 10000) fail(400, 'ความคิดเห็นต้องมี 1–10000 ตัวอักษร');
         item.reviewerNotes ||= [];
-        if (action === 'comment') item.reviewerNotes.push({ ...author, id: operationId, text, replies: [] });
-        else {
+        if (action === 'comment') {
+          item.reviewerNotes.push({ ...author, id: operationId, text, voiceUrl, photoUrl, duration, replies: [] });
+        } else {
           const note = item.reviewerNotes.find(n => n.id === data.noteId);
           if (!note) fail(404, 'ไม่พบความคิดเห็น');
-          (note.replies ||= []).push({ ...author, id: operationId, text, replyToAuthor: clean(data.replyToAuthor) });
+          (note.replies ||= []).push({ ...author, id: operationId, text, voiceUrl, photoUrl, duration, replyToAuthor: clean(data.replyToAuthor), replyToId: clean(data.replyToId) });
         }
       } else if (action === 'handoff') {
         expectRevision(item, req.body.revision);
@@ -293,7 +311,8 @@ export function createApp({ dataDir, defaults = DEFAULT_DATABASE, sessionTtlMs =
       if (!['view', 'like'].includes(action)) {
         touch(item);
         (item.history ||= []).push({ action, user: req.user.alias, timestamp: now() });
-        notify(db, req.user, action === 'handoff' ? 'status' : action, action === 'handoff' ? 'อัปเดตงานส่งต่อ' : 'ความคิดเห็นใหม่', clean(data.text).slice(0, 120) || item.name || item.storeName, item.id);
+        const notifTitle = action === 'handoff' ? 'อัปเดตงานส่งต่อ' : action === 'reply' ? 'ตอบกลับความคิดเห็น' : 'ความคิดเห็นใหม่';
+        notify(db, req.user, action === 'handoff' ? 'status' : action, notifTitle, clean(data.text).slice(0, 120) || item.name || item.storeName, item.id);
       }
       save(db); res.json({ success: true });
     });
@@ -360,9 +379,41 @@ export function createApp({ dataDir, defaults = DEFAULT_DATABASE, sessionTtlMs =
   });
   app.post('/api/notifications', (req, res) => {
     requireFounder(req); const db = read();
-    const n = { ...pick(req.body, ['id', 'title', 'message', 'type', 'targetId']), actorId: req.user.id, actorAlias: req.user.alias, avatar: req.user.avatar, timestamp: now(), read: false };
+    const n = { ...pick(req.body, ['id', 'title', 'message', 'type', 'targetId']), actorId: req.user.id, actorAlias: req.user.alias, avatar: req.user.avatar, timestamp: now(), read: false, readBy: [req.user.id], clearedBy: [] };
     if (!clean(n.id) || !clean(n.title) || !clean(n.message)) fail(400, 'ข้อมูลแจ้งเตือนไม่ครบ');
     if (!(db.notifications || []).some(x => x.id === n.id)) { db.notifications = [n, ...(db.notifications || [])].slice(0, 80); save(db); }
+    res.json({ success: true });
+  });
+  app.post('/api/notifications/read', (req, res) => {
+    const db = read();
+    const { id, all } = req.body || {};
+    let changed = false;
+    for (const n of db.notifications || []) {
+      if (all || n.id === id) {
+        n.readBy ||= [];
+        if (!n.readBy.includes(req.user.id)) {
+          n.readBy.push(req.user.id);
+          changed = true;
+        }
+      }
+    }
+    if (changed) save(db);
+    res.json({ success: true });
+  });
+  app.post('/api/notifications/clear', (req, res) => {
+    const db = read();
+    const { id, all } = req.body || {};
+    let changed = false;
+    for (const n of db.notifications || []) {
+      if (all || n.id === id) {
+        n.clearedBy ||= [];
+        if (!n.clearedBy.includes(req.user.id)) {
+          n.clearedBy.push(req.user.id);
+          changed = true;
+        }
+      }
+    }
+    if (changed) save(db);
     res.json({ success: true });
   });
   app.post('/api/sync', (_req, _res) => fail(410, 'ปิดการเขียนทับฐานข้อมูลจากเครื่องผู้ใช้แล้ว'));
@@ -434,6 +485,62 @@ export function createApp({ dataDir, defaults = DEFAULT_DATABASE, sessionTtlMs =
       fs.writeFileSync(path.join(uploads, filename), bytes, { flag: 'wx' });
       res.status(201).json({ success: true, url: `/uploads/${filename}` });
     }
+  });
+
+  app.post('/api/drive/session', async (req, res) => {
+    requireWriter(req);
+    const { filename, mimeType, fileSize, recordType, recordId, recordTitle } = req.body || {};
+    if (!filename || !mimeType || typeof fileSize !== 'number' || fileSize <= 0) {
+      fail(400, 'ข้อมูลไฟล์ไม่ถูกต้อง');
+    }
+    const MAX_FILE_SIZE = 100 * 1024 * 1024; // 100 MB ceiling
+    if (fileSize > MAX_FILE_SIZE) fail(413, 'ไฟล์ต้องไม่เกิน 100 MB');
+    if (mediaStorage?.createDirectUploadSession) {
+      try {
+        const session = await mediaStorage.createDirectUploadSession({
+          filename,
+          mimeType,
+          fileSize,
+          recordType: recordType || 'misc',
+          recordId: recordId || 'general',
+          recordTitle: recordTitle || '',
+        });
+        if (session.directAvailable) {
+          return res.json({ success: true, ...session });
+        }
+      } catch (err) {
+        console.warn('Google Drive direct upload session failed, falling back:', err.message);
+      }
+    }
+    res.json({ success: true, directAvailable: false, maxFallbackSize: 50 * 1024 * 1024 });
+  });
+
+  app.post('/api/drive/complete', async (req, res) => {
+    requireWriter(req);
+    const { fileId, folderId, recordId, filename, mimeType, fileSize, md5Checksum } = req.body || {};
+    if (!fileId) fail(400, 'Missing fileId');
+    if (mediaStorage?.completeDirectUpload) {
+      const result = await mediaStorage.completeDirectUpload({
+        fileId,
+        folderId,
+        recordId,
+        filename,
+        mimeType,
+        fileSize,
+        md5Checksum,
+      });
+      return res.json({ success: true, ...result });
+    }
+    fail(500, 'Drive completion handler not available');
+  });
+
+  app.get('/api/drive/status', async (req, res) => {
+    requireAdmin(req);
+    if (mediaStorage?.getDriveStatus) {
+      const status = await mediaStorage.getDriveStatus();
+      return res.json(status);
+    }
+    res.json({ configured: false, message: 'Google Drive integration is not active' });
   });
   // Unpredictable media URLs support native video range requests. Never accept HTML/SVG.
   if (mediaStorage?.serve) app.get('/media/:id', mediaStorage.serve);

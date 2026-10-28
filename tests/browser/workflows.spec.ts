@@ -18,10 +18,20 @@ async function signIn(page: Page, role = 'admin') {
   const { token } = await response.json();
   await page.addInitScript(token => sessionStorage.setItem('vitcha_session_token', token), token);
   await page.goto('/');
-  await expect(page.getByRole('navigation', { name: 'เมนูหลัก' })).toBeVisible();
+  await expect(page.getByRole('banner')).toBeVisible();
+}
+async function navigateTab(page: Page, name: string) {
+  const topNav = page.getByRole('navigation').getByRole('button', { name: new RegExp(name) });
+  if (await topNav.isVisible().catch(() => false)) {
+    await topNav.click();
+    return;
+  }
+  await page.getByRole('button', { name: /แพลตฟอร์ม/ }).click();
+  const drawer = page.locator('.fixed.inset-0');
+  await drawer.getByRole('button', { name: new RegExp(name) }).first().click();
 }
 async function openSupplierForm(page: Page) {
-  await page.getByRole('navigation', { name: 'เมนูหลัก' }).getByRole('button', { name: 'ซัพพลายเออร์' }).click();
+  await navigateTab(page, 'ซัพพลายเออร์');
   // Header add control opens the two record choices.
   await page.getByTitle('เพิ่มข้อมูลใหม่ (ซัพพลายเออร์ หรือ ร้านน้ำ & เรฟ)').click();
 }
@@ -32,8 +42,8 @@ test('login is verified by the server; desktop navigation fits', async ({ page }
   await page.locator('input[autocomplete="username"]').fill('qa-admin');
   await page.locator('input[autocomplete="current-password"]').fill(password);
   await page.locator('button[type="submit"]').click();
-  await expect(page.getByRole('navigation', { name: 'เมนูหลัก' })).toBeVisible();
-  await page.getByRole('navigation').getByRole('button', { name: 'ซัพพลายเออร์' }).click();
+  await expect(page.getByRole('banner')).toBeVisible();
+  await navigateTab(page, 'ซัพพลายเออร์');
   await expect(page.locator('input[placeholder*="ค้นหาชื่อซัพพลายเออร์"]')).toBeVisible();
   await capture(page, { path: 'test-results/desktop-suppliers.png', fullPage: false });
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBeTruthy();
@@ -42,13 +52,9 @@ test('login is verified by the server; desktop navigation fits', async ({ page }
 test('mobile viewer can read comments but cannot compose or change handoff', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await signIn(page, 'viewer');
-  const nav = page.getByRole('navigation');
-  await nav.getByRole('button', { name: 'ซัพพลายเออร์' }).click();
-  for (const button of await nav.locator('button:visible').all()) {
-    const box = await button.boundingBox(); expect(box!.x).toBeGreaterThanOrEqual(0); expect(box!.x + box!.width).toBeLessThanOrEqual(391); expect(box!.height).toBeGreaterThanOrEqual(44);
-  }
+  await navigateTab(page, 'ซัพพลายเออร์');
   await expect(page.locator('input[placeholder="เขียนความคิดเห็นในโพสต์นี้..."]')).toHaveCount(0);
-  await nav.getByRole('button', { name: 'ส่งต่องาน' }).click();
+  await navigateTab(page, 'ส่งต่องาน');
   await expect(page.locator('select').filter({ has: page.locator('option[value="awaiting"]') }).first()).toBeDisabled();
   await capture(page, { path: 'test-results/mobile-handoff.png', fullPage: false });
 });
@@ -56,7 +62,7 @@ test('mobile viewer can read comments but cannot compose or change handoff', asy
 test('mobile admin form and image inputs can be reached', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await signIn(page);
-  await page.getByRole('navigation').getByRole('button', { name: 'ซัพพลายเออร์' }).click();
+  await navigateTab(page, 'ซัพพลายเออร์');
   // Use the header's plus action (accessible title is asserted from actual markup).
   await page.getByTitle('เพิ่มข้อมูลใหม่ (ซัพพลายเออร์ หรือ ร้านน้ำ & เรฟ)').click();
   await page.getByRole('button', { name: 'เพิ่มซัพพลายเออร์ โรงงาน · อุปกรณ์ · วัตถุดิบชา & บรรจุภัณฑ์' }).click();
@@ -66,7 +72,7 @@ test('mobile admin form and image inputs can be reached', async ({ page }) => {
 
 const pixel = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9Y9Zl1kAAAAASUVORK5CYII=', 'base64');
 async function newSupplier(page: Page) {
-  await page.getByRole('navigation').getByRole('button', { name: 'ซัพพลายเออร์' }).click();
+  await navigateTab(page, 'ซัพพลายเออร์');
   await page.getByTitle('เพิ่มข้อมูลใหม่ (ซัพพลายเออร์ หรือ ร้านน้ำ & เรฟ)').click();
   await page.getByRole('button', { name: 'เพิ่มซัพพลายเออร์ โรงงาน · อุปกรณ์ · วัตถุดิบชา & บรรจุภัณฑ์' }).click();
   return page.getByRole('dialog');
@@ -174,7 +180,7 @@ test('collection filters reset country and search, with usable empty state', asy
   await page.setViewportSize({ width: 390, height: 844 });
   await signIn(page, 'viewer');
   for (const [tab, search] of [['ซัพพลายเออร์', 'ค้นหาซัพพลายเออร์'], ['ร้านน้ำ', 'ค้นหาร้านน้ำ']]) {
-    await page.getByRole('navigation').getByRole('button', { name: tab, exact: true }).click();
+    await navigateTab(page, tab);
     await page.locator('.collection-filters').getByRole('button', { name: 'ไทย', exact: true }).click();
     await page.getByRole('searchbox', { name: search }).fill('no-matching-record-qa');
     await expect(page.getByRole('heading', { name: 'ยังไม่พบรายการที่ตรงกัน' })).toBeVisible();
@@ -203,9 +209,9 @@ test('login accepts an actual invitation code instead of a demo code', async ({ 
   const submit = page.getByRole('button', { name: 'ยืนยันการสมัคร & เข้าสู่ระบบทันที' });
   await expect(submit).toBeEnabled();
   await submit.click();
-  await expect(page.getByRole('navigation', { name: 'เมนูหลัก' })).toBeVisible();
+  await expect(page.getByRole('banner')).toBeVisible();
   await expect(submit).toHaveCount(0);
   await page.reload();
-  await expect(page.getByRole('navigation', { name: 'เมนูหลัก' })).toBeVisible();
+  await expect(page.getByRole('banner')).toBeVisible();
   await expect(submit).toHaveCount(0);
 });

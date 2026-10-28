@@ -95,9 +95,62 @@ export const deleteSupplierFromCentral = (id: string, revision: number) => sendJ
 export const deleteStoreFromCentral = (id: string, revision: number) => sendJson(`/api/drink-stores/${encodeURIComponent(id)}`, { revision }, 'DELETE');
 export const deleteUserFromCentral = (id: string, revision: number) => sendJson(`/api/users/${encodeURIComponent(id)}`, { revision }, 'DELETE');
 export const deleteInviteFromCentral = (id: string) => sendJson(`/api/invites/${encodeURIComponent(id)}`, {}, 'DELETE');
-export async function uploadMediaToServer(file: File): Promise<string> {
-  if (file.size > 50 * 1024 * 1024) throw new Error('ไฟล์ต้องไม่เกิน 50 MB');
+export const markNotificationsReadApi = (params: { id?: string; all?: boolean }) => sendJson('/api/notifications/read', params);
+export const clearNotificationsApi = (params: { id?: string; all?: boolean }) => sendJson('/api/notifications/clear', params);
+export const getDriveStatusApi = () => requestJson('/api/drive/status');
+
+export async function uploadMediaToServer(
+  file: File,
+  options?: { recordId?: string; recordType?: string; recordTitle?: string }
+): Promise<string> {
   const mimeType = file.type.split(';')[0].toLowerCase();
+
+  // Try direct resumable upload to Google Drive first if session is available
+  try {
+    const sessionRes = await sendJson('/api/drive/session', {
+      filename: file.name || `file-${Date.now()}`,
+      mimeType,
+      fileSize: file.size,
+      recordType: options?.recordType || 'misc',
+      recordId: options?.recordId || 'general',
+      recordTitle: options?.recordTitle || '',
+    });
+
+    if (sessionRes?.directAvailable && sessionRes?.sessionUrl) {
+      const uploadRes = await fetch(sessionRes.sessionUrl, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': mimeType,
+          'Content-Length': String(file.size),
+        },
+        body: file,
+      });
+
+      if (uploadRes.ok) {
+        const driveData = await uploadRes.json();
+        if (driveData?.id) {
+          const completeRes = await sendJson('/api/drive/complete', {
+            fileId: driveData.id,
+            folderId: sessionRes.folderId,
+            recordId: options?.recordId || 'general',
+            filename: file.name,
+            mimeType,
+            fileSize: file.size,
+            md5Checksum: driveData.md5Checksum,
+          });
+          if (completeRes?.url) {
+            return completeRes.url;
+          }
+        }
+      }
+    }
+  } catch (driveErr) {
+    // Non-blocking fallback to server storage
+    console.warn('Direct Drive upload skipped or unavailable, using server upload:', driveErr);
+  }
+
+  // Fallback to server media storage
+  if (file.size > 50 * 1024 * 1024) throw new Error('ไฟล์ต้องไม่เกิน 50 MB');
   const normalized = new Blob([file], { type: mimeType });
   const base64 = await new Promise<string>((resolve, reject) => {
     const reader = new FileReader();

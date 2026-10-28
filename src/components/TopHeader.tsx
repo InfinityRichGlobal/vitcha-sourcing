@@ -78,43 +78,46 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
 
   return (
     <>
-      <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-xl border-b border-slate-100 px-2.5 sm:px-5 py-2 transition-all">
-        <div className="flex items-center justify-between gap-1.5 sm:gap-2 max-w-6xl mx-auto">
-          {/* Left: Official Logo "ฉันจะเป็นหัวแถว" & Full Subtitle (แสดงเต็มไม่ถูกตัดคำ) */}
+      <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-xl border-b border-slate-100 px-2 sm:px-5 py-2 transition-all">
+        <div className="flex items-center justify-between gap-1 sm:gap-2 max-w-6xl mx-auto">
+          {/* Left: Official Logo "ฉันจะเป็นหัวแถว" & Full Subtitle */}
           <button
             type="button"
             onClick={() => setIsDrawerOpen(true)}
-            className="flex items-center gap-2 py-0.5 pr-1 rounded-xl hover:bg-slate-100/70 transition-all group text-left shrink-0"
-            title="กดที่โลโก้เพื่อเปิดเมนูเข้าหน้าต่างๆ"
+            className="flex items-center gap-1.5 sm:gap-2 py-0.5 pr-1 rounded-xl hover:bg-slate-100/70 transition-all group text-left min-w-0"
+            title="กดเพื่อเปิดเมนูแพลตฟอร์ม (เมนูด้านซ้าย) · กดที่โลโก้เพื่อเปิดเมนูเข้าหน้าต่างๆ"
           >
             <div className="relative shrink-0">
               <img
                 src="./logo.jpg"
                 alt="ฉันจะเป็นหัวแถว"
-                className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl object-cover border border-slate-200/80 shadow-2xs group-hover:scale-105 transition-transform"
+                className="w-7 h-7 sm:w-10 sm:h-10 rounded-xl object-cover border border-slate-200/80 shadow-2xs group-hover:scale-105 transition-transform"
               />
               <span
-                className={`absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 border-white ${
+                className={`absolute -bottom-0.5 -right-0.5 w-2 sm:w-2.5 h-2 sm:h-2.5 rounded-full border-2 border-white ${
                   syncStatus === 'online' && renderStatus === 'connected' ? 'bg-emerald-500' : 'bg-amber-500'
                 }`}
               />
             </div>
 
-            <div className="shrink-0">
-              <div className="flex items-center gap-1.5">
-                <span className="font-extrabold text-[13px] sm:text-base tracking-tight text-slate-950 whitespace-nowrap leading-tight">
+            <div className="min-w-0">
+              <div className="flex items-center gap-1 sm:gap-1.5">
+                <span className="font-extrabold text-xs sm:text-base tracking-tight text-slate-950 truncate leading-tight">
                   ฉันจะเป็นหัวแถว
+                </span>
+                <span className="inline-flex items-center text-[8.5px] sm:text-[9px] font-bold px-1 sm:px-1.5 py-0.2 sm:py-0.5 rounded-md bg-emerald-50 text-emerald-800 border border-emerald-200/60 shrink-0">
+                  แพลตฟอร์ม
                 </span>
                 <span className="hidden lg:inline-flex items-center text-[9px] font-mono font-bold px-1.5 py-0.5 rounded-md bg-slate-100 text-slate-600">
                   CN · TH
                 </span>
               </div>
-              <div className="flex items-center gap-1 text-[9.5px] sm:text-[11px] text-slate-500 font-medium whitespace-nowrap leading-tight">
-                <i aria-hidden="true" className="fa-solid fa-bars text-[9px] text-slate-400 shrink-0" />
+              <div className="flex items-center gap-1 text-[9px] sm:text-[11px] text-slate-500 font-medium truncate leading-tight">
+                <i aria-hidden="true" className="fa-solid fa-bars text-[8px] sm:text-[9px] text-slate-400 shrink-0" />
                 <span>
                   {syncStatus === 'online' && renderStatus === 'connected'
-                    ? 'เมนูหลัก · ออนไลน์'
-                    : 'รอเชื่อมต่อ'}
+                    ? 'เมนูแพลตฟอร์ม · ออนไลน์'
+                    : 'เมนูแพลตฟอร์ม'}
                 </span>
               </div>
             </div>

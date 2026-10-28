@@ -42,9 +42,7 @@ export function MembersManagementView() {
   const [pendingUser, setPendingUser] = useState("");
   if (currentUser.role !== "admin") return null;
   const members = users.filter(
-    (u) =>
-      !["user-mook", "user-ann", "user-beam"].includes(u.id) &&
-      (currentUser.id === "user-ice" || u.id !== "user-ice"),
+    (u) => !["user-mook", "user-ann", "user-beam"].includes(u.id),
   );
   async function copy(invite: InviteLink) {
     try {
@@ -286,7 +284,7 @@ export function MembersManagementView() {
                     {user.emailOrId}
                   </p>
                 </div>
-                {user.id !== "user-ice" && (
+                {user.id !== "user-ice" ? (
                   <div className="flex items-center gap-2">
                     <select
                       aria-label={`ระดับสมาชิก ${user.alias}`}
@@ -328,6 +326,10 @@ export function MembersManagementView() {
                       </button>
                     )}
                   </div>
+                ) : (
+                  <span className="text-xs font-semibold px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-800 border border-emerald-100">
+                    ผู้ดูแลระบบ (Admin)
+                  </span>
                 )}
               </div>
             ))}

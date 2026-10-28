@@ -144,7 +144,7 @@ const MainApp: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-white text-slate-900 flex flex-col font-sans pb-16 selection:bg-emerald-500 selection:text-white">
+    <div className="min-h-screen bg-white text-slate-900 flex flex-col font-sans selection:bg-emerald-500 selection:text-white">
       <ConnectionStatus />
       {/* Real-time In-App Floating Toast Notification */}
       <NotificationToast onSelectItem={handleSelectFromNotification} />

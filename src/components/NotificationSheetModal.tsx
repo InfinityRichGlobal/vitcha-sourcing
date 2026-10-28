@@ -1,7 +1,7 @@
 import { AvatarImage } from './AvatarImage';
 import React from 'react';
 import { useApp } from '../context/AppContext';
-import { Bell, X, CheckCheck, Factory, Coffee, MessageSquare, Flame, ShieldCheck } from 'lucide-react';
+import { Bell, X, CheckCheck, Factory, Coffee, MessageSquare, Flame, ShieldCheck, Trash2 } from 'lucide-react';
 
 interface NotificationSheetModalProps {
   isOpen: boolean;
@@ -14,7 +14,7 @@ export const NotificationSheetModal: React.FC<NotificationSheetModalProps> = ({
   onClose,
   onSelectItem,
 }) => {
-  const { currentUser, notifications, markAllNotificationsRead } = useApp();
+  const { currentUser, notifications, markAllNotificationsRead, markNotificationRead, clearAllNotifications, clearNotification } = useApp();
 
   // กรองการแจ้งเตือนตามกฎ:
   // 1. "ไม่แจ้งตนเองเมื่อเป็นผู้กระทำนั้นๆ" (actorId !== currentUser.id)
@@ -57,21 +57,40 @@ export const NotificationSheetModal: React.FC<NotificationSheetModalProps> = ({
                 การแจ้งเตือนในระบบ ({visibleNotifications.length})
               </h3>
               <p className="text-[11px] text-slate-400">
-                อัปเดตแบบเรียลไทม์จากสมาชิกในทีมทุกคน
+                กล่องข้อความส่วนตัว · แยกสถานะรายบุคคล
               </p>
             </div>
           </div>
 
           <div className="flex items-center gap-1.5">
+            {visibleNotifications.length > 0 && (
+              <>
+                <button
+                  type="button"
+                  onClick={() => markAllNotificationsRead()}
+                  className="text-[11px] font-semibold text-emerald-600 hover:text-emerald-700 px-2 py-1 rounded-lg hover:bg-emerald-50 transition-colors flex items-center gap-1"
+                  title="อ่านทั้งหมด"
+                >
+                  <CheckCheck className="w-3.5 h-3.5" />
+                  <span className="hidden sm:inline">อ่านหมด</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (confirm('ต้องการล้างการแจ้งเตือนทั้งหมดออกจากกล่องของคุณ?')) {
+                      clearAllNotifications();
+                    }
+                  }}
+                  className="text-[11px] font-semibold text-rose-500 hover:text-rose-600 px-2 py-1 rounded-lg hover:bg-rose-50 transition-colors flex items-center gap-1"
+                  title="ล้างกล่องข้อความส่วนตัว"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                  <span className="hidden sm:inline">ล้าง</span>
+                </button>
+              </>
+            )}
             <button
-              onClick={markAllNotificationsRead}
-              className="text-[11px] font-semibold text-emerald-600 hover:text-emerald-700 px-2 py-1 rounded-lg hover:bg-emerald-50 transition-colors flex items-center gap-1"
-              title="อ่านทั้งหมด"
-            >
-              <CheckCheck className="w-3.5 h-3.5" />
-              <span>อ่านหมดแล้ว</span>
-            </button>
-            <button
+              type="button"
               onClick={onClose}
               className="w-7 h-7 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center transition-colors"
             >
@@ -91,12 +110,13 @@ export const NotificationSheetModal: React.FC<NotificationSheetModalProps> = ({
               <div
                 key={notif.id}
                 onClick={() => {
+                  markNotificationRead(notif.id);
                   if (notif.targetId) {
                     onSelectItem(notif.targetId, notif.type);
                     onClose();
                   }
                 }}
-                className={`p-3 rounded-xl border transition-all cursor-pointer flex items-start gap-2.5 ${
+                className={`group p-3 rounded-xl border transition-all cursor-pointer flex items-start gap-2.5 relative ${
                   notif.read
                     ? 'bg-white border-slate-100 text-slate-600 hover:bg-slate-50'
                     : 'bg-emerald-50/40 border-emerald-100/80 text-slate-900 hover:bg-emerald-50/70 shadow-sm'
@@ -119,7 +139,7 @@ export const NotificationSheetModal: React.FC<NotificationSheetModalProps> = ({
                   </span>
                 </div>
 
-                <div className="min-w-0 flex-1">
+                <div className="min-w-0 flex-1 pr-6">
                   <div className="flex items-center justify-between text-xs mb-0.5">
                     <span className="font-bold text-slate-900 truncate">
                       {notif.title}
@@ -135,6 +155,19 @@ export const NotificationSheetModal: React.FC<NotificationSheetModalProps> = ({
                     {notif.message}
                   </p>
                 </div>
+
+                {/* Individual Dismiss Button */}
+                <button
+                  type="button"
+                  title="ลบรายการนี้ออกจากกล่องของคุณ"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    clearNotification(notif.id);
+                  }}
+                  className="absolute top-2.5 right-2.5 p-1 rounded-md text-slate-300 hover:text-rose-500 hover:bg-rose-50 transition-colors opacity-80 sm:opacity-0 group-hover:opacity-100"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
               </div>
             ))
           )}
@@ -143,6 +176,7 @@ export const NotificationSheetModal: React.FC<NotificationSheetModalProps> = ({
         {/* Footer */}
         <div className="p-3 border-t border-slate-100 bg-slate-50 text-center">
           <button
+            type="button"
             onClick={onClose}
             className="w-full py-2 rounded-xl bg-white border border-slate-200 text-xs font-bold text-slate-700 hover:bg-slate-100 transition-colors"
           >

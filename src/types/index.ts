@@ -82,6 +82,11 @@ export interface ReviewReply {
   text: string;
   timestamp: string;
   replyToAuthor?: string;
+  replyToId?: string;
+  voiceUrl?: string;
+  audioUrl?: string;
+  photoUrl?: string;
+  duration?: number;
 }
 
 export interface ReviewerNote {
@@ -92,6 +97,10 @@ export interface ReviewerNote {
   authorRole: UserRole;
   text: string;
   timestamp: string;
+  voiceUrl?: string;
+  audioUrl?: string;
+  photoUrl?: string;
+  duration?: number;
   replies?: ReviewReply[];
 }
 
@@ -107,6 +116,8 @@ export interface AppNotification {
   actorAlias?: string;
   forAdminOnly?: boolean;
   read: boolean;
+  readBy?: string[];
+  clearedBy?: string[];
 }
 
 export interface SupplierRecord {
