@@ -1,3 +1,5 @@
+import { useDialog } from '../hooks/useDialog';
+import { AvatarImage } from './AvatarImage';
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import { compressImageFile } from '../utils/imageCompressor';
@@ -9,55 +11,60 @@ interface UserProfileModalProps {
 }
 
 export const UserProfileModal: React.FC<UserProfileModalProps> = ({ isOpen, onClose }) => {
-  const { currentUser, updateCurrentUserProfile, logout } = useApp();
+  const { currentUser, updateCurrentUserProfile, updateCurrentUserAvatar, logout, isMutating } = useApp();
 
-  const [name, setName] = useState(currentUser.name || '');
   const [alias, setAlias] = useState(currentUser.alias || '');
   const [emailOrId, setEmailOrId] = useState(currentUser.emailOrId || '');
   const [avatar, setAvatar] = useState(currentUser.avatar || '');
   const [pin, setPin] = useState(currentUser.pin || '');
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [profileRevision, setProfileRevision] = useState(currentUser.revision || 0);
+  const [avatarSaved, setAvatarSaved] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
 
   // Sync form state whenever currentUser changes or modal opens
   useEffect(() => {
     if (isOpen && currentUser) {
-      setName(currentUser.name || '');
+      setProfileRevision(currentUser.revision || 0); setAvatarSaved(false);
       setAlias(currentUser.alias || '');
       setEmailOrId(currentUser.emailOrId || '');
       setAvatar(currentUser.avatar || '');
       setPin(currentUser.pin || '');
     }
-  }, [isOpen, currentUser]);
+  }, [isOpen, currentUser.id]);
 
+  const dialog = useDialog(isOpen);
   if (!isOpen) return null;
 
   const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    const compressed = await compressImageFile(file, 320, 0.82);
-    if (compressed) {
-      setAvatar(compressed);
+    setIsProcessing(true);
+    try {
+      const image = await compressImageFile(file, 320, 0.82);
+      const saved = await updateCurrentUserAvatar(image, profileRevision);
+      if (saved) { setAvatar(saved.avatar); setProfileRevision(saved.revision || 0); setAvatarSaved(true); }
     }
+    catch (error) { alert(error instanceof Error ? error.message : 'ประมวลผลรูปไม่สำเร็จ'); }
+    finally { setIsProcessing(false); }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isProcessing || isMutating) return;
     if (!alias.trim()) {
       alert('กรุณากรอกชื่อนามแฝงที่จะแสดงบนระบบ');
       return;
     }
-    if (!pin.trim() || pin.trim().length < 4) {
-      alert('รหัสผ่าน / PIN ต้องมีอย่างน้อย 4 ตัวอักษรหรือตัวเลข');
-      return;
-    }
-
-    updateCurrentUserProfile(
-      name.trim() || alias.trim(),
+    const saved = await updateCurrentUserProfile(
+      alias.trim(),
       alias.trim(),
       avatar,
-      pin.trim(),
-      emailOrId.trim() || currentUser.emailOrId
+      pin,
+      emailOrId.trim() || currentUser.emailOrId,
+      profileRevision
     );
+    if (!saved) return;
     setIsSaved(true);
     setTimeout(() => {
       setIsSaved(false);
@@ -67,7 +74,7 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({ isOpen, onCl
 
   return (
     <div className="fixed inset-0 z-[110] bg-black/45 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
-      <div className="bg-white border border-slate-200/90 w-full max-w-md rounded-2xl shadow-2xl overflow-hidden animate-in zoom-in-95 text-slate-900 my-auto">
+      <div ref={dialog} role="dialog" aria-modal="true" aria-label="โปรไฟล์" className="bg-white border border-slate-200/90 w-full max-w-md rounded-2xl shadow-2xl overflow-hidden animate-in zoom-in-95 text-slate-900 my-auto">
         {/* Header */}
         <div className="p-4 border-b border-slate-100 flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -78,7 +85,7 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({ isOpen, onCl
           </div>
           <button
             type="button"
-            onClick={onClose}
+            onClick={onClose} aria-label="ปิดโปรไฟล์" disabled={isProcessing || isMutating}
             className="w-7 h-7 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center transition-colors"
           >
             <X className="w-4 h-4" />
@@ -86,11 +93,12 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({ isOpen, onCl
         </div>
 
         {/* Form */}
+        {avatarSaved && <p role="status" className="px-4 text-center text-xs text-emerald-700">บันทึกรูปบนเซิร์ฟเวอร์แล้ว สมาชิกทุกคนจะเห็นรูปเดียวกัน</p>}
         <form onSubmit={handleSubmit} className="p-5 space-y-3.5">
           {/* Avatar Upload */}
           <div className="flex flex-col items-center justify-center gap-2">
             <label className="relative group cursor-pointer">
-              <img
+              <AvatarImage
                 src={avatar}
                 alt={alias}
                 className="w-20 h-20 rounded-full object-cover ring-4 ring-emerald-500/20 shadow-md"
@@ -99,7 +107,7 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({ isOpen, onCl
                 <Camera className="w-6 h-6" />
               </span>
               <input
-                type="file"
+                type="file" disabled={isProcessing || isMutating}
                 accept="image/*"
                 onChange={handleAvatarUpload}
                 className="hidden"
@@ -109,7 +117,7 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({ isOpen, onCl
               <Camera className="w-3.5 h-3.5" />
               <span>แตะเพื่อเปลี่ยนรูปโปรไฟล์ (อัปเดตทันทีทุกจุด)</span>
               <input
-                type="file"
+                type="file" disabled={isProcessing || isMutating}
                 accept="image/*"
                 onChange={handleAvatarUpload}
                 className="hidden"
@@ -119,14 +127,14 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({ isOpen, onCl
 
           <div>
             <label className="text-xs font-semibold text-slate-600 block mb-1">
-              ชื่อที่แสดงบน Header & ทุกโพสต์ (Display Name / Alias) *
+              ชื่อที่แสดง *
             </label>
             <input
               type="text"
               required
               value={alias}
               onChange={(e) => setAlias(e.target.value)}
-              placeholder="เช่น คุณไอซ์ (Admin)"
+              placeholder="ชื่อที่แสดงให้ทีมเห็น"
               className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-sm text-slate-900 focus:bg-white focus:outline-none focus:border-emerald-500 font-bold"
             />
           </div>
@@ -149,18 +157,6 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({ isOpen, onCl
             </div>
           </div>
 
-          <div>
-            <label className="text-xs font-semibold text-slate-600 block mb-1">
-              ชื่อ-นามสกุล / ตำแหน่งเต็ม
-            </label>
-            <input
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-sm text-slate-900 focus:bg-white focus:outline-none focus:border-emerald-500"
-            />
-          </div>
-
           <div className="p-3.5 bg-slate-50 rounded-2xl border border-slate-100 space-y-1.5">
             <div className="flex items-center justify-between">
               <label className="text-xs text-slate-700 font-bold flex items-center gap-1.5">
@@ -170,16 +166,13 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({ isOpen, onCl
               <span className="text-[10px] text-slate-400 font-mono">PASSWORD / PIN</span>
             </div>
             <input
-              type="text"
+              type="password"
+              autoComplete="new-password"
+              placeholder="เว้นว่างเพื่อใช้รหัสเดิม"
               value={pin}
               onChange={(e) => setPin(e.target.value)}
               className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-center text-lg font-mono font-extrabold tracking-widest text-emerald-700 focus:outline-none focus:border-emerald-500 shadow-inner"
             />
-          </div>
-
-          <div className="text-[11px] text-slate-400 text-center">
-            ระดับสิทธิ์ปัจจุบัน:{' '}
-            <strong className="text-slate-800 uppercase font-mono">{currentUser.role}</strong>
           </div>
 
           <div className="pt-3 border-t border-slate-100 flex items-center justify-between gap-2">
@@ -200,13 +193,13 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({ isOpen, onCl
             <div className="flex items-center gap-2">
               <button
                 type="button"
-                onClick={onClose}
+                onClick={onClose} aria-label="ปิดโปรไฟล์" disabled={isProcessing || isMutating}
                 className="px-4 py-2 text-xs font-semibold text-slate-500 hover:text-slate-800"
               >
                 ยกเลิก
               </button>
               <button
-                type="submit"
+                type="submit" disabled={isProcessing || isMutating}
                 className="flex items-center gap-1.5 px-5 py-2.5 text-xs font-bold rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white shadow-md active:scale-95 transition-all"
               >
                 {isSaved ? (

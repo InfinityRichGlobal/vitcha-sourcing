@@ -1,8 +1,20 @@
+# No paid resources. Configure the server-only Supabase connection and validate
+# the complete import before activating this release on the linked branch.
 services:
   - type: web
     name: vitcha-sourcing
     runtime: node
     plan: free
     region: singapore
-    buildCommand: npm install --include=dev && npm run build
+    numInstances: 1
+    autoDeployTrigger: checksPass
+    buildCommand: npm ci --include=dev && npm run build
     startCommand: node server/index.js
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SECRET_KEY
+        sync: false

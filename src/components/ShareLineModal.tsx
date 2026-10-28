@@ -104,7 +104,7 @@ ${directLink}
           <div className="p-3 bg-emerald-50/80 border border-emerald-200/60 rounded-2xl flex items-start gap-2.5 text-xs text-emerald-900">
             <Lock className="w-4 h-4 text-emerald-700 shrink-0 mt-0.5" />
             <span>
-              <strong>ระบบความปลอดภัย (Security Check):</strong> เมื่อปลายทางคลิกเปิดลิงก์ ระบบจะให้ระบุรหัส PIN 4 หลักตามสิทธิ์เพื่อความปลอดภัยของข้อมูล
+              <strong>ระบบความปลอดภัย (Security Check):</strong> เมื่อปลายทางคลิกเปิดลิงก์ ผู้รับต้องเข้าสู่ระบบด้วยบัญชีของตนเอง
             </span>
           </div>
 

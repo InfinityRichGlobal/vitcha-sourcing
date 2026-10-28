@@ -2,6 +2,14 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useApp } from '../context/AppContext';
 import { SupplierRecord, StoreInspoRecord } from '../types';
 import L from 'leaflet';
+import { maplibreGL } from '@maplibre/maplibre-gl-leaflet';
+import { setWorkerUrl } from 'maplibre-gl';
+import workerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url';
+import 'maplibre-gl/dist/maplibre-gl.css';
+import 'leaflet/dist/leaflet.css';
+import { MAP_STYLE_URL, withEnglishLabels } from '../utils/englishMapStyle';
+
+setWorkerUrl(workerUrl);
 import { Factory, Coffee, Layers, MapPin, ChevronRight, X, Navigation } from 'lucide-react';
 
 interface MapViewProps {
@@ -17,6 +25,9 @@ export const MapView: React.FC<MapViewProps> = ({
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
   const markersLayerRef = useRef<L.LayerGroup | null>(null);
+  const lastFocusRef = useRef<string | null>(null);
+  const [mapStatus, setMapStatus] = useState<'loading' | 'ready' | 'error'>('loading');
+  const [mapAttempt, setMapAttempt] = useState(0);
 
   const [filterType, setFilterType] = useState<'all' | 'suppliers' | 'drink_stores'>('all');
   const [regionFocus, setRegionFocus] = useState<'CN' | 'TH' | 'ALL'>('CN');
@@ -38,14 +49,30 @@ export const MapView: React.FC<MapViewProps> = ({
     const map = L.map(mapContainerRef.current, {
       center: [23.115, 113.325],
       zoom: 11,
+      minZoom: 1,
+      maxZoom: 19,
       zoomControl: false,
     });
 
-    // Primary OpenStreetMap Standard Tile Layer
-    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '&copy; OpenStreetMap contributors',
-      maxZoom: 19,
-    }).addTo(map);
+    const controller = new AbortController();
+    let active = true;
+    let vectorLayer: ReturnType<typeof maplibreGL> | undefined;
+    let ready = false;
+    setMapStatus('loading');
+    lastFocusRef.current = null;
+    const loadTimeout = window.setTimeout(() => { if (active && !ready) setMapStatus('error'); }, 25000);
+    fetch(MAP_STYLE_URL, { signal: controller.signal })
+      .then(response => { if (!response.ok) throw new Error('Map style unavailable'); return response.json(); })
+      .then(style => {
+        if (!active) return;
+        vectorLayer = maplibreGL({ style: withEnglishLabels(style), attributionControl: false, renderWorldCopies: false }).addTo(map);
+        const gl = vectorLayer.getMaplibreMap();
+        gl.on('load', () => { if (active) { ready = true; window.clearTimeout(loadTimeout); setMapStatus('ready'); } });
+        gl.on('error', () => { if (active && !ready) setMapStatus('error'); });
+        gl.on('webglcontextlost', () => { if (active) setMapStatus('error'); });
+      })
+      .catch(() => { if (active && !controller.signal.aborted) setMapStatus('error'); });
+    map.attributionControl.addAttribution('<a href="https://openfreemap.org/" target="_blank" rel="noopener">OpenFreeMap</a> · <a href="https://openmaptiles.org/" target="_blank" rel="noopener">OpenMapTiles</a> · <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">© OpenStreetMap</a>');
 
     L.control.zoom({ position: 'bottomright' }).addTo(map);
 
@@ -72,6 +99,7 @@ export const MapView: React.FC<MapViewProps> = ({
     }, 200);
 
     return () => {
+      active = false; controller.abort(); window.clearTimeout(loadTimeout);
       if (resizeTimer) window.clearTimeout(resizeTimer);
       window.clearTimeout(initTimer);
       window.removeEventListener('resize', handleResize);
@@ -80,9 +108,9 @@ export const MapView: React.FC<MapViewProps> = ({
       } catch {
         // ignore cleanup error
       }
-      mapInstanceRef.current = null;
+      mapInstanceRef.current = null; markersLayerRef.current = null;
     };
-  }, []);
+  }, [mapAttempt]);
 
   // Render Circular Photo Pins & Fit to Selected Region
   useEffect(() => {
@@ -98,6 +126,7 @@ export const MapView: React.FC<MapViewProps> = ({
       suppliers.forEach((s) => {
         if (!s.location?.lat || !s.location?.lng) return;
         const itemCountry = s.country || 'CN';
+        if (regionFocus !== 'ALL' && regionFocus !== itemCountry) return;
 
         const photo =
           s.photos.storefrontAndAtmosphere?.[0] ||
@@ -108,7 +137,7 @@ export const MapView: React.FC<MapViewProps> = ({
           className: 'custom-map-pin',
           html: `
             <div style="position: relative; width: 46px; height: 46px; border-radius: 50%; border: 3px solid #059669; box-shadow: 0 4px 14px rgba(0,0,0,0.28); overflow: hidden; background: #fff; cursor: pointer;">
-              <img src="${photo}" style="width: 100%; height: 100%; object-fit: cover;" />
+              <img src="${photo.replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;")}" style="width: 100%; height: 100%; object-fit: cover;" />
               <div style="position: absolute; bottom: 0; right: 0; width: 17px; height: 17px; border-radius: 50%; background: #059669; border: 1.5px solid #fff; display: flex; align-items: center; justify-content: center; font-size: 8px; color: #fff;"><i class="fa-solid fa-industry"></i></div>
             </div>
           `,
@@ -117,7 +146,7 @@ export const MapView: React.FC<MapViewProps> = ({
         });
 
         const marker = L.marker([s.location.lat, s.location.lng], { icon: customIcon });
-        marker.bindTooltip(s.name, { direction: 'top', offset: [0, -20] });
+        marker.bindTooltip(Object.assign(document.createElement('span'), { textContent: s.name }), { direction: 'top', offset: [0, -20] });
         marker.on('click', () => {
           setSelectedPin({ type: 'supplier', data: s });
           map.flyTo([s.location.lat, s.location.lng], 14, { duration: 0.6 });
@@ -135,6 +164,7 @@ export const MapView: React.FC<MapViewProps> = ({
       drinkStores.forEach((d) => {
         if (!d.location?.lat || !d.location?.lng) return;
         const itemCountry = d.country || 'CN';
+        if (regionFocus !== 'ALL' && regionFocus !== itemCountry) return;
 
         const photo =
           d.photos.drinkCups?.[0] ||
@@ -145,7 +175,7 @@ export const MapView: React.FC<MapViewProps> = ({
           className: 'custom-map-pin',
           html: `
             <div style="position: relative; width: 46px; height: 46px; border-radius: 50%; border: 3px solid #D97706; box-shadow: 0 4px 14px rgba(0,0,0,0.28); overflow: hidden; background: #fff; cursor: pointer;">
-              <img src="${photo}" style="width: 100%; height: 100%; object-fit: cover;" />
+              <img src="${photo.replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;")}" style="width: 100%; height: 100%; object-fit: cover;" />
               <div style="position: absolute; bottom: 0; right: 0; width: 17px; height: 17px; border-radius: 50%; background: #D97706; border: 1.5px solid #fff; display: flex; align-items: center; justify-content: center; font-size: 8px; color: #fff;"><i class="fa-solid fa-mug-hot"></i></div>
             </div>
           `,
@@ -154,7 +184,7 @@ export const MapView: React.FC<MapViewProps> = ({
         });
 
         const marker = L.marker([d.location.lat, d.location.lng], { icon: customIcon });
-        marker.bindTooltip(d.storeName, { direction: 'top', offset: [0, -20] });
+        marker.bindTooltip(Object.assign(document.createElement('span'), { textContent: d.storeName }), { direction: 'top', offset: [0, -20] });
         marker.on('click', () => {
           setSelectedPin({ type: 'drink_store', data: d });
           map.flyTo([d.location.lat, d.location.lng], 14, { duration: 0.6 });
@@ -167,6 +197,9 @@ export const MapView: React.FC<MapViewProps> = ({
       });
     }
 
+    const focusKey = `${regionFocus}:${filterType}`;
+    if (lastFocusRef.current === focusKey) return;
+    lastFocusRef.current = focusKey;
     if (bounds.isValid()) {
       map.fitBounds(bounds, {
         padding: [36, 36],
@@ -178,7 +211,11 @@ export const MapView: React.FC<MapViewProps> = ({
     } else if (regionFocus === 'TH') {
       map.setView([13.7563, 100.5018], 11, { animate: false });
     }
-  }, [suppliers, drinkStores, filterType, regionFocus]);
+  }, [suppliers, drinkStores, filterType, regionFocus, mapAttempt]);
+
+  useEffect(() => { setSelectedPin(null); }, [filterType, regionFocus]);
+  const regionSuppliers = suppliers.filter(s => regionFocus === 'ALL' || (s.country || 'CN') === regionFocus);
+  const regionStores = drinkStores.filter(s => regionFocus === 'ALL' || (s.country || 'CN') === regionFocus);
 
   // Combined list of pinned items for quick-jump bar below map
   const quickPinItems = [
@@ -204,7 +241,7 @@ export const MapView: React.FC<MapViewProps> = ({
           raw: d,
         }))
       : []),
-  ];
+  ].filter(item => regionFocus === 'ALL' || item.country === regionFocus);
 
   const handleFlyToItem = (item: (typeof quickPinItems)[number]) => {
     setSelectedPin({ type: item.type, data: item.raw });
@@ -214,7 +251,8 @@ export const MapView: React.FC<MapViewProps> = ({
   };
 
   return (
-    <div className="space-y-2">
+    <div className="space-y-2" data-testid="english-map" data-map-status={mapStatus}>
+      <p className="text-xs text-slate-500"><span className="font-semibold text-slate-700">Map language: English</span> · ชื่อสถานที่ภาษาอังกฤษ</p>
       <div className="relative isolate w-full h-[380px] sm:h-[430px] overflow-hidden rounded-2xl border border-slate-200/90 shadow-2xs bg-slate-100">
         {/* Top Left: Type Filter Bar */}
         <div className="absolute top-2.5 left-2.5 z-[400] flex flex-wrap items-center gap-1 bg-white/95 backdrop-blur-md p-1 rounded-xl border border-slate-200/80 shadow-sm">
@@ -228,7 +266,7 @@ export const MapView: React.FC<MapViewProps> = ({
             }`}
           >
             <Layers className="w-3 h-3" />
-            <span>ทั้งหมด ({suppliers.length + drinkStores.length})</span>
+            <span>ทั้งหมด ({regionSuppliers.length + regionStores.length})</span>
           </button>
 
           <button
@@ -241,7 +279,7 @@ export const MapView: React.FC<MapViewProps> = ({
             }`}
           >
             <Factory className="w-3 h-3" />
-            <span>ซัพ ({suppliers.length})</span>
+            <span>ซัพ ({regionSuppliers.length})</span>
           </button>
 
           <button
@@ -254,7 +292,7 @@ export const MapView: React.FC<MapViewProps> = ({
             }`}
           >
             <Coffee className="w-3 h-3" />
-            <span>ร้านน้ำ ({drinkStores.length})</span>
+            <span>ร้านน้ำ ({regionStores.length})</span>
           </button>
         </div>
 
@@ -269,8 +307,8 @@ export const MapView: React.FC<MapViewProps> = ({
                 : 'text-slate-700 hover:bg-slate-100'
             }`}
           >
-            <i className="fa-solid fa-location-dot text-[10px]" />
-            <span>โซนจีน (กวางโจว/เซินเจิ้น)</span>
+            <i aria-hidden="true" className="fa-solid fa-location-dot text-[10px]" />
+            <span>China</span>
           </button>
           <button
             type="button"
@@ -281,8 +319,8 @@ export const MapView: React.FC<MapViewProps> = ({
                 : 'text-slate-700 hover:bg-slate-100'
             }`}
           >
-            <i className="fa-solid fa-location-dot text-[10px]" />
-            <span>โซนไทย (กทม.)</span>
+            <i aria-hidden="true" className="fa-solid fa-location-dot text-[10px]" />
+            <span>Thailand</span>
           </button>
           <button
             type="button"
@@ -293,13 +331,18 @@ export const MapView: React.FC<MapViewProps> = ({
                 : 'text-slate-700 hover:bg-slate-100'
             }`}
           >
-            <i className="fa-solid fa-earth-asia text-[10px]" />
-            <span>รวม</span>
+            <i aria-hidden="true" className="fa-solid fa-earth-asia text-[10px]" />
+            <span>All regions</span>
           </button>
         </div>
 
         {/* Map Canvas Container */}
         <div ref={mapContainerRef} className="w-full h-full z-0" style={{ minHeight: '380px' }} />
+
+        {mapStatus !== 'ready' && <div role="status" className="absolute bottom-8 left-3 right-12 z-[450] rounded-xl border border-slate-200 bg-white/95 px-3 py-2 text-xs text-slate-600 shadow-sm">
+          {mapStatus === 'loading' ? 'กำลังโหลดแผนที่ภาษาอังกฤษ…' : 'ยังโหลดแผนที่ไม่ได้ กรุณาตรวจสอบอินเทอร์เน็ต'}
+          {mapStatus === 'error' && <button className="ml-2 min-h-10 font-semibold text-emerald-700 underline" onClick={() => setMapAttempt(value => value + 1)}>ลองใหม่</button>}
+        </div>}
 
         {/* Bottom Popup Card for Selected Pin */}
         {selectedPin && (
@@ -314,12 +357,12 @@ export const MapView: React.FC<MapViewProps> = ({
               >
                 {selectedPin.type === 'supplier' ? (
                   <>
-                    <i className="fa-solid fa-industry text-[9px] text-emerald-600" />
+                    <i aria-hidden="true" className="fa-solid fa-industry text-[9px] text-emerald-600" />
                     <span>ซัพพลายเออร์</span>
                   </>
                 ) : (
                   <>
-                    <i className="fa-solid fa-mug-hot text-[9px] text-amber-600" />
+                    <i aria-hidden="true" className="fa-solid fa-mug-hot text-[9px] text-amber-600" />
                     <span>เรฟร้านน้ำ</span>
                   </>
                 )}
@@ -408,9 +451,9 @@ export const MapView: React.FC<MapViewProps> = ({
               {p.country === 'TH' ? 'TH' : 'CN'}
             </span>
             {p.type === 'supplier' ? (
-              <i className="fa-solid fa-industry text-[10px] text-emerald-600" />
+              <i aria-hidden="true" className="fa-solid fa-industry text-[10px] text-emerald-600" />
             ) : (
-              <i className="fa-solid fa-mug-hot text-[10px] text-amber-600" />
+              <i aria-hidden="true" className="fa-solid fa-mug-hot text-[10px] text-amber-600" />
             )}
             <span className="max-w-[160px] truncate">{p.title}</span>
           </button>

@@ -1,3 +1,4 @@
+import { useDialog } from '../hooks/useDialog';
 import React, { useState, useEffect } from 'react';
 import {
   Download,
@@ -19,7 +20,7 @@ interface InstallPromptModalProps {
 }
 
 export const InstallPromptModal: React.FC<InstallPromptModalProps> = ({ isOpen, onClose }) => {
-  const { currentUser, broadcastNotification } = useApp();
+  const { currentUser, broadcastNotification, simulatedFromAdmin, isMutating } = useApp();
 
   const [notificationPermission, setNotificationPermission] = useState<string>(
     typeof window !== 'undefined' && 'Notification' in window ? Notification.permission : 'default'
@@ -89,7 +90,7 @@ export const InstallPromptModal: React.FC<InstallPromptModalProps> = ({ isOpen, 
       if (Notification.permission === 'granted') {
         try {
           new Notification('🔔 ทดสอบแจ้งเตือน — ฉันจะเป็นหัวแถว', {
-            body: `สวัสดี ${currentUser.alias}! ระบบแจ้งเตือนและเสียงเตือนบนเครื่องของคุณทำงานปกติ 100%`,
+            body: `สวัสดี ${currentUser.alias}! ระบบแจ้งเตือนและเสียงเตือนบนเครื่องของคุณพร้อมใช้งาน`,
             icon: './logo.jpg',
           });
         } catch {
@@ -104,18 +105,20 @@ export const InstallPromptModal: React.FC<InstallPromptModalProps> = ({ isOpen, 
       'status',
       undefined,
       currentUser.avatar,
-      false
+      false,
+      { localOnly: true }
     );
 
     setTestStatusMsg('✅ ยิงแจ้งเตือนทดสอบ + เสียงเตือนเข้าเครื่องนี้สำเร็จแล้ว! (สังเกตแถบเด้งด้านบน)');
   };
 
-  const handleAdminBroadcastToAll = () => {
+  const handleAdminBroadcastToAll = async () => {
+    if (currentUser.id !== 'user-ice' || simulatedFromAdmin) return;
     playAlertChime();
 
     const msg =
       adminBroadcastText.trim() ||
-      'ประกาศด่วนจากคุณไอซ์: รบกวนทีมตรวจเช็กข้อมูลซัพพลายเออร์และเรฟร้านน้ำล่าสุด';
+      'รบกวนทีมตรวจเช็กข้อมูลซัพพลายเออร์และร้านน้ำล่าสุด';
 
     if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
       try {
@@ -128,7 +131,7 @@ export const InstallPromptModal: React.FC<InstallPromptModalProps> = ({ isOpen, 
       }
     }
 
-    broadcastNotification(
+    const saved = await broadcastNotification(
       `📢 ประกาศด่วนจาก ${currentUser.alias} ถึงทุกคนในระบบ`,
       msg,
       'reply',
@@ -137,7 +140,7 @@ export const InstallPromptModal: React.FC<InstallPromptModalProps> = ({ isOpen, 
       false
     );
 
-    setTestStatusMsg('📢 ส่งแจ้งเตือนประกาศด่วนถึงทุกคนในระบบเรียบร้อยแล้ว!');
+    setTestStatusMsg(saved ? 'ส่งประกาศถึงทีมแล้ว' : 'ส่งประกาศไม่สำเร็จ กรุณาลองใหม่');
   };
 
   const handleInstallClick = () => {
@@ -149,11 +152,12 @@ export const InstallPromptModal: React.FC<InstallPromptModalProps> = ({ isOpen, 
     toggleInstalledStatus(true);
   };
 
+  const dialog = useDialog(isOpen);
   if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 z-50 bg-black/45 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4 animate-in fade-in">
-      <div className="bg-white border border-slate-200/90 w-full max-w-lg rounded-t-3xl sm:rounded-2xl shadow-2xl overflow-hidden p-5 sm:p-6 text-slate-900 animate-in slide-in-from-bottom-6 sm:zoom-in-95 max-h-[92vh] overflow-y-auto">
+      <div ref={dialog} role="dialog" aria-modal="true" aria-label="ติดตั้งแอพ" className="bg-white border border-slate-200/90 w-full max-w-lg rounded-t-3xl sm:rounded-2xl shadow-2xl overflow-hidden p-5 sm:p-6 text-slate-900 animate-in slide-in-from-bottom-6 sm:zoom-in-95 max-h-[92vh] overflow-y-auto">
         {/* Header */}
         <div className="flex items-center justify-between pb-3.5 border-b border-slate-100">
           <div className="flex items-center gap-2.5">
@@ -172,7 +176,7 @@ export const InstallPromptModal: React.FC<InstallPromptModalProps> = ({ isOpen, 
             </div>
           </div>
           <button
-            onClick={onClose}
+            onClick={onClose} aria-label="ปิดหน้าติดตั้ง"
             className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center transition-colors"
           >
             <X className="w-4 h-4" />
@@ -320,12 +324,12 @@ export const InstallPromptModal: React.FC<InstallPromptModalProps> = ({ isOpen, 
           </div>
 
           {/* Admin-Only Special Broadcast Button ("ปุ่มพิเศษสำหรับผมเทสแจ้งเตือนทุกคน") */}
-          {currentUser.role === 'admin' && (
+          {currentUser.id === 'user-ice' && !simulatedFromAdmin && (
             <div className="p-3.5 bg-amber-50/70 rounded-xl border-2 border-amber-300/80 space-y-2.5 text-xs">
               <div className="flex items-center justify-between">
                 <span className="font-extrabold text-amber-950 flex items-center gap-1.5">
                   <ShieldCheck className="w-4 h-4 text-amber-600" />
-                  <span>ปุ่มพิเศษเฉพาะคุณไอซ์ (Admin): ยิงแจ้งเตือนทดสอบถึงทุกคน</span>
+                  <span>ส่งประกาศถึงทีม</span>
                 </span>
                 <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-amber-200/70 text-amber-900">
                   ADMIN ONLY
@@ -342,11 +346,11 @@ export const InstallPromptModal: React.FC<InstallPromptModalProps> = ({ isOpen, 
 
               <button
                 type="button"
-                onClick={handleAdminBroadcastToAll}
+                onClick={handleAdminBroadcastToAll} disabled={isMutating}
                 className="w-full py-2.5 px-4 rounded-xl bg-slate-900 hover:bg-emerald-700 text-white font-extrabold text-xs flex items-center justify-center gap-2 shadow-sm active:scale-[0.99] transition-all"
               >
                 <Radio className="w-4 h-4 text-emerald-400 animate-pulse" />
-                <span>📢 ยิงแจ้งเตือนด่วนถึงทุกคนในระบบเดี๋ยวนี้</span>
+                <span>ส่งประกาศ</span>
               </button>
             </div>
           )}
@@ -360,7 +364,7 @@ export const InstallPromptModal: React.FC<InstallPromptModalProps> = ({ isOpen, 
 
         <div className="pt-2 flex justify-end">
           <button
-            onClick={onClose}
+            onClick={onClose} aria-label="ปิดหน้าติดตั้ง"
             className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold transition-colors"
           >
             ปิดหน้าต่าง

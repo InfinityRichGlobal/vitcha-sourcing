@@ -1,3 +1,4 @@
+import { AvatarImage } from './AvatarImage';
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import {
@@ -34,6 +35,7 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
   const {
     currentUser,
     syncStatus,
+    renderStatus,
     pendingSyncCount,
     exchangeRate,
     notifications,
@@ -58,12 +60,14 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
     setIsPwaInstalled(checkInstallStatus());
     const handleStatusChange = () => setIsPwaInstalled(checkInstallStatus());
     window.addEventListener('vitcha-pwa-status-changed', handleStatusChange);
-    window.addEventListener('appinstalled', () => {
+    const handleInstalled = () => {
       localStorage.setItem('vitcha_pwa_installed', 'true');
       setIsPwaInstalled(true);
-    });
+    };
+    window.addEventListener('appinstalled', handleInstalled);
     return () => {
       window.removeEventListener('vitcha-pwa-status-changed', handleStatusChange);
+      window.removeEventListener('appinstalled', handleInstalled);
     };
   }, []);
 
@@ -91,7 +95,7 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
               />
               <span
                 className={`absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 border-white ${
-                  syncStatus === 'online' ? 'bg-emerald-500' : 'bg-amber-500'
+                  syncStatus === 'online' && renderStatus === 'connected' ? 'bg-emerald-500' : 'bg-amber-500'
                 }`}
               />
             </div>
@@ -106,11 +110,11 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
                 </span>
               </div>
               <div className="flex items-center gap-1 text-[9.5px] sm:text-[11px] text-slate-500 font-medium whitespace-nowrap leading-tight">
-                <i className="fa-solid fa-bars text-[9px] text-slate-400 shrink-0" />
+                <i aria-hidden="true" className="fa-solid fa-bars text-[9px] text-slate-400 shrink-0" />
                 <span>
-                  {syncStatus === 'online'
+                  {syncStatus === 'online' && renderStatus === 'connected'
                     ? 'เมนูหลัก · ออนไลน์'
-                    : `ออฟไลน์ (${pendingSyncCount})`}
+                    : 'รอเชื่อมต่อ'}
                 </span>
               </div>
             </div>
@@ -125,14 +129,14 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
                 setActiveTab('dashboard');
                 window.scrollTo({ top: 0, behavior: 'smooth' });
               }}
-              className={`w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center transition-all active:scale-95 shrink-0 ${
+              className={`hidden md:flex w-7 h-7 sm:w-8 sm:h-8 items-center justify-center transition-all active:scale-95 shrink-0 ${
                 activeTab === 'dashboard'
-                  ? 'text-emerald-600'
-                  : 'text-slate-600 hover:text-emerald-600'
+                  ? 'text-slate-500'
+                  : 'text-slate-500 hover:text-slate-700'
               }`}
               title="กลับหน้าหลัก (Home)"
             >
-              <i className="fa-solid fa-house text-sm sm:text-base" />
+              <i aria-hidden="true" className="fa-solid fa-house text-sm sm:text-base" />
             </button>
 
             {/* '+' Button (ปุ่มบวกทรงกลมกะทัดรัด ไม่ใหญ่เกินไป) */}
@@ -140,10 +144,10 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
               <button
                 type="button"
                 onClick={() => setIsAddPickerOpen(true)}
-                className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-slate-900 hover:bg-emerald-600 text-white flex items-center justify-center shadow-xs transition-all active:scale-95 shrink-0"
+                className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-slate-700 hover:bg-slate-800 text-white flex items-center justify-center shadow-xs transition-all active:scale-95 shrink-0"
                 title="เพิ่มข้อมูลใหม่ (ซัพพลายเออร์ หรือ ร้านน้ำ & เรฟ)"
               >
-                <i className="fa-solid fa-plus text-xs" />
+                <i aria-hidden="true" className="fa-solid fa-plus text-xs" />
               </button>
             )}
 
@@ -162,7 +166,7 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
             <button
               type="button"
               onClick={onOpenInstall}
-              className="relative w-7 h-7 sm:w-8 sm:h-8 rounded-lg hover:bg-slate-100/80 text-slate-600 hover:text-slate-900 flex items-center justify-center transition-all active:scale-95 shrink-0"
+              className="hidden md:flex relative w-7 h-7 sm:w-8 sm:h-8 rounded-lg hover:bg-slate-100/80 text-slate-600 hover:text-slate-900 flex items-center justify-center transition-all active:scale-95 shrink-0"
               title={
                 isPwaInstalled
                   ? 'ติดตั้งแอพลงหน้าจอโฮมแล้ว (✓) · กดเพื่อดู/ทดสอบแจ้งเตือน'
@@ -203,13 +207,13 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
               title="กดเพื่อแก้ไขรูปโปรไฟล์ ชื่อ และรหัสผ่าน"
               className="flex items-center gap-1.5 py-1 pl-1 pr-1 rounded-lg hover:bg-slate-100/80 transition-all active:scale-95 shrink-0"
             >
-              <img
+              <AvatarImage
                 key={currentUser.avatar}
-                src={currentUser.avatar}
+                src={currentUser.avatar || './logo.jpg'}
                 alt={currentUser.alias}
                 className="w-6 h-6 sm:w-7 sm:h-7 rounded-full object-cover ring-1 ring-slate-200 shrink-0"
               />
-              <span className="text-[11px] sm:text-xs font-bold text-slate-800 whitespace-nowrap">
+              <span className="hidden sm:inline max-w-40 truncate text-xs font-bold text-slate-800">
                 {currentUser.alias}
               </span>
             </button>
@@ -230,11 +234,11 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
             <div className="flex items-center justify-between">
               <div>
                 <h3 className="font-extrabold text-sm sm:text-base text-slate-950 flex items-center gap-1.5">
-                  <i className="fa-solid fa-circle-plus text-emerald-600" />
+                  <i aria-hidden="true" className="fa-solid fa-circle-plus text-emerald-600" />
                   <span>เลือกประเภทข้อมูลที่ต้องการบันทึก</span>
                 </h3>
                 <p className="text-[11px] text-slate-500 flex items-center gap-1 mt-0.5">
-                  <i className="fa-solid fa-earth-asia text-slate-400" />
+                  <i aria-hidden="true" className="fa-solid fa-earth-asia text-slate-400" />
                   <span>รองรับการสำรวจทั้งใน จีน (CN) และ ไทย (TH)</span>
                 </p>
               </div>
@@ -259,7 +263,7 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
               >
                 <div className="flex items-center gap-3 min-w-0">
                   <div className="w-10 h-10 rounded-xl bg-white/15 flex items-center justify-center shrink-0">
-                    <i className="fa-solid fa-industry text-base text-white" />
+                    <i aria-hidden="true" className="fa-solid fa-industry text-base text-white" />
                   </div>
                   <div className="min-w-0">
                     <div className="font-extrabold text-sm text-white flex items-center gap-1.5">
@@ -284,7 +288,7 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
               >
                 <div className="flex items-center gap-3 min-w-0">
                   <div className="w-10 h-10 rounded-xl bg-white/15 flex items-center justify-center shrink-0">
-                    <i className="fa-solid fa-mug-hot text-base text-white" />
+                    <i aria-hidden="true" className="fa-solid fa-mug-hot text-base text-white" />
                   </div>
                   <div className="min-w-0">
                     <div className="font-extrabold text-sm text-white flex items-center gap-1.5">

@@ -1,18 +1,20 @@
+import { AvatarImage } from './AvatarImage';
 import React, { useState, useEffect, useRef } from 'react';
 import { useApp } from '../context/AppContext';
 import { compressImageFile } from '../utils/imageCompressor';
+import { requestJson } from '../services/api';
 import { UserRole } from '../types';
-import { 
-  ShieldCheck, 
-  Ticket, 
-  User as UserIcon, 
-  Lock, 
-  Eye, 
-  EyeOff, 
-  Camera, 
-  Image as ImageIcon, 
-  AlertCircle, 
-  CheckCircle2, 
+import {
+  ShieldCheck,
+  Ticket,
+  User as UserIcon,
+  Lock,
+  Eye,
+  EyeOff,
+  Camera,
+  Image as ImageIcon,
+  AlertCircle,
+  CheckCircle2,
   Sparkles,
   ArrowRight
 } from 'lucide-react';
@@ -34,33 +36,27 @@ export const RegisterWithInviteModal: React.FC<RegisterWithInviteModalProps> = (
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Read URL query params if any extra metadata was embedded
-  const params = new URLSearchParams(window.location.search);
-  const urlRole = (params.get('role') as UserRole) || 'reviewer';
-  const urlAlias = params.get('alias') || '';
-
-  // Find invite from state or initialize
-  const matchedInvite = invites.find(
-    (inv) => inv.code.toUpperCase() === inviteCode.trim().toUpperCase()
-  );
-
-  const initialRole: UserRole = matchedInvite?.role || urlRole || 'reviewer';
-  const initialAlias: string = matchedInvite?.prefilledAlias || urlAlias || (inviteCode === 'VITCHA-RKBQS' ? 'ทีมงานปฏิบัติการ VITCHA' : 'สมาชิกใหม่ VITCHA');
-
-  const [name, setName] = useState(initialAlias);
+  const [verifiedInvite, setVerifiedInvite] = useState<{ role: UserRole; prefilledAlias?: string } | null>(null);
+  const initialRole = verifiedInvite?.role || 'reviewer';
+  const [name, setName] = useState('');
   const [usernameOrId, setUsernameOrId] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [avatar, setAvatar] = useState<string>('');
   const [isCompressing, setIsCompressing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
 
   useEffect(() => {
-    if (initialAlias && !name) {
-      setName(initialAlias);
-    }
-  }, [initialAlias]);
+    if (!isOpen) return;
+    const controller = new AbortController();
+    setVerifiedInvite(null); setError(null);
+    requestJson(`/api/invite/${encodeURIComponent(inviteCode)}`, { signal: controller.signal })
+      .then(data => { if (!controller.signal.aborted) { setVerifiedInvite(data); setName(data.prefilledAlias || ""); } })
+      .catch(error => { if (!controller.signal.aborted) setError(error.message); });
+    return () => controller.abort();
+  }, [isOpen, inviteCode]);
 
   if (!isOpen) return null;
 
@@ -84,9 +80,10 @@ export const RegisterWithInviteModal: React.FC<RegisterWithInviteModalProps> = (
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+    if (isSubmitting || isCompressing || !verifiedInvite) return;
 
     // Strict validation: บังคับทุกฟิลด์ตามคำสั่ง
     if (!name.trim()) {
@@ -99,8 +96,8 @@ export const RegisterWithInviteModal: React.FC<RegisterWithInviteModalProps> = (
       return;
     }
 
-    if (!password.trim() || password.trim().length < 4) {
-      setError('กรุณากำหนดรหัสผ่านหรือ PIN อย่างน้อย 4 ตัวอักษร (จำเป็น)');
+    if (!password.length) {
+      setError('กรุณากำหนดรหัสผ่าน');
       return;
     }
 
@@ -109,13 +106,14 @@ export const RegisterWithInviteModal: React.FC<RegisterWithInviteModalProps> = (
       return;
     }
 
+    setIsSubmitting(true);
     try {
-      registerUserWithInvite(
+      await registerUserWithInvite(
         inviteCode,
         name.trim(),
         name.trim(),
         usernameOrId.trim(),
-        password.trim(),
+        password,
         avatar,
         initialRole
       );
@@ -125,29 +123,11 @@ export const RegisterWithInviteModal: React.FC<RegisterWithInviteModalProps> = (
       window.history.replaceState({}, document.title, cleanUrl);
 
       setIsSuccess(true);
-      setTimeout(() => {
-        onClose();
-      }, 700);
-    } catch {
-      setError('เกิดข้อผิดพลาดในการลงทะเบียน กรุณาลองใหม่อีกครั้ง');
-    }
+      onClose();
+    } catch (error) {
+      setError(error instanceof Error ? error.message : 'สมัครไม่สำเร็จ');
+    } finally { setIsSubmitting(false); }
   };
-
-  const getRoleBadge = (role: UserRole) => {
-    switch (role) {
-      case 'admin':
-        return { label: 'Admin (ผู้ดูแลระบบสูงสุด)', color: 'bg-red-50 text-red-700 border-red-200' };
-      case 'editor':
-        return { label: 'Editor (ทีมสำรวจ: บันทึก+ถ่ายภาพ)', color: 'bg-emerald-50 text-emerald-700 border-emerald-200' };
-      case 'viewer':
-        return { label: 'Viewer (ผู้ร่วมสังเกตการณ์: ดูอย่างเดียว)', color: 'bg-slate-100 text-slate-700 border-slate-200' };
-      case 'reviewer':
-      default:
-        return { label: 'Reviewer (ทีมไทย: เมมโม+ปรับสถานะ)', color: 'bg-blue-50 text-blue-700 border-blue-200' };
-    }
-  };
-
-  const roleInfo = getRoleBadge(initialRole);
 
   return (
     <div className="fixed inset-0 z-[120] bg-slate-950 flex items-center justify-center p-3 sm:p-6 overflow-y-auto animate-in fade-in">
@@ -189,7 +169,7 @@ export const RegisterWithInviteModal: React.FC<RegisterWithInviteModalProps> = (
               </div>
               <div className="min-w-0">
                 <div className="text-[10px] font-bold text-emerald-800 uppercase tracking-wider flex items-center gap-1">
-                  <span>บัตรเทียบเชิญถูกต้อง</span>
+                  <span>{verifiedInvite ? 'ตรวจสอบคำเชิญแล้ว' : error ? 'ไม่สามารถใช้คำเชิญนี้' : 'กำลังตรวจสอบคำเชิญ'}</span>
                   <Sparkles className="w-3 h-3 text-emerald-600" />
                 </div>
                 <div className="text-sm font-mono font-black text-slate-900 tracking-wide truncate">
@@ -197,9 +177,7 @@ export const RegisterWithInviteModal: React.FC<RegisterWithInviteModalProps> = (
                 </div>
               </div>
             </div>
-            <span className={`text-[10px] font-bold px-2.5 py-1 rounded-lg border ${roleInfo.color} shrink-0`}>
-              {roleInfo.label.split(' ')[0]}
-            </span>
+
           </div>
         </div>
 
@@ -231,7 +209,7 @@ export const RegisterWithInviteModal: React.FC<RegisterWithInviteModalProps> = (
                 }`}
               >
                 {avatar ? (
-                  <img
+                  <AvatarImage
                     src={avatar}
                     alt="รูปโปรไฟล์"
                     className="w-full h-full object-cover"
@@ -276,7 +254,7 @@ export const RegisterWithInviteModal: React.FC<RegisterWithInviteModalProps> = (
             {/* Hidden Input for Mobile Gallery & Camera */}
             <input
               ref={fileInputRef}
-              type="file"
+              type="file" disabled={isCompressing || isSubmitting}
               accept="image/*"
               className="hidden"
               onChange={handleAvatarFile}
@@ -301,7 +279,7 @@ export const RegisterWithInviteModal: React.FC<RegisterWithInviteModalProps> = (
               />
             </div>
             <p className="text-[10px] text-slate-400 pl-1">
-              ระบบดึงชื่อจากบัตรเทียบเชิญมาแสดงให้อัตโนมัติ สามารถแตะเพื่อพิมพ์แก้ไขชื่อใหม่ได้เลย
+              ใช้ชื่อที่ทีมรู้จัก เพื่อระบุผู้บันทึกและผู้รับผิดชอบงานได้ง่าย
             </p>
           </div>
 
@@ -333,7 +311,7 @@ export const RegisterWithInviteModal: React.FC<RegisterWithInviteModalProps> = (
           <div className="space-y-1">
             <label className="text-xs font-bold text-slate-700 flex items-center gap-1">
               <span>รหัสผ่าน หรือ PIN</span>
-              <span className="text-red-500">* (อย่างน้อย 4 ตัวอักษร)</span>
+              <span className="text-red-500">*</span>
             </label>
             <div className="relative">
               <Lock className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
@@ -341,10 +319,11 @@ export const RegisterWithInviteModal: React.FC<RegisterWithInviteModalProps> = (
                 type={showPassword ? 'text' : 'password'}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="กำหนดรหัสผ่าน เช่น 1234 หรือ Pass#2026"
+                autoComplete="new-password"
+                placeholder="กำหนดรหัสผ่านสำหรับบัญชีของคุณ"
                 className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2.5 pl-10 pr-10 text-xs sm:text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white transition-all font-mono"
                 required
-                minLength={4}
+
               />
               <button
                 type="button"
@@ -360,7 +339,7 @@ export const RegisterWithInviteModal: React.FC<RegisterWithInviteModalProps> = (
           {/* Submit Button */}
           <button
             type="submit"
-            disabled={isCompressing || isSuccess}
+            disabled={isCompressing || isSuccess || isSubmitting || !verifiedInvite}
             className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3.5 px-4 rounded-xl shadow-lg shadow-emerald-600/20 active:scale-[0.98] transition-all flex items-center justify-center gap-2 text-sm mt-3"
           >
             {isSuccess ? (

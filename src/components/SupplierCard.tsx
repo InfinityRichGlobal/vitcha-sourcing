@@ -1,3 +1,4 @@
+import { AvatarImage } from './AvatarImage';
 import React, { useState } from 'react';
 import { SupplierRecord } from '../types';
 import { useApp } from '../context/AppContext';
@@ -37,6 +38,7 @@ export const SupplierCard: React.FC<SupplierCardProps> = ({
     addReviewerNote,
     addReviewReply,
     canEditItems,
+    canComment,
     openEditItem,
   } = useApp();
 
@@ -82,19 +84,19 @@ export const SupplierCard: React.FC<SupplierCardProps> = ({
   const isLikedByMe = likes.some((l) => l.userId === currentUser.id);
   const catalogItems = Array.isArray(supplier.catalogItems) ? supplier.catalogItems : [];
 
-  const handlePostComment = (e: React.FormEvent) => {
+  const handlePostComment = async (e: React.FormEvent) => {
     e.preventDefault();
     e.stopPropagation();
     if (!commentInput.trim()) return;
-    addReviewerNote(supplier.id, 'supplier', commentInput.trim());
+    if (!await addReviewerNote(supplier.id, 'supplier', commentInput.trim())) return;
     setCommentInput('');
   };
 
-  const handlePostReply = (e: React.FormEvent, noteId: string, replyToAuthor?: string) => {
+  const handlePostReply = async (e: React.FormEvent, noteId: string, replyToAuthor?: string) => {
     e.preventDefault();
     e.stopPropagation();
     if (!replyInput.trim()) return;
-    addReviewReply(supplier.id, 'supplier', noteId, replyInput.trim(), replyToAuthor);
+    if (!await addReviewReply(supplier.id, 'supplier', noteId, replyInput.trim(), replyToAuthor)) return;
     setReplyInput('');
     setReplyingTo(null);
   };
@@ -108,7 +110,7 @@ export const SupplierCard: React.FC<SupplierCardProps> = ({
           className="p-4 pb-2.5 flex items-start justify-between gap-2 cursor-pointer"
         >
           <div className="flex items-center gap-2.5 min-w-0">
-            <img
+            <AvatarImage loading="lazy" decoding="async"
               src={supplier.creator.avatar}
               alt={supplier.creator.alias}
               className="w-9 h-9 rounded-full object-cover border border-slate-200 shrink-0"
@@ -229,7 +231,7 @@ export const SupplierCard: React.FC<SupplierCardProps> = ({
             </div>
           )}
 
-          <img
+          <img loading="lazy" decoding="async"
             src={displayPhotos[safePhotoIdx]}
             alt={supplier.name}
             onClick={() => setLightboxIdx(safePhotoIdx)}
@@ -373,7 +375,7 @@ export const SupplierCard: React.FC<SupplierCardProps> = ({
                   return (
                     <div key={note.id} className="space-y-1.5">
                       <div className="flex items-start gap-2">
-                        <img
+                        <AvatarImage loading="lazy" decoding="async"
                           src={note.authorAvatar}
                           alt={note.author}
                           className="w-6 h-6 rounded-full object-cover mt-0.5 shrink-0"
@@ -395,7 +397,8 @@ export const SupplierCard: React.FC<SupplierCardProps> = ({
                           </div>
 
                           <div className="flex items-center gap-3 px-2 mt-0.5 text-[10px] font-bold text-slate-500">
-                            <button
+                            {canComment && (
+<button
                               type="button"
                               onClick={() =>
                                 setReplyingTo(
@@ -410,6 +413,7 @@ export const SupplierCard: React.FC<SupplierCardProps> = ({
                               <CornerDownRight className="w-2.5 h-2.5" />
                               <span>ตอบกลับ</span>
                             </button>
+)}
 
                             {replies.length > 0 && (
                               <button
@@ -443,7 +447,7 @@ export const SupplierCard: React.FC<SupplierCardProps> = ({
                         <div className="ml-7 pl-2.5 border-l-2 border-slate-200 space-y-1.5">
                           {replies.map((rep) => (
                             <div key={rep.id} className="flex items-start gap-1.5">
-                              <img
+                              <AvatarImage loading="lazy" decoding="async"
                                 src={rep.authorAvatar}
                                 alt={rep.author}
                                 className="w-5 h-5 rounded-full object-cover mt-0.5 shrink-0"
@@ -468,7 +472,8 @@ export const SupplierCard: React.FC<SupplierCardProps> = ({
                                   </div>
                                   <p className="text-[11px] text-slate-700">{rep.text}</p>
                                 </div>
-                                <button
+                                {canComment && (
+<button
                                   type="button"
                                   onClick={() =>
                                     setReplyingTo({ noteId: note.id, author: rep.author })
@@ -478,13 +483,14 @@ export const SupplierCard: React.FC<SupplierCardProps> = ({
                                   <CornerDownRight className="w-2 h-2" />
                                   <span>ตอบกลับ @{rep.author}</span>
                                 </button>
+)}
                               </div>
                             </div>
                           ))}
                         </div>
                       )}
 
-                      {replyingTo?.noteId === note.id && (
+                      {canComment && replyingTo?.noteId === note.id && (
                         <form
                           onSubmit={(e) => handlePostReply(e, note.id, replyingTo.author)}
                           className="ml-7 flex items-center gap-1.5 pt-1"
@@ -511,8 +517,9 @@ export const SupplierCard: React.FC<SupplierCardProps> = ({
               </div>
             )}
 
-            <form onSubmit={handlePostComment} className="flex items-center gap-1.5 pt-1">
-              <img
+            {canComment && (
+<form onSubmit={handlePostComment} className="flex items-center gap-1.5 pt-1">
+              <AvatarImage loading="lazy" decoding="async"
                 src={currentUser.avatar}
                 alt=""
                 className="w-6 h-6 rounded-full object-cover shrink-0"
@@ -532,6 +539,7 @@ export const SupplierCard: React.FC<SupplierCardProps> = ({
                 <Send className="w-3.5 h-3.5" />
               </button>
             </form>
+)}
           </div>
         )}
       </div>
@@ -574,7 +582,7 @@ export const SupplierCard: React.FC<SupplierCardProps> = ({
               </button>
             )}
 
-            <img
+            <img loading="lazy" decoding="async"
               src={displayPhotos[lightboxIdx]}
               alt=""
               className="max-w-full max-h-[75vh] object-contain rounded-xl shadow-2xl"

@@ -1,2 +1,16 @@
 node_modules
 .DS_Store
+.private/
+.env
+.env.*
+!.env.example
+server/data/database.json
+
+test-results/
+playwright-report/
+server/data/uploads/
+server/data/*.tmp
+server/data/*.backup-tmp
+release/
+
+server/data/recovery.json

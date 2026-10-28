@@ -6,7 +6,7 @@ interface PinLoginModalProps {
   isOpen: boolean;
   onClose?: () => void;
   isGate?: boolean;
-  onOpenInvite?: () => void;
+  onOpenInvite?: (code: string) => void;
 }
 
 export const PinLoginModal: React.FC<PinLoginModalProps> = ({
@@ -15,7 +15,10 @@ export const PinLoginModal: React.FC<PinLoginModalProps> = ({
   isGate = false,
   onOpenInvite,
 }) => {
-  const { loginWithCredentials } = useApp();
+  const { loginWithCredentials, actionError } = useApp();
+  const [busy, setBusy] = useState(false);
+  const [showInvite, setShowInvite] = useState(false);
+  const [inviteCode, setInviteCode] = useState('');
   const [identifier, setIdentifier] = useState<string>('');
   const [password, setPassword] = useState<string>('');
   const [showPassword, setShowPassword] = useState<boolean>(false);
@@ -23,18 +26,21 @@ export const PinLoginModal: React.FC<PinLoginModalProps> = ({
 
   if (!isOpen) return null;
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!identifier.trim()) {
       setError('กรุณากรอก Username หรือ Email ของคุณ');
       return;
     }
-    if (!password.trim()) {
+    if (!password.length) {
       setError('กรุณากรอกรหัสผ่านหรือ PIN');
       return;
     }
 
-    const success = loginWithCredentials(identifier.trim(), password.trim());
+    if (busy) return;
+    setBusy(true);
+    const success = await loginWithCredentials(identifier.trim(), password);
+    setBusy(false);
     if (success) {
       setError(null);
       setIdentifier('');
@@ -81,17 +87,17 @@ export const PinLoginModal: React.FC<PinLoginModalProps> = ({
         </div>
 
         {/* Error Alert */}
-        {error && (
+        {(error || actionError) && (
           <div className="p-3 bg-red-50 border border-red-200 rounded-2xl text-xs text-red-600 flex items-center gap-2 animate-in shake">
             <AlertCircle className="w-4 h-4 shrink-0" />
-            <span>{error}</span>
+            <span>{actionError || error}</span>
           </div>
         )}
 
         {/* Secure Login Form (Username / Email + Password / PIN) */}
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="text-xs font-bold text-slate-700 block mb-1.5">
+            <label htmlFor="login-identity" className="text-xs font-bold text-slate-700 block mb-1.5">
               ชื่อผู้ใช้ หรือ อีเมล (Username / Email)
             </label>
             <div className="relative flex items-center">
@@ -100,6 +106,7 @@ export const PinLoginModal: React.FC<PinLoginModalProps> = ({
               </div>
               <input
                 type="text"
+                id="login-identity"
                 autoComplete="username"
                 autoFocus
                 required
@@ -115,7 +122,7 @@ export const PinLoginModal: React.FC<PinLoginModalProps> = ({
           </div>
 
           <div>
-            <label className="text-xs font-bold text-slate-700 block mb-1.5">
+            <label htmlFor="login-password" className="text-xs font-bold text-slate-700 block mb-1.5">
               รหัสผ่าน หรือ PIN (Password / PIN)
             </label>
             <div className="relative flex items-center">
@@ -124,6 +131,7 @@ export const PinLoginModal: React.FC<PinLoginModalProps> = ({
               </div>
               <input
                 type={showPassword ? 'text' : 'password'}
+                id="login-password"
                 autoComplete="current-password"
                 required
                 placeholder="กรอกรหัสผ่าน หรือ PIN"
@@ -146,11 +154,11 @@ export const PinLoginModal: React.FC<PinLoginModalProps> = ({
           </div>
 
           <button
-            type="submit"
+            type="submit" disabled={busy} aria-busy={busy}
             className="w-full h-12 text-sm font-extrabold rounded-xl bg-slate-950 hover:bg-slate-800 text-white shadow-md active:scale-[0.98] transition-all flex items-center justify-center gap-2 mt-2"
           >
             <Lock className="w-4 h-4" />
-            <span>เข้าสู่ระบบ (Sign In)</span>
+            <span>{busy ? 'กำลังตรวจสอบบัญชี…' : 'เข้าสู่ระบบ (Sign In)'}</span>
           </button>
         </form>
 
@@ -160,14 +168,22 @@ export const PinLoginModal: React.FC<PinLoginModalProps> = ({
           <button
             type="button"
             onClick={() => {
-              if (onOpenInvite) onOpenInvite();
+              setShowInvite(value => !value);
             }}
-            className="inline-flex items-center gap-1.5 text-emerald-700 hover:text-emerald-800 font-bold transition-colors"
+            aria-expanded={showInvite}
+            className="min-h-11 inline-flex items-center gap-1.5 text-emerald-700 hover:text-emerald-800 font-bold transition-colors"
           >
             <Ticket className="w-3.5 h-3.5" />
             <span>กรอกรหัสคำเชิญ (Invite Code)</span>
           </button>
         </div>
+
+        {showInvite && onOpenInvite && <form className="space-y-2 rounded-2xl border border-emerald-100 bg-emerald-50/60 p-4" onSubmit={event => { event.preventDefault(); if (inviteCode.trim()) onOpenInvite(inviteCode.trim().toUpperCase()); }}>
+          <label htmlFor="invite-code" className="block text-xs font-semibold text-slate-700">รหัสคำเชิญจากผู้ดูแลทีม</label>
+          <input id="invite-code" autoFocus required autoCapitalize="characters" spellCheck={false} value={inviteCode} onChange={event => setInviteCode(event.target.value)} placeholder="VITCHA-…" className="h-12 w-full rounded-xl border border-emerald-200 bg-white px-3 font-mono text-sm" />
+          <button type="submit" className="min-h-11 w-full rounded-xl bg-emerald-700 px-3 text-sm font-semibold text-white hover:bg-emerald-800">ตรวจสอบรหัสคำเชิญ</button>
+          <p className="text-xs leading-relaxed text-slate-500">ยังไม่มีรหัส? ขอคำเชิญจากผู้ดูแลทีมก่อนสมัครสมาชิก</p>
+        </form>}
 
         {!isGate && onClose && (
           <div className="text-center pt-1">

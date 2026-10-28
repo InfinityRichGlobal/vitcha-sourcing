@@ -1,3 +1,4 @@
+import { AvatarImage } from './AvatarImage';
 import React from 'react';
 import { useApp } from '../context/AppContext';
 import { X, Bell, ChevronRight } from 'lucide-react';
@@ -17,7 +18,7 @@ export const NotificationToast: React.FC<NotificationToastProps> = ({ onSelectIt
         {/* Avatar or Icon */}
         <div className="relative shrink-0 mt-0.5">
           {activeToast.avatar ? (
-            <img
+            <AvatarImage
               src={activeToast.avatar}
               alt=""
               className="w-8 h-8 rounded-full object-cover ring-1 ring-slate-200"

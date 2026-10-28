@@ -67,11 +67,10 @@ export const INITIAL_QUICK_MESSAGES: QuickMessageTemplate[] = [
 export const INITIAL_USERS: User[] = [
   {
     id: 'user-ice',
-    name: 'Ice (SuperiCez - บนสุด/ผู้ก่อตั้ง)',
+    name: 'SuperiCez',
     alias: 'SuperiCez',
     role: 'admin',
     avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
-    pin: '1234',
     emailOrId: 'supericez',
     createdAt: '2026-10-26T10:00:00Z',
     lastActiveAt: '2026-10-28T15:45:00Z',
@@ -83,7 +82,6 @@ export const INITIAL_USERS: User[] = [
     alias: 'มุก (Admin)',
     role: 'admin',
     avatar: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=150&auto=format&fit=crop&q=80',
-    pin: '4444',
     emailOrId: 'mook@vitcha.com',
     createdAt: '2026-10-26T12:00:00Z',
     lastActiveAt: '2026-10-28T14:15:00Z',
@@ -95,7 +93,6 @@ export const INITIAL_USERS: User[] = [
     alias: 'ช่างบีม (Reviewer)',
     role: 'reviewer',
     avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80',
-    pin: '2222',
     emailOrId: 'beam@vitcha.com',
     createdAt: '2026-10-26T11:00:00Z',
     lastActiveAt: '2026-10-28T15:25:00Z',
@@ -107,7 +104,6 @@ export const INITIAL_USERS: User[] = [
     alias: 'แอน (Viewer)',
     role: 'viewer',
     avatar: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150&auto=format&fit=crop&q=80',
-    pin: '3333',
     emailOrId: 'ann@vitcha.com',
     createdAt: '2026-10-26T11:30:00Z',
     lastActiveAt: '2026-10-28T14:50:00Z',
@@ -119,7 +115,6 @@ export const INITIAL_USERS: User[] = [
     alias: 'Mommy SomO',
     role: 'reviewer',
     avatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&auto=format&fit=crop&q=80',
-    pin: '1234',
     emailOrId: 'somo@vitcha.com',
     createdAt: '2026-10-28T09:00:00Z',
     lastActiveAt: '2026-10-28T16:00:00Z',
@@ -190,7 +185,7 @@ export const INITIAL_SUPPLIERS: SupplierRecord[] = [
     status: 'shortlisted',
     creator: {
       id: 'user-ice',
-      name: 'Ice (ผู้ก่อตั้ง)',
+      name: 'SuperiCez',
       alias: 'SuperiCez',
       avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
       timestamp: '2026-11-02T14:35:00Z',
@@ -261,7 +256,7 @@ export const INITIAL_SUPPLIERS: SupplierRecord[] = [
     status: 'reviewing',
     creator: {
       id: 'user-ice',
-      name: 'Ice (ผู้ก่อตั้ง)',
+      name: 'SuperiCez',
       alias: 'SuperiCez',
       avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
       timestamp: '2026-11-03T11:20:00Z',
@@ -315,7 +310,7 @@ export const INITIAL_SUPPLIERS: SupplierRecord[] = [
     handoffNotes: 'นัดวิดีโอคอลทดสอบแรงดันสกัดชาสดแก้วต่อแก้วผ่าน WeChat',
     creator: {
       id: 'user-ice',
-      name: 'Ice (ผู้ก่อตั้ง)',
+      name: 'SuperiCez',
       alias: 'SuperiCez',
       avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
       timestamp: '2026-11-03T15:40:00Z',
@@ -368,7 +363,7 @@ export const INITIAL_SUPPLIERS: SupplierRecord[] = [
     handoffNotes: 'นัดรับตัวอย่างใบชา 1 กิโลกรัมวันพฤหัสบดีนี้ เพื่อนำไปสกัดเทสรสชาติกับสูตร Lucky 13',
     creator: {
       id: 'user-ice',
-      name: 'Ice (ผู้ก่อตั้ง)',
+      name: 'SuperiCez',
       alias: 'SuperiCez',
       avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
       timestamp: '2026-10-27T10:00:00Z',
@@ -443,7 +438,7 @@ export const INITIAL_SUPPLIERS: SupplierRecord[] = [
     status: 'shortlisted',
     creator: {
       id: 'user-ice',
-      name: 'Ice (ผู้ก่อตั้ง)',
+      name: 'SuperiCez',
       alias: 'SuperiCez',
       avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
       timestamp: '2026-10-27T15:20:00Z',
@@ -619,7 +614,7 @@ export const INITIAL_DRINK_STORES: StoreInspoRecord[] = [
     },
     creator: {
       id: 'user-ice',
-      name: 'Ice (ผู้ก่อตั้ง)',
+      name: 'SuperiCez',
       alias: 'SuperiCez',
       avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
       timestamp: '2026-11-02T19:20:00Z',
@@ -687,7 +682,7 @@ export const INITIAL_DRINK_STORES: StoreInspoRecord[] = [
     },
     creator: {
       id: 'user-ice',
-      name: 'Ice (ผู้ก่อตั้ง)',
+      name: 'SuperiCez',
       alias: 'SuperiCez',
       avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
       timestamp: '2026-11-03T18:15:00Z',
@@ -759,7 +754,7 @@ export const INITIAL_DRINK_STORES: StoreInspoRecord[] = [
     },
     creator: {
       id: 'user-ice',
-      name: 'Ice (ผู้ก่อตั้ง)',
+      name: 'SuperiCez',
       alias: 'SuperiCez',
       avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
       timestamp: '2026-10-27T14:30:00Z',
@@ -876,7 +871,7 @@ export const INITIAL_DRINK_STORES: StoreInspoRecord[] = [
     },
     creator: {
       id: 'user-ice',
-      name: 'Ice (ผู้ก่อตั้ง)',
+      name: 'SuperiCez',
       alias: 'SuperiCez',
       avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
       timestamp: '2026-10-27T17:50:00Z',
@@ -895,7 +890,7 @@ export const INITIAL_INVITES: InviteLink[] = [
     prefilledAlias: 'ทีมงานปฏิบัติการ VITCHA',
     isUsed: false,
     createdAt: '2026-10-28T00:00:00Z',
-    createdBy: 'SuperiCez (ผู้ก่อตั้ง)',
+    createdBy: 'SuperiCez',
   },
   {
     id: 'inv-1',

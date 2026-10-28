@@ -34,6 +34,7 @@ export const HandoffManagementView: React.FC<HandoffManagementViewProps> = ({ on
     users,
     convertCnyToThb,
     canEditItems,
+    canComment,
     openEditItem,
   } = useApp();
 
@@ -181,13 +182,13 @@ export const HandoffManagementView: React.FC<HandoffManagementViewProps> = ({ on
     handleSetStage(item, nextStage, itemType);
   };
 
-  const handleSaveHandoffNote = (
+  const handleSaveHandoffNote = async (
     item: SupplierRecord | StoreInspoRecord,
     itemType: 'supplier' | 'drink_store'
   ) => {
-    updateHandoff(item.id, itemType, {
+    if (!await updateHandoff(item.id, itemType, {
       handoffNotes: noteDraft.trim(),
-    });
+    })) return;
     setEditingNoteId(null);
   };
 
@@ -333,6 +334,7 @@ export const HandoffManagementView: React.FC<HandoffManagementViewProps> = ({ on
               พาร์ท / สเตจปัจจุบัน:
             </span>
             <select
+              disabled={!canComment}
               value={item.handoffStage || 'awaiting'}
               onChange={(e) =>
                 handleSetStage(item, e.target.value as HandoffStage, item.itemType)
@@ -352,6 +354,7 @@ export const HandoffManagementView: React.FC<HandoffManagementViewProps> = ({ on
               ผู้รับผิดชอบ:
             </span>
             <select
+              disabled={!canComment}
               value={item.assignedTo || ''}
               onChange={(e) =>
                 updateHandoff(item.id, item.itemType, {
@@ -375,6 +378,7 @@ export const HandoffManagementView: React.FC<HandoffManagementViewProps> = ({ on
             </span>
             <input
               type="date"
+              disabled={!canComment}
               value={item.targetFollowUpDate || ''}
               onChange={(e) =>
                 updateHandoff(item.id, item.itemType, {
@@ -388,7 +392,7 @@ export const HandoffManagementView: React.FC<HandoffManagementViewProps> = ({ on
 
         {/* Handover Notes */}
         <div className="text-xs">
-          {editingNoteId === item.id ? (
+          {canComment && editingNoteId === item.id ? (
             <div className="space-y-1.5">
               <textarea
                 value={noteDraft}
@@ -415,6 +419,7 @@ export const HandoffManagementView: React.FC<HandoffManagementViewProps> = ({ on
           ) : (
             <div
               onClick={() => {
+                if (!canComment) return;
                 setEditingNoteId(item.id);
                 setNoteDraft(item.handoffNotes || '');
               }}
@@ -426,7 +431,7 @@ export const HandoffManagementView: React.FC<HandoffManagementViewProps> = ({ on
                   <i className="fa-solid fa-clipboard-check text-emerald-600 text-[11px]" />
                   <span>บันทึกการรับช่วงต่อ / ผลเจรจา:</span>
                 </span>
-                <span className="text-emerald-700">แก้ไข</span>
+                {canComment && <span className="text-emerald-700">แก้ไข</span>}
               </div>
               <p className="text-xs text-slate-800 mt-0.5">
                 {item.handoffNotes || '(แตะเพื่อพิมพ์บันทึกผลการเจรจาหรือสั่งงานต่อ)'}
@@ -470,7 +475,7 @@ export const HandoffManagementView: React.FC<HandoffManagementViewProps> = ({ on
               <span>เปิดดีเทลเต็ม</span>
             </button>
 
-            {stageKey !== 'ordered' && (
+            {canComment && stageKey !== 'ordered' && (
               <button
                 onClick={() => handleAdvanceStage(item, stageKey, item.itemType)}
                 className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold active:scale-95 transition-all shadow-2xs"
