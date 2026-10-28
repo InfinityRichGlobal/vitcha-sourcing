@@ -4,11 +4,14 @@ import { fileURLToPath } from 'node:url';
 import express from 'express';
 import { createApp } from './app.js';
 import { DEFAULT_DATABASE } from './defaults.js';
+import { createSupabasePersistence, supabaseRequest } from './supabase-persistence.js';
+import { createCloudMedia } from './cloud-media.js';
 
 const root = path.dirname(fileURLToPath(import.meta.url));
 const dataDir = process.env.DATA_DIR || path.join(root, 'data');
 let defaults = DEFAULT_DATABASE;
-if (!fs.existsSync(path.join(dataDir, 'database.json'))) {
+const cloud = !!process.env.SUPABASE_URL;
+if (!cloud && !fs.existsSync(path.join(dataDir, 'database.json'))) {
   if (!process.env.BOOTSTRAP_PIN || process.env.BOOTSTRAP_PIN.length < 8) throw new Error('Database missing. Restore a backup or provide BOOTSTRAP_PIN (at least 8 characters).');
   defaults = structuredClone(DEFAULT_DATABASE);
   defaults.users = defaults.users.filter(u => ['user-ice', 'user-mook', 'user-beam', 'user-ann'].includes(u.id));
@@ -16,8 +19,20 @@ if (!fs.existsSync(path.join(dataDir, 'database.json'))) {
   defaults.invites = [];
 }
 const recoveryFile = path.join(dataDir, 'recovery.json');
-const recoveryPasswordHash = process.env.ACCOUNT_RECOVERY_PASSWORD_HASH || (fs.existsSync(recoveryFile) ? JSON.parse(fs.readFileSync(recoveryFile, 'utf8')).passwordHash : null);
-const app = createApp({ dataDir, defaults, recoveryPasswordHash });
+let recoveryPasswordHash = process.env.ACCOUNT_RECOVERY_PASSWORD_HASH || (fs.existsSync(recoveryFile) ? JSON.parse(fs.readFileSync(recoveryFile, 'utf8')).passwordHash : null);
+let persistence = null, mediaStorage = null;
+if (cloud) {
+  const config = { url: process.env.SUPABASE_URL, key: process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY };
+  const request = supabaseRequest(config);
+  persistence = await createSupabasePersistence({ request });
+  const runtime = await request('/rest/v1/vitcha_runtime?select=key,value');
+  recoveryPasswordHash ||= runtime.find(row => row.key === 'account_recovery')?.value?.passwordHash;
+  mediaStorage = createCloudMedia({ ...config, request, drive: runtime.find(row => row.key === 'google_drive')?.value });
+} else if (process.env.NODE_ENV === 'production' && process.env.RENDER) {
+  throw new Error('Durable cloud storage must be configured before production startup.');
+}
+const app = createApp({ dataDir, defaults, recoveryPasswordHash, persistence, mediaStorage });
+await persistence?.flush();
 const dist = path.join(root, '../dist');
 if (fs.existsSync(dist)) {
   app.use(express.static(dist));

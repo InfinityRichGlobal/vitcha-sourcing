@@ -2,11 +2,17 @@
 
 ## Runtime and deployment
 
-The application retains React/Vite, Express and JSON persistence. Deploy the matching frontend and server together: old clients do not have sessions and will receive 401 responses. Existing members keep their credentials; legacy plaintext PINs are hashed with salted scrypt when the server starts. Login resolves an exact account. Private server authentication configuration is loaded from the runtime directory or server environment, and is excluded from the frontend and delivery archive. Legacy `editor` users are treated as reviewers; new roles are admin, reviewer and viewer, with `user-ice` exclusively owning simulation and maintenance.
+The application uses React/Vite and Express with server-only Supabase PostgreSQL persistence in production and a JSON file adapter for local development. Deploy the matching frontend and server together: old clients do not have sessions and will receive 401 responses. Existing members keep their credentials; legacy plaintext PINs are hashed with salted scrypt when the server starts. Login resolves an exact account. Private server authentication configuration is loaded from the runtime directory or server environment, and is excluded from the frontend and delivery archive. Legacy `editor` users are treated as reviewers; new roles are admin, reviewer and viewer, with `user-ice` exclusively owning simulation and maintenance.
 
-Run one Node server process per database directory. Transactions synchronously read, validate and atomically rename the JSON file without an asynchronous gap. Record revisions reject stale edits and deletes; separate action endpoints append comments/replies against the current record. Client operation IDs deduplicate retries. This file store is not a distributed database and must not be shared by multiple replicas/writers.
+The local file adapter requires one Node server process per database directory. Its transactions synchronously read, validate and atomically rename the JSON file without an asynchronous gap. Record revisions reject stale edits and deletes; separate action endpoints append comments/replies against the current record. Client operation IDs deduplicate retries. This file store is not a distributed database and must not be shared by multiple replicas/writers.
 
-Set `DATA_DIR` to a persistent storage directory containing `database.json`; uploads live under `DATA_DIR/uploads`. Back up both the JSON and uploads. The user declined new hosting charges. `render.yaml` retains the Free plan, adds no paid disk and holds deployment pending durable external storage. No hosting settings have been changed. The current JSON/filesystem runtime must not be activated on ephemeral production storage. A future external database/media adapter is still required for the free-hosting path. Restore the latest complete database, uploads and private runtime configuration before starting the upgrade. A missing database deliberately stops startup rather than replacing the team. Render's default filesystem is ephemeral; persistent disks are available for paid services ([Render documentation](https://render.com/docs/disks)). If a database is missing, startup requires `BOOTSTRAP_PIN` of at least 8 characters or a restored backup; startup never silently creates an account with a known password.
+Production requires `SUPABASE_URL` and a server-only `SUPABASE_SECRET_KEY`. Apply `deployment/supabase.sql`, import the complete normalized backup, verify its SHA-256 and collection counts, and create a private `vitcha-media` bucket before starting. Render production refuses to start with ephemeral file persistence. `render.yaml` retains the Free plan, adds no paid resources and supports deployment after CI passes once activated. Secrets never enter the client build or Git.
+
+PostgreSQL commits use a database advisory transaction lock, expected version and unique commit receipt. A stale writer receives 409; a failed write never reports success, and a lost HTTP acknowledgement is resolved from its receipt. Registration and invitation consumption share one commit. Server requests check the remote version before using a cached snapshot. `/api/data?since=...` avoids downloading unchanged media-rich snapshots; its version also includes the effective session identity. Sessions remain process-local, so use one server instance and expect sign-in again after a restart.
+
+Media uploads await object storage and private metadata before returning a stable `/media/:id` URL. Supabase objects remain private and are read through short-lived signed links. The fallback uses the free Storage quota; it is not an unlimited media plan. Optional Google Drive resumable uploads verify size and MD5 and stream range requests without making Drive files public. Drive requires its own authorized application OAuth configuration in the private runtime table; it is not yet connected. The chat Drive connector is not an application grant.
+
+For local development only, set `DATA_DIR` to a persistent directory containing `database.json` and `uploads`. A missing database requires a complete restore or explicit `BOOTSTRAP_PIN`; startup never silently seeds over a missing production database. Keep independent private backups in addition to persistent database storage.
 
 Sessions use opaque bearer tokens stored in sessionStorage. They expire after 12 hours and after server restart. Roles are checked against current server data on every request. PIN changes invalidate other sessions; deleting a user invalidates that user's sessions. The three mock personas cannot log in directly. Only a founder-authenticated session can enter/leave simulation, and simulated mutations use the simulated role.
 
@@ -26,7 +32,7 @@ Do not overwrite the database using a sanitized `/api/data` response. Run `npm r
 
 ## Local development and verification
 
-Start the backend with `PORT=3001 npm start`, and run `npm run dev` in another terminal. Vite proxies `/api` and `/uploads` to localhost:3001; `VITCHA_DEV_API` can override the target. Use a temporary `DATA_DIR` and `BOOTSTRAP_PIN` when starting with an empty database.
+Start the backend with `PORT=3001 npm start`, and run `npm run dev` in another terminal. Vite proxies `/api`, `/uploads` and `/media` to localhost:3001; `VITCHA_DEV_API` can override the target. Use a temporary `DATA_DIR` and `BOOTSTRAP_PIN` when starting with an empty database.
 
 - `npm test`: real HTTP endpoint tests for authentication, all roles, concurrent registrations/comments/replies, stale edits/deletes, session revocation, media validation, safe import and disk/network failure behavior.
 - `npm run test:browser`: Chrome tests against a disposable database and fixture accounts. It covers desktop/mobile layout, login, viewer controls, overlapping photo jobs, inline image replacement, retained drafts after a failed save, and invalid invitations. Install Chrome first. On a supported host, install WebKit and use `TEST_WEBKIT=1 npm run test:browser` for the additional engine. Ports 3901 and 4173 must be free.
@@ -36,11 +42,11 @@ Browser tests do not use the real Render database. WebKit could not start on thi
 
 ## Verification result — 2026-10-28
 
-- Node integration/stability/map style tests: 38 passed, 0 failed.
+- Node integration/stability/map style/PostgreSQL/cloud media tests: 48 passed, 0 failed.
 - Chrome browser workflows on the compiled production build: 20 passed, 0 failed, including 320/390/768 px layouts and 1440 px desktop. These are emulated viewport tests, not physical device results.
 - Production build and its TypeScript build passed; GitHub Pages fallback and `.nojekyll` are restored by postbuild. Map and record dialogs load in separate chunks; the main bundle is about 397 kB (101 kB gzip) for the initial application. The English vector-map update adds a separately loaded WebGL renderer (~1.24 MB, 342 kB gzip) and worker (~520 kB); Vite warns about that optional map chunk.
 - Full dependency audit: 0 known vulnerabilities reported. `git diff --check` passed.
-- Branch: `main`; changes are uncommitted. No commit/push/deployment was performed. `server/data/database.json` contains the validated live backup, including the current profile image; it is excluded from the delivery archive. Tests used disposable databases.
+- Branch: `codex/vitcha-security-release`; prior release commit is published in draft PR #1. The Supabase migration changes are prepared separately; production cutover is pending connection approval and verification. `server/data/database.json` contains the validated live backup, including the current profile image; it is excluded from the delivery archive. Tests used disposable databases.
 - Safari/WebKit remains unverified due to the host runtime incompatibility described above. Production persistent storage and real-device QA remain deployment prerequisites.
 
 ## Final UI polish and delivery
@@ -60,7 +66,7 @@ Generate the delivery archive with `npm run release` on macOS/Linux (requires th
 
 - `npm test` checks the API and persistence; `npm run build` checks TypeScript and produces the frontend.
 - `TEST_PRODUCTION=1 npm run test:browser` verifies the compiled frontend through the preview proxy against the temporary API fixture. Never point the fixture at production storage.
-- Restore the latest complete database and uploads to persistent storage, configure `DATA_DIR`, and run **one** Node process. Frontend and backend must be upgraded together because sessions are now mandatory.
+- Import and validate the complete backup into the server-only Supabase schema, configure the two server environment values, and run **one** Node process. Frontend and backend must be upgraded together because sessions are now mandatory.
 - The Render YAML retains Free hosting. Do not activate this version until durable storage is connected and all migrated records/media have been verified. For GitHub Pages, publish the contents of `dist` only with the matching updated backend.
 - Before each commit/push, perform the live backup procedure above. Release work is published to `codex/vitcha-security-release`, which does not deploy production. GitHub Actions automatically runs API tests, a production build and browser workflows on pushes and pull requests.
 
@@ -111,4 +117,6 @@ The server loads optional private authentication configuration from `DATA_DIR/re
 
 ## Durable storage direction under the no-new-cost constraint
 
-The reference SuperiCez Studio uses Render Free with Supabase, plus a Google Drive media integration. Google Drive is suitable for media and private versioned backups; account creation, single-use invitations and permission changes need database transactions. VITCHA has not yet been migrated to Supabase or Drive. The connected Supabase organization already has two active free projects and a quota warning; capacity must be resolved without mixing or overwriting another application’s data. The chat’s Drive connector is not an application OAuth grant. VITCHA needs its own authorized Drive connection before automatic runtime uploads can operate.
+The original Supabase organization was inspected only; no VITCHA project or data was added there and no Studio/HubChat resources were changed. The new account now contains the VITCHA schema, RLS restrictions, a checksum-verified backup (6 total user records, 7 suppliers, 5 stores and 2 invitations), private runtime configuration and a private media bucket limited to 50 MB per file. Original endpoint backups remain untouched. The server connection is prepared but requires action-time browser confirmation before its existing secret key is stored in Render. No paid plan was activated.
+
+The current migration keeps embedded media intact. Before cutover, compare a fresh backup with the imported source again; never overwrite a newer cloud state automatically. The original and dashboard Render URLs were separate installations, so verify routing and deployment individually before calling the migration complete. Google Drive application OAuth remains pending; temporary new uploads can use the configured Supabase free storage quota.

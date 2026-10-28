@@ -24,10 +24,12 @@ export function saveRenderServerUrl(url: string): void {
 }
 
 const SESSION_KEY = 'vitcha_session_token';
+let centralSnapshot: { key: string; data: any } | null = null;
 export function getSessionToken(): string | null {
   try { return sessionStorage.getItem(SESSION_KEY); } catch { return null; }
 }
 export function setSessionToken(token: string | null) {
+  centralSnapshot = null;
   if (token) sessionStorage.setItem(SESSION_KEY, token);
   else sessionStorage.removeItem(SESSION_KEY);
 }
@@ -68,7 +70,16 @@ export async function checkServerHealth(customUrl?: string): Promise<{ ok: boole
     return { ok: true, message: 'เชื่อมต่อเซิร์ฟเวอร์สำเร็จ', count: data };
   } catch { return { ok: false, message: 'เซิร์ฟเวอร์อาจกำลังเริ่มทำงาน กรุณารอสักครู่แล้วลองอีกครั้ง' }; }
 }
-export const fetchCentralData = (signal?: AbortSignal) => requestJson('/api/data', { signal });
+export async function fetchCentralData(signal?: AbortSignal) {
+  const key = `${getRenderServerUrl()}|${getSessionToken()}`;
+  const cached = centralSnapshot?.key === key ? centralSnapshot.data : null;
+  const query = cached?.version ? `?since=${encodeURIComponent(cached.version)}` : '';
+  const data = await requestJson(`/api/data${query}`, { signal });
+  if (signal?.aborted) throw new DOMException('Aborted', 'AbortError');
+  if (data.unchanged && cached) return cached;
+  centralSnapshot = { key, data };
+  return data;
+}
 export const postSupplierToCentral = (value: SupplierRecord) => sendJson('/api/suppliers', value);
 export const postStoreToCentral = (value: StoreInspoRecord) => sendJson('/api/drink-stores', value);
 export const postUserToCentral = (value: Partial<User>) => sendJson('/api/users', value);
@@ -89,7 +100,7 @@ export async function uploadMediaToServer(file: File): Promise<string> {
     reader.readAsDataURL(normalized);
   });
   const result = await requestJson('/api/upload', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ mimeType, base64 }) }, 120000);
-  return `${getRenderServerUrl()}${result.url}`;
+  return new URL(result.url, getRenderServerUrl()).href;
 }
 export async function loginUserApi(idOrEmail: string, pin: string) {
   const result = await sendJson('/api/login', { idOrEmail, pin });

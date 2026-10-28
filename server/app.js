@@ -73,14 +73,15 @@ function validateRecord(record, collection) {
   if ((record.videos || []).some(url => typeof url !== 'string' || /^(idb:|blob:)/.test(url))) fail(400, 'กรุณาอัปโหลดวิดีโอขึ้นเซิร์ฟเวอร์ให้สำเร็จก่อน');
 }
 
-export function createApp({ dataDir, defaults = DEFAULT_DATABASE, sessionTtlMs = 12 * 60 * 60 * 1000, recoveryPasswordHash = null } = {}) {
+export function createApp({ dataDir, defaults = DEFAULT_DATABASE, sessionTtlMs = 12 * 60 * 60 * 1000, recoveryPasswordHash = null, persistence = null, mediaStorage = null } = {}) {
   const app = express();
-  const storage = createPersistence(path.join(dataDir, 'database.json'), defaults);
+  const storage = persistence || createPersistence(path.join(dataDir, 'database.json'), defaults);
   const uploads = path.join(dataDir, 'uploads');
   fs.mkdirSync(uploads, { recursive: true });
   const sessions = new Map();
   const attempts = new Map();
   const read = () => storage.read();
+  const afterCommit = callback => storage.afterCommit ? storage.afterCommit(callback) : callback();
   // Every read/validate/write transaction below is synchronous (no await between
   // read and save). Run one Node writer per DATA_DIR; revisions protect stale clients.
   const save = db => { db.updatedAt = now(); db.revision = revision(db) + 1; storage.save(db); };
@@ -125,7 +126,7 @@ export function createApp({ dataDir, defaults = DEFAULT_DATABASE, sessionTtlMs =
   function issueSession(user, db) {
     const token = randomBytes(32).toString('hex');
     const s = { userId: user.id, expires: Date.now() + sessionTtlMs, credential: user.pinHash || user.pin };
-    sessions.set(token, s);
+    afterCommit(() => sessions.set(token, s));
     return { token, ...sessionResult(s, db) };
   }
   function rateLimit(req) {
@@ -140,6 +141,7 @@ export function createApp({ dataDir, defaults = DEFAULT_DATABASE, sessionTtlMs =
   app.use(cors({ origin: true, methods: ['GET', 'POST', 'PATCH', 'DELETE', 'OPTIONS'], allowedHeaders: ['Content-Type', 'Authorization'] }));
   app.use((req, res, next) => { res.set('X-Content-Type-Options', 'nosniff'); res.set('Cache-Control', 'no-store'); next(); });
   app.get('/api/health', (_req, res) => res.json({ status: 'ok' }));
+  if (storage.middleware) app.use('/api', storage.middleware());
   // Parse auth requests separately; reject unauthenticated large bodies before parsing.
   app.use(['/api/login', '/api/register'], express.json({ limit: '2mb' }));
   app.post('/api/login', (req, res) => {
@@ -203,7 +205,10 @@ export function createApp({ dataDir, defaults = DEFAULT_DATABASE, sessionTtlMs =
   });
   app.get('/api/data', (req, res) => {
     const db = read();
-    res.json({ ...productData(db), ...pick(db, ['suppliers', 'drinkStores', 'categories', 'storeCategories', 'quickTagsList', 'quickMessages', 'updatedAt', 'revision']), suppliers: (db.suppliers || []).map(item => currentRecord(db, item)), drinkStores: (db.drinkStores || []).map(item => currentRecord(db, item)), users: db.users.filter(u => !MOCK_IDS.has(u.id)).map(publicUser), invites: req.user.role === 'admin' ? db.invites : [], notifications: (db.notifications || []).filter(n => !n.forAdminOnly || req.user.id === 'user-ice').map(n => { const actor = db.users.find(u => u.id === n.actorId); return actor ? { ...n, avatar: actor.avatar, actorAlias: actor.alias } : n; }), ...sessionResult(req.session, db) });
+    const version = `${revision(db)}:${req.user.id}:${!!req.session.simulatedId}`;
+    if (req.query.since === version) return res.json({ unchanged: true, version });
+    res.set('X-Vitcha-Version', version);
+    res.json({ version, ...productData(db), ...pick(db, ['suppliers', 'drinkStores', 'categories', 'storeCategories', 'quickTagsList', 'quickMessages', 'updatedAt', 'revision']), suppliers: (db.suppliers || []).map(item => currentRecord(db, item)), drinkStores: (db.drinkStores || []).map(item => currentRecord(db, item)), users: db.users.filter(u => !MOCK_IDS.has(u.id)).map(publicUser), invites: req.user.role === 'admin' ? db.invites : [], notifications: (db.notifications || []).filter(n => !n.forAdminOnly || req.user.id === 'user-ice').map(n => { const actor = db.users.find(u => u.id === n.actorId); return actor ? { ...n, avatar: actor.avatar, actorAlias: actor.alias } : n; }), ...sessionResult(req.session, db) });
   });
   app.get('/api/backup', (req, res) => { requireFounder(req); res.json(read()); });
   for (const [route, collection] of [['suppliers', 'suppliers'], ['drink-stores', 'drinkStores']]) {
@@ -325,7 +330,7 @@ export function createApp({ dataDir, defaults = DEFAULT_DATABASE, sessionTtlMs =
       }
     }
     user.revision = revision(user) + 1; save(db);
-    if (user.id === req.session.userId) req.session.credential = user.pinHash || user.pin;
+    if (user.id === req.session.userId) afterCommit(() => { req.session.credential = user.pinHash || user.pin; });
     res.json({ success: true, user: publicUser(user) });
   });
   app.delete('/api/users/:id', (req, res) => {
@@ -408,7 +413,7 @@ export function createApp({ dataDir, defaults = DEFAULT_DATABASE, sessionTtlMs =
     }
     Object.assign(db, next); save(db); res.json({ success: true });
   });
-  app.post('/api/upload', (req, res) => {
+  app.post('/api/upload', async (req, res) => {
     requireWriter(req);
     const { base64, mimeType } = req.body;
     const types = { 'video/mp4': '.mp4', 'video/quicktime': '.mov', 'video/webm': '.webm', 'audio/webm': '.webm', 'audio/mp4': '.m4a', 'audio/mpeg': '.mp3', 'audio/wav': '.wav', 'audio/x-wav': '.wav', 'audio/ogg': '.ogg', 'audio/aac': '.aac', 'image/jpeg': '.jpg', 'image/png': '.png', 'image/webp': '.webp' };
@@ -416,10 +421,16 @@ export function createApp({ dataDir, defaults = DEFAULT_DATABASE, sessionTtlMs =
     const bytes = Buffer.from(base64.split(',')[1], 'base64');
     if (!bytes.length || bytes.length > 50 * 1024 * 1024) fail(413, 'ไฟล์ต้องไม่เกิน 50 MB');
     const filename = `${randomBytes(24).toString('hex')}${types[mimeType]}`;
-    fs.writeFileSync(path.join(uploads, filename), bytes, { flag: 'wx' });
-    res.status(201).json({ success: true, url: `/uploads/${filename}` });
+    if (mediaStorage) {
+      const url = await mediaStorage.upload({ filename, bytes, mimeType });
+      res.status(201).json({ success: true, url });
+    } else {
+      fs.writeFileSync(path.join(uploads, filename), bytes, { flag: 'wx' });
+      res.status(201).json({ success: true, url: `/uploads/${filename}` });
+    }
   });
   // Unpredictable media URLs support native video range requests. Never accept HTML/SVG.
+  if (mediaStorage?.serve) app.get('/media/:id', mediaStorage.serve);
   app.use('/uploads', express.static(uploads, { dotfiles: 'deny', setHeaders: res => { res.set('X-Content-Type-Options', 'nosniff'); res.set('Content-Security-Policy', "default-src 'none'; sandbox"); } }));
   app.use('/api', (_req, res) => res.status(404).json({ error: 'Unknown endpoint' }));
   app.use((err, _req, res, _next) => {

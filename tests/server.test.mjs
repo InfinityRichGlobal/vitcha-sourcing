@@ -27,6 +27,18 @@ test('every data/mutation API requires a real session', async t => {
   const { call } = await setup(t);
   for (const [route, method] of [['/api/data','GET'],['/api/suppliers','POST'],['/api/users','POST'],['/api/invites','POST'],['/api/sync','POST'],['/api/upload','POST'],['/api/backup','GET']]) assert.equal((await call(route, 'forged', method === 'GET' ? undefined : {}, method)).status, 401, route);
 });
+test('snapshot polling avoids repeated payloads while observing writes and changed identities', async t => {
+  const { call, login } = await setup(t); const token = await login('ice');
+  const first = (await call('/api/data', token, undefined, 'GET')).data;
+  const poll = version => call(`/api/data?since=${encodeURIComponent(version)}`, token, undefined, 'GET');
+  assert.equal((await poll(first.version)).data.unchanged, true);
+  await call('/api/suppliers', token, item);
+  const changed = (await poll(first.version)).data;
+  assert.equal(changed.suppliers.length, 1); assert.notEqual(changed.version, first.version);
+  await call('/api/simulate', token, { userId: 'user-ann' });
+  const simulated = (await poll(changed.version)).data;
+  assert.equal(simulated.user.id, 'user-ann'); assert.notEqual(simulated.version, changed.version);
+});
 test('login uses exact identity, no founder fallback PIN, and hashes legacy PIN', async t => {
   const { call, login, dir } = await setup(t);
   assert.equal((await call('/api/login', null, { idOrEmail: 'ice', pin: '1234' })).status, 401);

@@ -26,7 +26,7 @@ test('China basemap loads with English labels and keeps its zoom across polling'
   const before = await markers.first().getAttribute('style');
   await map.locator('.leaflet-control-zoom-in').click();
   await expect.poll(() => markers.first().getAttribute('style')).not.toBe(before);
-  await page.waitForResponse(response => response.url().endsWith('/api/data') && response.request().method() === 'GET');
+  await page.waitForResponse(response => new URL(response.url()).pathname === '/api/data' && response.request().method() === 'GET');
   await expect(markers.first()).not.toHaveAttribute('style', before || '');
   await map.screenshot({ path: 'test-results/english-china-map.png' });
 });

@@ -8,7 +8,7 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const outputDir = path.join(root, 'release');
 fs.mkdirSync(outputDir, { recursive: true });
 if (!fs.existsSync(path.join(root, 'dist/index.html'))) throw new Error('Run npm run build first.');
-const files = ['src', 'server', 'dist', 'public', 'scripts', 'tests', 'package.json', 'package-lock.json', 'index.html', 'vite.config.ts', 'playwright.config.ts', 'tsconfig.json', 'tsconfig.node.json', 'tailwind.config.js', 'postcss.config.js', 'render.yaml', 'vercel.json', 'SECURITY_AND_QA.md', '.gitignore'];
+const files = ['src', 'server', 'dist', 'public', 'scripts', 'tests', 'deployment', '.github', 'package.json', 'package-lock.json', 'index.html', 'vite.config.ts', 'playwright.config.ts', 'tsconfig.json', 'tsconfig.node.json', 'tailwind.config.js', 'postcss.config.js', 'render.yaml', 'vercel.json', 'SECURITY_AND_QA.md', '.gitignore'];
 for (const [source, target] of [['desktop-suppliers.png', 'preview-desktop.png'], ['mobile-stores.png', 'preview-mobile.png'], ['english-china-map.png', 'preview-china-map.png'], ['products-desktop.png', 'preview-products.png'], ['products-mobile.png', 'preview-products-mobile.png'], ['members-desktop.png', 'preview-members.png'], ['invitation-desktop.png', 'preview-invitation.png'], ['feed-mobile.png', 'preview-feed-mobile.png']]) {
   const screenshot = path.join(root, 'test-results', source);
   if (fs.existsSync(screenshot)) fs.copyFileSync(screenshot, path.join(outputDir, target));
