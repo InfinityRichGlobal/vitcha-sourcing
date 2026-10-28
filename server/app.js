@@ -7,7 +7,8 @@ import { createPersistence } from './persistence.js';
 import { DEFAULT_DATABASE } from './defaults.js';
 import { productData, registerProductRoutes } from './products.js';
 
-const MOCK_IDS = new Set(['user-beam', 'user-ann', 'user-mook']);
+const MOCK_ROLES = { 'user-beam': 'reviewer', 'user-ann': 'viewer', 'user-mook': 'admin' };
+const MOCK_IDS = new Set(Object.keys(MOCK_ROLES));
 const ROLES = ['admin', 'reviewer', 'viewer'];
 const STAGES = ['awaiting', 'rfq_sent', 'sample_test', 'negotiate', 'approved', 'ordered'];
 const STATUSES = ['scouted', 'reviewing', 'rfq_sent', 'shortlisted', 'ordered'];
@@ -93,6 +94,11 @@ export function createApp({ dataDir, defaults = DEFAULT_DATABASE, sessionTtlMs =
   const initial = read();
   let migrated = false;
   for (const user of initial.users || []) {
+    // Reserved simulation personas had inconsistent roles in legacy exports.
+    // Normalize only these non-login identities, preserving every real member.
+    if (MOCK_IDS.has(user.id) && user.role !== MOCK_ROLES[user.id]) {
+      user.role = MOCK_ROLES[user.id]; user.revision = revision(user) + 1; migrated = true;
+    }
     if (typeof user.pin === 'string') {
       if (user.pin && !user.pinHash) user.pinHash = pinHash(user.pin);
       delete user.pin; migrated = true;

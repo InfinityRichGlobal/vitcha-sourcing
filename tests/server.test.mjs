@@ -84,6 +84,20 @@ test('founder simulation is enforced server-side and can safely return', async t
   assert.equal((await call('/api/simulate', token, { userId: 'user-ice' })).data.user.id, 'user-ice');
   assert.equal((await call('/api/suppliers', token, item)).status, 200);
 });
+test('legacy simulation roles are repaired without changing real member permissions', async t => {
+  const users = [['ice','admin'],['ann','reviewer'],['mook','editor'],['beam','admin'],['real','editor']].map(([id,role]) => ({ id: `user-${id}`, emailOrId: id, name: id, alias: id, role, pin: '876543' }));
+  const { call, login, dir } = await setup(t, { defaults: { users, invites: [], suppliers: [], drinkStores: [], notifications: [] } });
+  const token = await login('ice');
+  for (const [id,role] of [['ann','viewer'],['mook','admin'],['beam','reviewer']]) {
+    const result = await call('/api/simulate', token, { userId: `user-${id}` });
+    assert.equal(result.status,200); assert.equal(result.data.user.role,role);
+    if (role === 'viewer') assert.equal((await call('/api/upload',token,{mimeType:'image/png',base64:'data:image/png;base64,eA=='})).status,403);
+    assert.equal((await call('/api/backup',token,undefined,'GET')).status,403);
+  }
+  const stored=JSON.parse(fs.readFileSync(path.join(dir,'database.json')));
+  assert.equal(stored.users.find(u=>u.id==='user-real').role,'editor');
+  assert.equal(stored.users.length,5);
+});
 test('registration rejects duplicate accounts without changing user or consuming invite', async t => {
   const { call, login } = await setup(t);
   const r = await call('/api/register', null, { code: 'INVITE1', name: 'attacker', emailOrId: 'ICE', pin: '9999', role: 'admin' });

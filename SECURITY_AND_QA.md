@@ -42,7 +42,7 @@ Browser tests do not use the real Render database. WebKit could not start on thi
 
 ## Verification result — 2026-10-28
 
-- Node integration/stability/map style/PostgreSQL/cloud media tests: 49 passed, 0 failed.
+- Node integration/stability/map style/PostgreSQL/cloud media tests: 50 passed, 0 failed.
 - Chrome browser workflows on the compiled production build: 20 passed, 0 failed, including 320/390/768 px layouts and 1440 px desktop. These are emulated viewport tests, not physical device results.
 - Production build and its TypeScript build passed; GitHub Pages fallback and `.nojekyll` are restored by postbuild. Map and record dialogs load in separate chunks; the main bundle is about 397 kB (101 kB gzip) for the initial application. The English vector-map update adds a separately loaded WebGL renderer (~1.24 MB, 342 kB gzip) and worker (~520 kB); Vite warns about that optional map chunk.
 - Full dependency audit: 0 known vulnerabilities reported. `git diff --check` passed.
@@ -128,3 +128,5 @@ The Supabase-backed server at `https://vitcha-sourcing-fxjw.onrender.com` starte
 Render is configured for After CI Checks Pass. GitHub Pages is configured for Actions deployment, and the verified main-branch build publishes automatically. The frontend migrates saved references to the old JSON endpoint onto the new canonical server. The old backend remains independently backed up; it is outside the currently accessible Render workspace. Do not direct new clients to that retired endpoint.
 
 The local Git backup guard now defaults to the authenticated cloud service and also preserves a separate snapshot of the retired endpoint. It can use owner-readable `.private/backup-auth.json` bound to that exact server, or environment credentials. Private values are never included in Git or delivery archives. Failed backups block publication.
+
+Legacy reserved personas are normalized at startup: the viewer, reviewer and administrator simulation identities always have their intended roles. Live migration inspection found stale roles in the old export; the regression test covers that export shape and verifies that actual member roles remain unchanged. These three reserved identities remain unable to log in directly and absent from member lists.
