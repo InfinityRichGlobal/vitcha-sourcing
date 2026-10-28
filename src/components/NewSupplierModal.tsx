@@ -14,6 +14,7 @@ import {
   Tag,
   Factory,
   Pencil,
+  RefreshCw,
 } from 'lucide-react';
 
 interface NewSupplierModalProps {
@@ -76,6 +77,7 @@ export const NewSupplierModal: React.FC<NewSupplierModalProps> = ({ isOpen, onCl
   const [addressText, setAddressText] = useState('กวางโจว (Guangzhou)');
   const [isLocating, setIsLocating] = useState(false);
   const [gpsStatusMsg, setGpsStatusMsg] = useState<string | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
 
   // Populate form when editingSupplier changes or reset when opening fresh
   useEffect(() => {
@@ -274,88 +276,100 @@ export const NewSupplierModal: React.FC<NewSupplierModalProps> = ({ isOpen, onCl
     );
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setIsSaving(true);
 
-    const finalName = name.trim() || `ซัพพลายเออร์ #${suppliers.length + 1} (${category})`;
+    try {
+      const finalName = name.trim() || `ซัพพลายเออร์ #${suppliers.length + 1} (${category})`;
 
-    if (isEditMode && editingSupplier) {
-      updateSupplier(editingSupplier.id, {
-        name: finalName,
-        chineseName: chineseName.trim() || undefined,
-        marketOrCity: marketOrCity.trim() || addressText,
-        category,
-        country,
-        rating,
-        quickTags: selectedTags,
-        isFactory: selectedTags.includes('โรงงานผลิตเอง (Manufacturer)'),
-        phone: phone.trim() || undefined,
-        wechatId: wechatId.trim() || undefined,
-        lineId: lineId.trim() || undefined,
-        photos: {
-          storefrontAndAtmosphere:
-            storefrontAndAtmosphere.length > 0
-              ? storefrontAndAtmosphere
-              : ['https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80'],
-          contactCards,
-        },
-        videos,
-        catalogItems,
-        memo: memo.trim() || undefined,
-        voiceNoteUrl: mainVoiceNotes[0]?.url || mainVoiceUrl,
-        voiceDurationSec: mainVoiceNotes[0]?.durationSec || mainVoiceSec,
-        voiceNotes: mainVoiceNotes,
-        location: {
-          lat,
-          lng,
-          addressText: marketOrCity.trim() || addressText,
-        },
-      });
-    } else {
-      addSupplier({
-        name: finalName,
-        chineseName: chineseName.trim() || undefined,
-        marketOrCity: marketOrCity.trim() || addressText,
-        category,
-        country,
-        rating,
-        quickTags: selectedTags,
-        isFactory: selectedTags.includes('โรงงานผลิตเอง (Manufacturer)'),
-        phone: phone.trim() || undefined,
-        wechatId: wechatId.trim() || undefined,
-        lineId: lineId.trim() || undefined,
-        photos: {
-          storefrontAndAtmosphere:
-            storefrontAndAtmosphere.length > 0
-              ? storefrontAndAtmosphere
-              : ['https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80'],
-          contactCards,
-        },
-        videos,
-        catalogItems,
-        memo: memo.trim() || undefined,
-        voiceNoteUrl: mainVoiceNotes[0]?.url || mainVoiceUrl,
-        voiceDurationSec: mainVoiceNotes[0]?.durationSec || mainVoiceSec,
-        voiceNotes: mainVoiceNotes,
-        location: {
-          lat,
-          lng,
-          addressText: marketOrCity.trim() || addressText,
-        },
-        status: 'scouted',
-        handoffStage: 'awaiting',
-        assignedTo: country === 'TH' ? 'ช่างบีม (วิศวกร)' : 'SuperiCez',
-      });
+      if (isEditMode && editingSupplier) {
+        await updateSupplier(editingSupplier.id, {
+          name: finalName,
+          chineseName: chineseName.trim() || undefined,
+          marketOrCity: marketOrCity.trim() || addressText,
+          category,
+          country,
+          rating,
+          quickTags: selectedTags,
+          isFactory: selectedTags.includes('โรงงานผลิตเอง (Manufacturer)'),
+          phone: phone.trim() || undefined,
+          wechatId: wechatId.trim() || undefined,
+          lineId: lineId.trim() || undefined,
+          photos: {
+            storefrontAndAtmosphere:
+              storefrontAndAtmosphere.length > 0
+                ? storefrontAndAtmosphere
+                : ['https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80'],
+            contactCards,
+          },
+          videos,
+          catalogItems,
+          memo: memo.trim() || undefined,
+          voiceNoteUrl: mainVoiceNotes[0]?.url || mainVoiceUrl,
+          voiceDurationSec: mainVoiceNotes[0]?.durationSec || mainVoiceSec,
+          voiceNotes: mainVoiceNotes,
+          location: {
+            lat,
+            lng,
+            addressText: marketOrCity.trim() || addressText,
+          },
+        });
+      } else {
+        await addSupplier({
+          name: finalName,
+          chineseName: chineseName.trim() || undefined,
+          marketOrCity: marketOrCity.trim() || addressText,
+          category,
+          country,
+          rating,
+          quickTags: selectedTags,
+          isFactory: selectedTags.includes('โรงงานผลิตเอง (Manufacturer)'),
+          phone: phone.trim() || undefined,
+          wechatId: wechatId.trim() || undefined,
+          lineId: lineId.trim() || undefined,
+          photos: {
+            storefrontAndAtmosphere:
+              storefrontAndAtmosphere.length > 0
+                ? storefrontAndAtmosphere
+                : ['https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80'],
+            contactCards,
+          },
+          videos,
+          catalogItems,
+          memo: memo.trim() || undefined,
+          voiceNoteUrl: mainVoiceNotes[0]?.url || mainVoiceUrl,
+          voiceDurationSec: mainVoiceNotes[0]?.durationSec || mainVoiceSec,
+          voiceNotes: mainVoiceNotes,
+          location: {
+            lat,
+            lng,
+            addressText: marketOrCity.trim() || addressText,
+          },
+          status: 'scouted',
+          handoffStage: 'awaiting',
+          assignedTo: country === 'TH' ? 'ช่างบีม (วิศวกร)' : 'SuperiCez',
+        });
+      }
+
+      handleCloseAll();
+    } catch (err) {
+      alert('เกิดข้อผิดพลาดในการบันทึกข้อมูลขึ้นเซิร์ฟเวอร์ กรุณาลองใหม่อีกครั้ง');
+    } finally {
+      setIsSaving(false);
     }
-
-    handleCloseAll();
   };
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (!editingSupplier) return;
     if (window.confirm(`ยืนยันการลบรายการ "${editingSupplier.name}" หรือไม่?`)) {
-      deleteSupplier(editingSupplier.id);
-      handleCloseAll();
+      setIsSaving(true);
+      try {
+        await deleteSupplier(editingSupplier.id);
+        handleCloseAll();
+      } finally {
+        setIsSaving(false);
+      }
     }
   };
 
@@ -1043,9 +1057,17 @@ export const NewSupplierModal: React.FC<NewSupplierModalProps> = ({ isOpen, onCl
             <button
               type="button"
               onClick={handleSubmit}
-              className="px-6 py-2.5 text-xs font-bold rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg shadow-emerald-600/20 active:scale-95 transition-all"
+              disabled={isSaving}
+              className="px-6 py-2.5 text-xs font-bold rounded-xl bg-emerald-600 hover:bg-emerald-700 disabled:opacity-60 text-white shadow-lg shadow-emerald-600/20 active:scale-95 transition-all flex items-center gap-1.5"
             >
-              {isEditMode ? '💾 บันทึกการแก้ไข' : 'บันทึกเข้าระบบ'}
+              {isSaving ? (
+                <>
+                  <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                  <span>กำลังส่งเข้าเซิร์ฟเวอร์ & รีเฟรช...</span>
+                </>
+              ) : (
+                <span>{isEditMode ? '💾 บันทึกการแก้ไข' : 'บันทึกเข้าระบบ'}</span>
+              )}
             </button>
           </div>
         </div>

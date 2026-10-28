@@ -53,9 +53,9 @@ export const InviteManagerModal: React.FC<InviteManagerModalProps> = ({
 
   if (!isOpen) return null;
 
-  const handleGenerate = (e: React.FormEvent) => {
+  const handleGenerate = async (e: React.FormEvent) => {
     e.preventDefault();
-    const inv = createInvite(selectedRole, prefilledAlias.trim() || undefined);
+    const inv = await createInvite(selectedRole, prefilledAlias.trim() || undefined);
     setGeneratedInvite(inv.code);
     setPrefilledAlias('');
   };

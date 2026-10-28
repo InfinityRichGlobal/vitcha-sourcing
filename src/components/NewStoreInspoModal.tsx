@@ -13,6 +13,7 @@ import {
   Coffee,
   Upload,
   Pencil,
+  RefreshCw,
 } from 'lucide-react';
 
 interface NewStoreInspoModalProps {
@@ -74,6 +75,7 @@ export const NewStoreInspoModal: React.FC<NewStoreInspoModalProps> = ({ isOpen, 
   const [lng, setLng] = useState<number>(113.3274);
   const [addressText, setAddressText] = useState('Tianhe District, Guangzhou');
   const [isLocating, setIsLocating] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
   // Populate form when editingStore changes or reset when opening fresh
   useEffect(() => {
@@ -265,96 +267,109 @@ export const NewStoreInspoModal: React.FC<NewStoreInspoModalProps> = ({ isOpen, 
     );
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const finalName = storeName.trim() || `ร้านน้ำ #${drinkStores.length + 1} (${city})`;
+    setIsSaving(true);
 
-    if (isEditMode && editingStore) {
-      updateStoreInspo(editingStore.id, {
-        storeName: finalName,
-        chineseName: chineseName.trim() || undefined,
-        storeCategory,
-        brandConcept: brandConcept.trim() || undefined,
-        city: city.trim(),
-        country,
-        lineId: lineId.trim() || undefined,
-        wechatId: wechatId.trim() || undefined,
-        phone: phone.trim() || undefined,
-        photos: {
-          storefrontAndAtmosphere:
-            storefrontAndAtmosphere.length > 0
-              ? storefrontAndAtmosphere
-              : ['https://images.unsplash.com/photo-1554118811-1e0d58224f24?w=800&auto=format&fit=crop&q=80'],
-          menuBoard: menuBoardPhotos,
-          drinkCups: drinkCupPhotos,
-        },
-        videos,
-        ratings: {
-          taste: tasteRating,
-          aesthetics: aestheticsRating,
-          value: valueRating,
-          speed: speedRating,
-        },
-        drinkItems,
-        tastingNotes: tastingNotes.trim() || undefined,
-        voiceNoteUrl: mainVoiceNotes[0]?.url || mainVoiceUrl,
-        voiceDurationSec: mainVoiceNotes[0]?.durationSec || mainVoiceSec,
-        voiceNotes: mainVoiceNotes,
-        location: {
-          lat,
-          lng,
-          addressText,
-        },
-      });
-    } else {
-      addStoreInspo({
-        storeName: finalName,
-        chineseName: chineseName.trim() || undefined,
-        storeCategory,
-        brandConcept: brandConcept.trim() || undefined,
-        city: city.trim(),
-        country,
-        lineId: lineId.trim() || undefined,
-        wechatId: wechatId.trim() || undefined,
-        phone: phone.trim() || undefined,
-        photos: {
-          storefrontAndAtmosphere:
-            storefrontAndAtmosphere.length > 0
-              ? storefrontAndAtmosphere
-              : ['https://images.unsplash.com/photo-1554118811-1e0d58224f24?w=800&auto=format&fit=crop&q=80'],
-          menuBoard: menuBoardPhotos,
-          drinkCups: drinkCupPhotos,
-        },
-        videos,
-        ratings: {
-          taste: tasteRating,
-          aesthetics: aestheticsRating,
-          value: valueRating,
-          speed: speedRating,
-        },
-        drinkItems,
-        tastingNotes: tastingNotes.trim() || undefined,
-        voiceNoteUrl: mainVoiceNotes[0]?.url || mainVoiceUrl,
-        voiceDurationSec: mainVoiceNotes[0]?.durationSec || mainVoiceSec,
-        voiceNotes: mainVoiceNotes,
-        location: {
-          lat,
-          lng,
-          addressText,
-        },
-        handoffStage: 'awaiting',
-        assignedTo: country === 'TH' ? 'แอน (จัดซื้อ)' : 'SuperiCez',
-      });
+    try {
+      const finalName = storeName.trim() || `ร้านน้ำ #${drinkStores.length + 1} (${city})`;
+
+      if (isEditMode && editingStore) {
+        await updateStoreInspo(editingStore.id, {
+          storeName: finalName,
+          chineseName: chineseName.trim() || undefined,
+          storeCategory,
+          brandConcept: brandConcept.trim() || undefined,
+          city: city.trim(),
+          country,
+          lineId: lineId.trim() || undefined,
+          wechatId: wechatId.trim() || undefined,
+          phone: phone.trim() || undefined,
+          photos: {
+            storefrontAndAtmosphere:
+              storefrontAndAtmosphere.length > 0
+                ? storefrontAndAtmosphere
+                : ['https://images.unsplash.com/photo-1554118811-1e0d58224f24?w=800&auto=format&fit=crop&q=80'],
+            menuBoard: menuBoardPhotos,
+            drinkCups: drinkCupPhotos,
+          },
+          videos,
+          ratings: {
+            taste: tasteRating,
+            aesthetics: aestheticsRating,
+            value: valueRating,
+            speed: speedRating,
+          },
+          drinkItems,
+          tastingNotes: tastingNotes.trim() || undefined,
+          voiceNoteUrl: mainVoiceNotes[0]?.url || mainVoiceUrl,
+          voiceDurationSec: mainVoiceNotes[0]?.durationSec || mainVoiceSec,
+          voiceNotes: mainVoiceNotes,
+          location: {
+            lat,
+            lng,
+            addressText,
+          },
+        });
+      } else {
+        await addStoreInspo({
+          storeName: finalName,
+          chineseName: chineseName.trim() || undefined,
+          storeCategory,
+          brandConcept: brandConcept.trim() || undefined,
+          city: city.trim(),
+          country,
+          lineId: lineId.trim() || undefined,
+          wechatId: wechatId.trim() || undefined,
+          phone: phone.trim() || undefined,
+          photos: {
+            storefrontAndAtmosphere:
+              storefrontAndAtmosphere.length > 0
+                ? storefrontAndAtmosphere
+                : ['https://images.unsplash.com/photo-1554118811-1e0d58224f24?w=800&auto=format&fit=crop&q=80'],
+            menuBoard: menuBoardPhotos,
+            drinkCups: drinkCupPhotos,
+          },
+          videos,
+          ratings: {
+            taste: tasteRating,
+            aesthetics: aestheticsRating,
+            value: valueRating,
+            speed: speedRating,
+          },
+          drinkItems,
+          tastingNotes: tastingNotes.trim() || undefined,
+          voiceNoteUrl: mainVoiceNotes[0]?.url || mainVoiceUrl,
+          voiceDurationSec: mainVoiceNotes[0]?.durationSec || mainVoiceSec,
+          voiceNotes: mainVoiceNotes,
+          location: {
+            lat,
+            lng,
+            addressText,
+          },
+          handoffStage: 'awaiting',
+          assignedTo: country === 'TH' ? 'แอน (จัดซื้อ)' : 'SuperiCez',
+        });
+      }
+
+      handleCloseAll();
+    } catch (err) {
+      alert('เกิดข้อผิดพลาดในการบันทึกข้อมูลขึ้นเซิร์ฟเวอร์ กรุณาลองใหม่อีกครั้ง');
+    } finally {
+      setIsSaving(false);
     }
-
-    handleCloseAll();
   };
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (!editingStore) return;
     if (window.confirm(`ยืนยันการลบรายการ "${editingStore.storeName}" หรือไม่?`)) {
-      deleteStoreInspo(editingStore.id);
-      handleCloseAll();
+      setIsSaving(true);
+      try {
+        await deleteStoreInspo(editingStore.id);
+        handleCloseAll();
+      } finally {
+        setIsSaving(false);
+      }
     }
   };
 
@@ -1047,9 +1062,17 @@ export const NewStoreInspoModal: React.FC<NewStoreInspoModalProps> = ({ isOpen, 
             <button
               type="button"
               onClick={handleSubmit}
-              className="px-6 py-2.5 text-xs font-bold rounded-xl bg-amber-600 hover:bg-amber-700 text-white shadow-lg shadow-amber-600/20 active:scale-95 transition-all"
+              disabled={isSaving}
+              className="px-6 py-2.5 text-xs font-bold rounded-xl bg-amber-600 hover:bg-amber-700 disabled:opacity-60 text-white shadow-lg shadow-amber-600/20 active:scale-95 transition-all flex items-center gap-1.5"
             >
-              {isEditMode ? '💾 บันทึกการแก้ไข' : 'บันทึกร้านน้ำ'}
+              {isSaving ? (
+                <>
+                  <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                  <span>กำลังส่งเข้าเซิร์ฟเวอร์ & รีเฟรช...</span>
+                </>
+              ) : (
+                <span>{isEditMode ? '💾 บันทึกการแก้ไข' : 'บันทึกร้านน้ำ'}</span>
+              )}
             </button>
           </div>
         </div>

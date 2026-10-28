@@ -315,9 +315,9 @@ export const SettingsManagementView: React.FC = () => {
     setEditingQmId(null);
   };
 
-  const handleCreateInvite = (e: React.FormEvent) => {
+  const handleCreateInvite = async (e: React.FormEvent) => {
     e.preventDefault();
-    createInvite(inviteRole, inviteAlias.trim() || undefined);
+    await createInvite(inviteRole, inviteAlias.trim() || undefined);
     setInviteAlias('');
   };
 

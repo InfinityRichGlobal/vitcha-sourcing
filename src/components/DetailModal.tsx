@@ -913,22 +913,28 @@ export const DetailModal: React.FC<DetailModalProps> = ({
             </div>
 
             {/* Post New Top-Level Comment */}
-            <form onSubmit={handleAddReview} className="flex gap-2 pt-1">
-              <input
-                type="text"
-                placeholder={`พิมพ์ข้อคิดเห็นใหม่ในฐานะ ${currentUser.alias}...`}
-                value={newReviewText}
-                onChange={(e) => setNewReviewText(e.target.value)}
-                className="flex-1 bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 focus:outline-none focus:border-blue-500"
-              />
-              <button
-                type="submit"
-                className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold shadow-xs active:scale-95 transition-all flex items-center gap-1"
-              >
-                <Send className="w-3 h-3" />
-                <span>โพสต์</span>
-              </button>
-            </form>
+            {currentUser.role === 'viewer' ? (
+              <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200 text-center text-xs text-slate-500 font-medium">
+                👁️ สิทธิ์คนดูเท่านั้น (View-only) สามารถดูและอ่านความคิดเห็นได้เท่านั้น
+              </div>
+            ) : (
+              <form onSubmit={handleAddReview} className="flex gap-2 pt-1">
+                <input
+                  type="text"
+                  placeholder={`พิมพ์ข้อคิดเห็นใหม่ในฐานะ ${currentUser.alias}...`}
+                  value={newReviewText}
+                  onChange={(e) => setNewReviewText(e.target.value)}
+                  className="flex-1 bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 focus:outline-none focus:border-blue-500"
+                />
+                <button
+                  type="submit"
+                  className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold shadow-xs active:scale-95 transition-all flex items-center gap-1"
+                >
+                  <Send className="w-3 h-3" />
+                  <span>โพสต์</span>
+                </button>
+              </form>
+            )}
           </div>
         </div>
 

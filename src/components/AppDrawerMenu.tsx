@@ -429,7 +429,7 @@ export const AppDrawerMenu: React.FC<AppDrawerMenuProps> = ({
                 </span>
               </div>
 
-              {/* Minimalist Persona Switch Grid (ไม่มีสถานะปลอม แค่กดสลับทดสอบสิทธิ์) */}
+              {/* Minimalist Persona Switch Grid (ครบ 4 ลำดับสิทธิ์ตามสายงาน: บนสุด -> แอดมิน -> ทีมรีวิว -> คนดู) */}
               <div className="grid grid-cols-2 gap-1.5">
                 <button
                   type="button"
@@ -439,10 +439,11 @@ export const AppDrawerMenu: React.FC<AppDrawerMenuProps> = ({
                       ? 'bg-slate-900 text-white border-slate-900 shadow-xs'
                       : 'bg-white hover:bg-slate-50 text-slate-800 border-slate-200'
                   }`}
+                  title="ระดับบนสุด: จัดการทุกอย่าง + เมนูจำลองนี้"
                 >
                   <span className="truncate">👑 SuperiCez</span>
                   <span className="text-[9px] uppercase font-mono px-1 py-0.5 rounded bg-amber-100 text-amber-800 shrink-0">
-                    Admin
+                    บนสุด
                   </span>
                 </button>
 
@@ -454,10 +455,11 @@ export const AppDrawerMenu: React.FC<AppDrawerMenuProps> = ({
                       ? 'bg-slate-900 text-white border-slate-900 shadow-xs'
                       : 'bg-white hover:bg-slate-50 text-slate-800 border-slate-200'
                   }`}
+                  title="ระดับแอดมิน: ดูแลระบบ ออกลิงก์ ลบ/แก้ได้"
                 >
-                  <span className="truncate">✏️ มุก (Scout)</span>
-                  <span className="text-[9px] uppercase font-mono px-1 py-0.5 rounded bg-emerald-100 text-emerald-800 shrink-0">
-                    Editor
+                  <span className="truncate">🛡️ น้องมุก</span>
+                  <span className="text-[9px] uppercase font-mono px-1 py-0.5 rounded bg-purple-100 text-purple-800 shrink-0">
+                    Admin
                   </span>
                 </button>
 
@@ -469,6 +471,7 @@ export const AppDrawerMenu: React.FC<AppDrawerMenuProps> = ({
                       ? 'bg-slate-900 text-white border-slate-900 shadow-xs'
                       : 'bg-white hover:bg-slate-50 text-slate-800 border-slate-200'
                   }`}
+                  title="ทีมรีวิว: ดูและคอมเมนต์ได้ ห้ามแก้ข้อมูลร้าน/ซัพพลายเออร์ ห้ามลบ"
                 >
                   <span className="truncate">🔬 ช่างบีม</span>
                   <span className="text-[9px] uppercase font-mono px-1 py-0.5 rounded bg-blue-100 text-blue-800 shrink-0">
@@ -484,10 +487,11 @@ export const AppDrawerMenu: React.FC<AppDrawerMenuProps> = ({
                       ? 'bg-slate-900 text-white border-slate-900 shadow-xs'
                       : 'bg-white hover:bg-slate-50 text-slate-800 border-slate-200'
                   }`}
+                  title="คนดูเท่านั้น: ดูอย่างเดียว ห้ามแก้ ห้ามลบ ห้ามคอมเมนต์"
                 >
-                  <span className="truncate">🔬 แอน (จัดซื้อ)</span>
-                  <span className="text-[9px] uppercase font-mono px-1 py-0.5 rounded bg-blue-100 text-blue-800 shrink-0">
-                    Reviewer
+                  <span className="truncate">👁️ คุณแอน</span>
+                  <span className="text-[9px] uppercase font-mono px-1 py-0.5 rounded bg-slate-100 text-slate-700 shrink-0">
+                    Viewer
                   </span>
                 </button>
               </div>

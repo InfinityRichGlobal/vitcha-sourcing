@@ -115,7 +115,7 @@ interface AppContextType {
   addQuickMessage: (title: string, text: string) => void;
   editQuickMessage: (id: string, title: string, text: string) => void;
   deleteQuickMessage: (id: string) => void;
-  updateUserRole: (userId: string, newRole: UserRole) => void;
+  updateUserRole: (userId: string, newRole: UserRole) => Promise<void>;
   recordItemView: (targetId: string, type: 'supplier' | 'drink_store') => void;
   toggleLikeItem: (targetId: string, type: 'supplier' | 'drink_store') => void;
   loadFullMockupData: () => void;
@@ -132,27 +132,31 @@ interface AppContextType {
       handoffStage?: HandoffStage;
       status?: PipelineStatus;
     }
-  ) => void;
+  ) => Promise<void>;
 
-  // Actions
-  addSupplier: (supplier: Omit<SupplierRecord, 'id' | 'type' | 'creator' | 'reviewerNotes' | 'history' | 'updatedAt'>) => SupplierRecord;
-  updateSupplier: (id: string, updates: Partial<SupplierRecord>) => void;
-  deleteSupplier: (id: string) => void;
+  // Actions (Direct to Central Server & Real-time Refresh)
+  addSupplier: (supplier: Omit<SupplierRecord, 'id' | 'type' | 'creator' | 'reviewerNotes' | 'history' | 'updatedAt'>) => Promise<SupplierRecord | null>;
+  updateSupplier: (id: string, updates: Partial<SupplierRecord>) => Promise<void>;
+  deleteSupplier: (id: string) => Promise<void>;
 
-  addStoreInspo: (store: Omit<StoreInspoRecord, 'id' | 'type' | 'creator' | 'reviewerNotes' | 'history' | 'updatedAt'>) => StoreInspoRecord;
-  updateStoreInspo: (id: string, updates: Partial<StoreInspoRecord>) => void;
-  deleteStoreInspo: (id: string) => void;
+  addStoreInspo: (store: Omit<StoreInspoRecord, 'id' | 'type' | 'creator' | 'reviewerNotes' | 'history' | 'updatedAt'>) => Promise<StoreInspoRecord | null>;
+  updateStoreInspo: (id: string, updates: Partial<StoreInspoRecord>) => Promise<void>;
+  deleteStoreInspo: (id: string) => Promise<void>;
 
-  // Edit Item Modal State (สำหรับ 2 สิทธิ์ระดับบน Admin & Editor)
+  // Role Permissions
   canEditItems: boolean;
+  canDeleteItems: boolean;
+  canComment: boolean;
+  canAddItems: boolean;
+
   editingSupplier: SupplierRecord | null;
   editingStore: StoreInspoRecord | null;
   openEditItem: (item: SupplierRecord | StoreInspoRecord) => void;
   closeEditItem: () => void;
 
-  addReviewerNote: (targetId: string, type: 'supplier' | 'drink_store', noteText: string) => void;
-  addReviewReply: (targetId: string, type: 'supplier' | 'drink_store', noteId: string, replyText: string, replyToAuthor?: string) => void;
-  updatePipelineStatus: (supplierId: string, status: PipelineStatus) => void;
+  addReviewerNote: (targetId: string, type: 'supplier' | 'drink_store', noteText: string) => Promise<void>;
+  addReviewReply: (targetId: string, type: 'supplier' | 'drink_store', noteId: string, replyText: string, replyToAuthor?: string) => Promise<void>;
+  updatePipelineStatus: (supplierId: string, status: PipelineStatus) => Promise<void>;
 
   updateExchangeRate: (rate: number, isAuto?: boolean) => void;
   toggleCurrencyMode: () => void;
@@ -176,7 +180,7 @@ interface AppContextType {
   logout: () => void;
   loginWithCredentials: (usernameOrEmail: string, passOrPin: string) => boolean;
   loginWithPin: (idOrEmail: string, pin: string) => boolean;
-  createInvite: (role: UserRole, prefilledAlias?: string) => InviteLink;
+  createInvite: (role: UserRole, prefilledAlias?: string) => Promise<InviteLink>;
   redeemInvite: (code: string, name: string, alias: string, avatar: string, pin: string) => User | null;
   registerUserWithInvite: (
     code: string,
@@ -693,44 +697,21 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         });
       }
 
-      if (Array.isArray(data.invites) && data.invites.length > 0) {
-        setInvites((prevInvites) => {
-          const invMap = new Map<string, InviteLink>();
-          prevInvites.forEach((i) => invMap.set(i.id || i.code, i));
-          data.invites.forEach((i: InviteLink) => {
-            const key = i.id || i.code;
-            invMap.set(key, { ...invMap.get(key), ...i });
-          });
-          const merged = Array.from(invMap.values());
-          safeSetLocalStorage('vitcha_invites_v5', JSON.stringify(merged));
-          return merged;
-        });
+      if (Array.isArray(data.invites)) {
+        setInvites(data.invites);
+        safeSetLocalStorage('vitcha_invites_v5', JSON.stringify(data.invites));
       }
 
-      if (Array.isArray(data.suppliers) && data.suppliers.length > 0) {
-        setSuppliers((prev) => {
-          const supMap = new Map<string, SupplierRecord>();
-          prev.forEach((s) => supMap.set(s.id, s));
-          data.suppliers.forEach((s: SupplierRecord) => {
-            supMap.set(s.id, { ...supMap.get(s.id), ...s });
-          });
-          const merged = normalizeSuppliers(Array.from(supMap.values()));
-          safeSetLocalStorage('vitcha_suppliers_v5', JSON.stringify(merged));
-          return merged;
-        });
+      if (Array.isArray(data.suppliers)) {
+        const normalized = normalizeSuppliers(data.suppliers);
+        setSuppliers(normalized);
+        safeSetLocalStorage('vitcha_suppliers_v5', JSON.stringify(normalized));
       }
 
-      if (Array.isArray(data.drinkStores) && data.drinkStores.length > 0) {
-        setDrinkStores((prev) => {
-          const storeMap = new Map<string, StoreInspoRecord>();
-          prev.forEach((s) => storeMap.set(s.id, s));
-          data.drinkStores.forEach((s: StoreInspoRecord) => {
-            storeMap.set(s.id, { ...storeMap.get(s.id), ...s });
-          });
-          const merged = normalizeStores(Array.from(storeMap.values()));
-          safeSetLocalStorage('vitcha_drink_stores_v5', JSON.stringify(merged));
-          return merged;
-        });
+      if (Array.isArray(data.drinkStores)) {
+        const normalized = normalizeStores(data.drinkStores);
+        setDrinkStores(normalized);
+        safeSetLocalStorage('vitcha_drink_stores_v5', JSON.stringify(normalized));
       }
 
       // Synchronize Central Notifications from teammates
@@ -785,20 +766,29 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   };
 
-  // Background Auto-Sync every 20s & on Tab/Window Focus
+  // Background Auto-Sync every 3.5s & on Tab/Window Focus for true real-time across all devices
   useEffect(() => {
     refreshCentralData();
     const interval = setInterval(() => {
-      refreshCentralData();
-    }, 20000);
+      if (!document.hidden) {
+        refreshCentralData();
+      }
+    }, 3500);
 
     const onFocus = () => {
       refreshCentralData();
     };
+    const onVisibility = () => {
+      if (!document.hidden) {
+        refreshCentralData();
+      }
+    };
     window.addEventListener('focus', onFocus);
+    document.addEventListener('visibilitychange', onVisibility);
     return () => {
       clearInterval(interval);
       window.removeEventListener('focus', onFocus);
+      document.removeEventListener('visibilitychange', onVisibility);
     };
   }, []);
 
@@ -862,8 +852,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [editingSupplier, setEditingSupplier] = useState<SupplierRecord | null>(null);
   const [editingStore, setEditingStore] = useState<StoreInspoRecord | null>(null);
 
-  // สองสิทธิ์ระดับบน (Admin & Editor) สามารถแก้ไขรายการได้
-  const canEditItems = currentUser.role === 'admin' || currentUser.role === 'editor';
+  // สิทธิ์ระดับบน (Admin & SuperiCez) เท่านั้นที่แก้ไขหรือลบรายการเดิมได้ เพื่อกัน Reviewer แก้ไขผิดพลาด
+  const canEditItems = currentUser.role === 'admin';
+  const canDeleteItems = currentUser.role === 'admin';
+  const canComment = currentUser.role !== 'viewer';
+  const canAddItems = currentUser.role !== 'viewer';
 
   const openEditItem = (item: SupplierRecord | StoreInspoRecord) => {
     if (!canEditItems) return;
@@ -1166,17 +1159,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   };
 
-  const updateUserRole = (userId: string, newRole: UserRole) => {
-    setUsers((prev) =>
-      prev.map((u) => (u.id === userId ? { ...u, role: newRole } : u))
-    );
-    if (currentUser.id === userId) {
-      setCurrentUser((prev) => ({ ...prev, role: newRole }));
+  const updateUserRole = async (userId: string, newRole: UserRole): Promise<void> => {
+    const target = users.find((u) => u.id === userId);
+    if (target) {
+      const updated: User = { ...target, role: newRole };
+      await postUserToCentral(updated);
+      await refreshCentralData();
     }
   };
 
-  // Handoff & Operations
-  const updateHandoff = (
+  // Handoff & Operations (Direct to Central Server)
+  const updateHandoff = async (
     id: string,
     type: 'supplier' | 'drink_store',
     data: {
@@ -1186,46 +1179,46 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       handoffStage?: HandoffStage;
       status?: PipelineStatus;
     }
-  ) => {
+  ): Promise<void> => {
     if (type === 'supplier') {
-      setSuppliers((prev) =>
-        prev.map((s) => {
-          if (s.id !== id) return s;
-          return {
-            ...s,
-            ...data,
-            status: data.status || s.status,
-            history: [
-              ...s.history,
-              {
-                action: `อัปเดตงานรับช่วงต่อ: สเตจ [${data.handoffStage || s.handoffStage || 'ดำเนินงาน'}] ผู้รับผิดชอบ: ${data.assignedTo || s.assignedTo || 'ยังไม่ระบุ'}`,
-                user: currentUser.alias,
-                timestamp: new Date().toISOString(),
-              },
-            ],
-            updatedAt: new Date().toISOString(),
-          };
-        })
-      );
+      const target = suppliers.find((s) => s.id === id);
+      if (target) {
+        const updated: SupplierRecord = {
+          ...target,
+          ...data,
+          status: data.status || target.status,
+          history: [
+            ...target.history,
+            {
+              action: `อัปเดตงานรับช่วงต่อ: สเตจ [${data.handoffStage || target.handoffStage || 'ดำเนินงาน'}] ผู้รับผิดชอบ: ${data.assignedTo || target.assignedTo || 'ยังไม่ระบุ'}`,
+              user: currentUser.alias,
+              timestamp: new Date().toISOString(),
+            },
+          ],
+          updatedAt: new Date().toISOString(),
+        };
+        await postSupplierToCentral(updated);
+        await refreshCentralData();
+      }
     } else {
-      setDrinkStores((prev) =>
-        prev.map((d) => {
-          if (d.id !== id) return d;
-          return {
-            ...d,
-            ...data,
-            history: [
-              ...d.history,
-              {
-                action: `อัปเดตงานรับช่วงต่อ: สเตจ [${data.handoffStage || d.handoffStage || 'ดำเนินงาน'}] ผู้รับผิดชอบ: ${data.assignedTo || d.assignedTo || 'ยังไม่ระบุ'}`,
-                user: currentUser.alias,
-                timestamp: new Date().toISOString(),
-              },
-            ],
-            updatedAt: new Date().toISOString(),
-          };
-        })
-      );
+      const target = drinkStores.find((s) => s.id === id);
+      if (target) {
+        const updated: StoreInspoRecord = {
+          ...target,
+          ...data,
+          history: [
+            ...target.history,
+            {
+              action: `อัปเดตงานรับช่วงต่อ: สเตจ [${data.handoffStage || target.handoffStage || 'ดำเนินงาน'}] ผู้รับผิดชอบ: ${data.assignedTo || target.assignedTo || 'ยังไม่ระบุ'}`,
+              user: currentUser.alias,
+              timestamp: new Date().toISOString(),
+            },
+          ],
+          updatedAt: new Date().toISOString(),
+        };
+        await postStoreToCentral(updated);
+        await refreshCentralData();
+      }
     }
 
     broadcastNotification(
@@ -1238,8 +1231,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     );
   };
 
-  // Supplier CRUD
-  const addSupplier = (supplierData: Omit<SupplierRecord, 'id' | 'type' | 'creator' | 'reviewerNotes' | 'history' | 'updatedAt'>) => {
+  // Supplier CRUD (Direct to Central Server & Instant View Refresh)
+  const addSupplier = async (
+    supplierData: Omit<SupplierRecord, 'id' | 'type' | 'creator' | 'reviewerNotes' | 'history' | 'updatedAt'>
+  ): Promise<SupplierRecord | null> => {
     const newRecord: SupplierRecord = {
       ...supplierData,
       id: `sup-${Date.now()}`,
@@ -1276,12 +1271,20 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       updatedAt: new Date().toISOString(),
     };
 
-    setSuppliers([newRecord, ...suppliers]);
-    saveSupplierToCloud(newRecord);
-    postSupplierToCentral(newRecord);
-    if (syncStatus === 'offline') {
-      setPendingSyncCount((prev) => prev + 1);
-    }
+    // 1. Send directly to Central Server
+    await postSupplierToCentral(newRecord);
+
+    // 2. Refresh state from Central Server immediately
+    await refreshCentralData();
+
+    // 3. Immediately switch tab & reset filters so user sees new item right away!
+    setActiveTab('suppliers');
+    setCountryFilter('all');
+    setSearchQuery('');
+    setSelectedCategory('all');
+    setSelectedStatus('all');
+    setSelectedTag('all');
+
     broadcastNotification(
       `${currentUser.alias} บันทึกซัพพลายเออร์ใหม่`,
       `${newRecord.name} (${newRecord.category})`,
@@ -1293,39 +1296,36 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return newRecord;
   };
 
-  const updateSupplier = (id: string, updates: Partial<SupplierRecord>) => {
-    const nextSuppliers = suppliers.map((s) => {
-      if (s.id !== id) return s;
-      return {
-        ...s,
-        ...updates,
-        history: [
-          ...s.history,
-          {
-            action: `อัปเดตข้อมูล`,
-            user: currentUser.alias,
-            timestamp: new Date().toISOString(),
-          },
-        ],
-        updatedAt: new Date().toISOString(),
-      };
-    });
-    setSuppliers(nextSuppliers);
-    const target = nextSuppliers.find((s) => s.id === id);
-    if (target) {
-      saveSupplierToCloud(target);
-      postSupplierToCentral(target);
-    }
+  const updateSupplier = async (id: string, updates: Partial<SupplierRecord>): Promise<void> => {
+    const target = suppliers.find((s) => s.id === id);
+    if (!target) return;
+    const updatedTarget: SupplierRecord = {
+      ...target,
+      ...updates,
+      history: [
+        ...target.history,
+        {
+          action: `อัปเดตข้อมูล`,
+          user: currentUser.alias,
+          timestamp: new Date().toISOString(),
+        },
+      ],
+      updatedAt: new Date().toISOString(),
+    };
+
+    await postSupplierToCentral(updatedTarget);
+    await refreshCentralData();
   };
 
-  const deleteSupplier = (id: string) => {
-    setSuppliers(suppliers.filter((s) => s.id !== id));
-    deleteSupplierFromCloud(id);
-    deleteSupplierFromCentral(id);
+  const deleteSupplier = async (id: string): Promise<void> => {
+    await deleteSupplierFromCentral(id);
+    await refreshCentralData();
   };
 
-  // Store Inspo CRUD
-  const addStoreInspo = (storeData: Omit<StoreInspoRecord, 'id' | 'type' | 'creator' | 'reviewerNotes' | 'history' | 'updatedAt'>) => {
+  // Store Inspo CRUD (Direct to Central Server & Instant View Refresh)
+  const addStoreInspo = async (
+    storeData: Omit<StoreInspoRecord, 'id' | 'type' | 'creator' | 'reviewerNotes' | 'history' | 'updatedAt'>
+  ): Promise<StoreInspoRecord | null> => {
     const newRecord: StoreInspoRecord = {
       ...storeData,
       id: `store-${Date.now()}`,
@@ -1363,12 +1363,20 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       updatedAt: new Date().toISOString(),
     };
 
-    setDrinkStores([newRecord, ...drinkStores]);
-    saveStoreToCloud(newRecord);
-    postStoreToCentral(newRecord);
-    if (syncStatus === 'offline') {
-      setPendingSyncCount((prev) => prev + 1);
-    }
+    // 1. Send directly to Central Server
+    await postStoreToCentral(newRecord);
+
+    // 2. Refresh state from Central Server immediately
+    await refreshCentralData();
+
+    // 3. Immediately switch tab & reset filters so user sees new item right away!
+    setActiveTab('drink_stores');
+    setCountryFilter('all');
+    setSearchQuery('');
+    setSelectedCategory('all');
+    setSelectedStatus('all');
+    setSelectedTag('all');
+
     broadcastNotification(
       `${currentUser.alias} บันทึกเรฟร้านน้ำใหม่`,
       `${newRecord.storeName} (${newRecord.city || 'กวางโจว'})`,
@@ -1380,39 +1388,34 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return newRecord;
   };
 
-  const updateStoreInspo = (id: string, updates: Partial<StoreInspoRecord>) => {
-    const nextStores = drinkStores.map((s) => {
-      if (s.id !== id) return s;
-      return {
-        ...s,
-        ...updates,
-        history: [
-          ...s.history,
-          {
-            action: `อัปเดตข้อมูล`,
-            user: currentUser.alias,
-            timestamp: new Date().toISOString(),
-          },
-        ],
-        updatedAt: new Date().toISOString(),
-      };
-    });
-    setDrinkStores(nextStores);
-    const target = nextStores.find((s) => s.id === id);
-    if (target) {
-      saveStoreToCloud(target);
-      postStoreToCentral(target);
-    }
+  const updateStoreInspo = async (id: string, updates: Partial<StoreInspoRecord>): Promise<void> => {
+    const target = drinkStores.find((s) => s.id === id);
+    if (!target) return;
+    const updatedTarget: StoreInspoRecord = {
+      ...target,
+      ...updates,
+      history: [
+        ...target.history,
+        {
+          action: `อัปเดตข้อมูล`,
+          user: currentUser.alias,
+          timestamp: new Date().toISOString(),
+        },
+      ],
+      updatedAt: new Date().toISOString(),
+    };
+
+    await postStoreToCentral(updatedTarget);
+    await refreshCentralData();
   };
 
-  const deleteStoreInspo = (id: string) => {
-    setDrinkStores(drinkStores.filter((s) => s.id !== id));
-    deleteStoreFromCloud(id);
-    deleteStoreFromCentral(id);
+  const deleteStoreInspo = async (id: string): Promise<void> => {
+    await deleteStoreFromCentral(id);
+    await refreshCentralData();
   };
 
-  // Reviewer Note (หากเราพิมคอมเม้นเอง ไม่ต้องเด้งแจ้งเตือนเรา - suppressToast = true)
-  const addReviewerNote = (targetId: string, type: 'supplier' | 'drink_store', noteText: string) => {
+  // Reviewer Note (Direct to Central Server)
+  const addReviewerNote = async (targetId: string, type: 'supplier' | 'drink_store', noteText: string): Promise<void> => {
     const newNote = {
       id: `note-${Date.now()}`,
       author: currentUser.alias,
@@ -1424,46 +1427,45 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     };
 
     if (type === 'supplier') {
-      setSuppliers((prev) =>
-        prev.map((s) => {
-          if (s.id !== targetId) return s;
-          return {
-            ...s,
-            reviewerNotes: [...s.reviewerNotes, newNote],
-            history: [
-              ...s.history,
-              {
-                action: `เพิ่มข้อคิดเห็น: "${noteText.slice(0, 30)}..."`,
-                user: currentUser.alias,
-                timestamp: new Date().toISOString(),
-              },
-            ],
-            updatedAt: new Date().toISOString(),
-          };
-        })
-      );
+      const target = suppliers.find((s) => s.id === targetId);
+      if (target) {
+        const updated: SupplierRecord = {
+          ...target,
+          reviewerNotes: [...target.reviewerNotes, newNote],
+          history: [
+            ...target.history,
+            {
+              action: `เพิ่มข้อคิดเห็น: "${noteText.slice(0, 30)}..."`,
+              user: currentUser.alias,
+              timestamp: new Date().toISOString(),
+            },
+          ],
+          updatedAt: new Date().toISOString(),
+        };
+        await postSupplierToCentral(updated);
+        await refreshCentralData();
+      }
     } else {
-      setDrinkStores((prev) =>
-        prev.map((s) => {
-          if (s.id !== targetId) return s;
-          return {
-            ...s,
-            reviewerNotes: [...s.reviewerNotes, newNote],
-            history: [
-              ...s.history,
-              {
-                action: `เพิ่มข้อคิดเห็น: "${noteText.slice(0, 30)}..."`,
-                user: currentUser.alias,
-                timestamp: new Date().toISOString(),
-              },
-            ],
-            updatedAt: new Date().toISOString(),
-          };
-        })
-      );
+      const target = drinkStores.find((s) => s.id === targetId);
+      if (target) {
+        const updated: StoreInspoRecord = {
+          ...target,
+          reviewerNotes: [...target.reviewerNotes, newNote],
+          history: [
+            ...target.history,
+            {
+              action: `เพิ่มข้อคิดเห็น: "${noteText.slice(0, 30)}..."`,
+              user: currentUser.alias,
+              timestamp: new Date().toISOString(),
+            },
+          ],
+          updatedAt: new Date().toISOString(),
+        };
+        await postStoreToCentral(updated);
+        await refreshCentralData();
+      }
     }
 
-    // Do NOT pop up toast for our own comment ("หากเราพิมคอมเม้นเองไม่ต้อง เด้งแจ้งเตือนเรานะ")
     broadcastNotification(
       `${currentUser.alias} เพิ่มความเห็นใหม่`,
       `"${noteText.slice(0, 45)}"`,
@@ -1474,14 +1476,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     );
   };
 
-  // Threaded Review Reply (ตอบกลับต่อกันได้เรื่อยๆ + ไม่เด้งแจ้งเตือนตัวเอง)
-  const addReviewReply = (
+  // Threaded Review Reply (Direct to Central Server)
+  const addReviewReply = async (
     targetId: string,
     type: 'supplier' | 'drink_store',
     noteId: string,
     replyText: string,
     replyToAuthor?: string
-  ) => {
+  ): Promise<void> => {
     const newReply: ReviewReply = {
       id: `reply-${Date.now()}`,
       author: currentUser.alias,
@@ -1493,39 +1495,39 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     };
 
     if (type === 'supplier') {
-      setSuppliers((prev) =>
-        prev.map((s) => {
-          if (s.id !== targetId) return s;
-          return {
-            ...s,
-            reviewerNotes: s.reviewerNotes.map((n) => {
-              if (n.id !== noteId) return n;
-              return {
-                ...n,
-                replies: [...(n.replies || []), newReply],
-              };
-            }),
-            updatedAt: new Date().toISOString(),
-          };
-        })
-      );
+      const target = suppliers.find((s) => s.id === targetId);
+      if (target) {
+        const updated: SupplierRecord = {
+          ...target,
+          reviewerNotes: target.reviewerNotes.map((n) => {
+            if (n.id !== noteId) return n;
+            return {
+              ...n,
+              replies: [...(n.replies || []), newReply],
+            };
+          }),
+          updatedAt: new Date().toISOString(),
+        };
+        await postSupplierToCentral(updated);
+        await refreshCentralData();
+      }
     } else {
-      setDrinkStores((prev) =>
-        prev.map((d) => {
-          if (d.id !== targetId) return d;
-          return {
-            ...d,
-            reviewerNotes: d.reviewerNotes.map((n) => {
-              if (n.id !== noteId) return n;
-              return {
-                ...n,
-                replies: [...(n.replies || []), newReply],
-              };
-            }),
-            updatedAt: new Date().toISOString(),
-          };
-        })
-      );
+      const target = drinkStores.find((s) => s.id === targetId);
+      if (target) {
+        const updated: StoreInspoRecord = {
+          ...target,
+          reviewerNotes: target.reviewerNotes.map((n) => {
+            if (n.id !== noteId) return n;
+            return {
+              ...n,
+              replies: [...(n.replies || []), newReply],
+            };
+          }),
+          updatedAt: new Date().toISOString(),
+        };
+        await postStoreToCentral(updated);
+        await refreshCentralData();
+      }
     }
 
     broadcastNotification(
@@ -1538,26 +1540,26 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     );
   };
 
-  // Pipeline Status Update
-  const updatePipelineStatus = (supplierId: string, status: PipelineStatus) => {
-    setSuppliers(
-      suppliers.map((s) => {
-        if (s.id !== supplierId) return s;
-        return {
-          ...s,
-          status,
-          history: [
-            ...s.history,
-            {
-              action: `ปรับสถานะเป็น "${status}"`,
-              user: currentUser.alias,
-              timestamp: new Date().toISOString(),
-            },
-          ],
-          updatedAt: new Date().toISOString(),
-        };
-      })
-    );
+  // Pipeline Status Update (Direct to Central Server)
+  const updatePipelineStatus = async (supplierId: string, status: PipelineStatus): Promise<void> => {
+    const target = suppliers.find((s) => s.id === supplierId);
+    if (target) {
+      const updated: SupplierRecord = {
+        ...target,
+        status,
+        history: [
+          ...target.history,
+          {
+            action: `ปรับสถานะเป็น "${status}"`,
+            user: currentUser.alias,
+            timestamp: new Date().toISOString(),
+          },
+        ],
+        updatedAt: new Date().toISOString(),
+      };
+      await postSupplierToCentral(updated);
+      await refreshCentralData();
+    }
     broadcastNotification(
       `${currentUser.alias} ปรับสถานะไปป์ไลน์`,
       `เปลี่ยนเป็น: ${status}`,
@@ -1742,7 +1744,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return loginWithCredentials(idOrEmail, pin);
   };
 
-  const createInvite = (role: UserRole, prefilledAlias?: string) => {
+  const createInvite = async (role: UserRole, prefilledAlias?: string): Promise<InviteLink> => {
     const newInvite: InviteLink = {
       id: `inv-${Date.now()}`,
       code: `VITCHA-${Math.random().toString(36).substring(2, 7).toUpperCase()}`,
@@ -1752,11 +1754,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       createdAt: new Date().toISOString(),
       createdBy: currentUser.alias,
     };
-    const nextInvites = [newInvite, ...invites];
-    setInvites(nextInvites);
-    safeSetLocalStorage('vitcha_invites_v5', JSON.stringify(nextInvites));
-    saveInviteToCloud(newInvite);
-    postInviteToCentral(newInvite);
+    await postInviteToCentral(newInvite);
+    await refreshCentralData();
     return newInvite;
   };
 
@@ -1911,6 +1910,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         updateStoreInspo,
         deleteStoreInspo,
         canEditItems,
+        canDeleteItems,
+        canComment,
+        canAddItems,
         editingSupplier,
         editingStore,
         openEditItem,
