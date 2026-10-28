@@ -98,6 +98,7 @@ const DEFAULT_DATABASE = {
   ],
   suppliers: [],
   drinkStores: [],
+  notifications: [],
   categories: [
     'เคาน์เตอร์ & สเตนเลส',
     'เครื่องซีลแก้ว',
@@ -182,6 +183,7 @@ app.get('/api/health', (req, res) => {
     drinkStoresCount: db.drinkStores?.length || 0,
     usersCount: db.users?.length || 0,
     invitesCount: db.invites?.length || 0,
+    notificationsCount: db.notifications?.length || 0,
   });
 });
 
@@ -311,6 +313,30 @@ app.delete('/api/invites/:id', (req, res) => {
   res.json({ success: true, id });
 });
 
+// Get Notifications
+app.get('/api/notifications', (req, res) => {
+  const db = getDatabase();
+  res.json(db.notifications || []);
+});
+
+// Post Notification (Broadcast to other users)
+app.post('/api/notifications', (req, res) => {
+  const notif = req.body;
+  if (!notif || !notif.id) {
+    return res.status(400).json({ error: 'Missing notification data' });
+  }
+  const db = getDatabase();
+  if (!Array.isArray(db.notifications)) {
+    db.notifications = [];
+  }
+  const exists = db.notifications.some((n) => n.id === notif.id);
+  if (!exists) {
+    db.notifications = [notif, ...db.notifications].slice(0, 80);
+    saveDatabase(db);
+  }
+  res.json({ success: true, notification: notif });
+});
+
 // Batch Sync
 app.post('/api/sync', (req, res) => {
   const incoming = req.body;
@@ -327,6 +353,13 @@ app.post('/api/sync', (req, res) => {
   }
   if (Array.isArray(incoming.invites) && incoming.invites.length > 0) {
     db.invites = incoming.invites;
+  }
+  if (Array.isArray(incoming.notifications) && incoming.notifications.length > 0) {
+    const existing = db.notifications || [];
+    const notifMap = new Map();
+    existing.forEach((n) => notifMap.set(n.id, n));
+    incoming.notifications.forEach((n) => notifMap.set(n.id, n));
+    db.notifications = Array.from(notifMap.values()).slice(0, 80);
   }
 
   saveDatabase(db);

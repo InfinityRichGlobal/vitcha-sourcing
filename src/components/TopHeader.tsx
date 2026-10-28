@@ -67,7 +67,10 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
     };
   }, []);
 
-  const unreadCount = notifications.filter((n) => !n.read).length;
+  // คำนวณ Unread Badge: ไม่นับรายการที่ตนเองเป็นผู้กระทำ และไม่นับหมวด 5 (เว้นแต่เป็น user-ice)
+  const unreadCount = notifications.filter(
+    (n) => !n.read && n.actorId !== currentUser.id && (!n.forAdminOnly || currentUser.id === 'user-ice')
+  ).length;
 
   return (
     <>

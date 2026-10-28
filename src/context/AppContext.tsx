@@ -52,6 +52,7 @@ import {
   deleteUserFromCentral,
   postInviteToCentral,
   deleteInviteFromCentral,
+  postNotificationToCentral,
   syncAllToCentral,
 } from '../services/api';
 
@@ -93,7 +94,12 @@ interface AppContextType {
     type: AppNotification['type'],
     targetId?: string,
     avatar?: string,
-    suppressToast?: boolean
+    suppressToast?: boolean,
+    options?: {
+      actorId?: string;
+      actorAlias?: string;
+      isCategory5?: boolean;
+    }
   ) => void;
 
   // Settings & Management (สำหรับ 2 สิทธิ์ระดับบน Admin & Editor)
@@ -574,8 +580,45 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     type: AppNotification['type'],
     targetId?: string,
     avatar?: string,
-    suppressToast = false
+    suppressToast = false,
+    options?: {
+      actorId?: string;
+      actorAlias?: string;
+      isCategory5?: boolean;
+    }
   ) => {
+    const actorId = options?.actorId ?? currentUser.id;
+    const actorAlias = options?.actorAlias ?? currentUser.alias;
+    const isCategory5 = options?.isCategory5 || false;
+
+    // 1. หมวดที่ 5: ระบบ & ข้อมูลทดสอบ (System Operations)
+    // "ไม่ต้องแจ้งครับ หรือแจ้งให้เฉพาะ ผมคนเดียว ผู้ทำระบบ"
+    if (isCategory5) {
+      if (currentUser.id === 'user-ice') {
+        const notif: AppNotification = {
+          id: `sys-${Date.now()}`,
+          title,
+          message,
+          timestamp: new Date().toISOString(),
+          type: 'system',
+          avatar: avatar || currentUser.avatar,
+          actorId,
+          actorAlias,
+          forAdminOnly: true,
+          read: true,
+        };
+        if (!suppressToast) {
+          setActiveToast(notif);
+          setTimeout(() => {
+            setActiveToast((current) => (current?.id === notif.id ? null : current));
+          }, 3500);
+        }
+      }
+      return; // ไม่ส่งขึ้นเซิร์ฟเวอร์ และไม่ส่งแจ้งเตือนให้สมาชิกคนอื่น
+    }
+
+    // 2. หมวดอื่นๆ (หมวด 1, 2, 3, 4):
+    // "แจ้งทุกคนสำหรับหมวดนี้ รายชื่อหมวดดังนี้ แต่ไม่แจ้งตนเองเมื่อเป็นผู้กระทำนั้นๆ"
     const newNotif: AppNotification = {
       id: `notif-${Date.now()}-${Math.random().toString(36).slice(2, 5)}`,
       title,
@@ -584,28 +627,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       type,
       targetId,
       avatar: avatar || currentUser.avatar,
-      read: suppressToast,
+      actorId,
+      actorAlias,
+      forAdminOnly: false,
+      read: false,
     };
 
-    setNotifications((prev) => [newNotif, ...prev]);
+    // ส่งเข้า Central Server เพื่อกระจายให้สมาชิกคนอื่นในทีมทุกคน
+    postNotificationToCentral(newNotif);
 
-    if (!suppressToast) {
-      setActiveToast(newNotif);
-      setTimeout(() => {
-        setActiveToast((current) => (current?.id === newNotif.id ? null : current));
-      }, 4500);
-
-      if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
-        try {
-          new Notification(title, {
-            body: message,
-            icon: avatar || currentUser.avatar,
-          });
-        } catch {
-          // ignore
-        }
-      }
-    }
+    // *ตามคำสั่ง*: ตนเองเป็นผู้กระทำ จะไม่เด้งแจ้งเตือนตนเอง ("แต่ไม่แจ้งตนเองเมื่อเป็นผู้กระทำนั้นๆ")
   };
 
   // Refresh & Synchronize Central Server Data (ดึงข้อมูลล่าสุดจาก Render + แจ้งเตือนเมื่อมีสมาชิกใหม่)
@@ -629,7 +660,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
                 `คุณ ${nu.alias || nu.name} สมัครเข้าใช้งานในสิทธิ์ [${nu.role}]`,
                 'system',
                 undefined,
-                nu.avatar
+                nu.avatar,
+                false,
+                { actorId: nu.id, actorAlias: nu.alias || nu.name }
               );
             });
           }
@@ -678,6 +711,54 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           });
           const merged = normalizeStores(Array.from(storeMap.values()));
           safeSetLocalStorage('vitcha_drink_stores_v5', JSON.stringify(merged));
+          return merged;
+        });
+      }
+
+      // Synchronize Central Notifications from teammates
+      if (Array.isArray(data.notifications) && data.notifications.length > 0) {
+        setNotifications((prevNotifs) => {
+          const prevIds = new Set(prevNotifs.map((n) => n.id));
+          const incoming = data.notifications as AppNotification[];
+
+          // 1. "ไม่แจ้งตนเองเมื่อเป็นผู้กระทำนั้นๆ": กรอง actorId === currentUser.id ออก
+          // 2. "หมวดที่ 5: ไม่ต้องแจ้ง หรือแจ้งเฉพาะ user-ice": กรอง forAdminOnly ออก ถ้าไม่ใช่ user-ice
+          const validForMe = incoming.filter((n) => {
+            if (n.actorId && n.actorId === currentUser.id) return false;
+            if (n.forAdminOnly && currentUser.id !== 'user-ice') return false;
+            return true;
+          });
+
+          // ตรวจหารายการใหม่จากเพื่อนร่วมทีมที่เครื่องนี้ยังไม่เคยเห็น
+          const newFromTeammates = validForMe.filter((n) => !prevIds.has(n.id));
+          if (newFromTeammates.length > 0) {
+            const newest = newFromTeammates[0];
+            setActiveToast(newest);
+            setTimeout(() => {
+              setActiveToast((current) => (current?.id === newest.id ? null : current));
+            }, 4500);
+
+            if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
+              try {
+                new Notification(newest.title, {
+                  body: newest.message,
+                  icon: newest.avatar || './logo.jpg',
+                });
+              } catch {
+                // ignore
+              }
+            }
+          }
+
+          const notifMap = new Map<string, AppNotification>();
+          prevNotifs.forEach((n) => notifMap.set(n.id, n));
+          validForMe.forEach((n) => {
+            if (!notifMap.has(n.id)) {
+              notifMap.set(n.id, n);
+            }
+          });
+          const merged = Array.from(notifMap.values()).slice(0, 80);
+          safeSetLocalStorage('vitcha_notifications_v5', JSON.stringify(merged));
           return merged;
         });
       }
@@ -1026,7 +1107,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       'system',
       undefined,
       currentUser.avatar,
-      false
+      false,
+      { isCategory5: true }
     );
   };
 
@@ -1035,14 +1117,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       setSuppliers([]);
       setDrinkStores([]);
       setNotifications([]);
-      syncAllToCentral({ suppliers: [], drinkStores: [] });
+      syncAllToCentral({ suppliers: [], drinkStores: [], notifications: [] });
       broadcastNotification(
         '🗑️ ล้างข้อมูลเป็นระบบว่างเปล่าสำเร็จ',
         'พร้อมเริ่มบันทึกข้อมูลหน้างานจริงตั้งแต่ศูนย์',
         'system',
         undefined,
         currentUser.avatar,
-        false
+        false,
+        { isCategory5: true }
       );
     } else {
       const initialSup = normalizeSuppliers(INITIAL_SUPPLIERS);
@@ -1066,7 +1149,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         'system',
         undefined,
         currentUser.avatar,
-        false
+        false,
+        { isCategory5: true }
       );
     }
   };

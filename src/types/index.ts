@@ -100,6 +100,9 @@ export interface AppNotification {
   type: 'supplier' | 'drink_store' | 'comment' | 'reply' | 'status' | 'system';
   targetId?: string;
   avatar?: string;
+  actorId?: string;
+  actorAlias?: string;
+  forAdminOnly?: boolean;
   read: boolean;
 }
 

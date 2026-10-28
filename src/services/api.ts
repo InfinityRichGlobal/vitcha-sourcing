@@ -1,4 +1,4 @@
-import { SupplierRecord, StoreInspoRecord, User, InviteLink } from '../types';
+import { SupplierRecord, StoreInspoRecord, User, InviteLink, AppNotification } from '../types';
 
 const RENDER_CONFIG_KEY = 'vitcha_render_server_url';
 // Default Render service name convention
@@ -159,11 +159,26 @@ export async function deleteInviteFromCentral(id: string): Promise<boolean> {
   }
 }
 
+export async function postNotificationToCentral(notif: AppNotification): Promise<boolean> {
+  const baseUrl = getRenderServerUrl();
+  try {
+    const res = await fetch(`${baseUrl}/api/notifications`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(notif),
+    });
+    return res.ok;
+  } catch {
+    return false;
+  }
+}
+
 export async function syncAllToCentral(payload: {
   suppliers?: SupplierRecord[];
   drinkStores?: StoreInspoRecord[];
   users?: User[];
   invites?: InviteLink[];
+  notifications?: AppNotification[];
 }): Promise<boolean> {
   const baseUrl = getRenderServerUrl();
   try {

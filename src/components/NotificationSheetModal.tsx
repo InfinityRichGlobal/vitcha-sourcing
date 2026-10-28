@@ -13,7 +13,14 @@ export const NotificationSheetModal: React.FC<NotificationSheetModalProps> = ({
   onClose,
   onSelectItem,
 }) => {
-  const { notifications, markAllNotificationsRead } = useApp();
+  const { currentUser, notifications, markAllNotificationsRead } = useApp();
+
+  // กรองการแจ้งเตือนตามกฎ:
+  // 1. "ไม่แจ้งตนเองเมื่อเป็นผู้กระทำนั้นๆ" (actorId !== currentUser.id)
+  // 2. "หมวดที่ 5 (ระบบ & ข้อมูลทดสอบ) ไม่ต้องแจ้งคนอื่น หรือแจ้งเฉพาะผู้ทำระบบ (user-ice)"
+  const visibleNotifications = notifications.filter(
+    (n) => n.actorId !== currentUser.id && (!n.forAdminOnly || currentUser.id === 'user-ice')
+  );
 
   if (!isOpen) return null;
 
@@ -46,7 +53,7 @@ export const NotificationSheetModal: React.FC<NotificationSheetModalProps> = ({
             </div>
             <div>
               <h3 className="font-bold text-sm text-slate-900">
-                การแจ้งเตือนในระบบ ({notifications.length})
+                การแจ้งเตือนในระบบ ({visibleNotifications.length})
               </h3>
               <p className="text-[11px] text-slate-400">
                 อัปเดตแบบเรียลไทม์จากสมาชิกในทีมทุกคน
@@ -74,12 +81,12 @@ export const NotificationSheetModal: React.FC<NotificationSheetModalProps> = ({
 
         {/* List */}
         <div className="p-3 overflow-y-auto space-y-2 flex-1">
-          {notifications.length === 0 ? (
+          {visibleNotifications.length === 0 ? (
             <div className="py-12 text-center text-xs text-slate-400">
               ยังไม่มีการแจ้งเตือนใหม่ในระบบ
             </div>
           ) : (
-            notifications.map((notif) => (
+            visibleNotifications.map((notif) => (
               <div
                 key={notif.id}
                 onClick={() => {
