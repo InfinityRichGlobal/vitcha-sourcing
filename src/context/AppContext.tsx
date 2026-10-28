@@ -126,6 +126,8 @@ interface AppContextType {
 
   updateCurrentUserProfile: (name: string, alias: string, avatar: string, pin?: string) => void;
   switchUser: (userId: string) => void;
+  isAuthenticated: boolean;
+  logout: () => void;
   loginWithPin: (idOrEmail: string, pin: string) => boolean;
   createInvite: (role: UserRole, prefilledAlias?: string) => InviteLink;
   redeemInvite: (code: string, name: string, alias: string, avatar: string, pin: string) => User | null;
@@ -239,6 +241,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [currentUser, setCurrentUser] = useState<User>(() => {
     const savedUser = localStorage.getItem('vitcha_current_user_v5');
     return savedUser ? JSON.parse(savedUser) : INITIAL_USERS[0];
+  });
+
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
+    return localStorage.getItem('vitcha_authenticated_session') === 'true';
   });
 
   const [suppliers, setSuppliers] = useState<SupplierRecord[]>(() => {
@@ -1147,13 +1153,24 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const switchUser = (userId: string) => {
     const found = users.find((u) => u.id === userId);
-    if (found) setCurrentUser(found);
+    if (found) {
+      setCurrentUser(found);
+      localStorage.setItem('vitcha_current_user_v5', JSON.stringify(found));
+    }
+  };
+
+  const logout = () => {
+    setIsAuthenticated(false);
+    localStorage.removeItem('vitcha_authenticated_session');
   };
 
   const loginWithPin = (idOrEmail: string, pin: string) => {
-    const user = users.find((u) => (u.emailOrId === idOrEmail || u.name === idOrEmail) && u.pin === pin);
+    const user = users.find((u) => (u.emailOrId === idOrEmail || u.name === idOrEmail || u.id === idOrEmail) && u.pin === pin);
     if (user) {
       setCurrentUser(user);
+      setIsAuthenticated(true);
+      localStorage.setItem('vitcha_authenticated_session', 'true');
+      localStorage.setItem('vitcha_current_user_v5', JSON.stringify(user));
       return true;
     }
     return false;
@@ -1193,6 +1210,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setUsers([...users, newUser]);
     setInvites(invites.map((inv) => (inv.id === invite.id ? { ...inv, isUsed: true } : inv)));
     setCurrentUser(newUser);
+    setIsAuthenticated(true);
+    localStorage.setItem('vitcha_authenticated_session', 'true');
+    localStorage.setItem('vitcha_current_user_v5', JSON.stringify(newUser));
     return newUser;
   };
 
@@ -1268,6 +1288,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         convertThbToCny,
         updateCurrentUserProfile,
         switchUser,
+        isAuthenticated,
+        logout,
         loginWithPin,
         createInvite,
         redeemInvite,

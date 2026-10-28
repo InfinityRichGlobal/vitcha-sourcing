@@ -112,11 +112,11 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
             </div>
           </button>
 
-          {/* Right: Framed Capture Box ("เพิ่ม [🏭 ซัพ] [🧋 ร้านน้ำ]") + Utility Pills */}
+          {/* Right: Add Buttons ("เพิ่ม [🏭 ซัพ] [🧋 ร้านน้ำ]") + Utility Pills */}
           <div className="flex items-center gap-1 sm:gap-1.5 shrink-0">
             {currentUser.role !== 'viewer' && (
-              <div className="flex items-center gap-1 sm:gap-1.5 bg-slate-100/90 pl-2 sm:pl-2.5 pr-1 py-1 rounded-xl border border-slate-200/80">
-                <span className="text-[11px] sm:text-xs font-extrabold text-slate-700 select-none">
+              <div className="flex items-center gap-1 sm:gap-1.5">
+                <span className="text-[11px] sm:text-xs font-bold text-slate-500 select-none mr-0.5">
                   เพิ่ม
                 </span>
 
@@ -133,10 +133,10 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
                 <button
                   type="button"
                   onClick={onOpenNewStoreInspo}
-                  className="inline-flex items-center gap-1 px-2.5 py-1.5 text-[11px] sm:text-xs font-extrabold rounded-lg bg-white hover:bg-amber-50 text-slate-900 border border-slate-200/90 shadow-2xs active:scale-95 transition-all"
+                  className="inline-flex items-center gap-1 px-2.5 py-1.5 text-[11px] sm:text-xs font-extrabold rounded-lg bg-orange-500 hover:bg-orange-600 text-white shadow-2xs active:scale-95 transition-all"
                   title="บันทึกร้านน้ำ & เรฟใหม่"
                 >
-                  <Coffee className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-amber-600" />
+                  <Coffee className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-white" />
                   <span>ร้านน้ำ</span>
                 </button>
               </div>

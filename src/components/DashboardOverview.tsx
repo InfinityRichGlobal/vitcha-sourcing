@@ -307,7 +307,34 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
         </button>
       </div>
 
-      {/* 3. รายการสำรวจล่าสุด (วางไว้ใต้ 4 กรอบหน้าแดชบอร์ดทันที ตามสั่ง! รูปแบบ Facebook Feed) */}
+      {/* 3. แผนที่มอนิเตอร์พิกัดสำรวจจริง (Live Map Monitor — แสดงก่อนหน้าโซเชียลฟีด) */}
+      <div id="map-section" className="bg-white rounded-2xl border border-slate-200/90 p-4 sm:p-5 shadow-2xs space-y-3">
+        <div className="flex items-center justify-between gap-2 flex-wrap">
+          <div className="flex items-center gap-2">
+            <span className="p-2 rounded-xl bg-emerald-50 text-emerald-700 border border-emerald-200/60">
+              <MapPin className="w-4 h-4" />
+            </span>
+            <div>
+              <h3 className="font-extrabold text-sm sm:text-base text-slate-900">
+                🗺️ แผนที่มอนิเตอร์พิกัดจริง (Live Map Monitor)
+              </h3>
+              <p className="text-[11px] text-slate-500">
+                รวมพิกัดทุกซัพพลายเออร์ (ขอบเขียว 🏭) และทุกร้านน้ำเรฟ (ขอบส้ม 🧋) — แตะที่หมุดรูปภาพเพื่อเปิดดูดีเทลทันที
+              </p>
+            </div>
+          </div>
+          <span className="text-[11px] font-mono font-bold px-2.5 py-1 rounded-full bg-slate-100 text-slate-700 border border-slate-200">
+            พิกัดทั้งหมด {suppliers.length + drinkStores.length} จุด
+          </span>
+        </div>
+
+        <MapView
+          onSelectSupplier={onSelectSupplier}
+          onSelectStoreInspo={onSelectStore}
+        />
+      </div>
+
+      {/* 4. รายการสำรวจล่าสุด (วางไว้ใต้แผนที่ รูปแบบ Facebook Feed) */}
       <div className="bg-white rounded-2xl border border-slate-200/90 p-4 sm:p-5 shadow-2xs space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2 border-b border-slate-100">
           <div>
@@ -392,33 +419,6 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
             </button>
           </div>
         )}
-      </div>
-
-      {/* 4. แผนที่มอนิเตอร์พิกัดสำรวจทั้งหมด (Map Monitor — สำคัญมาก ดูได้ทุกซับและทุกร้านน้ำ) */}
-      <div id="map-section" className="bg-white rounded-2xl border border-slate-200/90 p-4 sm:p-5 shadow-2xs space-y-3">
-        <div className="flex items-center justify-between gap-2 flex-wrap">
-          <div className="flex items-center gap-2">
-            <span className="p-2 rounded-xl bg-emerald-50 text-emerald-700 border border-emerald-200/60">
-              <MapPin className="w-4 h-4" />
-            </span>
-            <div>
-              <h3 className="font-extrabold text-sm sm:text-base text-slate-900">
-                🗺️ แผนที่มอนิเตอร์พิกัดจริง (Live Map Monitor)
-              </h3>
-              <p className="text-[11px] text-slate-500">
-                รวมพิกัดทุกซัพพลายเออร์ (ขอบเขียว 🏭) และทุกร้านน้ำเรฟ (ขอบส้ม 🧋) — แตะที่หมุดรูปภาพเพื่อเปิดดูดีเทลทันที
-              </p>
-            </div>
-          </div>
-          <span className="text-[11px] font-mono font-bold px-2.5 py-1 rounded-full bg-slate-100 text-slate-700 border border-slate-200">
-            พิกัดทั้งหมด {suppliers.length + drinkStores.length} จุด
-          </span>
-        </div>
-
-        <MapView
-          onSelectSupplier={onSelectSupplier}
-          onSelectStoreInspo={onSelectStore}
-        />
       </div>
 
       {/* 5. Two-Column Interactive Hub: Live Chat Destination Feed + Separate Category Explorer */}

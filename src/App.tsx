@@ -22,7 +22,7 @@ import { NotificationToast } from './components/NotificationToast';
 import { SupplierRecord, StoreInspoRecord } from './types';
 
 const MainApp: React.FC = () => {
-  const { activeTab, setActiveTab, suppliers, drinkStores } = useApp();
+  const { activeTab, setActiveTab, suppliers, drinkStores, isAuthenticated } = useApp();
 
   const [isNewSupplierOpen, setIsNewSupplierOpen] = useState(false);
   const [isNewStoreInspoOpen, setIsNewStoreInspoOpen] = useState(false);
@@ -93,6 +93,23 @@ const MainApp: React.FC = () => {
       }, 200);
     }
   };
+
+  // Lockscreen Gate: ทุกคนต้องล็อกอินก่อนเข้าถึงหน้าหลักและข้อมูล
+  if (!isAuthenticated) {
+    return (
+      <div className="min-h-screen bg-slate-950 flex flex-col font-sans selection:bg-emerald-500 selection:text-white">
+        <PinLoginModal
+          isOpen={true}
+          isGate={true}
+          onOpenInvite={() => setIsInviteModalOpen(true)}
+        />
+        <InviteManagerModal
+          isOpen={isInviteModalOpen}
+          onClose={() => setIsInviteModalOpen(false)}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-white text-slate-900 flex flex-col font-sans pb-16 selection:bg-emerald-500 selection:text-white">

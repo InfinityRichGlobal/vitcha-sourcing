@@ -255,17 +255,16 @@ export const DetailModal: React.FC<DetailModalProps> = ({
             </div>
           </div>
 
-          <div className="flex items-center gap-1.5 flex-wrap shrink-0">
+          <div className="flex items-center gap-1 sm:gap-1.5 shrink-0">
             {/* Edit Item Button (เฉพาะ 2 สิทธิ์ระดับบน Admin & Editor) */}
             {canEditItems && (
               <button
                 type="button"
                 onClick={() => openEditItem(currentItem)}
-                className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-bold rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-300 transition-colors shadow-2xs"
-                title="แก้ไขข้อมูลรายการนี้ (สำหรับ Admin / Editor)"
+                className="p-2 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-300 shadow-2xs active:scale-95 transition-all flex items-center justify-center"
+                title="แก้ไขข้อมูลรายการนี้ (Admin / Editor)"
               >
-                <Pencil className="w-3.5 h-3.5 text-amber-600" />
-                <span>แก้ไข</span>
+                <Pencil className="w-4 h-4 text-amber-600" />
               </button>
             )}
 
@@ -273,56 +272,57 @@ export const DetailModal: React.FC<DetailModalProps> = ({
             <button
               type="button"
               onClick={() => toggleLikeItem(currentItem.id, currentItem.type)}
-              className={`flex items-center gap-1 px-2.5 py-1.5 text-xs font-bold rounded-xl border transition-all ${
+              className={`p-2 rounded-xl border transition-all active:scale-95 flex items-center gap-1 text-xs font-bold ${
                 isLikedByMe
                   ? 'bg-blue-50 text-blue-700 border-blue-200'
                   : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
               }`}
+              title={`ถูกใจ (${likes.length})`}
             >
               <ThumbsUp
-                className={`w-3.5 h-3.5 ${isLikedByMe ? 'fill-blue-600 text-blue-600' : ''}`}
+                className={`w-4 h-4 ${isLikedByMe ? 'fill-blue-600 text-blue-600' : ''}`}
               />
-              <span className="hidden sm:inline">ถูกใจ</span>
-              <span>({likes.length})</span>
+              {likes.length > 0 && (
+                <span className="text-[11px] font-mono font-bold leading-none">{likes.length}</span>
+              )}
             </button>
 
             {/* Share to Line */}
             <button
               type="button"
               onClick={() => onShareToLine(currentItem)}
-              className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-bold rounded-xl bg-emerald-600 text-white hover:bg-emerald-700 transition-colors shadow-2xs"
+              className="p-2 rounded-xl bg-[#06C755] hover:bg-[#05b34c] text-white transition-all shadow-2xs active:scale-95 flex items-center justify-center"
               title="แชร์ลิงก์เข้า LINE"
             >
-              <Share2 className="w-3.5 h-3.5" />
-              <span>แชร์ LINE</span>
+              <Share2 className="w-4 h-4" />
             </button>
 
-            {/* Download PDF File Button ("เพิ่มปุ่มดาวนโหลด PDF ด้วย ขอดีไซน์ เหมือนปริ้นนั่นแหล่ะ แต่อันนี้ PDF files นะ") */}
+            {/* Download PDF File Button */}
             <button
               type="button"
               onClick={() => openExecutiveReport(currentItem, convertCnyToThb, 'pdf')}
-              className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition-colors shadow-2xs"
-              title="ดาวน์โหลดรายงานฉบับเต็มเป็นไฟล์ PDF"
+              className="p-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white transition-all shadow-2xs active:scale-95 flex items-center justify-center"
+              title="ดาวน์โหลดรายงานเป็นไฟล์ PDF"
             >
-              <FileDown className="w-3.5 h-3.5 text-emerald-400" />
-              <span>PDF</span>
+              <FileDown className="w-4 h-4 text-emerald-400" />
             </button>
 
-            {/* Executive Print Button ("ปุ่มกด Print จัดดีไซน์ อ่านง่าย ภาพทั้งหมด + log คนดู + คอมเม้น") */}
+            {/* Executive Print Button */}
             <button
               type="button"
               onClick={() => openExecutiveReport(currentItem, convertCnyToThb, 'print')}
-              className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold transition-colors border border-slate-200/80"
+              className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 transition-all border border-slate-200/80 active:scale-95 flex items-center justify-center"
               title="พิมพ์รายงานฉบับจัดหน้าสวยงาม (Print)"
             >
-              <Printer className="w-3.5 h-3.5 text-slate-700" />
-              <span className="hidden sm:inline">Print</span>
+              <Printer className="w-4 h-4 text-slate-700" />
             </button>
 
+            {/* Close Modal Button */}
             <button
               type="button"
               onClick={onClose}
-              className="w-7 h-7 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center transition-colors"
+              className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 transition-all active:scale-95 flex items-center justify-center ml-0.5"
+              title="ปิดหน้าต่าง"
             >
               <X className="w-4 h-4" />
             </button>

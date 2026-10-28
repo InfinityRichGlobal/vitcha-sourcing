@@ -14,6 +14,7 @@ import {
   Users,
   RotateCcw,
   Database,
+  LogOut,
 } from 'lucide-react';
 
 interface AppDrawerMenuProps {
@@ -44,6 +45,7 @@ export const AppDrawerMenu: React.FC<AppDrawerMenuProps> = ({
     exchangeRate,
     users,
     switchUser,
+    logout,
     loadFullMockupData,
     resetSystemData,
   } = useApp();
@@ -417,6 +419,21 @@ export const AppDrawerMenu: React.FC<AppDrawerMenuProps> = ({
                 </button>
               ))}
             </div>
+          </div>
+
+          {/* Logout Action */}
+          <div className="pt-2">
+            <button
+              type="button"
+              onClick={() => {
+                onClose();
+                logout();
+              }}
+              className="w-full flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl text-xs font-bold text-rose-600 bg-rose-50 hover:bg-rose-100 transition-colors"
+            >
+              <LogOut className="w-3.5 h-3.5" />
+              <span>ออกจากระบบ (Lock PIN)</span>
+            </button>
           </div>
         </div>
 

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
-import { X, Camera, ShieldCheck, KeyRound, Check } from 'lucide-react';
+import { X, Camera, ShieldCheck, KeyRound, Check, LogOut } from 'lucide-react';
 
 interface UserProfileModalProps {
   isOpen: boolean;
@@ -8,7 +8,7 @@ interface UserProfileModalProps {
 }
 
 export const UserProfileModal: React.FC<UserProfileModalProps> = ({ isOpen, onClose }) => {
-  const { currentUser, updateCurrentUserProfile } = useApp();
+  const { currentUser, updateCurrentUserProfile, logout } = useApp();
 
   const [name, setName] = useState(currentUser.name);
   const [alias, setAlias] = useState(currentUser.alias);
@@ -141,27 +141,43 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({ isOpen, onCl
             ระดับสิทธิ์ปัจจุบัน: <strong className="text-slate-800 uppercase font-mono">{currentUser.role}</strong>
           </div>
 
-          <div className="pt-2 flex justify-end gap-2">
+          <div className="pt-3 border-t border-slate-100 flex items-center justify-between gap-2">
             <button
               type="button"
-              onClick={onClose}
-              className="px-4 py-2 text-xs font-semibold text-slate-500 hover:text-slate-800"
+              onClick={() => {
+                if (window.confirm('คุณต้องการออกจากระบบหรือไม่?')) {
+                  logout();
+                  onClose();
+                }
+              }}
+              className="flex items-center gap-1.5 px-3 py-2 text-xs font-bold text-rose-600 hover:text-rose-700 hover:bg-rose-50 rounded-xl transition-colors"
             >
-              ยกเลิก
+              <LogOut className="w-3.5 h-3.5" />
+              <span>ออกจากระบบ</span>
             </button>
-            <button
-              type="submit"
-              className="flex items-center gap-1.5 px-5 py-2.5 text-xs font-bold rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white shadow-md active:scale-95 transition-all"
-            >
-              {isSaved ? (
-                <>
-                  <Check className="w-4 h-4" />
-                  <span>บันทึกแล้ว!</span>
-                </>
-              ) : (
-                <span>บันทึกข้อมูล</span>
-              )}
-            </button>
+
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={onClose}
+                className="px-4 py-2 text-xs font-semibold text-slate-500 hover:text-slate-800"
+              >
+                ยกเลิก
+              </button>
+              <button
+                type="submit"
+                className="flex items-center gap-1.5 px-5 py-2.5 text-xs font-bold rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white shadow-md active:scale-95 transition-all"
+              >
+                {isSaved ? (
+                  <>
+                    <Check className="w-4 h-4" />
+                    <span>บันทึกแล้ว!</span>
+                  </>
+                ) : (
+                  <span>บันทึกข้อมูล</span>
+                )}
+              </button>
+            </div>
           </div>
         </form>
       </div>
