@@ -271,6 +271,18 @@ app.post('/api/users', (req, res) => {
   res.json({ success: true, user });
 });
 
+// Delete User
+app.delete('/api/users/:id', (req, res) => {
+  const { id } = req.params;
+  const db = getDatabase();
+  if (id === 'user-ice') {
+    return res.status(400).json({ error: 'Cannot delete super admin user' });
+  }
+  db.users = (db.users || []).filter((u) => u.id !== id);
+  saveDatabase(db);
+  res.json({ success: true, id });
+});
+
 // Save Invite
 app.post('/api/invites', (req, res) => {
   const invite = req.body;
@@ -288,6 +300,15 @@ app.post('/api/invites', (req, res) => {
 
   saveDatabase(db);
   res.json({ success: true, invite });
+});
+
+// Delete Invite
+app.delete('/api/invites/:id', (req, res) => {
+  const { id } = req.params;
+  const db = getDatabase();
+  db.invites = (db.invites || []).filter((inv) => inv.id !== id && inv.code !== id);
+  saveDatabase(db);
+  res.json({ success: true, id });
 });
 
 // Batch Sync

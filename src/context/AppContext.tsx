@@ -49,7 +49,9 @@ import {
   postStoreToCentral,
   deleteStoreFromCentral,
   postUserToCentral,
+  deleteUserFromCentral,
   postInviteToCentral,
+  deleteInviteFromCentral,
   syncAllToCentral,
 } from '../services/api';
 
@@ -159,6 +161,11 @@ interface AppContextType {
     emailOrId?: string
   ) => void;
   switchUser: (userId: string) => void;
+  simulatedFromAdmin: boolean;
+  restoreAdminUser: () => void;
+  deleteUser: (userId: string) => Promise<boolean>;
+  deleteInvite: (inviteId: string) => Promise<boolean>;
+  refreshCentralData: () => Promise<void>;
   isAuthenticated: boolean;
   logout: () => void;
   loginWithCredentials: (usernameOrEmail: string, passOrPin: string) => boolean;
@@ -341,6 +348,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return localStorage.getItem('vitcha_authenticated_session') === 'true';
   });
 
+  const [simulatedFromAdmin, setSimulatedFromAdmin] = useState<boolean>(() => {
+    return sessionStorage.getItem('vitcha_simulated_admin') === 'true';
+  });
+
   const [suppliers, setSuppliers] = useState<SupplierRecord[]>(() => {
     const saved = localStorage.getItem('vitcha_suppliers_v5');
     if (saved) {
@@ -499,51 +510,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     });
   };
 
-  // Fetch Central Server Data on App Startup
-  useEffect(() => {
-    let active = true;
-    setRenderStatus('connecting');
-
-    fetchCentralData()
-      .then((data) => {
-        if (!active) return;
-        if (!data) {
-          setRenderStatus('disconnected');
-          return;
-        }
-        setRenderStatus('connected');
-
-        if (Array.isArray(data.suppliers) && data.suppliers.length > 0) {
-          setSuppliers(normalizeSuppliers(data.suppliers));
-          safeSetLocalStorage('vitcha_suppliers_v5', JSON.stringify(data.suppliers));
-        } else if (suppliers.length > 0) {
-          syncAllToCentral({ suppliers, drinkStores, users, invites });
-        }
-
-        if (Array.isArray(data.drinkStores) && data.drinkStores.length > 0) {
-          setDrinkStores(normalizeStores(data.drinkStores));
-          safeSetLocalStorage('vitcha_drink_stores_v5', JSON.stringify(data.drinkStores));
-        }
-
-        if (Array.isArray(data.users) && data.users.length > 0) {
-          setUsers(data.users);
-          safeSetLocalStorage('vitcha_users_v5', JSON.stringify(data.users));
-        }
-
-        if (Array.isArray(data.invites) && data.invites.length > 0) {
-          setInvites(data.invites);
-          safeSetLocalStorage('vitcha_invites_v5', JSON.stringify(data.invites));
-        }
-      })
-      .catch(() => {
-        if (active) setRenderStatus('disconnected');
-      });
-
-    return () => {
-      active = false;
-    };
-  }, []);
-
   // Push / Real-time In-App Notifications
   const [notifications, setNotifications] = useState<AppNotification[]>(() => {
     const saved = localStorage.getItem('vitcha_notifications_v5');
@@ -640,6 +606,149 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         }
       }
     }
+  };
+
+  // Refresh & Synchronize Central Server Data (ดึงข้อมูลล่าสุดจาก Render + แจ้งเตือนเมื่อมีสมาชิกใหม่)
+  const refreshCentralData = async () => {
+    try {
+      const data = await fetchCentralData();
+      if (!data) {
+        setRenderStatus('disconnected');
+        return;
+      }
+      setRenderStatus('connected');
+
+      if (Array.isArray(data.users) && data.users.length > 0) {
+        setUsers((prevUsers) => {
+          const prevIds = new Set(prevUsers.map((u) => u.id));
+          const newUsersFound = data.users.filter((u: User) => !prevIds.has(u.id));
+          if (newUsersFound.length > 0) {
+            newUsersFound.forEach((nu: User) => {
+              broadcastNotification(
+                '🔔 สมาชิกใหม่เข้าร่วมทีม',
+                `คุณ ${nu.alias || nu.name} สมัครเข้าใช้งานในสิทธิ์ [${nu.role}]`,
+                'system',
+                undefined,
+                nu.avatar
+              );
+            });
+          }
+          const userMap = new Map<string, User>();
+          prevUsers.forEach((u) => userMap.set(u.id, u));
+          data.users.forEach((u: User) => userMap.set(u.id, { ...userMap.get(u.id), ...u }));
+          const merged = Array.from(userMap.values());
+          safeSetLocalStorage('vitcha_users_v5', JSON.stringify(merged));
+          return merged;
+        });
+      }
+
+      if (Array.isArray(data.invites) && data.invites.length > 0) {
+        setInvites((prevInvites) => {
+          const invMap = new Map<string, InviteLink>();
+          prevInvites.forEach((i) => invMap.set(i.id || i.code, i));
+          data.invites.forEach((i: InviteLink) => {
+            const key = i.id || i.code;
+            invMap.set(key, { ...invMap.get(key), ...i });
+          });
+          const merged = Array.from(invMap.values());
+          safeSetLocalStorage('vitcha_invites_v5', JSON.stringify(merged));
+          return merged;
+        });
+      }
+
+      if (Array.isArray(data.suppliers) && data.suppliers.length > 0) {
+        setSuppliers((prev) => {
+          const supMap = new Map<string, SupplierRecord>();
+          prev.forEach((s) => supMap.set(s.id, s));
+          data.suppliers.forEach((s: SupplierRecord) => {
+            supMap.set(s.id, { ...supMap.get(s.id), ...s });
+          });
+          const merged = normalizeSuppliers(Array.from(supMap.values()));
+          safeSetLocalStorage('vitcha_suppliers_v5', JSON.stringify(merged));
+          return merged;
+        });
+      }
+
+      if (Array.isArray(data.drinkStores) && data.drinkStores.length > 0) {
+        setDrinkStores((prev) => {
+          const storeMap = new Map<string, StoreInspoRecord>();
+          prev.forEach((s) => storeMap.set(s.id, s));
+          data.drinkStores.forEach((s: StoreInspoRecord) => {
+            storeMap.set(s.id, { ...storeMap.get(s.id), ...s });
+          });
+          const merged = normalizeStores(Array.from(storeMap.values()));
+          safeSetLocalStorage('vitcha_drink_stores_v5', JSON.stringify(merged));
+          return merged;
+        });
+      }
+    } catch {
+      // offline fallback
+    }
+  };
+
+  // Background Auto-Sync every 20s & on Tab/Window Focus
+  useEffect(() => {
+    refreshCentralData();
+    const interval = setInterval(() => {
+      refreshCentralData();
+    }, 20000);
+
+    const onFocus = () => {
+      refreshCentralData();
+    };
+    window.addEventListener('focus', onFocus);
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('focus', onFocus);
+    };
+  }, []);
+
+  const deleteUser = async (userId: string): Promise<boolean> => {
+    if (userId === 'user-ice') {
+      alert('ไม่สามารถลบผู้ก่อตั้งระบบ (SuperiCez) ได้');
+      return false;
+    }
+    const target = users.find((u) => u.id === userId);
+    const targetName = target ? target.alias : userId;
+    const nextUsers = users.filter((u) => u.id !== userId);
+    setUsers(nextUsers);
+    safeSetLocalStorage('vitcha_users_v5', JSON.stringify(nextUsers));
+    await deleteUserFromCentral(userId);
+    broadcastNotification(
+      '🗑️ ลบสมาชิกสำเร็จ',
+      `นำคุณ ${targetName} ออกจากระบบเรียบร้อยแล้ว`,
+      'system'
+    );
+    return true;
+  };
+
+  const deleteInvite = async (inviteId: string): Promise<boolean> => {
+    const target = invites.find((i) => i.id === inviteId || i.code === inviteId);
+    const nextInvites = invites.filter((inv) => inv.id !== inviteId && inv.code !== inviteId);
+    setInvites(nextInvites);
+    safeSetLocalStorage('vitcha_invites_v5', JSON.stringify(nextInvites));
+    await deleteInviteFromCentral(inviteId);
+    broadcastNotification(
+      '🗑️ ลบคำเชิญสำเร็จ',
+      `ลบรหัสคำเชิญ ${target?.code || inviteId} เรียบร้อยแล้ว`,
+      'system'
+    );
+    return true;
+  };
+
+  const restoreAdminUser = () => {
+    const admin = users.find((u) => u.id === 'user-ice') || INITIAL_USERS[0];
+    setCurrentUser(admin);
+    setSimulatedFromAdmin(false);
+    sessionStorage.removeItem('vitcha_simulated_admin');
+    safeSetLocalStorage('vitcha_current_user_v5', JSON.stringify(admin));
+    broadcastNotification(
+      '👑 สลับกลับสู่ไอดีผู้ก่อตั้ง',
+      'คุณกลับเข้าสู่สิทธิ์ SuperiCez (Admin สูงสุด) เรียบร้อยแล้ว',
+      'system',
+      undefined,
+      admin.avatar
+    );
   };
 
   useEffect(() => {
@@ -1458,13 +1567,31 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const switchUser = (userId: string) => {
     const found = users.find((u) => u.id === userId);
     if (found) {
+      if (currentUser.id === 'user-ice' || currentUser.role === 'admin') {
+        setSimulatedFromAdmin(true);
+        sessionStorage.setItem('vitcha_simulated_admin', 'true');
+      }
       setCurrentUser(found);
       safeSetLocalStorage('vitcha_current_user_v5', JSON.stringify(found));
+      broadcastNotification(
+        '🎭 จำลองมุมมองสมาชิก',
+        `ขณะนี้กำลังแสดงผลในสิทธิ์ของ: ${found.alias} (${found.role})`,
+        'system',
+        undefined,
+        found.avatar
+      );
     }
   };
 
   const logout = () => {
+    broadcastNotification(
+      '⚪ ออกจากระบบ',
+      `คุณ ${currentUser.alias} ออกจากระบบเรียบร้อยแล้ว`,
+      'system'
+    );
     setIsAuthenticated(false);
+    setSimulatedFromAdmin(false);
+    sessionStorage.removeItem('vitcha_simulated_admin');
     localStorage.removeItem('vitcha_authenticated_session');
   };
 
@@ -1507,8 +1634,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (user) {
       setCurrentUser(user);
       setIsAuthenticated(true);
+      setSimulatedFromAdmin(false);
+      sessionStorage.removeItem('vitcha_simulated_admin');
       safeSetLocalStorage('vitcha_authenticated_session', 'true');
       safeSetLocalStorage('vitcha_current_user_v5', JSON.stringify(user));
+      broadcastNotification(
+        '🟢 มีการเข้าสู่ระบบ',
+        `คุณ ${user.alias} เข้าใช้งานระบบในสิทธิ์ [${user.role}]`,
+        'system',
+        undefined,
+        user.avatar
+      );
       return true;
     }
     return false;
@@ -1592,11 +1728,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     setUsers(nextUsers);
     if (existingInvite) {
+      const updatedInvite = { ...existingInvite, isUsed: true };
       const nextInvites = invites.map((inv) =>
-        inv.id === existingInvite.id ? { ...inv, isUsed: true } : inv
+        inv.id === existingInvite.id ? updatedInvite : inv
       );
       setInvites(nextInvites);
       safeSetLocalStorage('vitcha_invites_v5', JSON.stringify(nextInvites));
+      postInviteToCentral(updatedInvite);
     }
     setCurrentUser(finalUser);
     setIsAuthenticated(true);
@@ -1605,6 +1743,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     safeSetLocalStorage('vitcha_users_v5', JSON.stringify(nextUsers));
     saveUserToCloud(finalUser);
     postUserToCentral(finalUser);
+    broadcastNotification(
+      '🎉 สมาชิกใหม่ลงทะเบียนสำเร็จ',
+      `ยินดีต้อนรับคุณ ${finalUser.alias} เข้าร่วมทีมในสิทธิ์ [${finalUser.role}]`,
+      'system',
+      undefined,
+      finalUser.avatar
+    );
     return finalUser;
   };
 
@@ -1691,6 +1836,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         convertThbToCny,
         updateCurrentUserProfile,
         switchUser,
+        simulatedFromAdmin,
+        restoreAdminUser,
+        deleteUser,
+        deleteInvite,
+        refreshCentralData,
         isAuthenticated,
         logout,
         loginWithCredentials,

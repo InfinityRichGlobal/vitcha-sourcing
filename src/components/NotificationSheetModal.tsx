@@ -1,6 +1,6 @@
 import React from 'react';
 import { useApp } from '../context/AppContext';
-import { Bell, X, CheckCheck, Factory, Coffee, MessageSquare, Flame } from 'lucide-react';
+import { Bell, X, CheckCheck, Factory, Coffee, MessageSquare, Flame, ShieldCheck } from 'lucide-react';
 
 interface NotificationSheetModalProps {
   isOpen: boolean;
@@ -28,6 +28,8 @@ export const NotificationSheetModal: React.FC<NotificationSheetModalProps> = ({
         return <MessageSquare className="w-3.5 h-3.5 text-blue-600" />;
       case 'status':
         return <Flame className="w-3.5 h-3.5 text-orange-500" />;
+      case 'system':
+        return <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />;
       default:
         return <Bell className="w-3.5 h-3.5 text-slate-500" />;
     }

@@ -121,6 +121,18 @@ export async function postUserToCentral(user: User): Promise<boolean> {
   }
 }
 
+export async function deleteUserFromCentral(id: string): Promise<boolean> {
+  const baseUrl = getRenderServerUrl();
+  try {
+    const res = await fetch(`${baseUrl}/api/users/${id}`, {
+      method: 'DELETE',
+    });
+    return res.ok;
+  } catch {
+    return false;
+  }
+}
+
 export async function postInviteToCentral(invite: InviteLink): Promise<boolean> {
   const baseUrl = getRenderServerUrl();
   try {
@@ -128,6 +140,18 @@ export async function postInviteToCentral(invite: InviteLink): Promise<boolean> 
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(invite),
+    });
+    return res.ok;
+  } catch {
+    return false;
+  }
+}
+
+export async function deleteInviteFromCentral(id: string): Promise<boolean> {
+  const baseUrl = getRenderServerUrl();
+  try {
+    const res = await fetch(`${baseUrl}/api/invites/${id}`, {
+      method: 'DELETE',
     });
     return res.ok;
   } catch {

@@ -115,33 +115,32 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
 
           {/* Right: Minimalist Actions (Home + Soft '+' + Borderless Download, Bell, Full Profile Name) */}
           <div className="flex items-center gap-0.5 sm:gap-1.5 min-w-0">
-            {/* Home Button (ปุ่มโฮม กลับหน้าแดชบอร์ดหลักทันที) */}
+            {/* Home Button (ปุ่มโฮม ไร้กรอบ ปรับให้กลมกลืนกับเฮดเดอร์) */}
             <button
               type="button"
               onClick={() => {
                 setActiveTab('dashboard');
                 window.scrollTo({ top: 0, behavior: 'smooth' });
               }}
-              className={`w-7 h-7 sm:w-8 sm:h-8 rounded-lg flex items-center justify-center transition-all active:scale-95 shrink-0 ${
+              className={`w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center transition-all active:scale-95 shrink-0 ${
                 activeTab === 'dashboard'
-                  ? 'bg-emerald-50/90 text-emerald-700'
-                  : 'text-slate-600 hover:bg-slate-100/80 hover:text-slate-900'
+                  ? 'text-emerald-600'
+                  : 'text-slate-600 hover:text-emerald-600'
               }`}
               title="กลับหน้าหลัก (Home)"
             >
-              <i className="fa-solid fa-house text-xs sm:text-[13px]" />
+              <i className="fa-solid fa-house text-sm sm:text-base" />
             </button>
 
-            {/* Soft Minimalist '+' Button -> Opens Add Type Selector (ปรับโทนสีให้ซอฟต์กลมกลืน ไม่ดำทึบเด่นเกินไป) */}
+            {/* '+' Button (ปุ่มบวกทรงกลมกะทัดรัด ไม่ใหญ่เกินไป) */}
             {currentUser.role !== 'viewer' && (
               <button
                 type="button"
                 onClick={() => setIsAddPickerOpen(true)}
-                className="w-7 h-7 sm:w-auto sm:px-2.5 sm:py-1 rounded-lg bg-slate-100/90 hover:bg-emerald-50 text-slate-700 hover:text-emerald-700 border border-slate-200/70 hover:border-emerald-200 flex items-center justify-center gap-1 transition-all active:scale-95 shrink-0"
+                className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-slate-900 hover:bg-emerald-600 text-white flex items-center justify-center shadow-xs transition-all active:scale-95 shrink-0"
                 title="เพิ่มข้อมูลใหม่ (ซัพพลายเออร์ หรือ ร้านน้ำ & เรฟ)"
               >
                 <i className="fa-solid fa-plus text-xs" />
-                <span className="hidden sm:inline text-xs font-bold">เพิ่มข้อมูล</span>
               </button>
             )}
 

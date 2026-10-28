@@ -9,7 +9,9 @@ import {
   KeyRound, 
   Users,
   X,
-  Crown
+  Crown,
+  Trash2,
+  RefreshCw
 } from 'lucide-react';
 
 interface InviteManagerModalProps {
@@ -24,10 +26,15 @@ export const InviteManagerModal: React.FC<InviteManagerModalProps> = ({
   const { 
     currentUser, 
     users, 
+    deleteUser,
     invites, 
     createInvite, 
+    deleteInvite,
+    refreshCentralData,
     redeemInvite 
   } = useApp();
+
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   const [activeTab, setActiveTab] = useState<'generate' | 'redeem' | 'users'>('generate');
 
@@ -234,43 +241,82 @@ export const InviteManagerModal: React.FC<InviteManagerModalProps> = ({
 
           {/* List of Invites */}
           <div className="bg-white p-5 rounded-2xl border border-slate-200/80 space-y-3 shadow-xs">
-            <h3 className="font-bold text-sm text-slate-900">ประวัติลิงก์คำเชิญ ({invites.length})</h3>
+            <div className="flex items-center justify-between">
+              <h3 className="font-bold text-sm text-slate-900">ประวัติลิงก์คำเชิญ ({invites.length})</h3>
+              <button
+                type="button"
+                disabled={isRefreshing}
+                onClick={async () => {
+                  setIsRefreshing(true);
+                  try {
+                    await refreshCentralData();
+                  } finally {
+                    setTimeout(() => setIsRefreshing(false), 500);
+                  }
+                }}
+                className="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-[11px] font-bold flex items-center gap-1 transition-all"
+                title="รีเฟรชตรวจสอบสถานะล่าสุดจากเซิร์ฟเวอร์"
+              >
+                <RefreshCw className={`w-3 h-3 text-emerald-600 ${isRefreshing ? 'animate-spin' : ''}`} />
+                <span>รีเฟรช</span>
+              </button>
+            </div>
+
             <div className="space-y-2 max-h-[380px] overflow-y-auto">
               {invites.map((inv) => (
                 <div
                   key={inv.id}
-                  className="p-3 bg-slate-50 rounded-xl border border-slate-100 flex items-center justify-between text-xs"
+                  className="p-3 bg-slate-50 rounded-xl border border-slate-100 flex items-center justify-between text-xs gap-2"
                 >
                   <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-2">
-                      <span className="font-mono font-bold text-slate-800">{inv.code}</span>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="font-mono font-bold text-slate-800 bg-white px-2 py-0.5 rounded border border-slate-200">
+                        {inv.code}
+                      </span>
                       <span className="text-[10px] font-semibold uppercase px-2 py-0.2 rounded-full bg-slate-200 text-slate-700">
                         {inv.role}
                       </span>
                       {inv.isUsed ? (
-                        <span className="text-[10px] font-bold text-slate-400">ใช้แล้ว</span>
+                        <span className="text-[10px] font-extrabold text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded-full border border-emerald-300">
+                          🟢 สมัครแล้ว
+                        </span>
                       ) : (
-                        <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-1.5 py-0.2 rounded">
-                          พร้อมใช้
+                        <span className="text-[10px] font-bold text-amber-800 bg-amber-100 px-2 py-0.5 rounded-full border border-amber-300">
+                          🟡 ยังไม่ได้สมัคร
                         </span>
                       )}
                     </div>
                     {inv.prefilledAlias && (
-                      <div className="text-[11px] text-slate-500 mt-0.5">
+                      <div className="text-[11px] text-slate-500 mt-1">
                         สำหรับ: {inv.prefilledAlias}
                       </div>
                     )}
                   </div>
 
-                  {!inv.isUsed && (
+                  <div className="flex items-center gap-1 shrink-0">
+                    {!inv.isUsed && (
+                      <button
+                        onClick={() => handleCopy(inv.code)}
+                        className="px-2.5 py-1 rounded-lg bg-white border border-slate-200 text-slate-700 hover:bg-slate-100 transition-colors font-semibold text-[11px] flex items-center gap-1"
+                      >
+                        {copiedCode === inv.code ? <Check className="w-3 h-3 text-emerald-600" /> : <Copy className="w-3 h-3" />}
+                        <span>{copiedCode === inv.code ? 'คัดลอกแล้ว' : 'แชร์'}</span>
+                      </button>
+                    )}
+
                     <button
-                      onClick={() => handleCopy(inv.code)}
-                      className="px-2.5 py-1 rounded-lg bg-white border border-slate-200 text-slate-700 hover:bg-slate-100 transition-colors font-semibold text-[11px] flex items-center gap-1"
+                      type="button"
+                      onClick={() => {
+                        if (window.confirm(`ต้องการลบรหัสคำเชิญ "${inv.code}" หรือไม่?`)) {
+                          deleteInvite(inv.id);
+                        }
+                      }}
+                      className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors"
+                      title="ลบคำเชิญนี้"
                     >
-                      {copiedCode === inv.code ? <Check className="w-3 h-3 text-emerald-600" /> : <Copy className="w-3 h-3" />}
-                      <span>{copiedCode === inv.code ? 'คัดลอกแล้ว' : 'แชร์'}</span>
+                      <Trash2 className="w-3.5 h-3.5" />
                     </button>
-                  )}
+                  </div>
                 </div>
               ))}
             </div>
@@ -356,29 +402,73 @@ export const InviteManagerModal: React.FC<InviteManagerModalProps> = ({
       {activeTab === 'users' && (
         <div className="bg-white p-5 rounded-2xl border border-slate-200/80 space-y-4 shadow-xs">
           <div className="flex items-center justify-between">
-            <h3 className="font-bold text-sm text-slate-900">สมาชิกในทีม ({users.length} คน)</h3>
-            <span className="text-xs text-slate-400">ควบคุมด้วยสิทธิ์ RBAC</span>
+            <div>
+              <h3 className="font-bold text-sm text-slate-900">สมาชิกในทีม ({users.length} คน)</h3>
+              <span className="text-xs text-slate-400">ควบคุมด้วยสิทธิ์ RBAC</span>
+            </div>
+            <button
+              type="button"
+              disabled={isRefreshing}
+              onClick={async () => {
+                setIsRefreshing(true);
+                try {
+                  await refreshCentralData();
+                } finally {
+                  setTimeout(() => setIsRefreshing(false), 500);
+                }
+              }}
+              className="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-[11px] font-bold flex items-center gap-1 transition-all"
+              title="ดึงสมาชิกล่าสุดจากเซิร์ฟเวอร์ Render"
+            >
+              <RefreshCw className={`w-3 h-3 text-emerald-600 ${isRefreshing ? 'animate-spin' : ''}`} />
+              <span>ดึงสมาชิกล่าสุด</span>
+            </button>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {users.map((u) => (
-              <div
-                key={u.id}
-                className="p-3 bg-slate-50 rounded-xl border border-slate-100 flex items-center gap-3"
-              >
-                <img src={u.avatar} className="w-10 h-10 rounded-full object-cover ring-2 ring-white shadow-xs shrink-0" />
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-1.5">
-                    <span className="font-bold text-sm text-slate-900 truncate">{u.alias}</span>
-                    <span className="text-[10px] uppercase font-mono px-2 py-0.2 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200/60 font-semibold">
-                      {u.role}
-                    </span>
+            {users.map((u) => {
+              const isSuperAdmin = u.id === 'user-ice';
+              return (
+                <div
+                  key={u.id}
+                  className="p-3 bg-slate-50 rounded-xl border border-slate-100 flex items-center justify-between gap-3"
+                >
+                  <div className="flex items-center gap-3 min-w-0 flex-1">
+                    <img src={u.avatar} className="w-10 h-10 rounded-full object-cover ring-2 ring-white shadow-xs shrink-0" />
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <span className="font-bold text-sm text-slate-900 truncate">{u.alias}</span>
+                        <span className="text-[10px] uppercase font-mono px-2 py-0.2 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200/60 font-semibold">
+                          {u.role}
+                        </span>
+                      </div>
+                      <div className="text-xs text-slate-500 truncate">{u.name}</div>
+                      <div className="text-[11px] text-slate-400 font-mono truncate">{u.emailOrId || 'PIN: ••••'}</div>
+                    </div>
                   </div>
-                  <div className="text-xs text-slate-500 truncate">{u.name}</div>
-                  <div className="text-[11px] text-slate-400 font-mono">PIN: ••••</div>
+
+                  {!isSuperAdmin && currentUser.role === 'admin' && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (window.confirm(`ยืนยันการลบสมาชิก "${u.alias}" ออกจากระบบหรือไม่?`)) {
+                          deleteUser(u.id);
+                        }
+                      }}
+                      className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors shrink-0"
+                      title="ลบสมาชิกนี้ออกจากระบบ"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  )}
+                  {isSuperAdmin && (
+                    <span className="text-[9px] bg-amber-100 text-amber-800 font-bold px-1.5 py-0.5 rounded shrink-0">
+                      ผู้ก่อตั้ง
+                    </span>
+                  )}
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       )}

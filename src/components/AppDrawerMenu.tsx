@@ -44,6 +44,8 @@ export const AppDrawerMenu: React.FC<AppDrawerMenuProps> = ({
     exchangeRate,
     users,
     switchUser,
+    simulatedFromAdmin,
+    restoreAdminUser,
     logout,
     loadFullMockupData,
     resetSystemData,
@@ -398,8 +400,30 @@ export const AppDrawerMenu: React.FC<AppDrawerMenuProps> = ({
           </button>
 
           {/* Member List & Persona Switcher for Website Owner / Admin */}
-          {currentUser.role === 'admin' && (
+          {(currentUser.role === 'admin' || simulatedFromAdmin || currentUser.id === 'user-ice') && (
             <div className="pt-3 border-t border-slate-100">
+              {/* Return to Admin Button if currently simulating another account */}
+              {currentUser.id !== 'user-ice' && (
+                <button
+                  type="button"
+                  onClick={() => restoreAdminUser()}
+                  className="w-full mb-3 p-3 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-700 hover:from-emerald-500 hover:to-teal-600 text-white shadow-md active:scale-[0.98] transition-all flex items-center justify-between font-bold text-xs"
+                >
+                  <div className="flex items-center gap-2">
+                    <span className="w-7 h-7 rounded-full bg-white/20 flex items-center justify-center text-sm shrink-0">
+                      👑
+                    </span>
+                    <div className="text-left">
+                      <div className="text-[10px] text-emerald-100 font-medium">กำลังจำลองมุมมองสมาชิก</div>
+                      <div className="truncate">สลับกลับสู่ไอดีผู้ก่อตั้ง (SuperiCez) ↩</div>
+                    </div>
+                  </div>
+                  <span className="text-[10px] bg-white text-emerald-900 font-extrabold px-2 py-1 rounded-lg shrink-0">
+                    คืนสิทธิ์
+                  </span>
+                </button>
+              )}
+
               <div className="flex items-center justify-between px-1 mb-2">
                 <div className="flex items-center gap-1.5 text-xs font-extrabold text-slate-900">
                   <Users className="w-4 h-4 text-emerald-600" />
