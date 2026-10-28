@@ -135,15 +135,17 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({ isOpen, onCl
             <label className="text-xs font-semibold text-slate-600 block mb-1">
               Username หรือ Email สำหรับล็อกอิน
             </label>
-            <div className="relative">
+            <div className="relative flex items-center">
+              <div className="absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none flex items-center text-slate-400">
+                <User className="w-4 h-4" />
+              </div>
               <input
                 type="text"
                 value={emailOrId}
                 onChange={(e) => setEmailOrId(e.target.value)}
                 placeholder="เช่น ice@vitcha.com หรือ ice"
-                className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-9 pr-3.5 py-2 text-sm text-slate-900 focus:bg-white focus:outline-none focus:border-emerald-500 font-mono"
+                className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-11 pr-3.5 py-2 text-sm text-slate-900 focus:bg-white focus:outline-none focus:border-emerald-500 font-mono"
               />
-              <User className="w-4 h-4 text-slate-400 absolute left-3 top-2.5 pointer-events-none" />
             </div>
           </div>
 
