@@ -133,20 +133,6 @@ export const StoreInspoCard: React.FC<StoreInspoCardProps> = ({
           </div>
 
           <div className="flex items-center gap-1.5 shrink-0">
-            {canEditItems && (
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  openEditItem(store);
-                }}
-                className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-slate-100 hover:bg-amber-50 text-slate-700 hover:text-amber-800 border border-slate-200 text-[11px] font-bold transition-colors"
-                title="แก้ไขข้อมูลร้านน้ำนี้"
-              >
-                <Pencil className="w-3 h-3" />
-                <span>แก้ไข</span>
-              </button>
-            )}
             <span className="text-xs font-mono font-bold text-amber-600 bg-amber-50/70 px-2 py-0.5 rounded-md border border-amber-200/60 inline-flex items-center gap-1">
               <i className="fa-solid fa-star text-[10px] text-amber-500" />
               <span>{avgRating}</span>
@@ -160,16 +146,32 @@ export const StoreInspoCard: React.FC<StoreInspoCardProps> = ({
           className="px-4 pb-3 cursor-pointer space-y-2"
         >
           <div>
-            <div className="flex items-center gap-1.5 flex-wrap mb-1">
-              <span className="text-[11px] font-semibold text-amber-800 bg-amber-50/80 px-2 py-0.5 rounded-md inline-flex items-center gap-1">
-                <i className="fa-solid fa-mug-hot text-[10px] text-amber-600" />
-                <span>{store.storeCategory || 'เรฟร้านน้ำ'}</span>
-              </span>
-              {store.assignedTo && (
-                <span className="inline-flex items-center gap-1 text-[11px] text-slate-600 bg-slate-100 px-2 py-0.5 rounded-md">
-                  <UserCheck className="w-3 h-3 text-slate-500" />
-                  <span>{store.assignedTo}</span>
+            <div className="flex items-center justify-between gap-1.5 flex-wrap mb-1.5">
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <span className="text-[11px] font-semibold text-amber-800 bg-amber-50/80 px-2 py-0.5 rounded-md inline-flex items-center gap-1">
+                  <i className="fa-solid fa-mug-hot text-[10px] text-amber-600" />
+                  <span>{store.storeCategory || 'เรฟร้านน้ำ'}</span>
                 </span>
+                {store.assignedTo && (
+                  <span className="inline-flex items-center gap-1 text-[11px] text-slate-600 bg-slate-100 px-2 py-0.5 rounded-md">
+                    <UserCheck className="w-3 h-3 text-slate-500" />
+                    <span>{store.assignedTo}</span>
+                  </span>
+                )}
+              </div>
+              {canEditItems && (
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    openEditItem(store);
+                  }}
+                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-slate-100 hover:bg-amber-50 text-slate-700 hover:text-amber-800 border border-slate-200 text-[11px] font-bold transition-colors"
+                  title="แก้ไขข้อมูลร้านน้ำนี้"
+                >
+                  <Pencil className="w-3 h-3" />
+                  <span>แก้ไข</span>
+                </button>
               )}
             </div>
 

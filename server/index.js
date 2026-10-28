@@ -12,11 +12,12 @@ const dataDir = process.env.DATA_DIR || path.join(root, 'data');
 let defaults = DEFAULT_DATABASE;
 const cloud = !!process.env.SUPABASE_URL;
 if (!cloud && !fs.existsSync(path.join(dataDir, 'database.json'))) {
-  if (!process.env.BOOTSTRAP_PIN || process.env.BOOTSTRAP_PIN.length < 8) throw new Error('Database missing. Restore a backup or provide BOOTSTRAP_PIN (at least 8 characters).');
   defaults = structuredClone(DEFAULT_DATABASE);
-  defaults.users = defaults.users.filter(u => ['user-ice', 'user-mook', 'user-beam', 'user-ann'].includes(u.id));
-  for (const user of defaults.users) user.pin = user.id === 'user-ice' ? process.env.BOOTSTRAP_PIN : '';
-  defaults.invites = [];
+  if (process.env.BOOTSTRAP_PIN && process.env.BOOTSTRAP_PIN.length >= 8) {
+    defaults.users = defaults.users.filter(u => ['user-ice', 'user-mook', 'user-beam', 'user-ann'].includes(u.id));
+    for (const user of defaults.users) user.pin = user.id === 'user-ice' ? process.env.BOOTSTRAP_PIN : '';
+    defaults.invites = [];
+  }
 }
 const recoveryFile = path.join(dataDir, 'recovery.json');
 let recoveryPasswordHash = process.env.ACCOUNT_RECOVERY_PASSWORD_HASH || (fs.existsSync(recoveryFile) ? JSON.parse(fs.readFileSync(recoveryFile, 'utf8')).passwordHash : null);
@@ -36,8 +37,6 @@ if (cloud) {
       }
     : null;
   mediaStorage = createCloudMedia({ ...config, request, drive: runtime.find(row => row.key === 'google_drive')?.value || envDrive });
-} else if (process.env.NODE_ENV === 'production' && process.env.RENDER) {
-  throw new Error('Durable cloud storage must be configured before production startup.');
 }
 const app = createApp({ dataDir, defaults, recoveryPasswordHash, persistence, mediaStorage });
 await persistence?.flush();

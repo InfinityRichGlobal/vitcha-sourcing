@@ -30,9 +30,9 @@ const statusStyle = {
   reject: "bg-rose-50 text-rose-700",
 };
 const button =
-  "inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-40";
+  "inline-flex items-center justify-center gap-1.5 rounded-xl border border-slate-200/90 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 hover:bg-slate-50 disabled:opacity-40 transition-colors";
 const input =
-  "min-h-11 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm";
+  "w-full rounded-xl border border-slate-200/90 bg-slate-50 px-3 py-2 text-xs font-medium text-slate-900 focus:bg-white focus:outline-none focus:border-emerald-500";
 
 export function ProductWorkspace({
   onOpenSupplier,
@@ -134,47 +134,42 @@ export function ProductWorkspace({
   };
   return (
     <div
-      className="mx-auto max-w-6xl space-y-4 px-3 py-4 sm:px-4 animate-in fade-in"
+      className="mx-auto max-w-6xl space-y-3.5 px-3 py-3 sm:px-4 animate-in fade-in"
       data-testid="product-workspace"
     >
-      <div className="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/90 shadow-2xs flex flex-wrap items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <span className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-700 border border-emerald-200/60 flex items-center justify-center shrink-0">
-            <i aria-hidden="true" className="fa-solid fa-boxes-stacked text-base" />
+      <div className="bg-white px-3.5 py-2.5 rounded-2xl border border-slate-200/80 shadow-2xs flex flex-wrap items-center justify-between gap-2">
+        <div className="flex items-center gap-2 min-w-0">
+          <span className="w-7 h-7 rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-200/60 flex items-center justify-center shrink-0">
+            <i aria-hidden="true" className="fa-solid fa-boxes-stacked text-xs" />
           </span>
-          <div>
-            <div className="flex items-center gap-2 flex-wrap">
-              <h1 className="text-base sm:text-lg font-extrabold text-slate-950 tracking-tight">รายการสินค้า</h1>
-              <span className="text-[11px] font-mono font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200">
-                {products.length} ชิ้น
-              </span>
-            </div>
-            <p className="text-xs text-slate-500">
-              คัดทีละชิ้น เทียบข้ามซัพพลายเออร์ แล้วจัดเป็นชุดที่ทีมใช้งานต่อได้
-            </p>
+          <div className="flex items-center gap-2 flex-wrap min-w-0">
+            <h1 className="text-xs sm:text-sm font-extrabold text-slate-900 tracking-tight">รายการสินค้า</h1>
+            <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-800 border border-emerald-200">
+              {products.length} ชิ้น
+            </span>
           </div>
         </div>
         {canManage && (
           <button className={button} onClick={() => setTaxOpen(true)}>
-            <SlidersHorizontal size={16} />
+            <SlidersHorizontal size={14} />
             หมวดหมู่และแท็ก
           </button>
         )}
       </div>
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
         {Object.entries(decisions).map(([key, label]) => (
           <button
             key={key}
             aria-pressed={decision === key}
             onClick={() => setDecision(decision === key ? "all" : key)}
-            className={`rounded-2xl border p-3.5 text-left transition-all shadow-2xs ${decision === key ? "border-emerald-500 ring-1 ring-emerald-500 bg-white" : "border-slate-200/90 bg-white hover:border-slate-300"}`}
+            className={`rounded-2xl border p-3 text-left transition-all shadow-2xs ${decision === key ? "border-emerald-500 ring-1 ring-emerald-500 bg-white" : "border-slate-200/80 bg-white hover:border-slate-300"}`}
           >
             <span
-              className={`inline-flex rounded-lg px-2 py-0.5 text-[11px] font-bold ${statusStyle[key as keyof typeof decisions]}`}
+              className={`inline-flex rounded-md px-2 py-0.5 text-[10px] font-bold ${statusStyle[key as keyof typeof decisions]}`}
             >
               {label}
             </span>
-            <strong className="mt-2 block text-2xl font-extrabold font-mono text-slate-950">
+            <strong className="mt-1.5 block text-xl font-extrabold font-mono text-slate-950">
               {products.filter((item) => item.decision === key).length}
             </strong>
           </button>

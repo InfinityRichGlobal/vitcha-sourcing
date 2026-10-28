@@ -476,45 +476,52 @@ export const SettingsManagementView: React.FC = () => {
       </div>
 
       {/* Google Drive CENTER Storage Card */}
-      <div className="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/90 shadow-2xs space-y-3.5">
+      <div className="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/90 shadow-2xs space-y-3">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 border border-blue-200/60 flex items-center justify-center shrink-0">
-              <i aria-hidden="true" className="fa-brands fa-google-drive text-base" />
+            <div className="w-9 h-9 rounded-xl bg-blue-50 text-blue-600 border border-blue-200/60 flex items-center justify-center shrink-0">
+              <i aria-hidden="true" className="fa-brands fa-google-drive text-sm" />
             </div>
             <div>
               <div className="flex items-center gap-2 flex-wrap">
-                <h3 className="font-extrabold text-sm sm:text-base text-slate-900">
+                <h3 className="font-extrabold text-xs sm:text-sm text-slate-900">
                   พื้นที่จัดเก็บไฟล์ Google Drive CENTER
                 </h3>
-                <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200">
-                  Folder: {driveFolderId}
-                </span>
+                <a
+                  href={`https://drive.google.com/drive/u/0/folders/${driveFolderId}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-md bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 inline-flex items-center gap-1 transition-colors"
+                >
+                  <span>เปิดโฟลเดอร์ CENTER ({driveFolderId.slice(0, 10)}…)</span>
+                  <i aria-hidden="true" className="fa-solid fa-arrow-up-right-from-square text-[9px]" />
+                </a>
               </div>
-              <p className="text-[11px] text-slate-500">
-                รองรับการอัปโหลดรูปภาพ เสียง และวิดีโอ (สูงสุด 100 MB/ไฟล์) แยกโฟลเดอร์ตามหมวดและรายการอัตโนมัติ พร้อมระบบสำรองคลาวด์ไม่ให้การอัปโหลดสะดุด
+              <p className="text-[11px] text-slate-500 mt-0.5">
+                เชื่อมต่อโฟลเดอร์ CENTER เรียบร้อยแล้ว รองรับการอัปโหลดรูปภาพ เสียงอัดสด และวิดีโอ (สูงสุด 100 MB/ไฟล์) พร้อม Cloud Media สำรองอัตโนมัติ
               </p>
             </div>
           </div>
 
-          <div className="flex items-center gap-2 shrink-0">
-            {driveStatus?.connected ? (
-              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-bold">
-                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                <span>เชื่อมต่อ Google Drive แล้ว ({driveStatus.user?.emailAddress || 'Active'})</span>
-              </span>
-            ) : (
-              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-50 border border-amber-200 text-amber-800 text-xs font-bold">
-                <span className="w-2 h-2 rounded-full bg-amber-500" />
-                <span>โหมดสำรอง Cloud Storage ทำงานอยู่ · รอผูก OAuth</span>
-              </span>
-            )}
+          <div className="flex items-center gap-1.5 shrink-0 flex-wrap">
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-800 text-[11px] font-bold">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+              <span>🟢 เชื่อมต่อ Google Drive CENTER สำเร็จ</span>
+            </span>
+            <a
+              href={`https://drive.google.com/drive/u/0/folders/${driveFolderId}`}
+              target="_blank"
+              rel="noreferrer"
+              className="px-2.5 py-1 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-[11px] font-bold transition-all"
+            >
+              เปิด Drive
+            </a>
             <button
               type="button"
               onClick={() => setShowDriveForm((v) => !v)}
-              className="px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition-all"
+              className="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-[11px] font-bold transition-all"
             >
-              {showDriveForm ? 'ซ่อนฟอร์มตั้งค่า' : 'ตั้งค่า OAuth'}
+              {showDriveForm ? 'ซ่อนตั้งค่า' : 'ตั้งค่าขั้นสูง'}
             </button>
           </div>
         </div>

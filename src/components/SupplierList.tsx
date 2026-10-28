@@ -83,10 +83,10 @@ export const SupplierList: React.FC<SupplierListProps> = ({
   const resetFilters = () => { setSearchQuery(''); setCountryFilter('all'); setSelectedCategory('all'); setSelectedRating(null); setSelectedStatus('all'); setSelectedTag('all'); };
 
   return (
-    <div className="space-y-3 max-w-6xl mx-auto px-3 sm:px-5 py-5 sm:py-7 animate-in fade-in">
+    <div className="space-y-3 max-w-6xl mx-auto px-3 sm:px-4 py-3 animate-in fade-in">
       <CollectionHeading kind="supplier" count={filtered.length} total={suppliers.length} filtered={hasFilters} onReset={resetFilters} onCreate={currentUser.role !== 'viewer' ? onOpenNewSupplier : undefined} />
       {/* Search and Filters Bar */}
-      <div className="collection-filters bg-white p-3.5 sm:p-4 rounded-2xl border border-slate-200/80 space-y-2.5 shadow-xs">
+      <div className="collection-filters bg-white p-3.5 rounded-2xl border border-slate-200/80 space-y-2.5 shadow-2xs">
         <div className="flex flex-col sm:flex-row gap-2">
           {/* Search Input */}
           <div className="relative flex-1">
@@ -97,7 +97,7 @@ export const SupplierList: React.FC<SupplierListProps> = ({
               placeholder="ค้นหาชื่อซัพพลายเออร์, ตลาด, เมือง, สินค้า..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="min-h-11 w-full bg-slate-50 border border-slate-200/80 rounded-xl pl-9 pr-3.5 py-2 text-xs font-medium text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-emerald-500/20 focus:border-emerald-500"
+              className="w-full bg-slate-50 border border-slate-200/80 rounded-xl pl-9 pr-3.5 py-2 text-xs font-medium text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-emerald-500/20 focus:border-emerald-500"
             />
           </div>
 

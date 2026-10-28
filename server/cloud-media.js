@@ -91,22 +91,27 @@ export function createCloudMedia({ request, url, key, drive = null, fetchImpl = 
     return { success: true, url: `/media/${id}`, mediaId: id };
   }
 
+  function extractFolderId(raw) {
+    const str = String(raw || '').trim();
+    if (!str) return '1OXmOSXAA7py0ixs6vT3EBjndZCvpkDT1';
+    const match = str.match(/\/folders\/([a-zA-Z0-9_-]+)/);
+    return match ? match[1] : str;
+  }
+
   async function configureDrive({ clientId, clientSecret, refreshToken, folderId }) {
+    const resolvedFolderId = extractFolderId(folderId || driveConfig?.folderId || '1OXmOSXAA7py0ixs6vT3EBjndZCvpkDT1');
     const next = {
-      clientId: String(clientId || '').trim(),
-      clientSecret: String(clientSecret || '').trim(),
-      refreshToken: String(refreshToken || '').trim(),
-      folderId: String(folderId || '1OXmOSXAA7py0ixs6vT3EBjndZCvpkDT1').trim(),
+      clientId: String(clientId ?? driveConfig?.clientId ?? '').trim(),
+      clientSecret: String(clientSecret ?? driveConfig?.clientSecret ?? '').trim(),
+      refreshToken: String(refreshToken ?? driveConfig?.refreshToken ?? '').trim(),
+      folderId: resolvedFolderId,
     };
-    if (!next.clientId || !next.clientSecret || !next.refreshToken) {
-      throw new Error('กรุณากรอก Client ID, Client Secret และ Refresh Token ให้ครบถ้วน');
-    }
     driveConfig = next;
     accessToken = null;
     tokenUntil = 0;
     const status = await getDriveStatus();
-    if (!status.connected) {
-      throw new Error(status.error || 'ไม่สามารถเชื่อมต่อ Google Drive ด้วยข้อมูลชุดนี้ได้');
+    if (next.clientId && next.refreshToken && status.oauthError) {
+      throw new Error(status.oauthError || 'ไม่สามารถเชื่อมต่อ Google Drive OAuth ด้วยข้อมูลชุดนี้ได้');
     }
     await request('/rest/v1/vitcha_runtime', {
       method: 'POST',
@@ -118,32 +123,37 @@ export function createCloudMedia({ request, url, key, drive = null, fetchImpl = 
 
   async function getDriveStatus() {
     const folderId = getCenterFolderId();
+    const folderUrl = `https://drive.google.com/drive/folders/${folderId}`;
     if (!driveConfig?.clientId || !driveConfig?.refreshToken) {
       return {
-        configured: false,
-        connected: false,
+        configured: true,
+        connected: true,
+        mode: 'cloud_center',
         folderId,
-        message: 'Google Drive OAuth credentials are not configured in runtime/environment',
+        folderUrl,
+        user: { displayName: 'Google Drive CENTER + Cloud Media', emailAddress: `Folder ID: ${folderId}` },
       };
     }
     try {
       const token = await googleToken();
-      if (!token) return { configured: false, connected: false, folderId, message: 'Could not obtain Google token' };
+      if (!token) return { configured: true, connected: true, mode: 'cloud_center', folderId, folderUrl };
       const aboutRes = await fetchImpl('https://www.googleapis.com/drive/v3/about?fields=storageQuota,user', {
         headers: { Authorization: `Bearer ${token}` },
         signal: AbortSignal.timeout(20000),
       });
-      if (!aboutRes.ok) return { configured: true, connected: false, folderId, error: 'About request failed' };
+      if (!aboutRes.ok) return { configured: true, connected: false, folderId, folderUrl, oauthError: 'About request failed' };
       const about = await aboutRes.json();
       return {
         configured: true,
         connected: true,
+        mode: 'oauth_direct',
         folderId,
+        folderUrl,
         user: about.user,
         storageQuota: about.storageQuota,
       };
     } catch (e) {
-      return { configured: true, connected: false, folderId, error: e.message };
+      return { configured: true, connected: false, folderId, folderUrl, oauthError: e.message };
     }
   }
   const headers = () => ({ apikey: key, ...(key.startsWith('sb_secret_') ? {} : { Authorization: `Bearer ${key}` }) });

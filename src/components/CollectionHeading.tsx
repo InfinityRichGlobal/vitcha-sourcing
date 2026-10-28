@@ -12,10 +12,10 @@ type Props = {
 export function CollectionHeading({ kind, count, total, filtered, onReset, onCreate }: Props) {
   const isSupplier = kind === 'supplier';
   return (
-    <div className="bg-white rounded-2xl border border-slate-200/90 p-3.5 sm:p-4 shadow-2xs flex flex-wrap items-center justify-between gap-3">
-      <div className="flex items-center gap-2.5 min-w-0">
+    <div className="bg-white rounded-2xl border border-slate-200/80 px-3.5 py-2.5 shadow-2xs flex flex-wrap items-center justify-between gap-2">
+      <div className="flex items-center gap-2 min-w-0">
         <div
-          className={`w-9 h-9 rounded-xl border flex items-center justify-center shrink-0 ${
+          className={`w-7 h-7 rounded-lg border flex items-center justify-center shrink-0 ${
             isSupplier
               ? 'bg-emerald-50 text-emerald-700 border-emerald-200/60'
               : 'bg-amber-50 text-amber-700 border-amber-200/60'
@@ -23,54 +23,47 @@ export function CollectionHeading({ kind, count, total, filtered, onReset, onCre
         >
           <i
             aria-hidden="true"
-            className={`fa-solid ${isSupplier ? 'fa-industry' : 'fa-mug-hot'} text-sm`}
+            className={`fa-solid ${isSupplier ? 'fa-industry' : 'fa-mug-hot'} text-xs`}
           />
         </div>
-        <div className="min-w-0">
-          <div className="flex items-center gap-2 flex-wrap">
-            <h1 className="font-extrabold text-sm sm:text-base text-slate-950 tracking-tight">
-              {isSupplier ? 'ซัพพลายเออร์ (Suppliers)' : 'ร้านน้ำ & เรฟเมนู (Store Inspo)'}
-            </h1>
-            <span
-              aria-live="polite"
-              className={`text-[11px] font-mono font-bold px-2 py-0.5 rounded-full border ${
-                isSupplier
-                  ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
-                  : 'bg-amber-50 text-amber-800 border-amber-200'
-              }`}
-            >
-              แสดง {count} / {total} รายการ{filtered ? ' · กรองอยู่' : ''}
-            </span>
-          </div>
-          <p className="text-[11px] sm:text-xs text-slate-500 truncate">
-            {isSupplier
-              ? 'ฐานข้อมูลโรงงาน อุปกรณ์ วัตถุดิบชา และบรรจุภัณฑ์ที่ทีมสำรวจ'
-              : 'คลังเรฟเมนูเครื่องดื่ม รสชาติ แพ็กเกจจิ้ง และกิมมิกหน้าร้าน'}
-          </p>
+        <div className="flex items-center gap-2 flex-wrap min-w-0">
+          <h1 className="font-extrabold text-xs sm:text-sm text-slate-900 tracking-tight">
+            {isSupplier ? 'ซัพพลายเออร์ (Suppliers)' : 'ร้านน้ำ & เรฟเมนู (Store Inspo)'}
+          </h1>
+          <span
+            aria-live="polite"
+            className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded-md border ${
+              isSupplier
+                ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                : 'bg-amber-50 text-amber-800 border-amber-200'
+            }`}
+          >
+            {count} / {total} รายการ{filtered ? ' · กรองอยู่' : ''}
+          </span>
         </div>
       </div>
 
-      <div className="flex items-center gap-2 shrink-0">
+      <div className="flex items-center gap-1.5 shrink-0">
         {filtered && (
           <button
             type="button"
             onClick={onReset}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-all"
+            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-[11px] font-bold transition-all"
           >
-            <RotateCcw className="w-3.5 h-3.5" aria-hidden="true" />
-            <span>ล้างตัวกรองทั้งหมด</span>
+            <RotateCcw className="w-3 h-3" aria-hidden="true" />
+            <span>ล้างตัวกรอง</span>
           </button>
         )}
         {onCreate && (
           <button
             type="button"
             onClick={onCreate}
-            className={`inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-white text-xs font-bold shadow-xs active:scale-95 transition-all ${
+            className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-white text-[11px] font-bold shadow-2xs active:scale-95 transition-all ${
               isSupplier ? 'bg-slate-900 hover:bg-slate-800' : 'bg-amber-600 hover:bg-amber-700'
             }`}
           >
-            <Plus className="w-3.5 h-3.5" aria-hidden="true" />
-            <span>{isSupplier ? '+ บันทึกซัพพลายเออร์ใหม่' : '+ บันทึกเรฟร้านน้ำใหม่'}</span>
+            <Plus className="w-3 h-3" aria-hidden="true" />
+            <span>{isSupplier ? '+ เพิ่มซัพฯ' : '+ เพิ่มร้านน้ำ'}</span>
           </button>
         )}
       </div>

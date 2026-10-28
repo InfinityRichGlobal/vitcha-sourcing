@@ -80,10 +80,10 @@ export const StoreInspoList: React.FC<StoreInspoListProps> = ({
   const resetFilters = () => { setSearchQuery(''); setCountryFilter('all'); setSelectedCategory('all'); setSelectedRating(null); setSelectedCity('all'); };
 
   return (
-    <div className="space-y-3 max-w-6xl mx-auto px-3 sm:px-5 py-5 sm:py-7 animate-in fade-in">
+    <div className="space-y-3 max-w-6xl mx-auto px-3 sm:px-4 py-3 animate-in fade-in">
       <CollectionHeading kind="store" count={filtered.length} total={drinkStores.length} filtered={hasFilters} onReset={resetFilters} onCreate={currentUser.role !== 'viewer' ? onOpenNewStoreInspo : undefined} />
       {/* Search and Filters Bar */}
-      <div className="collection-filters bg-white p-3.5 sm:p-4 rounded-2xl border border-slate-200/80 space-y-2.5 shadow-xs">
+      <div className="collection-filters bg-white p-3.5 rounded-2xl border border-slate-200/80 space-y-2.5 shadow-2xs">
         <div className="flex flex-col sm:flex-row gap-2">
           <div className="relative flex-1">
             <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
@@ -93,7 +93,7 @@ export const StoreInspoList: React.FC<StoreInspoListProps> = ({
               placeholder="ค้นหาชื่อร้านน้ำ, หมวดหมู่เรฟ, เมนูที่ชิม, รสชาติ, กิมมิก..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="min-h-11 w-full bg-slate-50 border border-slate-200/80 rounded-xl pl-9 pr-3.5 py-2 text-xs font-medium text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-amber-500/20 focus:border-amber-500"
+              className="w-full bg-slate-50 border border-slate-200/80 rounded-xl pl-9 pr-3.5 py-2 text-xs font-medium text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-amber-500/20 focus:border-amber-500"
             />
           </div>
 

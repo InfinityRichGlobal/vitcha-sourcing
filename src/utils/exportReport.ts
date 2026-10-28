@@ -562,7 +562,7 @@ export function buildExecutiveReportHtml(
         </div>
         <div class="info-item">
           <span class="info-label">ผู้ลงพื้นที่สำรวจ & เวลาที่บันทึก:</span>
-          <span class="info-value">${escapeHtml(item.creator.alias)} (${escapeHtml(item.creator.name)}) · ${new Date(item.creator.timestamp).toLocaleString('th-TH')}</span>
+          <span class="info-value">${escapeHtml(item.creator.alias)}${item.creator.name && item.creator.name !== item.creator.alias ? ` (${escapeHtml(item.creator.name)})` : ''} · ${new Date(item.creator.timestamp).toLocaleString('th-TH')}</span>
         </div>
         <div class="info-item">
           <span class="info-label">ผู้รับผิดชอบรับช่วงต่อ & กำหนดติดตาม:</span>

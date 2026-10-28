@@ -135,20 +135,6 @@ export const SupplierCard: React.FC<SupplierCardProps> = ({
           </div>
 
           <div className="flex items-center gap-1.5 shrink-0">
-            {canEditItems && (
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  openEditItem(supplier);
-                }}
-                className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-slate-100 hover:bg-emerald-50 text-slate-700 hover:text-emerald-700 border border-slate-200 text-[11px] font-bold transition-colors"
-                title="แก้ไขข้อมูลซัพพลายเออร์นี้"
-              >
-                <Pencil className="w-3 h-3" />
-                <span>แก้ไข</span>
-              </button>
-            )}
             <span className={`text-[10px] px-2 py-0.5 rounded-md border ${statusConfig.color}`}>
               {statusConfig.label}
             </span>
@@ -165,16 +151,32 @@ export const SupplierCard: React.FC<SupplierCardProps> = ({
           className="px-4 pb-3 cursor-pointer space-y-2"
         >
           <div>
-            <div className="flex items-center gap-1.5 flex-wrap mb-1">
-              <span className="text-[11px] font-semibold text-emerald-700 bg-emerald-50/70 px-2 py-0.5 rounded-md inline-flex items-center gap-1">
-                <i className="fa-solid fa-industry text-[10px] text-emerald-600" />
-                <span>{supplier.category}</span>
-              </span>
-              {supplier.assignedTo && (
-                <span className="inline-flex items-center gap-1 text-[11px] text-slate-600 bg-slate-100 px-2 py-0.5 rounded-md">
-                  <UserCheck className="w-3 h-3 text-slate-500" />
-                  <span>{supplier.assignedTo}</span>
+            <div className="flex items-center justify-between gap-1.5 flex-wrap mb-1.5">
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <span className="text-[11px] font-semibold text-emerald-700 bg-emerald-50/70 px-2 py-0.5 rounded-md inline-flex items-center gap-1">
+                  <i className="fa-solid fa-industry text-[10px] text-emerald-600" />
+                  <span>{supplier.category}</span>
                 </span>
+                {supplier.assignedTo && (
+                  <span className="inline-flex items-center gap-1 text-[11px] text-slate-600 bg-slate-100 px-2 py-0.5 rounded-md">
+                    <UserCheck className="w-3 h-3 text-slate-500" />
+                    <span>{supplier.assignedTo}</span>
+                  </span>
+                )}
+              </div>
+              {canEditItems && (
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    openEditItem(supplier);
+                  }}
+                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-slate-100 hover:bg-emerald-50 text-slate-700 hover:text-emerald-700 border border-slate-200 text-[11px] font-bold transition-colors"
+                  title="แก้ไขข้อมูลซัพพลายเออร์นี้"
+                >
+                  <Pencil className="w-3 h-3" />
+                  <span>แก้ไข</span>
+                </button>
               )}
             </div>
 

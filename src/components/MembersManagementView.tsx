@@ -14,7 +14,7 @@ import { AvatarImage } from "./AvatarImage";
 import { inviteMessage } from "../utils/inviteMessage";
 
 const control =
-  "w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm outline-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-100";
+  "w-full rounded-xl border border-slate-200/90 bg-slate-50 px-3 py-2 text-xs font-medium text-slate-900 outline-none focus:bg-white focus:border-emerald-500";
 const roles = [
   ["reviewer", "Reviewer"],
   ["viewer", "Viewer"],
@@ -58,50 +58,45 @@ export function MembersManagementView() {
     }
   }
   return (
-    <div className="mx-auto max-w-6xl space-y-4 px-3 py-4 sm:px-4 animate-in fade-in">
-      <div className="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/90 shadow-2xs flex items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-purple-50 text-purple-700 border border-purple-200/60 flex items-center justify-center shrink-0">
-            <i aria-hidden="true" className="fa-solid fa-user-shield text-base" />
+    <div className="mx-auto max-w-6xl space-y-3.5 px-3 py-3 sm:px-4 animate-in fade-in">
+      <div className="bg-white px-3.5 py-2.5 rounded-2xl border border-slate-200/80 shadow-2xs flex items-center justify-between gap-2">
+        <div className="flex items-center gap-2 min-w-0">
+          <div className="w-7 h-7 rounded-lg bg-purple-50 text-purple-700 border border-purple-200/60 flex items-center justify-center shrink-0">
+            <i aria-hidden="true" className="fa-solid fa-user-shield text-xs" />
           </div>
-          <div>
-            <div className="flex items-center gap-2 flex-wrap">
-              <h1 className="text-base sm:text-lg font-extrabold tracking-tight text-slate-900">
-                สมาชิกและคำเชิญ
-              </h1>
-              <span className="text-[11px] font-mono font-bold px-2 py-0.5 rounded-full bg-purple-50 text-purple-800 border border-purple-200">
-                {members.length} คน
-              </span>
-            </div>
-            <p className="text-xs text-slate-500">
-              จัดการสมาชิกในทีม ออกลิงก์คำเชิญรายบุคคล และกำหนดสิทธิ์การใช้งาน
-            </p>
+          <div className="flex items-center gap-2 flex-wrap min-w-0">
+            <h1 className="text-xs sm:text-sm font-extrabold tracking-tight text-slate-900">
+              สมาชิกและคำเชิญ
+            </h1>
+            <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-md bg-purple-50 text-purple-800 border border-purple-200">
+              {members.length} คน
+            </span>
           </div>
         </div>
         <button
           aria-label="รีเฟรชสมาชิก"
           onClick={() => void refreshCentralData()}
-          className="rounded-xl border border-slate-200/90 bg-slate-50 hover:bg-slate-100 p-2.5 text-slate-600 transition-colors"
+          className="rounded-lg border border-slate-200/80 bg-slate-50 hover:bg-slate-100 p-1.5 text-slate-600 transition-colors shrink-0"
         >
-          <RefreshCw size={16} />
+          <RefreshCw size={14} />
         </button>
       </div>
       {error && (
         <p
           role="alert"
-          className="rounded-xl bg-rose-50 border border-rose-200 p-3 text-xs font-bold text-rose-700"
+          className="rounded-xl bg-rose-50 border border-rose-200 px-3 py-2 text-xs font-bold text-rose-700"
         >
           {error}
         </p>
       )}
-      <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)]">
-        <section className="rounded-2xl border border-slate-200/90 bg-white p-4 sm:p-5 shadow-2xs">
-          <h2 className="flex items-center gap-2 font-bold">
-            <UserPlus size={19} className="text-emerald-700" />
-            เชิญสมาชิก
+      <div className="grid gap-3.5 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)]">
+        <section className="rounded-2xl border border-slate-200/80 bg-white p-3.5 sm:p-4 shadow-2xs space-y-3">
+          <h2 className="flex items-center gap-1.5 text-xs sm:text-sm font-bold text-slate-900">
+            <UserPlus size={15} className="text-emerald-700" />
+            <span>เชิญสมาชิก</span>
           </h2>
           <form
-            className="mt-5 space-y-4"
+            className="space-y-2.5"
             onSubmit={async (e) => {
               e.preventDefault();
               if (creating.current) return;
@@ -122,19 +117,19 @@ export function MembersManagementView() {
               }
             }}
           >
-            <label className="block space-y-2 text-sm font-medium">
+            <label className="block space-y-1 text-xs font-bold text-slate-700">
               <span>ชื่อผู้รับคำเชิญ</span>
               <input
                 className={control}
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                placeholder="ชื่อที่ต้องการใส่ในข้อความเชิญ"
+                placeholder="เช่น คุณแอน (จัดซื้อ) หรือ ช่างบีม"
                 maxLength={120}
                 required
                 disabled={busy}
               />
             </label>
-            <label className="block space-y-2 text-sm font-medium">
+            <label className="block space-y-1 text-xs font-bold text-slate-700">
               <span>ระดับสมาชิก</span>
               <select
                 className={control}
@@ -151,82 +146,90 @@ export function MembersManagementView() {
             </label>
             <button
               disabled={busy}
-              className="w-full rounded-xl bg-emerald-700 px-4 py-3 text-sm font-semibold text-white disabled:opacity-50"
+              className="w-full rounded-xl bg-slate-900 hover:bg-emerald-700 px-3.5 py-2 text-xs font-bold text-white transition-colors disabled:opacity-50"
             >
               {busy ? "กำลังสร้างคำเชิญ…" : "สร้างคำเชิญ"}
             </button>
           </form>
           {preview && (
-            <div className="mt-4 rounded-xl border border-emerald-200 bg-emerald-50 p-4">
-              <p className="mb-2 text-xs font-semibold text-emerald-800">
+            <div className="rounded-xl border border-emerald-200 bg-emerald-50/70 p-3 space-y-2">
+              <p className="text-[11px] font-bold text-emerald-800">
                 ข้อความพร้อมส่ง
               </p>
               <textarea
                 aria-label="ข้อความเชิญพร้อมลิงก์"
                 readOnly
                 value={inviteMessage(preview, window.location.href)}
-                className="min-h-48 w-full resize-y rounded-lg border border-emerald-200 bg-white p-3 text-sm leading-relaxed"
+                className="min-h-32 w-full resize-y rounded-lg border border-emerald-200 bg-white p-2.5 text-xs leading-relaxed text-slate-800"
               />
               <button
                 onClick={() => void copy(preview)}
-                className="mt-2 flex w-full items-center justify-center gap-2 rounded-lg bg-emerald-700 px-3 py-2.5 text-sm font-semibold text-white"
+                className="flex w-full items-center justify-center gap-1.5 rounded-lg bg-emerald-700 hover:bg-emerald-800 px-3 py-2 text-xs font-bold text-white transition-colors"
               >
                 {copied === preview.id ? (
-                  <Check size={16} />
+                  <Check size={14} />
                 ) : (
-                  <Copy size={16} />
+                  <Copy size={14} />
                 )}{" "}
                 {copied === preview.id ? "คัดลอกแล้ว" : "คัดลอกข้อความและลิงก์"}
               </button>
             </div>
           )}
         </section>
-        <section className="rounded-2xl border border-slate-200 bg-white p-5 sm:p-6">
-          <h2 className="font-bold">
-            คำเชิญล่าสุด{" "}
-            <span className="ml-1 text-sm font-normal text-slate-400">
-              {invites.length}
+        <section className="rounded-2xl border border-slate-200/80 bg-white p-3.5 sm:p-4 shadow-2xs space-y-3">
+          <div className="flex items-center justify-between">
+            <h2 className="text-xs sm:text-sm font-bold text-slate-900">
+              คำเชิญล่าสุด
+            </h2>
+            <span className="text-[11px] font-mono font-bold px-2 py-0.5 rounded-md bg-slate-100 text-slate-600">
+              {invites.length} รายการ
             </span>
-          </h2>
-          <div className="mt-4 max-h-[560px] space-y-3 overflow-y-auto">
+          </div>
+          <div className="max-h-[420px] space-y-2 overflow-y-auto pr-0.5">
             {invites.length === 0 && (
-              <p className="py-12 text-center text-sm text-slate-400">
+              <p className="py-8 text-center text-xs text-slate-400">
                 ยังไม่มีคำเชิญ
               </p>
             )}
             {invites.map((inv) => (
               <div
                 key={inv.id}
-                className="flex items-center gap-3 rounded-xl border border-slate-100 bg-slate-50 p-3"
+                className="flex items-center justify-between gap-2 rounded-xl border border-slate-200/70 bg-slate-50/70 px-3 py-2"
                 data-testid="invite-row"
               >
                 <div className="min-w-0 flex-1">
-                  <p className="break-words text-sm font-semibold">
-                    {inv.prefilledAlias || "สมาชิกใหม่"}
-                  </p>
-                  <p className="mt-1 text-xs text-slate-500">
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <p className="truncate text-xs font-bold text-slate-900">
+                      {inv.prefilledAlias || "สมาชิกใหม่"}
+                    </p>
+                    <span
+                      className={`inline-block rounded-md px-1.5 py-0.5 text-[10px] font-bold ${
+                        inv.isUsed
+                          ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                          : "bg-amber-50 text-amber-800 border border-amber-200"
+                      }`}
+                    >
+                      {inv.isUsed ? "สมัครแล้ว" : "รอเข้าร่วม"}
+                    </span>
+                  </div>
+                  <p className="mt-0.5 text-[11px] text-slate-500 font-mono">
                     {inv.role} ·{" "}
                     {inv.createdAt && Number.isFinite(Date.parse(inv.createdAt))
                       ? new Date(inv.createdAt).toLocaleDateString("th-TH")
                       : "ไม่ระบุวันที่"}
                   </p>
-                  <span
-                    className={`mt-2 inline-block rounded-full px-2 py-1 text-[11px] ${inv.isUsed ? "bg-emerald-100 text-emerald-800" : "bg-amber-100 text-amber-800"}`}
-                  >
-                    {inv.isUsed ? "สมัครแล้ว" : "รอเข้าร่วม"}
-                  </span>
                 </div>
                 {!inv.isUsed && (
-                  <>
+                  <div className="flex items-center gap-1 shrink-0">
                     <button
                       aria-label={`คัดลอกคำเชิญ ${inv.prefilledAlias || inv.code}`}
                       onClick={() => void copy(inv)}
-                      className="rounded-lg border bg-white p-2.5 text-slate-600"
+                      className="rounded-lg border border-slate-200 bg-white hover:bg-slate-100 p-1.5 text-slate-600 transition-colors"
                     >
                       {copied === inv.id ? (
-                        <Check size={16} />
+                        <Check size={14} className="text-emerald-600" />
                       ) : (
-                        <Copy size={16} />
+                        <Copy size={14} />
                       )}
                     </button>
                     <button
@@ -238,35 +241,35 @@ export function MembersManagementView() {
                           }
                         }
                       }}
-                      className="rounded-lg p-2.5 text-slate-400 hover:bg-rose-50 hover:text-rose-600"
+                      className="rounded-lg p-1.5 text-slate-400 hover:bg-rose-50 hover:text-rose-600 transition-colors"
                     >
-                      <X size={16} />
+                      <X size={14} />
                     </button>
-                  </>
+                  </div>
                 )}
               </div>
             ))}
           </div>
         </section>
       </div>
-      <section className="rounded-2xl border border-slate-200 bg-white p-5 sm:p-6">
-        <div className="flex flex-wrap items-center justify-between gap-4">
-          <h2 className="flex items-center gap-2 font-bold">
-            <Users size={19} className="text-emerald-700" />
-            สมาชิก {members.length} คน
+      <section className="rounded-2xl border border-slate-200/80 bg-white p-3.5 sm:p-4 shadow-2xs space-y-3">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <h2 className="flex items-center gap-1.5 text-xs sm:text-sm font-bold text-slate-900">
+            <Users size={15} className="text-emerald-700" />
+            <span>สมาชิกในระบบ ({members.length} คน)</span>
           </h2>
-          <label className="flex w-full items-center gap-2 rounded-xl border px-3 sm:w-72">
-            <Search size={16} className="text-slate-400" />
+          <label className="flex w-full items-center gap-1.5 rounded-xl border border-slate-200/80 bg-slate-50 px-2.5 sm:w-60">
+            <Search size={14} className="text-slate-400 shrink-0" />
             <input
               aria-label="ค้นหาสมาชิก"
-              className="min-w-0 flex-1 bg-transparent py-2.5 text-sm outline-none"
-              placeholder="ค้นหาชื่อหรือไอดี"
+              className="min-w-0 flex-1 bg-transparent py-1.5 text-xs outline-none"
+              placeholder="ค้นหาชื่อหรือไอดี..."
               value={query}
               onChange={(e) => setQuery(e.target.value)}
             />
           </label>
         </div>
-        <div className="mt-5 grid gap-3 md:grid-cols-2">
+        <div className="grid gap-2.5 md:grid-cols-2">
           {members
             .filter((u) =>
               `${u.alias} ${u.emailOrId}`
@@ -277,22 +280,24 @@ export function MembersManagementView() {
               <div
                 key={user.id}
                 data-testid="member-row"
-                className="flex flex-wrap items-center gap-3 rounded-xl border border-slate-100 p-3"
+                className="flex items-center justify-between gap-2.5 rounded-xl border border-slate-200/70 bg-slate-50/40 px-3 py-2"
               >
-                <AvatarImage
-                  src={user.avatar}
-                  className="h-11 w-11 shrink-0 rounded-full object-cover"
-                />
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-semibold">
-                    {user.alias || user.name}
-                  </p>
-                  <p className="truncate text-xs text-slate-400">
-                    {user.emailOrId}
-                  </p>
+                <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                  <AvatarImage
+                    src={user.avatar}
+                    className="h-8 w-8 shrink-0 rounded-full object-cover border border-slate-200"
+                  />
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-xs font-bold text-slate-900">
+                      {user.alias || user.name}
+                    </p>
+                    <p className="truncate text-[11px] text-slate-400 font-mono">
+                      {user.emailOrId}
+                    </p>
+                  </div>
                 </div>
                 {user.id !== "user-ice" ? (
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1.5 shrink-0">
                     <select
                       aria-label={`ระดับสมาชิก ${user.alias}`}
                       value={user.role}
@@ -308,7 +313,7 @@ export function MembersManagementView() {
                         await updateUserRole(user.id, value);
                         setPendingUser("");
                       }}
-                      className="rounded-lg border bg-slate-50 p-2 text-xs"
+                      className="rounded-lg border border-slate-200 bg-white px-2 py-1 text-xs font-semibold text-slate-700"
                     >
                       {roles.map(([v, l]) => (
                         <option key={v} value={v}>
@@ -327,15 +332,15 @@ export function MembersManagementView() {
                             setPendingUser("");
                           }
                         }}
-                        className="rounded-lg p-2 text-slate-400 hover:bg-rose-50 hover:text-rose-600"
+                        className="rounded-lg p-1.5 text-slate-400 hover:bg-rose-50 hover:text-rose-600 transition-colors"
                       >
-                        <X size={16} />
+                        <X size={14} />
                       </button>
                     )}
                   </div>
                 ) : (
-                  <span className="text-xs font-semibold px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-800 border border-emerald-100">
-                    ผู้ดูแลระบบ (Admin)
+                  <span className="text-[11px] font-bold px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-800 border border-emerald-200 shrink-0">
+                    Admin
                   </span>
                 )}
               </div>

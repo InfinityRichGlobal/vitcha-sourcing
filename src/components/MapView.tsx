@@ -243,87 +243,93 @@ export const MapView: React.FC<MapViewProps> = ({
 
   return (
     <div className="space-y-2" data-testid="english-map" data-map-status={mapStatus} data-map-error={mapFailure}>
-      <p className="text-xs text-slate-500"><span className="font-semibold text-slate-700">Map language: English</span> · Google Maps · ชื่อสถานที่ภาษาอังกฤษ</p>
+      <span className="sr-only">Map language: English</span>
       <div className="relative isolate w-full h-[380px] sm:h-[430px] overflow-hidden rounded-2xl border border-slate-200/90 shadow-2xs bg-slate-100">
-        {/* Top Left: Type Filter Bar */}
-        <div className="absolute top-2.5 left-2.5 z-[400] flex flex-wrap items-center gap-1 bg-white/95 backdrop-blur-md p-1 rounded-xl border border-slate-200/80 shadow-sm">
+        {/* Top Left Corner: Ultra-Compact Type Filter Bar */}
+        <div className="absolute top-1.5 left-1.5 z-[400] flex items-center gap-0.5 bg-white/90 backdrop-blur-md p-0.5 rounded-lg border border-slate-200/80 shadow-2xs">
           <button
             type="button"
             onClick={() => setFilterType('all')}
-            className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold transition-all ${
+            className={`flex items-center gap-1 px-1.5 sm:px-2 py-0.5 rounded-md text-[10px] sm:text-[11px] font-bold transition-all ${
               filterType === 'all'
-                ? 'bg-slate-900 text-white shadow-xs'
+                ? 'bg-slate-900 text-white shadow-2xs'
                 : 'text-slate-600 hover:text-slate-900'
             }`}
           >
-            <Layers className="w-3 h-3" />
+            <Layers className="w-2.5 h-2.5 hidden sm:inline" />
             <span>ทั้งหมด ({regionSuppliers.length + regionStores.length})</span>
           </button>
 
           <button
             type="button"
             onClick={() => setFilterType('suppliers')}
-            className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold transition-all ${
+            className={`flex items-center gap-1 px-1.5 sm:px-2 py-0.5 rounded-md text-[10px] sm:text-[11px] font-bold transition-all ${
               filterType === 'suppliers'
-                ? 'bg-emerald-600 text-white shadow-xs'
+                ? 'bg-emerald-600 text-white shadow-2xs'
                 : 'text-slate-600 hover:text-emerald-700'
             }`}
           >
-            <Factory className="w-3 h-3" />
+            <Factory className="w-2.5 h-2.5 hidden sm:inline" />
             <span>ซัพ ({regionSuppliers.length})</span>
           </button>
 
           <button
             type="button"
             onClick={() => setFilterType('drink_stores')}
-            className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold transition-all ${
+            className={`flex items-center gap-1 px-1.5 sm:px-2 py-0.5 rounded-md text-[10px] sm:text-[11px] font-bold transition-all ${
               filterType === 'drink_stores'
-                ? 'bg-amber-600 text-white shadow-xs'
+                ? 'bg-amber-600 text-white shadow-2xs'
                 : 'text-slate-600 hover:text-amber-700'
             }`}
           >
-            <Coffee className="w-3 h-3" />
+            <Coffee className="w-2.5 h-2.5 hidden sm:inline" />
             <span>ร้านน้ำ ({regionStores.length})</span>
           </button>
         </div>
 
-        {/* Top Right: Quick Region Zoom Switcher (โซนจีน / โซนไทย / ทั้งหมด) */}
-        <div className="absolute top-14 sm:top-2.5 right-2.5 z-[400] flex items-center gap-1 bg-white/95 backdrop-blur-md p-1 rounded-xl border border-slate-200/80 shadow-sm">
+        {/* Top Right Corner: Ultra-Compact Flag Region Switcher (ชิดมุมขวาบน ธงจีน / ธงไทย / รวม) */}
+        <div className="absolute top-1.5 right-1.5 z-[400] flex items-center gap-0.5 bg-white/90 backdrop-blur-md p-0.5 rounded-lg border border-slate-200/80 shadow-2xs">
           <button
             type="button"
+            aria-label="China"
+            title="โซนจีน (China)"
             onClick={() => setRegionFocus('CN')}
-            className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all flex items-center gap-1 ${
+            className={`px-1.5 sm:px-2 py-0.5 rounded-md text-[10px] sm:text-[11px] font-bold transition-all flex items-center gap-1 ${
               regionFocus === 'CN'
-                ? 'bg-rose-600 text-white shadow-xs'
+                ? 'bg-rose-600 text-white shadow-2xs'
                 : 'text-slate-700 hover:bg-slate-100'
             }`}
           >
-            <i aria-hidden="true" className="fa-solid fa-location-dot text-[10px]" />
-            <span>China</span>
+            <span className="text-xs leading-none">🇨🇳</span>
+            <span className="hidden sm:inline">จีน</span>
           </button>
           <button
             type="button"
+            aria-label="Thailand"
+            title="โซนไทย (Thailand)"
             onClick={() => setRegionFocus('TH')}
-            className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all flex items-center gap-1 ${
+            className={`px-1.5 sm:px-2 py-0.5 rounded-md text-[10px] sm:text-[11px] font-bold transition-all flex items-center gap-1 ${
               regionFocus === 'TH'
-                ? 'bg-sky-600 text-white shadow-xs'
+                ? 'bg-sky-600 text-white shadow-2xs'
                 : 'text-slate-700 hover:bg-slate-100'
             }`}
           >
-            <i aria-hidden="true" className="fa-solid fa-location-dot text-[10px]" />
-            <span>Thailand</span>
+            <span className="text-xs leading-none">🇹🇭</span>
+            <span className="hidden sm:inline">ไทย</span>
           </button>
           <button
             type="button"
+            aria-label="All regions"
+            title="รวมทุกโซน (All regions)"
             onClick={() => setRegionFocus('ALL')}
-            className={`px-2 py-1 rounded-lg text-[11px] font-bold transition-all flex items-center gap-1 ${
+            className={`px-1.5 sm:px-2 py-0.5 rounded-md text-[10px] sm:text-[11px] font-bold transition-all flex items-center gap-1 ${
               regionFocus === 'ALL'
-                ? 'bg-slate-900 text-white shadow-xs'
+                ? 'bg-slate-900 text-white shadow-2xs'
                 : 'text-slate-700 hover:bg-slate-100'
             }`}
           >
-            <i aria-hidden="true" className="fa-solid fa-earth-asia text-[10px]" />
-            <span>All regions</span>
+            <span className="text-xs leading-none">🌏</span>
+            <span className="hidden sm:inline">รวม</span>
           </button>
         </div>
 

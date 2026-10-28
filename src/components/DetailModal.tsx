@@ -85,15 +85,32 @@ export const DetailModal: React.FC<DetailModalProps> = ({
   const [replyInputs, setReplyInputs] = useState<Record<string, string>>({});
   const [collapsedReplies, setCollapsedReplies] = useState<Record<string, boolean>>({});
 
-  // Rich comment & reply attachments (Photos & Voice notes to Google Drive CENTER)
+  // Rich comment & reply attachments (Photos & Live Voice notes to Google Drive CENTER)
   const [commentPhotoUrl, setCommentPhotoUrl] = useState<string | null>(null);
   const [commentVoiceUrl, setCommentVoiceUrl] = useState<string | null>(null);
   const [isUploadingCommentAttachment, setIsUploadingCommentAttachment] = useState(false);
   const [replyAttachments, setReplyAttachments] = useState<Record<string, { photoUrl?: string; voiceUrl?: string }>>({});
   const commentPhotoInputRef = React.useRef<HTMLInputElement | null>(null);
-  const commentVoiceInputRef = React.useRef<HTMLInputElement | null>(null);
-  const replyPhotoInputRef = React.useRef<HTMLInputElement | null>(null);
-  const replyVoiceInputRef = React.useRef<HTMLInputElement | null>(null);
+  const [recordingCommentTarget, setRecordingCommentTarget] = useState<string | null>(null);
+  const [recordingSeconds, setRecordingSeconds] = useState(0);
+  const commentRecorderRef = React.useRef<MediaRecorder | null>(null);
+  const commentStreamRef = React.useRef<MediaStream | null>(null);
+  const commentTimerRef = React.useRef<ReturnType<typeof setInterval> | null>(null);
+  const recordingStartedAtRef = React.useRef<number>(0);
+
+  const stopLiveVoiceRecording = React.useCallback(() => {
+    if (commentTimerRef.current) {
+      clearInterval(commentTimerRef.current);
+      commentTimerRef.current = null;
+    }
+    if (commentRecorderRef.current && commentRecorderRef.current.state === 'recording') {
+      commentRecorderRef.current.stop();
+      return;
+    }
+    commentStreamRef.current?.getTracks().forEach((t) => t.stop());
+    commentStreamRef.current = null;
+    setRecordingCommentTarget(null);
+  }, []);
 
   // Automatically log "Read / Seen By" when modal opens
   useEffect(() => {
@@ -103,6 +120,11 @@ export const DetailModal: React.FC<DetailModalProps> = ({
     setActiveImageIndex(null);
     setIsPlayingAudio(false);
     setPlayingSubAudioId(null);
+    return () => {
+      if (commentTimerRef.current) clearInterval(commentTimerRef.current);
+      if (commentRecorderRef.current?.state === 'recording') commentRecorderRef.current.stop();
+      commentStreamRef.current?.getTracks().forEach((t) => t.stop());
+    };
   }, [isOpen, item?.id]);
 
   // Collect all photos of this item for gallery & left/right carousel
@@ -207,6 +229,65 @@ export const DetailModal: React.FC<DetailModalProps> = ({
     }
   };
 
+  const toggleLiveVoiceRecording = async (targetKey: 'main' | string) => {
+    if (recordingCommentTarget === targetKey) {
+      stopLiveVoiceRecording();
+      return;
+    }
+    if (recordingCommentTarget) {
+      stopLiveVoiceRecording();
+    }
+    try {
+      if (!navigator.mediaDevices?.getUserMedia || typeof MediaRecorder === 'undefined') {
+        alert('เบราว์เซอร์นี้ไม่รองรับการอัดเสียงสด กรุณาเปิดผ่าน HTTPS หรืออนุญาตไมโครโฟน');
+        return;
+      }
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      commentStreamRef.current = stream;
+      const mime = ['audio/mp4', 'audio/webm;codecs=opus', 'audio/webm', 'audio/ogg'].find((t) =>
+        MediaRecorder.isTypeSupported(t)
+      );
+      const recorder = new MediaRecorder(stream, mime ? { mimeType: mime } : undefined);
+      commentRecorderRef.current = recorder;
+      const chunks: Blob[] = [];
+      recorder.ondataavailable = (e) => {
+        if (e.data.size > 0) chunks.push(e.data);
+      };
+      recorder.onstop = () => {
+        if (commentTimerRef.current) {
+          clearInterval(commentTimerRef.current);
+          commentTimerRef.current = null;
+        }
+        stream.getTracks().forEach((t) => t.stop());
+        commentStreamRef.current = null;
+        setRecordingCommentTarget(null);
+        const type = recorder.mimeType?.split(';')[0] || 'audio/webm';
+        const blob = new Blob(chunks, { type });
+        if (!blob.size) return;
+        const ext = type.includes('mp4') ? 'm4a' : type.includes('ogg') ? 'ogg' : 'webm';
+        const file = new File([blob], `เสียงคอมเมนต์-${Date.now()}.${ext}`, { type });
+        void handleUploadAttachment(file, 'audio', targetKey === 'main' ? undefined : targetKey);
+      };
+      recorder.onerror = () => {
+        if (commentTimerRef.current) clearInterval(commentTimerRef.current);
+        stream.getTracks().forEach((t) => t.stop());
+        setRecordingCommentTarget(null);
+        alert('อัดเสียงไม่สำเร็จ กรุณาลองใหม่');
+      };
+      recordingStartedAtRef.current = Date.now();
+      setRecordingSeconds(0);
+      setRecordingCommentTarget(targetKey);
+      recorder.start(250);
+      commentTimerRef.current = setInterval(() => {
+        setRecordingSeconds(Math.round((Date.now() - recordingStartedAtRef.current) / 1000));
+      }, 1000);
+    } catch {
+      commentStreamRef.current?.getTracks().forEach((t) => t.stop());
+      setRecordingCommentTarget(null);
+      alert('ไม่ได้รับสิทธิ์ใช้ไมโครโฟน กรุณากดอนุญาตไมโครโฟนเพื่ออัดเสียงสด');
+    }
+  };
+
   const handleAddReview = async (e: React.FormEvent) => {
     e.preventDefault();
     const text = newReviewText.trim();
@@ -292,42 +373,57 @@ export const DetailModal: React.FC<DetailModalProps> = ({
   return (
     <div className="fixed inset-0 z-[90] bg-black/45 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4 overflow-y-auto">
       <div className="bg-white border border-slate-200/90 w-full max-w-3xl rounded-2xl shadow-2xl overflow-hidden my-auto animate-in zoom-in-95 max-h-[94vh] flex flex-col text-slate-900">
-        {/* Header Bar */}
-        <div className="p-3.5 sm:p-4 border-b border-slate-100 flex flex-wrap items-center justify-between gap-2 bg-white sticky top-0 z-10">
-          <div className="flex items-center gap-2.5 min-w-0 flex-1">
-            <span
-              className={`p-2 rounded-xl shrink-0 ${
-                isSupplier ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'
-              }`}
-            >
-              {isSupplier ? (
-                <Factory className="w-5 h-5 text-emerald-600" />
-              ) : (
-                <Coffee className="w-5 h-5 text-amber-600" />
-              )}
-            </span>
-            <div className="min-w-0">
-              <h2 className="font-bold text-slate-900 text-sm sm:text-base truncate">
-                {isSupplier ? supplier?.name : store?.storeName}
-              </h2>
-              <p className="text-xs text-slate-400 truncate">
-                {isSupplier
-                  ? supplier?.chineseName || supplier?.marketOrCity
-                  : store?.chineseName || store?.storeCategory || store?.brandConcept}
-              </p>
+        {/* Header Bar — แยกชื่อรายการและปุ่มเครื่องมือคนละบรรทัด ไม่ให้บดบังชื่อรายการ */}
+        <div className="p-3.5 sm:p-4 border-b border-slate-100 space-y-2.5 bg-white sticky top-0 z-10">
+          {/* Row 1: Item Title + Close Button */}
+          <div className="flex items-start justify-between gap-2.5">
+            <div className="flex items-start gap-2.5 min-w-0 flex-1">
+              <span
+                className={`p-2 rounded-xl shrink-0 mt-0.5 ${
+                  isSupplier ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'
+                }`}
+              >
+                {isSupplier ? (
+                  <Factory className="w-4 h-4 sm:w-5 sm:h-5 text-emerald-600" />
+                ) : (
+                  <Coffee className="w-4 h-4 sm:w-5 sm:h-5 text-amber-600" />
+                )}
+              </span>
+              <div className="min-w-0 flex-1">
+                <h2 className="font-extrabold text-slate-900 text-sm sm:text-base leading-snug break-words">
+                  {isSupplier ? supplier?.name : store?.storeName}
+                </h2>
+                <p className="text-xs text-slate-400 truncate mt-0.5">
+                  {isSupplier
+                    ? supplier?.chineseName || supplier?.marketOrCity
+                    : store?.chineseName || store?.storeCategory || store?.brandConcept}
+                </p>
+              </div>
             </div>
+
+            {/* Close Modal Button */}
+            <button
+              type="button"
+              onClick={onClose}
+              className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 transition-all active:scale-95 flex items-center justify-center shrink-0"
+              title="ปิดหน้าต่าง"
+            >
+              <X className="w-4 h-4" />
+            </button>
           </div>
 
-          <div className="flex items-center gap-1 sm:gap-1.5 shrink-0">
+          {/* Row 2: Separate Action Toolbar Row (แก้ไข · ถูกใจ · แชร์ LINE · PDF · พิมพ์) */}
+          <div className="flex items-center gap-1.5 flex-wrap pt-2 border-t border-slate-100">
             {/* Edit Item Button (เฉพาะ 2 สิทธิ์ระดับบน Admin & Editor) */}
             {canEditItems && (
               <button
                 type="button"
                 onClick={() => openEditItem(currentItem)}
-                className="p-2 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-300 shadow-2xs active:scale-95 transition-all flex items-center justify-center"
+                className="px-2.5 py-1 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200/90 text-[11px] font-bold active:scale-95 transition-all inline-flex items-center gap-1"
                 title="แก้ไขข้อมูลรายการนี้ (Admin / Editor)"
               >
-                <Pencil className="w-4 h-4 text-amber-600" />
+                <Pencil className="w-3 h-3 text-amber-600" />
+                <span>แก้ไข</span>
               </button>
             )}
 
@@ -335,7 +431,7 @@ export const DetailModal: React.FC<DetailModalProps> = ({
             <button
               type="button"
               onClick={() => toggleLikeItem(currentItem.id, currentItem.type)}
-              className={`p-2 rounded-xl border transition-all active:scale-95 flex items-center gap-1 text-xs font-bold ${
+              className={`px-2.5 py-1 rounded-lg border transition-all active:scale-95 inline-flex items-center gap-1 text-[11px] font-bold ${
                 isLikedByMe
                   ? 'bg-blue-50 text-blue-700 border-blue-200'
                   : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
@@ -343,51 +439,42 @@ export const DetailModal: React.FC<DetailModalProps> = ({
               title={`ถูกใจ (${likes.length})`}
             >
               <ThumbsUp
-                className={`w-4 h-4 ${isLikedByMe ? 'fill-blue-600 text-blue-600' : ''}`}
+                className={`w-3 h-3 ${isLikedByMe ? 'fill-blue-600 text-blue-600' : ''}`}
               />
-              {likes.length > 0 && (
-                <span className="text-[11px] font-mono font-bold leading-none">{likes.length}</span>
-              )}
+              <span>ถูกใจ{likes.length > 0 ? ` (${likes.length})` : ''}</span>
             </button>
 
             {/* Share to Line */}
             <button
               type="button"
               onClick={() => onShareToLine(currentItem)}
-              className="p-2 rounded-xl bg-[#06C755] hover:bg-[#05b34c] text-white transition-all shadow-2xs active:scale-95 flex items-center justify-center"
+              className="px-2.5 py-1 rounded-lg bg-[#06C755] hover:bg-[#05b34c] text-white text-[11px] font-bold transition-all active:scale-95 inline-flex items-center gap-1"
               title="แชร์ลิงก์เข้า LINE"
             >
-              <Share2 className="w-4 h-4" />
+              <Share2 className="w-3 h-3" />
+              <span>แชร์ LINE</span>
             </button>
 
             {/* Download PDF File Button */}
             <button
               type="button"
               onClick={() => openExecutiveReport(currentItem, convertCnyToThb, 'pdf')}
-              className="p-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white transition-all shadow-2xs active:scale-95 flex items-center justify-center"
+              className="px-2.5 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-[11px] font-bold transition-all active:scale-95 inline-flex items-center gap-1"
               title="ดาวน์โหลดรายงานเป็นไฟล์ PDF"
             >
-              <FileDown className="w-4 h-4 text-emerald-400" />
+              <FileDown className="w-3 h-3 text-emerald-400" />
+              <span>ดาวน์โหลด PDF</span>
             </button>
 
             {/* Executive Print Button */}
             <button
               type="button"
               onClick={() => openExecutiveReport(currentItem, convertCnyToThb, 'print')}
-              className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 transition-all border border-slate-200/80 active:scale-95 flex items-center justify-center"
+              className="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-[11px] font-bold transition-all border border-slate-200/80 active:scale-95 inline-flex items-center gap-1"
               title="พิมพ์รายงานฉบับจัดหน้าสวยงาม (Print)"
             >
-              <Printer className="w-4 h-4 text-slate-700" />
-            </button>
-
-            {/* Close Modal Button */}
-            <button
-              type="button"
-              onClick={onClose}
-              className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 transition-all active:scale-95 flex items-center justify-center ml-0.5"
-              title="ปิดหน้าต่าง"
-            >
-              <X className="w-4 h-4" />
+              <Printer className="w-3 h-3 text-slate-600" />
+              <span>พิมพ์</span>
             </button>
           </div>
         </div>
@@ -405,7 +492,11 @@ export const DetailModal: React.FC<DetailModalProps> = ({
               <div>
                 <div className="text-slate-800 font-bold flex items-center gap-1.5">
                   <span>
-                    ผู้ลงพื้นที่สำรวจ: {currentItem.creator.alias} ({currentItem.creator.name})
+                    ผู้ลงพื้นที่สำรวจ: {currentItem.creator.alias}
+                    {currentItem.creator.name &&
+                    currentItem.creator.name !== currentItem.creator.alias
+                      ? ` (${currentItem.creator.name})`
+                      : ''}
                   </span>
                 </div>
                 <div className="text-[11px] text-slate-400 font-mono">
@@ -958,14 +1049,15 @@ export const DetailModal: React.FC<DetailModalProps> = ({
                                 </span>
                               )}
                               {replyAttachments[note.id]?.voiceUrl && (
-                                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-blue-50 text-blue-800 border border-blue-200">
-                                  <Mic className="w-3 h-3" /> เสียงพร้อมแนบ
+                                <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded bg-blue-50 text-blue-800 border border-blue-200">
+                                  <Mic className="w-3 h-3" /> เสียงอัดสดพร้อมส่ง
+                                  <audio controls src={replyAttachments[note.id]?.voiceUrl} className="h-6 w-32" />
                                   <button type="button" onClick={() => setReplyAttachments(p => ({ ...p, [note.id]: { ...p[note.id], voiceUrl: undefined } }))}><X className="w-2.5 h-2.5" /></button>
                                 </span>
                               )}
                             </div>
                           )}
-                          <div className="flex gap-1.5">
+                          <div className="flex gap-1.5 items-center flex-wrap sm:flex-nowrap">
                             <input
                               type="text"
                               placeholder={`ตอบกลับ @${replyTarget.author} ในฐานะ ${currentUser.alias}...`}
@@ -973,7 +1065,7 @@ export const DetailModal: React.FC<DetailModalProps> = ({
                               onChange={(e) =>
                                 setReplyInputs({ ...replyInputs, [note.id]: e.target.value })
                               }
-                              className="flex-1 bg-slate-50 border border-blue-300 rounded-lg px-2.5 py-1.5 text-xs text-slate-900 focus:outline-none focus:border-blue-500"
+                              className="flex-1 min-w-[140px] bg-slate-50 border border-blue-300 rounded-lg px-2.5 py-1.5 text-xs text-slate-900 focus:outline-none focus:border-blue-500"
                               autoFocus
                               onKeyDown={(e) => {
                                 if (e.key === 'Enter') {
@@ -1001,20 +1093,25 @@ export const DetailModal: React.FC<DetailModalProps> = ({
                             </button>
                             <button
                               type="button"
-                              title="แนบเสียงในคำตอบกลับ"
-                              onClick={() => {
-                                const input = document.createElement('input');
-                                input.type = 'file';
-                                input.accept = 'audio/*';
-                                input.onchange = (e: any) => {
-                                  const f = e.target?.files?.[0];
-                                  if (f) handleUploadAttachment(f, 'audio', note.id);
-                                };
-                                input.click();
-                              }}
-                              className="p-1.5 rounded-lg border border-slate-200 hover:bg-slate-100 text-slate-500"
+                              title={
+                                recordingCommentTarget === note.id
+                                  ? 'กดเพื่อหยุดอัดเสียงสด'
+                                  : 'กดเพื่ออัดเสียงสดในคำตอบกลับ'
+                              }
+                              disabled={isUploadingCommentAttachment}
+                              onClick={() => void toggleLiveVoiceRecording(note.id)}
+                              className={`px-2 py-1.5 rounded-lg border text-[11px] font-bold inline-flex items-center gap-1 transition-all ${
+                                recordingCommentTarget === note.id
+                                  ? 'bg-rose-600 text-white border-rose-600 animate-pulse'
+                                  : 'bg-white border-slate-200 hover:border-blue-500 hover:bg-blue-50 text-slate-600 hover:text-blue-700'
+                              }`}
                             >
                               <Mic className="w-3.5 h-3.5" />
+                              <span>
+                                {recordingCommentTarget === note.id
+                                  ? `หยุดอัด (${recordingSeconds}s)`
+                                  : 'อัดเสียงสด'}
+                              </span>
                             </button>
                             <button
                               type="button"
@@ -1086,7 +1183,8 @@ export const DetailModal: React.FC<DetailModalProps> = ({
                     {commentVoiceUrl && (
                       <div className="flex items-center gap-1.5 px-2 py-1 bg-blue-50 border border-blue-200 rounded-lg text-xs text-blue-800">
                         <Mic className="w-3.5 h-3.5 text-blue-600" />
-                        <span className="truncate max-w-[120px]">เสียงพร้อมแนบ</span>
+                        <span>เสียงอัดสด:</span>
+                        <audio controls src={commentVoiceUrl} className="h-6 w-36" />
                         <button
                           type="button"
                           onClick={() => setCommentVoiceUrl(null)}
@@ -1099,13 +1197,13 @@ export const DetailModal: React.FC<DetailModalProps> = ({
                     {isUploadingCommentAttachment && (
                       <div className="flex items-center gap-1.5 text-xs text-blue-600 font-medium">
                         <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                        <span>กำลังอัปโหลดไฟล์สื่อเข้า Google Drive...</span>
+                        <span>กำลังอัปโหลดไฟล์สื่อ...</span>
                       </div>
                     )}
                   </div>
                 )}
 
-                <div className="flex gap-1.5">
+                <div className="flex gap-1.5 items-center flex-wrap sm:flex-nowrap">
                   <input
                     ref={commentPhotoInputRef}
                     type="file"
@@ -1117,50 +1215,52 @@ export const DetailModal: React.FC<DetailModalProps> = ({
                       e.target.value = '';
                     }}
                   />
-                  <input
-                    ref={commentVoiceInputRef}
-                    type="file"
-                    accept="audio/*"
-                    className="hidden"
-                    onChange={(e) => {
-                      const f = e.target.files?.[0];
-                      if (f) handleUploadAttachment(f, 'audio');
-                      e.target.value = '';
-                    }}
-                  />
 
                   <input
                     type="text"
                     placeholder={`พิมพ์ข้อคิดเห็นใหม่ในฐานะ ${currentUser.alias}...`}
                     value={newReviewText}
                     onChange={(e) => setNewReviewText(e.target.value)}
-                    className="flex-1 bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 focus:outline-none focus:border-blue-500 shadow-2xs"
+                    className="flex-1 min-w-[150px] bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 focus:outline-none focus:border-blue-500 shadow-2xs"
                   />
 
                   <button
                     type="button"
-                    title="แนบรูปภาพเข้า Google Drive"
+                    title="แนบรูปภาพ"
                     disabled={isUploadingCommentAttachment}
                     onClick={() => commentPhotoInputRef.current?.click()}
-                    className="p-2 rounded-xl border border-slate-200 hover:border-emerald-500 hover:bg-emerald-50 text-slate-500 hover:text-emerald-700 transition-colors"
+                    className="p-2 rounded-xl border border-slate-200 hover:border-emerald-500 hover:bg-emerald-50 text-slate-500 hover:text-emerald-700 transition-colors shrink-0"
                   >
                     <ImageIcon className="w-4 h-4" />
                   </button>
 
                   <button
                     type="button"
-                    title="แนบเสียง/บันทึกเสียงเข้า Google Drive"
+                    title={
+                      recordingCommentTarget === 'main'
+                        ? 'กดเพื่อหยุดอัดเสียงสด'
+                        : 'กดเพื่ออัดเสียงสดในคอมเมนต์'
+                    }
                     disabled={isUploadingCommentAttachment}
-                    onClick={() => commentVoiceInputRef.current?.click()}
-                    className="p-2 rounded-xl border border-slate-200 hover:border-blue-500 hover:bg-blue-50 text-slate-500 hover:text-blue-700 transition-colors"
+                    onClick={() => void toggleLiveVoiceRecording('main')}
+                    className={`px-2.5 py-2 rounded-xl border text-xs font-bold inline-flex items-center gap-1.5 transition-all shrink-0 ${
+                      recordingCommentTarget === 'main'
+                        ? 'bg-rose-600 text-white border-rose-600 animate-pulse shadow-xs'
+                        : 'bg-white border-slate-200 hover:border-blue-500 hover:bg-blue-50 text-slate-700 hover:text-blue-700'
+                    }`}
                   >
-                    <Mic className="w-4 h-4" />
+                    <Mic className="w-3.5 h-3.5" />
+                    <span>
+                      {recordingCommentTarget === 'main'
+                        ? `หยุดอัด (${recordingSeconds}s)`
+                        : 'อัดเสียงสด'}
+                    </span>
                   </button>
 
                   <button
                     type="submit"
-                    disabled={isUploadingCommentAttachment}
-                    className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold shadow-xs active:scale-95 transition-all flex items-center gap-1 shrink-0 disabled:opacity-50"
+                    disabled={isUploadingCommentAttachment || recordingCommentTarget === 'main'}
+                    className="px-3.5 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold shadow-xs active:scale-95 transition-all flex items-center gap-1 shrink-0 disabled:opacity-50"
                   >
                     <Send className="w-3 h-3" />
                     <span>โพสต์</span>

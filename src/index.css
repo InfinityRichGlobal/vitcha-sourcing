@@ -61,18 +61,9 @@ button:disabled { cursor: not-allowed; }
 .app-navigation { padding-bottom: max(.35rem, env(safe-area-inset-bottom)); }
 img { max-width: 100%; }
 @media (max-width: 767px) {
-  input:not([type='checkbox']):not([type='radio']):not([type='file']), select, textarea { font-size: 16px !important; min-height: 44px; }
-  header button { min-width: 40px; min-height: 44px; }
   main { padding-bottom: calc(4.5rem + env(safe-area-inset-bottom)); }
   [role='dialog'] { overscroll-behavior: contain; }
 }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; transition-duration: .01ms !important; }
-}
-
-/* Comfortable filter targets without crowding the record cards. */
-.collection-filters button { min-height: 36px; flex-shrink: 0; }
-.collection-filters select { min-height: 44px; max-width: 100%; }
-@media (max-width: 767px) {
-  .collection-filters button { min-height: 44px; }
 }
