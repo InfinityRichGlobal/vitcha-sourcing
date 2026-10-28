@@ -27,6 +27,7 @@ export const MapView: React.FC<MapViewProps> = ({
   const markersLayerRef = useRef<L.LayerGroup | null>(null);
   const lastFocusRef = useRef<string | null>(null);
   const [mapStatus, setMapStatus] = useState<'loading' | 'ready' | 'error'>('loading');
+  const [mapFailure, setMapFailure] = useState('');
   const [mapAttempt, setMapAttempt] = useState(0);
 
   const [filterType, setFilterType] = useState<'all' | 'suppliers' | 'drink_stores'>('all');
@@ -59,19 +60,20 @@ export const MapView: React.FC<MapViewProps> = ({
     let vectorLayer: ReturnType<typeof maplibreGL> | undefined;
     let ready = false;
     setMapStatus('loading');
+    setMapFailure('');
     lastFocusRef.current = null;
-    const loadTimeout = window.setTimeout(() => { if (active && !ready) setMapStatus('error'); }, 25000);
+    const loadTimeout = window.setTimeout(() => { if (active && !ready) { setMapFailure('Map loading timed out'); setMapStatus('error'); } }, 25000);
     fetch(MAP_STYLE_URL, { signal: controller.signal })
       .then(response => { if (!response.ok) throw new Error('Map style unavailable'); return response.json(); })
       .then(style => {
         if (!active) return;
-        vectorLayer = maplibreGL({ style: withEnglishLabels(style), attributionControl: false, renderWorldCopies: false }).addTo(map);
+        vectorLayer = maplibreGL({ style: withEnglishLabels(style), attributionControl: false, renderWorldCopies: false, canvasContextAttributes: { powerPreference: 'low-power' } }).addTo(map);
         const gl = vectorLayer.getMaplibreMap();
-        gl.on('load', () => { if (active) { ready = true; window.clearTimeout(loadTimeout); setMapStatus('ready'); } });
-        gl.on('error', () => { if (active && !ready) setMapStatus('error'); });
-        gl.on('webglcontextlost', () => { if (active) setMapStatus('error'); });
+        gl.on('load', () => { if (active) { ready = true; window.clearTimeout(loadTimeout); setMapFailure(''); setMapStatus('ready'); } });
+        gl.on('error', event => { if (active && !ready) { setMapFailure(event.error?.message || 'Map resource unavailable'); setMapStatus('error'); } });
+        gl.on('webglcontextlost', () => { if (active) { setMapFailure('WebGL context lost'); setMapStatus('error'); } });
       })
-      .catch(() => { if (active && !controller.signal.aborted) setMapStatus('error'); });
+      .catch(error => { if (active && !controller.signal.aborted) { setMapFailure(error instanceof Error ? error.message : 'Map initialization failed'); setMapStatus('error'); } });
     map.attributionControl.addAttribution('<a href="https://openfreemap.org/" target="_blank" rel="noopener">OpenFreeMap</a> · <a href="https://openmaptiles.org/" target="_blank" rel="noopener">OpenMapTiles</a> · <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">© OpenStreetMap</a>');
 
     L.control.zoom({ position: 'bottomright' }).addTo(map);
@@ -251,7 +253,7 @@ export const MapView: React.FC<MapViewProps> = ({
   };
 
   return (
-    <div className="space-y-2" data-testid="english-map" data-map-status={mapStatus}>
+    <div className="space-y-2" data-testid="english-map" data-map-status={mapStatus} data-map-error={mapFailure}>
       <p className="text-xs text-slate-500"><span className="font-semibold text-slate-700">Map language: English</span> · ชื่อสถานที่ภาษาอังกฤษ</p>
       <div className="relative isolate w-full h-[380px] sm:h-[430px] overflow-hidden rounded-2xl border border-slate-200/90 shadow-2xs bg-slate-100">
         {/* Top Left: Type Filter Bar */}
@@ -340,7 +342,7 @@ export const MapView: React.FC<MapViewProps> = ({
         <div ref={mapContainerRef} className="w-full h-full z-0" style={{ minHeight: '380px' }} />
 
         {mapStatus !== 'ready' && <div role="status" className="absolute bottom-8 left-3 right-12 z-[450] rounded-xl border border-slate-200 bg-white/95 px-3 py-2 text-xs text-slate-600 shadow-sm">
-          {mapStatus === 'loading' ? 'กำลังโหลดแผนที่ภาษาอังกฤษ…' : 'ยังโหลดแผนที่ไม่ได้ กรุณาตรวจสอบอินเทอร์เน็ต'}
+          {mapStatus === 'loading' ? 'กำลังโหลดแผนที่ภาษาอังกฤษ…' : 'ยังแสดงแผนที่ไม่ได้ กรุณาลองอีกครั้ง'}
           {mapStatus === 'error' && <button className="ml-2 min-h-10 font-semibold text-emerald-700 underline" onClick={() => setMapAttempt(value => value + 1)}>ลองใหม่</button>}
         </div>}
 
