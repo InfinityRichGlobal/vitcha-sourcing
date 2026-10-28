@@ -1,61 +1,31 @@
-// VITCHA Sourcing PWA Service Worker
-const CACHE_NAME = 'vitcha-sourcing-v2';
-const STATIC_ASSETS = [
-  './',
-  './index.html',
-  './manifest.json',
-  './logo.jpg'
-];
-
-self.addEventListener('install', (event) => {
-  event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => {
-      return cache.addAll(STATIC_ASSETS).catch(() => {});
-    })
-  );
+// Cache the application shell only. Team data and uploads stay on the server.
+const CACHE_NAME = 'vitcha-sourcing-v3';
+const STATIC_ASSETS = ['./', './index.html', './manifest.json', './logo.jpg'];
+self.addEventListener('install', event => {
+  event.waitUntil(caches.open(CACHE_NAME).then(cache => cache.addAll(STATIC_ASSETS)).catch(() => {}));
   self.skipWaiting();
 });
-
-self.addEventListener('activate', (event) => {
-  event.waitUntil(
-    caches.keys().then((keys) => {
-      return Promise.all(
-        keys.map((key) => {
-          if (key !== CACHE_NAME) {
-            return caches.delete(key);
-          }
-        })
-      );
-    })
-  );
-  self.clients.claim();
+self.addEventListener('activate', event => {
+  event.waitUntil((async () => {
+    for (const key of await caches.keys()) if (key.startsWith('vitcha-sourcing-') && key !== CACHE_NAME) await caches.delete(key);
+    await self.clients.claim();
+  })());
 });
-
-self.addEventListener('fetch', (event) => {
-  // Only handle GET requests and skip API requests from caching
-  if (event.request.method !== 'GET' || event.request.url.includes('/api/')) {
-    return;
-  }
-
-  event.respondWith(
-    fetch(event.request)
-      .then((response) => {
-        // Cache valid responses
-        if (response.status === 200) {
-          const resClone = response.clone();
-          caches.open(CACHE_NAME).then((cache) => {
-            cache.put(event.request, resClone);
-          });
-        }
-        return response;
-      })
-      .catch(() => {
-        return caches.match(event.request).then((cached) => {
-          if (cached) return cached;
-          if (event.request.mode === 'navigate') {
-            return caches.match('./index.html');
-          }
-        });
-      })
-  );
+self.addEventListener('fetch', event => {
+  const url = new URL(event.request.url);
+  if (event.request.method !== 'GET' || url.origin !== self.location.origin || /\/(api|uploads)\//.test(url.pathname)) return;
+  const staticAsset = /\/assets\//.test(url.pathname) || /\/(index\.html|manifest\.json|logo\.jpg)$/.test(url.pathname);
+  if (!staticAsset && event.request.mode !== 'navigate') return;
+  event.respondWith((async () => {
+    try {
+      const response = await fetch(event.request);
+      if (response.ok) {
+        const copy = response.clone();
+        event.waitUntil(caches.open(CACHE_NAME).then(cache => cache.put(event.request, copy)).catch(() => {}));
+      }
+      return response;
+    } catch {
+      return await caches.match(event.request) || (event.request.mode === 'navigate' ? await caches.match('./index.html') : null) || Response.error();
+    }
+  })());
 });

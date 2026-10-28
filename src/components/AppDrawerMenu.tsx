@@ -1,3 +1,4 @@
+import { AvatarImage } from './AvatarImage';
 import React from 'react';
 import { useApp } from '../context/AppContext';
 import {
@@ -92,7 +93,7 @@ export const AppDrawerMenu: React.FC<AppDrawerMenuProps> = ({
             className="flex items-center justify-between p-2.5 rounded-xl bg-slate-50 border border-slate-200/80 hover:bg-slate-100 cursor-pointer transition-colors"
           >
             <div className="flex items-center gap-2.5 min-w-0">
-              <img
+              <AvatarImage
                 src={currentUser.avatar}
                 alt={currentUser.alias}
                 className="w-9 h-9 rounded-full object-cover ring-2 ring-emerald-500/20"
@@ -100,14 +101,6 @@ export const AppDrawerMenu: React.FC<AppDrawerMenuProps> = ({
               <div className="min-w-0">
                 <div className="font-bold text-xs text-slate-900 truncate">
                   {currentUser.alias}
-                </div>
-                <div className="text-[10px] font-medium text-slate-500 uppercase flex items-center gap-1">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-                  <span>
-                    {currentUser.role === 'admin'
-                      ? 'เจ้าของระบบ (Admin)'
-                      : currentUser.role}
-                  </span>
                 </div>
               </div>
             </div>
@@ -140,6 +133,7 @@ export const AppDrawerMenu: React.FC<AppDrawerMenuProps> = ({
             <span className="text-[10px] text-slate-400">หน้าหลัก</span>
           </button>
 
+          <button onClick={() => { setActiveTab('products'); onClose(); }} className="flex w-full items-center gap-2.5 rounded-xl px-3 py-3 text-xs font-bold text-slate-700 hover:bg-slate-50"><Layers size={16} className="text-emerald-600"/>รายการสินค้า</button>
           {/* Tab 1: ซัพพลายเออร์ */}
           <button
             onClick={() => {
@@ -249,7 +243,7 @@ export const AppDrawerMenu: React.FC<AppDrawerMenuProps> = ({
           </button>
 
           {/* Tab 4: ตั้งค่า & สิทธิ์ (Top 2 roles) */}
-          {(currentUser.role === 'admin' || currentUser.role === 'editor') && (
+          {(currentUser.role === 'admin') && (
             <button
               onClick={() => {
                 setActiveTab('settings');
@@ -263,7 +257,7 @@ export const AppDrawerMenu: React.FC<AppDrawerMenuProps> = ({
             >
               <div className="flex items-center gap-2.5">
                 <ShieldCheck className="w-4 h-4 text-emerald-600" />
-                <span>การตั้งค่าระบบ & สิทธิ์</span>
+                <span>การตั้งค่าเนื้อหา & สิทธิ์</span>
               </div>
               <span className="text-[10px] text-emerald-700 font-bold bg-emerald-50 px-1.5 py-0.5 rounded">
                 Admin
@@ -288,6 +282,7 @@ export const AppDrawerMenu: React.FC<AppDrawerMenuProps> = ({
           </button>
         </div>
 
+        {currentUser.id === 'user-ice' && (<>
         {/* Mockup Data Simulation & Reset Buttons */}
         <div className="p-4 pt-2 border-t border-slate-100 space-y-2">
           <div className="text-[10px] font-bold text-slate-400 tracking-wider uppercase px-2">
@@ -322,7 +317,7 @@ export const AppDrawerMenu: React.FC<AppDrawerMenuProps> = ({
                 className="flex items-center justify-center gap-1.5 px-2.5 py-2 rounded-xl text-[11px] font-bold bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-200 transition-all"
               >
                 <RotateCcw className="w-3.5 h-3.5 text-slate-600" />
-                <span>รีเซ็ท Mockup</span>
+                <span>เพิ่มตัวอย่างอีกชุด</span>
               </button>
 
               <button
@@ -342,11 +337,12 @@ export const AppDrawerMenu: React.FC<AppDrawerMenuProps> = ({
           </div>
         </div>
 
-        {/* Admin Only Section (จัดการสิทธิ์ & ลิงก์คำเชิญ) */}
+        </>)}
+        {/* Admin Only Section (สมาชิกและคำเชิญ) */}
         {currentUser.role === 'admin' && (
           <div className="p-4 pt-2 border-t border-slate-100 space-y-1">
             <div className="text-[10px] font-bold text-slate-400 tracking-wider uppercase px-2 mb-2">
-              เฉพาะเจ้าของระบบ (Admin Only)
+              จัดการทีม
             </div>
 
             <button
@@ -358,7 +354,7 @@ export const AppDrawerMenu: React.FC<AppDrawerMenuProps> = ({
             >
               <div className="flex items-center gap-2.5">
                 <ShieldCheck className="w-4 h-4 text-amber-400" />
-                <span>จัดการสิทธิ์ & ลิงก์คำเชิญ (Invite)</span>
+                <span>สมาชิกและคำเชิญ (Invite)</span>
               </div>
               <ChevronRight className="w-4 h-4 text-slate-400" />
             </button>
@@ -411,7 +407,7 @@ export const AppDrawerMenu: React.FC<AppDrawerMenuProps> = ({
                 >
                   <div className="flex items-center gap-2">
                     <span className="text-sm">👑</span>
-                    <span className="truncate">สลับกลับสู่ไอดีผู้ก่อตั้ง (SuperiCez) ↩</span>
+                    <span className="truncate">กลับสู่บัญชีหลัก ↩</span>
                   </div>
                   <span className="text-[10px] bg-white text-emerald-900 font-extrabold px-2 py-0.5 rounded shrink-0">
                     คืนสิทธิ์
@@ -422,7 +418,7 @@ export const AppDrawerMenu: React.FC<AppDrawerMenuProps> = ({
               <div className="flex items-center justify-between px-1">
                 <div className="flex items-center gap-1.5 text-xs font-extrabold text-slate-800">
                   <ShieldCheck className="w-4 h-4 text-emerald-600" />
-                  <span>จำลองมุมมองสิทธิ์ (เฉพาะผู้พัฒนาเว็บ)</span>
+                  <span>ทดสอบมุมมอง</span>
                 </div>
                 <span className="font-mono text-[9px] font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded">
                   Dev Mode

@@ -1,8 +1,16 @@
+# No paid resources. Production activation is held until durable external
+# database/media storage is connected and the existing data is verified there.
 services:
   - type: web
     name: vitcha-sourcing
     runtime: node
     plan: free
     region: singapore
-    buildCommand: npm install --include=dev && npm run build
+    numInstances: 1
+    autoDeployTrigger: "off"
+    buildCommand: npm ci --include=dev && npm run build
     startCommand: node server/index.js
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production

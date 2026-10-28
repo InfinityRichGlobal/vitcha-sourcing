@@ -1,12 +1,9 @@
+import { AvatarImage } from './AvatarImage';
 import React, { useState } from 'react';
+import { requestJson, sendJson } from '../services/api';
 import { useApp } from '../context/AppContext';
 import { UserRole } from '../types';
-import {
-  getSavedFirebaseConfig,
-  saveFirebaseConfig,
-  removeFirebaseConfig,
-  FirebaseConfig,
-} from '../services/firebase';
+
 import {
   Settings,
   Plus,
@@ -34,6 +31,7 @@ import {
 export const SettingsManagementView: React.FC = () => {
   const {
     currentUser,
+    simulatedFromAdmin,
     categories,
     addCategory,
     editCategory,
@@ -70,8 +68,8 @@ export const SettingsManagementView: React.FC = () => {
 
   const [isRefreshingUsers, setIsRefreshingUsers] = useState(false);
 
-  // Top 2 roles permission check: Admin & Editor
-  const hasPermission = currentUser.role === 'admin' || currentUser.role === 'editor';
+  // Content settings are managed by admins.
+  const hasPermission = currentUser.role === 'admin';
 
   // Supplier Category states
   const [newCategory, setNewCategory] = useState('');
@@ -99,12 +97,6 @@ export const SettingsManagementView: React.FC = () => {
   const [inviteRole, setInviteRole] = useState<UserRole>('reviewer');
   const [inviteAlias, setInviteAlias] = useState('');
   const [copiedId, setCopiedId] = useState<string | null>(null);
-
-  // Firebase Cloud Server states
-  const [firebaseConfig, setFirebaseConfig] = useState<FirebaseConfig | null>(() => getSavedFirebaseConfig());
-  const [configJsonInput, setConfigJsonInput] = useState('');
-  const [showConfigForm, setShowConfigForm] = useState(false);
-  const [firebaseStatusMsg, setFirebaseStatusMsg] = useState<string | null>(null);
 
   // Render Central Server states
   const [editingRenderUrl, setEditingRenderUrl] = useState(renderServerUrl);
@@ -136,200 +128,93 @@ export const SettingsManagementView: React.FC = () => {
     try {
       const ok = await syncAllDataToRender();
       if (ok) {
-        setRenderSyncMsg('✅ ซิงค์ข้อมูลทั้งหมดขึ้นเซิร์ฟเวอร์ Render เรียบร้อยแล้ว!');
+        setRenderSyncMsg('✅ ดึงข้อมูลล่าสุดจากเซิร์ฟเวอร์ Render เรียบร้อยแล้ว!');
       } else {
-        setRenderSyncMsg('❌ ไม่สามารถส่งข้อมูลได้ กรุณาลองใหม่อีกครั้ง');
+        setRenderSyncMsg('❌ ไม่สามารถดึงข้อมูลได้ กรุณาลองใหม่อีกครั้ง');
       }
     } finally {
       setIsSyncingRender(false);
     }
   };
 
-  if (!hasPermission) {
-    return (
-      <div className="max-w-4xl mx-auto px-4 py-12 text-center space-y-3">
-        <div className="w-12 h-12 rounded-2xl bg-rose-50 text-rose-600 flex items-center justify-center mx-auto">
-          <Lock className="w-6 h-6" />
-        </div>
-        <h2 className="font-bold text-base text-slate-900">
-          จำกัดสิทธิ์เฉพาะผู้ดูแลระบบ 2 ระดับบน (Admin & Editor)
-        </h2>
-        <p className="text-xs text-slate-500 max-w-md mx-auto">
-          คุณกำลังใช้งานในสิทธิ์ <span className="font-bold uppercase">{currentUser.role}</span>{' '}
-          หากต้องการเพิ่ม/แก้ไขหมวดหมู่ จุดเด่นทางลัด หรือข้อความด่วน กรุณาติดต่อ Admin
-        </p>
-      </div>
-    );
-  }
+  if (!hasPermission) return null;
 
-  const handleSaveFirebaseConfig = (e: React.FormEvent) => {
-    e.preventDefault();
-    try {
-      let parsed: any;
-      if (configJsonInput.trim().startsWith('{')) {
-        parsed = JSON.parse(configJsonInput);
-      } else {
-        const lines = configJsonInput.split('\n');
-        parsed = {};
-        lines.forEach((line) => {
-          const [k, v] = line.split(':');
-          if (k && v) {
-            const key = k.trim().replace(/['",]/g, '');
-            const val = v.trim().replace(/['",]/g, '');
-            parsed[key] = val;
-          }
-        });
-      }
-
-      const cleanConfig: FirebaseConfig = {
-        apiKey: parsed.apiKey || '',
-        authDomain: parsed.authDomain || '',
-        projectId: parsed.projectId || '',
-        storageBucket: parsed.storageBucket || '',
-        messagingSenderId: parsed.messagingSenderId || '',
-        appId: parsed.appId || '',
-      };
-
-      if (!cleanConfig.projectId || !cleanConfig.apiKey) {
-        alert('กรุณากรอก apiKey และ projectId ให้ถูกต้อง');
-        return;
-      }
-
-      saveFirebaseConfig(cleanConfig);
-      setFirebaseConfig(cleanConfig);
-      setShowConfigForm(false);
-      setFirebaseStatusMsg('เชื่อมต่อ Firebase Firestore สำเร็จ! ระบบกำลังซิงค์ข้อมูลกับเซิร์ฟเวอร์...');
-      setTimeout(() => window.location.reload(), 1200);
-    } catch {
-      alert('รูปแบบ Firebase Config ไม่ถูกต้อง กรุณาคัดลอก JSON มาวาง');
-    }
-  };
-
-  const handleDisconnectFirebase = () => {
-    if (window.confirm('ยืนยันตัดการเชื่อมต่อกับ Firebase หรือไม่?')) {
-      removeFirebaseConfig();
-      setFirebaseConfig(null);
-      window.location.reload();
-    }
-  };
-
-  const handleAddCategory = (e: React.FormEvent) => {
+  const handleAddCategory = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newCategory.trim()) return;
-    addCategory(newCategory.trim());
+    if (!await addCategory(newCategory.trim())) return;
     setNewCategory('');
   };
 
-  const handleSaveCategoryEdit = (oldCat: string) => {
+  const handleSaveCategoryEdit = async (oldCat: string) => {
     if (editCatValue.trim() && editCatValue.trim() !== oldCat) {
-      editCategory(oldCat, editCatValue.trim());
+      if (!await editCategory(oldCat, editCatValue.trim())) return;
     }
     setEditingCat(null);
   };
 
-  const handleAddStoreCategory = (e: React.FormEvent) => {
+  const handleAddStoreCategory = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newStoreCategory.trim()) return;
-    addStoreCategory(newStoreCategory.trim());
+    if (!await addStoreCategory(newStoreCategory.trim())) return;
     setNewStoreCategory('');
   };
 
-  const handleSaveStoreCategoryEdit = (oldCat: string) => {
+  const handleSaveStoreCategoryEdit = async (oldCat: string) => {
     if (editStoreCatValue.trim() && editStoreCatValue.trim() !== oldCat) {
-      editStoreCategory(oldCat, editStoreCatValue.trim());
+      if (!await editStoreCategory(oldCat, editStoreCatValue.trim())) return;
     }
     setEditingStoreCat(null);
   };
 
-  const handleAddQuickTag = (e: React.FormEvent) => {
+  const handleAddQuickTag = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newQuickTag.trim()) return;
-    addQuickTag(newQuickTag.trim());
+    if (!await addQuickTag(newQuickTag.trim())) return;
     setNewQuickTag('');
   };
 
-  const handleExportJson = () => {
-    const backupData = {
-      suppliers,
-      drinkStores,
-      categories,
-      storeCategories,
-      quickTagsList,
-      quickMessages,
-      users,
-      invites,
-      exportedAt: new Date().toISOString(),
-    };
-    const blob = new Blob([JSON.stringify(backupData, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `vitcha_backup_${new Date().toISOString().slice(0, 10)}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
+  const handleExportJson = async () => {
+    try {
+      const data = await requestJson('/api/backup');
+      const url = URL.createObjectURL(new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' }));
+      const link = document.createElement('a'); link.href = url; link.download = `vitcha-backup-${new Date().toISOString().slice(0, 10)}.json`; link.click();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    } catch (error) { alert(error instanceof Error ? error.message : 'สำรองข้อมูลไม่สำเร็จ'); }
+  };
+  const handleImportJson = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]; if (!file) return;
+    try {
+      const snapshot = JSON.parse(await file.text());
+      if (!window.confirm('นำเข้ารายการจากไฟล์นี้แทนรายการปัจจุบันหรือไม่? บัญชีสมาชิกและคำเชิญจะคงเดิม')) return;
+      const current = await requestJson('/api/data');
+      await sendJson('/api/system/import', { snapshot, revision: current.revision || 0 });
+      await refreshCentralData();
+    } catch (error) { alert(error instanceof Error ? error.message : 'นำเข้าข้อมูลไม่สำเร็จ'); }
+    finally { e.target.value = ''; }
   };
 
-  const handleImportJson = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      try {
-        const data = JSON.parse(event.target?.result as string);
-        if (data.suppliers) localStorage.setItem('vitcha_suppliers_v5', JSON.stringify(data.suppliers));
-        if (data.drinkStores) localStorage.setItem('vitcha_drink_stores_v5', JSON.stringify(data.drinkStores));
-        if (data.users) localStorage.setItem('vitcha_users_v5', JSON.stringify(data.users));
-        if (data.invites) localStorage.setItem('vitcha_invites_v5', JSON.stringify(data.invites));
-        if (data.categories) localStorage.setItem('vitcha_categories_v5', JSON.stringify(data.categories));
-        if (data.storeCategories) localStorage.setItem('vitcha_store_categories_v5', JSON.stringify(data.storeCategories));
-        if (data.quickTagsList) localStorage.setItem('vitcha_quick_tags_v5', JSON.stringify(data.quickTagsList));
-        if (data.quickMessages) localStorage.setItem('vitcha_quick_messages_v5', JSON.stringify(data.quickMessages));
-        alert('นำเข้าข้อมูลสำเร็จ! ระบบจะรีเฟรชเพื่อโหลดข้อมูลใหม่');
-        window.location.reload();
-      } catch {
-        alert('ไฟล์ข้อมูลไม่ถูกต้อง');
-      }
-    };
-    reader.readAsText(file);
-  };
-
-  const handleSaveTagEdit = (oldTag: string) => {
+  const handleSaveTagEdit = async (oldTag: string) => {
     if (editTagValue.trim() && editTagValue.trim() !== oldTag) {
-      editQuickTag(oldTag, editTagValue.trim());
+      if (!await editQuickTag(oldTag, editTagValue.trim())) return;
     }
     setEditingTag(null);
   };
 
-  const handleAddQuickMessage = (e: React.FormEvent) => {
+  const handleAddQuickMessage = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!qmTitle.trim() || !qmText.trim()) return;
-    addQuickMessage(qmTitle.trim(), qmText.trim());
+    if (!await addQuickMessage(qmTitle.trim(), qmText.trim())) return;
     setQmTitle('');
     setQmText('');
   };
 
-  const handleSaveQmEdit = (id: string) => {
+  const handleSaveQmEdit = async (id: string) => {
     if (editQmTitle.trim() && editQmText.trim()) {
-      editQuickMessage(id, editQmTitle.trim(), editQmText.trim());
+      if (!await editQuickMessage(id, editQmTitle.trim(), editQmText.trim())) return;
     }
     setEditingQmId(null);
   };
-
-  const handleCreateInvite = async (e: React.FormEvent) => {
-    e.preventDefault();
-    await createInvite(inviteRole, inviteAlias.trim() || undefined);
-    setInviteAlias('');
-  };
-
-  const copyInviteLink = (code: string, id: string) => {
-    const baseUrl = `${window.location.origin}${window.location.pathname}`;
-    const url = `${baseUrl}?invite=${code}`;
-    navigator.clipboard.writeText(url);
-    setCopiedId(id);
-    setTimeout(() => setCopiedId(null), 2000);
-  };
-
-  const realUsers = users.filter((u) => !['user-beam', 'user-ann', 'user-mook'].includes(u.id));
 
   return (
     <div className="max-w-6xl mx-auto px-3 sm:px-4 py-4 space-y-5 animate-in fade-in">
@@ -342,19 +227,18 @@ export const SettingsManagementView: React.FC = () => {
           <div>
             <div className="flex items-center gap-2">
               <h2 className="font-extrabold text-base sm:text-lg text-slate-900">
-                ตั้งค่าระบบ & จัดการตัวเลือก (System Setup)
+                ตั้งค่าเนื้อหา
               </h2>
-              <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
-                สิทธิ์: {currentUser.role.toUpperCase()}
-              </span>
+
             </div>
             <p className="text-xs text-slate-500">
-              จัดการหมวดหมู่ซัพพลายเออร์ หมวดหมู่ร้านน้ำเรฟ ปุ่มทางลัด ข้อความด่วน และระบบจำลองข้อมูล Mockup
+              จัดการหมวดหมู่ซัพพลายเออร์ หมวดหมู่ร้านน้ำเรฟ ปุ่มทางลัด และข้อความด่วน
             </p>
           </div>
         </div>
 
-        {/* Mockup Load & Reset System Buttons */}
+        {/* Founder-only backup and record maintenance */}
+        {currentUser.id === 'user-ice' && !simulatedFromAdmin && (<>
         <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-2">
           <button
             type="button"
@@ -371,7 +255,7 @@ export const SettingsManagementView: React.FC = () => {
             title="นำเข้าไฟล์สำรองข้อมูลที่ดาวน์โหลดมาจากเครื่องอื่น"
           >
             <i className="fa-solid fa-upload text-xs text-blue-600" />
-            <span>นำเข้าข้อมูลสำรอง</span>
+            <span>นำเข้ารายการจากไฟล์สำรอง</span>
             <input
               type="file"
               accept=".json"
@@ -395,7 +279,7 @@ export const SettingsManagementView: React.FC = () => {
             className="inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-200 text-xs font-bold active:scale-95 transition-all"
           >
             <RotateCcw className="w-3.5 h-3.5" />
-            <span>รีเซ็ท Mockup เริ่มต้น</span>
+            <span>เพิ่มข้อมูลตัวอย่างอีกชุด</span>
           </button>
 
           <button
@@ -415,9 +299,10 @@ export const SettingsManagementView: React.FC = () => {
             <span>ล้างข้อมูลว่างเปล่า</span>
           </button>
         </div>
+        </>)}
       </div>
 
-      {/* Central Cloud Server (onrender.com) Card */}
+      {currentUser.id === 'user-ice' && !simulatedFromAdmin && <>
       <div className="bg-white p-4 sm:p-5 rounded-2xl border-2 border-slate-900/10 shadow-sm space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div className="flex items-center gap-3">
@@ -434,7 +319,7 @@ export const SettingsManagementView: React.FC = () => {
                 </span>
               </div>
               <p className="text-[11px] text-slate-500">
-                ฐานข้อมูลกลางคลาวด์ บันทึกข้อมูลขึ้นระบบจริงทันที ข้อมูลมือถือและคอมพิวเตอร์ตรงกัน 100%
+                ฐานข้อมูลกลางคลาวด์ บันทึกข้อมูลขึ้นระบบจริงทันที ใช้ข้อมูลชุดเดียวกันบนมือถือและคอมพิวเตอร์
               </p>
             </div>
           </div>
@@ -495,7 +380,7 @@ export const SettingsManagementView: React.FC = () => {
                 className="w-full inline-flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs active:scale-95 transition-all shadow-xs"
               >
                 <Cloud className={`w-3.5 h-3.5 ${isSyncingRender ? 'animate-pulse' : ''}`} />
-                <span>{isSyncingRender ? 'กำลังซิงค์...' : 'ซิงค์ขึ้น Render ทันที'}</span>
+                <span>{isSyncingRender ? 'กำลังซิงค์...' : 'ดึงข้อมูลล่าสุดจาก Render'}</span>
               </button>
             </div>
           </form>
@@ -512,7 +397,7 @@ export const SettingsManagementView: React.FC = () => {
                 <span>{renderTestResult.ok ? '✅' : '⚠️'}</span>
                 <span>{renderTestResult.message}</span>
               </div>
-              {renderTestResult.count && (
+              {renderTestResult.count?.suppliersCount !== undefined && (
                 <div className="text-[11px] font-mono text-emerald-700 flex gap-2">
                   <span>ซัพพลายเออร์: {renderTestResult.count.suppliersCount ?? 0}</span>
                   <span>· ร้านน้ำ: {renderTestResult.count.drinkStoresCount ?? 0}</span>
@@ -531,12 +416,13 @@ export const SettingsManagementView: React.FC = () => {
           <div className="text-[11px] text-slate-600 leading-relaxed bg-white p-3 rounded-xl border border-slate-200/80 flex items-center gap-2">
             <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 shrink-0" />
             <span>
-              <strong>เซิร์ฟเวอร์หลักออนไลน์ 24 ชม.:</strong> ทุกการบันทึกข้อมูลหน้างาน ซัพพลายเออร์ ร้านน้ำเรฟ รูปภาพ และวิดีโอ จะถูกส่งขึ้นเซิร์ฟเวอร์ Render กลางทันที ข้อมูลบนมือถือและคอมพิวเตอร์จะตรงกัน 100%
+              <strong>ข้อมูลจากเซิร์ฟเวอร์กลาง:</strong> ทุกการบันทึกข้อมูลหน้างาน ซัพพลายเออร์ ร้านน้ำเรฟ รูปภาพ และวิดีโอ จะถูกส่งขึ้นเซิร์ฟเวอร์ Render กลางทันที ระบบจะดึงข้อมูลล่าสุดเป็นระยะเมื่อเชื่อมต่อได้
             </span>
           </div>
         </div>
       </div>
 
+      </>}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* 1. Supplier Category Management */}
         <div className="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/90 shadow-2xs space-y-4">
@@ -917,206 +803,6 @@ export const SettingsManagementView: React.FC = () => {
         </div>
       </div>
 
-      {/* 5. Team Roles & Invite Generator */}
-      <div className="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/90 shadow-2xs space-y-4">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
-              <div>
-                <h3 className="font-bold text-sm text-slate-900 flex items-center gap-1.5">
-                  <Users className="w-4 h-4 text-blue-600" />
-                  <span>5. จัดการสิทธิ์สมาชิกจริงในทีม & ออกลิงก์เชิญ ({realUsers.length} คน)</span>
-                </h3>
-                <p className="text-[11px] text-slate-500">
-                  กำหนดระดับสิทธิ์ของสมาชิกจริงในทีม ลบผู้ใช้ หรือตรวจสอบสถานะคำเชิญล่าสุด
-                </p>
-              </div>
-              <button
-                type="button"
-                disabled={isRefreshingUsers}
-                onClick={async () => {
-                  setIsRefreshingUsers(true);
-                  try {
-                    await refreshCentralData();
-                  } finally {
-                    setTimeout(() => setIsRefreshingUsers(false), 500);
-                  }
-                }}
-                className="self-start sm:self-auto px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold flex items-center gap-1.5 transition-all active:scale-95 shadow-2xs"
-              >
-                <RefreshCw className={`w-3.5 h-3.5 text-blue-600 ${isRefreshingUsers ? 'animate-spin' : ''}`} />
-                <span>{isRefreshingUsers ? 'กำลังดึงข้อมูล...' : '🔄 ดึงสมาชิกล่าสุดจาก Render'}</span>
-              </button>
-            </div>
-
-            {/* Member Cards Grid with Delete Capability (ซ่อน Account จำลอง ช่างบีม/แอน/มุก ไว้ใช้เฉพาะปุ่มจำลอง) */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
-              {realUsers.map((u) => {
-            const isSuperAdmin = u.id === 'user-ice';
-            return (
-              <div
-                key={u.id}
-                className="p-3 rounded-xl bg-slate-50 border border-slate-200/70 flex flex-col justify-between gap-2.5"
-              >
-                <div className="flex items-start justify-between gap-2">
-                  <div className="flex items-center gap-2.5 min-w-0">
-                    <img
-                      src={u.avatar}
-                      alt={u.alias}
-                      className="w-9 h-9 rounded-full object-cover ring-2 ring-white shadow-xs shrink-0"
-                    />
-                    <div className="min-w-0">
-                      <div className="text-xs font-bold text-slate-900 truncate">{u.alias}</div>
-                      <div className="text-[10px] text-slate-400 truncate">{u.emailOrId}</div>
-                    </div>
-                  </div>
-
-                  {/* Delete User Button (Hidden for super admin) */}
-                  {!isSuperAdmin && currentUser.role === 'admin' && (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        if (window.confirm(`ยืนยันการลบสมาชิก "${u.alias}" ออกจากระบบหรือไม่?`)) {
-                          deleteUser(u.id);
-                        }
-                      }}
-                      className="text-slate-400 hover:text-rose-600 p-1 rounded-lg hover:bg-rose-50 transition-colors"
-                      title="ลบสมาชิกนี้ออกจากระบบ"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
-                  )}
-                  {isSuperAdmin && (
-                    <span className="text-[9px] bg-amber-100 text-amber-800 font-bold px-1.5 py-0.5 rounded shrink-0">
-                      ผู้ก่อตั้ง
-                    </span>
-                  )}
-                </div>
-
-                <div className="flex items-center justify-between gap-2 pt-2 border-t border-slate-200/60">
-                  <span className="text-[10px] text-slate-500 font-medium">ระดับสิทธิ์:</span>
-                  <select
-                    value={u.role}
-                    disabled={isSuperAdmin}
-                    onChange={(e) => updateUserRole(u.id, e.target.value as UserRole)}
-                    className="bg-white border border-slate-200 rounded-lg px-2 py-1 text-[11px] font-bold text-slate-800 focus:outline-none focus:border-slate-900 disabled:opacity-60"
-                  >
-                    <option value="admin">👑 Admin (สูงสุด)</option>
-                    <option value="editor">✏️ Editor (แก้ไข/ตั้งค่า)</option>
-                    <option value="reviewer">🔬 Reviewer (คอมเมนต์/สเปก)</option>
-                    <option value="viewer">👁️ Viewer (ดู/เมมโม)</option>
-                  </select>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-
-        {/* Invite Generator & Status Check */}
-        {currentUser.role === 'admin' && (
-          <div className="pt-3 border-t border-slate-100 space-y-3">
-            <div className="flex items-center justify-between">
-              <div className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
-                <ShieldCheck className="w-4 h-4 text-emerald-600" />
-                <span>สถานะคำเชิญ & ออกลิงก์เชิญเข้าทีม ({invites.length} รายการ)</span>
-              </div>
-            </div>
-
-            <form onSubmit={handleCreateInvite} className="flex flex-col sm:flex-row gap-2">
-              <input
-                type="text"
-                placeholder="ตั้งชื่อนามแฝงล่วงหน้า เช่น เฮียต้อม (หุ้นส่วน)..."
-                value={inviteAlias}
-                onChange={(e) => setInviteAlias(e.target.value)}
-                className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900"
-              />
-              <select
-                value={inviteRole}
-                onChange={(e) => setInviteRole(e.target.value as UserRole)}
-                className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-800"
-              >
-                <option value="editor">สิทธิ์: Editor (ระดับบน)</option>
-                <option value="reviewer">สิทธิ์: Reviewer (ทีมสเปก/แล็บ)</option>
-                <option value="viewer">สิทธิ์: Viewer (ผู้ร่วมชม/เมมโม)</option>
-                <option value="admin">สิทธิ์: Admin</option>
-              </select>
-              <button
-                type="submit"
-                className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shrink-0"
-              >
-                + ออกลิงก์เชิญ
-              </button>
-            </form>
-
-            {/* Invites list with status badges & delete button */}
-            {invites.length > 0 && (
-              <div className="space-y-2 max-h-[300px] overflow-y-auto pr-1">
-                {invites.map((inv) => (
-                  <div
-                    key={inv.id}
-                    className="flex flex-col sm:flex-row sm:items-center justify-between p-2.5 rounded-xl bg-slate-50 border border-slate-200/80 gap-2 text-xs"
-                  >
-                    <div className="flex items-center gap-2 flex-wrap min-w-0">
-                      <span className="font-mono font-bold text-slate-800 bg-white px-2 py-0.5 rounded border border-slate-200">
-                        {inv.code}
-                      </span>
-                      <span className="text-[10px] font-semibold uppercase px-2 py-0.5 rounded-full bg-slate-200 text-slate-700">
-                        {inv.role}
-                      </span>
-                      {inv.prefilledAlias && (
-                        <span className="text-[11px] text-slate-600 font-medium truncate">
-                          ({inv.prefilledAlias})
-                        </span>
-                      )}
-                      {/* Status indicator requested by user */}
-                      {inv.isUsed ? (
-                        <span className="inline-flex items-center gap-1 text-[10px] font-extrabold text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded-full border border-emerald-300">
-                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-600"></span>
-                          <span>🟢 สมัครแล้ว</span>
-                        </span>
-                      ) : (
-                        <span className="inline-flex items-center gap-1 text-[10px] font-bold text-amber-800 bg-amber-100 px-2 py-0.5 rounded-full border border-amber-300">
-                          <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span>
-                          <span>🟡 ยังไม่ได้สมัคร</span>
-                        </span>
-                      )}
-                    </div>
-
-                    <div className="flex items-center gap-1.5 self-end sm:self-auto">
-                      {!inv.isUsed && (
-                        <button
-                          type="button"
-                          onClick={() => copyInviteLink(inv.code, inv.id)}
-                          className="px-2.5 py-1 rounded-lg bg-white border border-slate-200 hover:bg-slate-100 text-emerald-700 font-bold flex items-center gap-1 text-[11px]"
-                        >
-                          {copiedId === inv.id ? (
-                            <Check className="w-3 h-3" />
-                          ) : (
-                            <Copy className="w-3 h-3" />
-                          )}
-                          <span>{copiedId === inv.id ? 'คัดลอกแล้ว' : 'คัดลอกลิงก์'}</span>
-                        </button>
-                      )}
-
-                      {/* Delete Invite Button */}
-                      <button
-                        type="button"
-                        onClick={() => {
-                          if (window.confirm(`ต้องการลบรหัสคำเชิญ "${inv.code}" หรือไม่?`)) {
-                            deleteInvite(inv.id);
-                          }
-                        }}
-                        className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors"
-                        title="ลบคำเชิญนี้"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
-      </div>
     </div>
   );
 };

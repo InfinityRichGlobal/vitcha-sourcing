@@ -1,4 +1,5 @@
 import React from 'react';
+import { CollectionHeading, CollectionEmpty } from './CollectionHeading';
 import { useApp } from '../context/AppContext';
 import { SupplierRecord } from '../types';
 import { SupplierCard } from './SupplierCard';
@@ -78,20 +79,25 @@ export const SupplierList: React.FC<SupplierListProps> = ({
     return matchesCountry && matchesSearch && matchesCategory && matchesStatus && matchesRating && matchesTag;
   });
 
+  const hasFilters = !!searchQuery || countryFilter !== 'all' || selectedCategory !== 'all' || selectedStatus !== 'all' || selectedTag !== 'all' || selectedRating !== null;
+  const resetFilters = () => { setSearchQuery(''); setCountryFilter('all'); setSelectedCategory('all'); setSelectedRating(null); setSelectedStatus('all'); setSelectedTag('all'); };
+
   return (
-    <div className="space-y-3.5 max-w-6xl mx-auto px-3 sm:px-4 py-3 animate-in fade-in">
+    <div className="space-y-3 max-w-6xl mx-auto px-3 sm:px-5 py-5 sm:py-7 animate-in fade-in">
+      <CollectionHeading kind="supplier" count={filtered.length} total={suppliers.length} filtered={hasFilters} onReset={resetFilters} onCreate={currentUser.role !== 'viewer' ? onOpenNewSupplier : undefined} />
       {/* Search and Filters Bar */}
-      <div className="bg-white p-3.5 rounded-2xl border border-slate-200/80 space-y-2.5 shadow-xs">
+      <div className="collection-filters bg-white p-3.5 sm:p-4 rounded-2xl border border-slate-200/80 space-y-2.5 shadow-xs">
         <div className="flex flex-col sm:flex-row gap-2">
           {/* Search Input */}
           <div className="relative flex-1">
-            <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
+            <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
             <input
-              type="text"
+              aria-label="ค้นหาซัพพลายเออร์"
+              type="search"
               placeholder="ค้นหาชื่อซัพพลายเออร์, ตลาด, เมือง, สินค้า..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full bg-slate-50 border border-slate-200/80 rounded-xl pl-9 pr-3.5 py-2 text-xs font-medium text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-emerald-500/20 focus:border-emerald-500"
+              className="min-h-11 w-full bg-slate-50 border border-slate-200/80 rounded-xl pl-9 pr-3.5 py-2 text-xs font-medium text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-emerald-500/20 focus:border-emerald-500"
             />
           </div>
 
@@ -100,7 +106,7 @@ export const SupplierList: React.FC<SupplierListProps> = ({
             <div className="flex bg-slate-100 p-0.5 rounded-lg border border-slate-200 text-xs">
               <button
                 type="button"
-                onClick={() => setCountryFilter('all')}
+                aria-pressed={countryFilter === 'all'} onClick={() => setCountryFilter('all')}
                 className={`px-2 py-1 rounded-md font-bold transition-all ${
                   countryFilter === 'all' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-600'
                 }`}
@@ -109,27 +115,27 @@ export const SupplierList: React.FC<SupplierListProps> = ({
               </button>
               <button
                 type="button"
-                onClick={() => setCountryFilter('CN')}
+                aria-pressed={countryFilter === 'CN'} onClick={() => setCountryFilter('CN')}
                 className={`px-2 py-1 rounded-md font-bold transition-all flex items-center gap-1 ${
                   countryFilter === 'CN' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-600'
                 }`}
               >
-                <i className="fa-solid fa-location-dot text-[10px] text-rose-500" />
+                <i aria-hidden="true" className="fa-solid fa-location-dot text-[10px] text-rose-500" />
                 <span>จีน</span>
               </button>
               <button
                 type="button"
-                onClick={() => setCountryFilter('TH')}
+                aria-pressed={countryFilter === 'TH'} onClick={() => setCountryFilter('TH')}
                 className={`px-2 py-1 rounded-md font-bold transition-all flex items-center gap-1 ${
                   countryFilter === 'TH' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-600'
                 }`}
               >
-                <i className="fa-solid fa-location-dot text-[10px] text-sky-600" />
+                <i aria-hidden="true" className="fa-solid fa-location-dot text-[10px] text-sky-600" />
                 <span>ไทย</span>
               </button>
             </div>
 
-            <select
+            <select aria-label="สถานะซัพพลายเออร์"
               value={selectedStatus}
               onChange={(e) => setSelectedStatus(e.target.value)}
               className="bg-slate-50 border border-slate-200/80 rounded-xl px-2.5 py-1.5 text-xs font-semibold text-slate-700 focus:outline-none focus:border-emerald-500"
@@ -155,14 +161,14 @@ export const SupplierList: React.FC<SupplierListProps> = ({
               <button
                 key={String(opt.value)}
                 type="button"
-                onClick={() => setSelectedRating(opt.value)}
+                aria-pressed={isActive} onClick={() => setSelectedRating(opt.value)}
                 className={`px-2.5 py-1 rounded-lg text-[11px] font-bold whitespace-nowrap transition-all border inline-flex items-center gap-1 ${
                   isActive
                     ? 'bg-amber-500 text-slate-950 border-amber-500 shadow-2xs'
                     : 'bg-amber-50/50 text-amber-900 border-amber-200/70 hover:bg-amber-100/70'
                 }`}
               >
-                {opt.value !== null && <i className="fa-solid fa-star text-[9px] text-amber-600" />}
+                {opt.value !== null && <i aria-hidden="true" className="fa-solid fa-star text-[9px] text-amber-600" />}
                 <span>{opt.label}</span>
               </button>
             );
@@ -192,7 +198,7 @@ export const SupplierList: React.FC<SupplierListProps> = ({
           {allCategories.map((cat) => (
             <button
               key={cat}
-              onClick={() => setSelectedCategory(cat)}
+              aria-pressed={selectedCategory === cat} onClick={() => setSelectedCategory(cat)}
               className={`px-3 py-1.5 rounded-lg whitespace-nowrap transition-all font-semibold text-[11px] border inline-flex items-center gap-1.5 ${
                 selectedCategory === cat
                   ? 'bg-slate-900 text-white border-slate-900 shadow-xs'
@@ -201,7 +207,7 @@ export const SupplierList: React.FC<SupplierListProps> = ({
             >
               {cat === 'all' ? (
                 <>
-                  <i className="fa-solid fa-industry text-[10px]" />
+                  <i aria-hidden="true" className="fa-solid fa-industry text-[10px]" />
                   <span>ทุกหมวดซัพพลายเออร์</span>
                 </>
               ) : (
@@ -214,37 +220,7 @@ export const SupplierList: React.FC<SupplierListProps> = ({
 
       {/* Grid of Suppliers (Facebook-Style Feed Cards) */}
       {filtered.length === 0 ? (
-        <div className="text-center py-14 bg-white rounded-2xl border border-dashed border-slate-200 space-y-2.5">
-          <Factory className="w-9 h-9 text-slate-300 mx-auto" />
-          <div className="text-sm font-bold text-slate-800">ไม่พบซัพพลายเออร์ที่ตรงกับตัวกรอง</div>
-          <p className="text-xs text-slate-400 max-w-sm mx-auto">
-            ลองปรับเปลี่ยนหมวดหมู่ ระดับดาว หรือกดปุ่มบันทึกซัพพลายเออร์ใหม่ด้านล่าง
-          </p>
-          <div className="flex items-center justify-center gap-2">
-            <button
-              type="button"
-              onClick={() => {
-                setSelectedCategory('all');
-                setSelectedStatus('all');
-                setSelectedRating(null);
-                setSelectedTag('all');
-                setSearchQuery('');
-              }}
-              className="px-3.5 py-2 text-xs font-bold rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700"
-            >
-              ล้างตัวกรองทั้งหมด
-            </button>
-            {currentUser.role !== 'viewer' && (
-              <button
-                onClick={onOpenNewSupplier}
-                className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-bold rounded-xl bg-slate-900 hover:bg-slate-800 text-white shadow-sm active:scale-95 transition-all"
-              >
-                <Plus className="w-3.5 h-3.5" />
-                <span>+ บันทึกซัพพลายเออร์ใหม่</span>
-              </button>
-            )}
-          </div>
-        </div>
+        <CollectionEmpty kind="supplier" filtered={hasFilters} onReset={resetFilters} onCreate={currentUser.role !== 'viewer' ? onOpenNewSupplier : undefined} />
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {filtered.map((s) => (

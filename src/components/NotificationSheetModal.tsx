@@ -1,3 +1,4 @@
+import { AvatarImage } from './AvatarImage';
 import React from 'react';
 import { useApp } from '../context/AppContext';
 import { Bell, X, CheckCheck, Factory, Coffee, MessageSquare, Flame, ShieldCheck } from 'lucide-react';
@@ -103,7 +104,7 @@ export const NotificationSheetModal: React.FC<NotificationSheetModalProps> = ({
               >
                 <div className="relative shrink-0 mt-0.5">
                   {notif.avatar ? (
-                    <img
+                    <AvatarImage
                       src={notif.avatar}
                       alt=""
                       className="w-7 h-7 rounded-full object-cover ring-1 ring-slate-200"

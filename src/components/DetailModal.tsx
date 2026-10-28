@@ -1,3 +1,4 @@
+import { AvatarImage } from './AvatarImage';
 import React, { useState, useEffect } from 'react';
 import { SupplierRecord, StoreInspoRecord, PipelineStatus } from '../types';
 import { useApp } from '../context/AppContext';
@@ -54,6 +55,7 @@ export const DetailModal: React.FC<DetailModalProps> = ({
     quickMessages,
     recordItemView,
     canEditItems,
+    canComment,
     openEditItem,
   } = useApp();
 
@@ -161,17 +163,17 @@ export const DetailModal: React.FC<DetailModalProps> = ({
     setActiveImageIndex(idx >= 0 ? idx : 0);
   };
 
-  const handleAddReview = (e: React.FormEvent) => {
+  const handleAddReview = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newReviewText.trim()) return;
-    addReviewerNote(currentItem.id, currentItem.type, newReviewText.trim());
+    if (!await addReviewerNote(currentItem.id, currentItem.type, newReviewText.trim())) return;
     setNewReviewText('');
   };
 
-  const handleSendReply = (noteId: string, replyToAuthor?: string) => {
+  const handleSendReply = async (noteId: string, replyToAuthor?: string) => {
     const text = (replyInputs[noteId] || '').trim();
     if (!text) return;
-    addReviewReply(currentItem.id, currentItem.type, noteId, text, replyToAuthor);
+    if (!await addReviewReply(currentItem.id, currentItem.type, noteId, text, replyToAuthor)) return;
     setReplyInputs({ ...replyInputs, [noteId]: '' });
     setReplyTarget(null);
   };
@@ -337,7 +339,7 @@ export const DetailModal: React.FC<DetailModalProps> = ({
           {/* Creator Attribution Stamp + Seen By Log */}
           <div className="flex flex-wrap items-center justify-between gap-2 p-3 bg-slate-50 rounded-xl border border-slate-100 text-xs">
             <div className="flex items-center gap-2.5">
-              <img
+              <AvatarImage
                 src={currentItem.creator.avatar}
                 alt={currentItem.creator.alias}
                 className="w-8 h-8 rounded-full object-cover ring-2 ring-emerald-500/20 shadow-xs"
@@ -741,7 +743,7 @@ export const DetailModal: React.FC<DetailModalProps> = ({
                     >
                       {/* Main Comment */}
                       <div className="flex items-start gap-2.5">
-                        <img
+                        <AvatarImage
                           src={note.authorAvatar}
                           className="w-7 h-7 rounded-full object-cover shrink-0 mt-0.5 ring-1 ring-slate-200"
                         />
@@ -758,6 +760,7 @@ export const DetailModal: React.FC<DetailModalProps> = ({
                           <p className="text-xs text-slate-700 leading-relaxed">{note.text}</p>
 
                           <div className="flex items-center gap-3 mt-1.5 text-[11px] font-bold">
+                            {canComment && (
                             <button
                               type="button"
                               onClick={() =>
@@ -773,6 +776,7 @@ export const DetailModal: React.FC<DetailModalProps> = ({
                               <CornerDownRight className="w-3 h-3" />
                               <span>ตอบกลับ</span>
                             </button>
+                            )}
 
                             {replies.length > 0 && (
                               <button
@@ -812,7 +816,7 @@ export const DetailModal: React.FC<DetailModalProps> = ({
                             >
                               <div className="flex items-center justify-between text-[10px]">
                                 <div className="flex items-center gap-1.5 font-bold text-slate-800">
-                                  <img
+                                  <AvatarImage
                                     src={reply.authorAvatar}
                                     className="w-4 h-4 rounded-full object-cover"
                                   />
@@ -832,7 +836,8 @@ export const DetailModal: React.FC<DetailModalProps> = ({
                               </div>
                               <p className="text-slate-700 leading-snug">{reply.text}</p>
                               <div>
-                                <button
+                                {canComment && (
+                            <button
                                   type="button"
                                   onClick={() =>
                                     setReplyTarget({ noteId: note.id, author: reply.author })
@@ -842,6 +847,7 @@ export const DetailModal: React.FC<DetailModalProps> = ({
                                   <CornerDownRight className="w-2.5 h-2.5" />
                                   <span>ตอบกลับ @{reply.author} ต่อ</span>
                                 </button>
+                            )}
                               </div>
                             </div>
                           ))}
@@ -849,7 +855,7 @@ export const DetailModal: React.FC<DetailModalProps> = ({
                       )}
 
                       {/* Inline Reply Form */}
-                      {replyTarget?.noteId === note.id && (
+                      {canComment && replyTarget?.noteId === note.id && (
                         <div className="mt-2 pt-2 border-t border-slate-100 flex gap-1.5 animate-in fade-in">
                           <input
                             type="text"
@@ -874,13 +880,15 @@ export const DetailModal: React.FC<DetailModalProps> = ({
                           >
                             ส่ง
                           </button>
-                          <button
+                          {canComment && (
+                            <button
                             type="button"
                             onClick={() => setReplyTarget(null)}
                             className="px-2 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs"
                           >
                             ยกเลิก
                           </button>
+                            )}
                         </div>
                       )}
                     </div>
@@ -913,11 +921,7 @@ export const DetailModal: React.FC<DetailModalProps> = ({
             </div>
 
             {/* Post New Top-Level Comment */}
-            {currentUser.role === 'viewer' ? (
-              <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200 text-center text-xs text-slate-500 font-medium">
-                👁️ สิทธิ์คนดูเท่านั้น (View-only) สามารถดูและอ่านความคิดเห็นได้เท่านั้น
-              </div>
-            ) : (
+            {currentUser.role === 'viewer' ? null : (
               <form onSubmit={handleAddReview} className="flex gap-2 pt-1">
                 <input
                   type="text"

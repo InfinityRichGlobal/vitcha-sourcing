@@ -1,9 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import { AvatarImage } from './AvatarImage';
+import React, { useState, useEffect, useRef } from 'react';
+import { useDialog } from '../hooks/useDialog';
 import { useApp } from '../context/AppContext';
 import { DrinkDetailItem, VoiceNoteEntry } from '../types';
 import { AudioRecorder } from './AudioRecorder';
 import { getItemVoiceNotes } from '../utils/audioHelper';
-import { compressImageFile } from '../utils/imageCompressor';
+import { uploadImageFile as compressImageFile } from '../utils/mediaStorage';
 import { saveVideoFile, deleteVideoFile } from '../utils/mediaStorage';
 import { VideoPlayer } from './VideoPlayer';
 import {
@@ -36,6 +38,7 @@ export const NewStoreInspoModal: React.FC<NewStoreInspoModalProps> = ({ isOpen, 
 
   const isEditMode = !!editingStore;
   const modalOpen = isOpen || isEditMode;
+  const dialogRef = useDialog(modalOpen);
 
   const [country, setCountry] = useState<'CN' | 'TH'>('CN');
   const [storeCategory, setStoreCategory] = useState<string>(
@@ -76,6 +79,15 @@ export const NewStoreInspoModal: React.FC<NewStoreInspoModalProps> = ({ isOpen, 
   const [addressText, setAddressText] = useState('Tianhe District, Guangzhou');
   const [isLocating, setIsLocating] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [photoTaskCount, setPhotoTaskCount] = useState(0);
+  const photoTaskRef = useRef(0);
+  const savingRef = useRef(false);
+  const audioJobs = useRef(new Set<string>());
+  const [audioPending, setAudioPending] = useState(0);
+  const audioBusy = (id: string, value: boolean) => { if (value) audioJobs.current.add(id); else audioJobs.current.delete(id); setAudioPending(audioJobs.current.size); };
+  const isCompressingPhotos = photoTaskCount > 0;
+  const beginPhotos = () => { photoTaskRef.current++; setPhotoTaskCount(photoTaskRef.current); };
+  const endPhotos = () => { photoTaskRef.current--; setPhotoTaskCount(photoTaskRef.current); };
 
   // Populate form when editingStore changes or reset when opening fresh
   useEffect(() => {
@@ -137,22 +149,36 @@ export const NewStoreInspoModal: React.FC<NewStoreInspoModalProps> = ({ isOpen, 
   if (!modalOpen) return null;
 
   const handleCloseAll = () => {
+    if (savingRef.current || photoTaskRef.current || audioJobs.current.size || isVideoLoading || isLocating) return;
     closeEditItem();
     onClose();
   };
 
-  const handleMultiPhotoUpload = (
+  const handleMultiPhotoUpload = async (
     e: React.ChangeEvent<HTMLInputElement>,
     setter: React.Dispatch<React.SetStateAction<string[]>>
   ) => {
     const files = e.target.files;
-    if (!files) return;
-    Array.from(files).forEach(async (file) => {
-      const compressed = await compressImageFile(file, 960, 0.72);
-      if (compressed) {
-        setter((prev) => [...prev, compressed]);
+    if (!files || files.length === 0) return;
+    beginPhotos();
+    try {
+      const fileList = Array.from(files);
+      const compressedList: string[] = [];
+      for (const file of fileList) {
+        const compressed = await compressImageFile(file, 960, 0.72);
+        if (compressed) {
+          compressedList.push(compressed);
+        }
       }
-    });
+      if (compressedList.length > 0) {
+        setter((prev) => [...prev, ...compressedList]);
+      }
+    } catch (error) {
+      alert(error instanceof Error ? error.message : 'ประมวลผลรูปไม่สำเร็จ');
+    } finally {
+      endPhotos();
+      e.target.value = '';
+    }
   };
 
   const handleVideoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -175,32 +201,22 @@ export const NewStoreInspoModal: React.FC<NewStoreInspoModalProps> = ({ isOpen, 
   };
 
   const handleRemoveVideo = (index: number) => {
-    const targetUrl = videos[index];
-    if (targetUrl) {
-      deleteVideoFile(targetUrl);
-    }
-    setVideos((prev) => prev.filter((_, idx) => idx !== index));
+    setVideos(previous => previous.filter((_, i) => i !== index));
   };
 
-  const handleMassDrinkUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (!files || files.length === 0) return;
-
-    Array.from(files).forEach(async (file, idx) => {
-      const compressed = await compressImageFile(file, 900, 0.72);
-      if (!compressed) return;
-      const newItem: DrinkDetailItem = {
-        id: `drink-${Date.now()}-${idx}-${Math.random().toString(36).substring(2, 5)}`,
-        photo: compressed,
-        name: '',
-        priceRmb: undefined,
-        cupSize: '500ml',
-        fitMenuTarget: '',
-        gimmickNotes: '',
-        voiceNotes: [],
-      };
-      setDrinkItems((prev) => [...prev, newItem]);
-    });
+  const handleMassDrinkUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    if (!files.length) return;
+    beginPhotos();
+    try {
+      const items: DrinkDetailItem[] = [];
+      for (const file of files) {
+        const photo = await compressImageFile(file, 900, 0.72);
+        items.push({ id: crypto.randomUUID(), photo, name: '', cupSize: '500ml', fitMenuTarget: '', gimmickNotes: '', voiceNotes: [] });
+      }
+      setDrinkItems(previous => [...previous, ...items]);
+    } catch (error) { alert(error instanceof Error ? error.message : 'ประมวลผลรูปไม่สำเร็จ'); }
+    finally { endPhotos(); e.target.value = ''; }
   };
 
   const addManualDrinkItem = () => {
@@ -234,10 +250,14 @@ export const NewStoreInspoModal: React.FC<NewStoreInspoModalProps> = ({ isOpen, 
         const longitude = pos.coords.longitude;
         setLat(latitude);
         setLng(longitude);
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 8000);
         try {
           const res = await fetch(
-            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&accept-language=th,en`
+            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&accept-language=th,en`,
+            { signal: controller.signal }
           );
+          if (!res.ok) throw new Error('Address lookup failed');
           const data = await res.json();
           const addr = data?.address || {};
           const placeParts = [
@@ -256,6 +276,7 @@ export const NewStoreInspoModal: React.FC<NewStoreInspoModalProps> = ({ isOpen, 
           setCity(fallback);
           setAddressText(fallback);
         } finally {
+          clearTimeout(timeout);
           setIsLocating(false);
         }
       },
@@ -269,13 +290,15 @@ export const NewStoreInspoModal: React.FC<NewStoreInspoModalProps> = ({ isOpen, 
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (savingRef.current || photoTaskRef.current || audioJobs.current.size || isVideoLoading || isLocating) return;
+    savingRef.current = true;
     setIsSaving(true);
 
     try {
       const finalName = storeName.trim() || `ร้านน้ำ #${drinkStores.length + 1} (${city})`;
 
       if (isEditMode && editingStore) {
-        await updateStoreInspo(editingStore.id, {
+        if (!await updateStoreInspo(editingStore.id, {
           storeName: finalName,
           chineseName: chineseName.trim() || undefined,
           storeCategory,
@@ -310,9 +333,9 @@ export const NewStoreInspoModal: React.FC<NewStoreInspoModalProps> = ({ isOpen, 
             lng,
             addressText,
           },
-        });
+        })) return;
       } else {
-        await addStoreInspo({
+        if (!await addStoreInspo({
           storeName: finalName,
           chineseName: chineseName.trim() || undefined,
           storeCategory,
@@ -349,13 +372,15 @@ export const NewStoreInspoModal: React.FC<NewStoreInspoModalProps> = ({ isOpen, 
           },
           handoffStage: 'awaiting',
           assignedTo: country === 'TH' ? 'แอน (จัดซื้อ)' : 'SuperiCez',
-        });
+        })) return;
       }
 
+      savingRef.current = false;
       handleCloseAll();
     } catch (err) {
       alert('เกิดข้อผิดพลาดในการบันทึกข้อมูลขึ้นเซิร์ฟเวอร์ กรุณาลองใหม่อีกครั้ง');
     } finally {
+      savingRef.current = false;
       setIsSaving(false);
     }
   };
@@ -365,17 +390,23 @@ export const NewStoreInspoModal: React.FC<NewStoreInspoModalProps> = ({ isOpen, 
     if (window.confirm(`ยืนยันการลบรายการ "${editingStore.storeName}" หรือไม่?`)) {
       setIsSaving(true);
       try {
-        await deleteStoreInspo(editingStore.id);
-        handleCloseAll();
+        if (!await deleteStoreInspo(editingStore.id)) return;
+        savingRef.current = false;
+      handleCloseAll();
+      } catch {
+        alert('เซิร์ฟเวอร์ยังไม่ยืนยันการลบ กรุณารีเฟรชเพื่อตรวจสอบรายการ');
       } finally {
-        setIsSaving(false);
+        savingRef.current = false;
+      setIsSaving(false);
       }
     }
   };
 
   return (
-    <div className="fixed inset-0 z-[110] bg-black/45 backdrop-blur-md flex items-center justify-center p-2 sm:p-4 overflow-y-auto">
-      <div className="bg-white border border-slate-200/90 w-full max-w-2xl rounded-2xl shadow-2xl overflow-hidden my-auto animate-in zoom-in-95 max-h-[92vh] flex flex-col text-slate-900">
+    <div ref={dialogRef} role="dialog" aria-modal="true" aria-label="บันทึกรายการ" className="fixed inset-0 z-[110] bg-black/45 backdrop-blur-md flex items-center justify-center p-2 sm:p-4 overflow-y-auto">
+      <div className="bg-white border border-slate-200/90 w-full max-w-2xl rounded-2xl shadow-2xl overflow-hidden my-auto animate-in zoom-in-95 max-h-[92vh] supports-[height:100dvh]:max-h-[92dvh] flex flex-col text-slate-900">
+        {audioPending > 0 && <div role="status" className="border-b border-emerald-100 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">กำลังอัดหรือส่งเสียงขึ้นเซิร์ฟเวอร์ กรุณารอให้ครบก่อนบันทึก</div>}
+        {(isCompressingPhotos || isVideoLoading) && <div role="status" className="border-b border-emerald-100 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-800">{isVideoLoading ? 'กำลังอัปโหลดวิดีโอ กรุณารอให้ครบก่อนบันทึก' : `กำลังประมวลผลรูปภาพ ${photoTaskCount} ชุด กรุณารอสักครู่`}</div>}
         {/* Header */}
         <div className="p-4 border-b border-slate-100 flex items-center justify-between bg-white sticky top-0 z-10">
           <div className="flex items-center gap-2.5">
@@ -406,7 +437,8 @@ export const NewStoreInspoModal: React.FC<NewStoreInspoModalProps> = ({ isOpen, 
         </div>
 
         {/* Form Body */}
-        <form onSubmit={handleSubmit} className="p-4 sm:p-5 space-y-4 overflow-y-auto flex-1">
+        <form onSubmit={handleSubmit} className="p-4 sm:p-6 space-y-5 overflow-y-auto flex-1 min-h-0">
+          <fieldset disabled={isSaving} className="contents">
           {/* Dual-Country Switcher (จีน / ไทย) */}
           <div className="bg-slate-100 p-1 rounded-xl flex items-center gap-1 border border-slate-200/80">
             <button
@@ -482,7 +514,7 @@ export const NewStoreInspoModal: React.FC<NewStoreInspoModalProps> = ({ isOpen, 
               <Camera className="w-4 h-4 text-amber-600" />
               <span>+ เลือกรูปจากอัลบั้ม / ถ่ายภาพหน้าร้าน (เลือกได้หลายรูปพร้อมกัน)</span>
               <input
-                type="file"
+                type="file" disabled={isSaving || isVideoLoading}
                 accept="image/*"
                 multiple
                 onChange={(e) => handleMultiPhotoUpload(e, setStorefrontAndAtmosphere)}
@@ -740,7 +772,7 @@ export const NewStoreInspoModal: React.FC<NewStoreInspoModalProps> = ({ isOpen, 
                 <Camera className="w-4 h-4 text-amber-600" />
                 <span>+ เลือกรูป / ถ่ายป้ายเมนู ({menuBoardPhotos.length})</span>
                 <input
-                  type="file"
+                  type="file" disabled={isSaving || isVideoLoading}
                   accept="image/*"
                   multiple
                   onChange={(e) => handleMultiPhotoUpload(e, setMenuBoardPhotos)}
@@ -752,7 +784,7 @@ export const NewStoreInspoModal: React.FC<NewStoreInspoModalProps> = ({ isOpen, 
                 <Camera className="w-4 h-4 text-amber-600" />
                 <span>+ เลือกรูป / ถ่ายแก้วแพ็กเกจจิ้ง ({drinkCupPhotos.length})</span>
                 <input
-                  type="file"
+                  type="file" disabled={isSaving || isVideoLoading}
                   accept="image/*"
                   multiple
                   onChange={(e) => handleMultiPhotoUpload(e, setDrinkCupPhotos)}
@@ -798,10 +830,10 @@ export const NewStoreInspoModal: React.FC<NewStoreInspoModalProps> = ({ isOpen, 
                   : '+ เลือกคลิปวิดีโอจากอัลบั้ม / ถ่ายคลิปวิดีโอใหม่ (ไม่จำกัดขนาดไฟล์)'}
               </span>
               <input
-                type="file"
+                type="file" disabled={isSaving || isVideoLoading}
                 accept="video/*"
                 multiple
-                disabled={isVideoLoading}
+
                 onChange={handleVideoUpload}
                 className="hidden"
               />
@@ -838,7 +870,7 @@ export const NewStoreInspoModal: React.FC<NewStoreInspoModalProps> = ({ isOpen, 
                 เลือกทีเดียวหลายๆ รูป ระบบจะสร้างการ์ดเมนูแยกให้ทันที
               </span>
               <input
-                type="file"
+                type="file" disabled={isSaving || isVideoLoading}
                 accept="image/*"
                 multiple
                 onChange={handleMassDrinkUpload}
@@ -881,16 +913,18 @@ export const NewStoreInspoModal: React.FC<NewStoreInspoModalProps> = ({ isOpen, 
                       </div>
                     )}
                     <input
-                      type="file"
+                      type="file" disabled={isSaving || isVideoLoading}
                       accept="image/*"
                       onChange={async (e) => {
                         const f = e.target.files?.[0];
                         if (!f) return;
-                        const compressed = await compressImageFile(f, 900, 0.72);
-                        if (!compressed) return;
-                        const updated = [...drinkItems];
-                        updated[idx].photo = compressed;
-                        setDrinkItems(updated);
+                        beginPhotos();
+                        const itemId = item.id;
+                        try {
+                          const compressed = await compressImageFile(f, 900, 0.72);
+                          setDrinkItems(previous => previous.map(entry => entry.id === itemId ? { ...entry, photo: compressed } : entry));
+                        } catch (error) { alert(error instanceof Error ? error.message : 'ประมวลผลรูปไม่สำเร็จ'); }
+                        finally { endPhotos(); }
                       }}
                       className="hidden"
                     />
@@ -962,15 +996,12 @@ export const NewStoreInspoModal: React.FC<NewStoreInspoModalProps> = ({ isOpen, 
                     🎙️ วอยซ์เสียงเฉพาะแก้วนี้ (อัดเพิ่มได้ไม่จำกัดจำนวนคลิป):
                   </span>
                   <AudioRecorder
+                    onBusyChange={busy => audioBusy(item.id, busy)}
                     voiceNotes={getItemVoiceNotes(item)}
                     initialAudioUrl={item.voiceNoteUrl}
                     initialDurationSec={item.voiceDurationSec}
                     onVoiceNotesChange={(notes) => {
-                      const updated = [...drinkItems];
-                      updated[idx].voiceNotes = notes;
-                      updated[idx].voiceNoteUrl = notes[0]?.url;
-                      updated[idx].voiceDurationSec = notes[0]?.durationSec || 0;
-                      setDrinkItems(updated);
+                      setDrinkItems(previous => previous.map(entry => entry.id === item.id ? { ...entry, voiceNotes: notes, voiceNoteUrl: notes[0]?.url, voiceDurationSec: notes[0]?.durationSec || 0 } : entry));
                     }}
                     onAudioSaved={(base64, duration) => {
                       const updated = [...drinkItems];
@@ -997,6 +1028,7 @@ export const NewStoreInspoModal: React.FC<NewStoreInspoModalProps> = ({ isOpen, 
               5. วอยซ์เสียงภาพรวม & โน้ตชิม (อัดเสียงได้หลายรายการไม่จำกัด)
             </span>
             <AudioRecorder
+              onBusyChange={busy => audioBusy('main', busy)}
               voiceNotes={mainVoiceNotes}
               initialAudioUrl={mainVoiceUrl}
               initialDurationSec={mainVoiceSec}
@@ -1024,10 +1056,11 @@ export const NewStoreInspoModal: React.FC<NewStoreInspoModalProps> = ({ isOpen, 
               className="w-full bg-white border border-slate-200 rounded-xl p-3 text-xs text-slate-900 focus:outline-none focus:border-amber-500"
             />
           </div>
+          </fieldset>
         </form>
 
         {/* Footer */}
-        <div className="p-4 border-t border-slate-100 bg-white flex items-center justify-between gap-2">
+        <div className="shrink-0 p-3 sm:p-4 border-t border-slate-100 bg-white flex flex-wrap items-center justify-between gap-2">
           <div className="flex items-center gap-2">
             {isEditMode ? (
               <button
@@ -1040,8 +1073,8 @@ export const NewStoreInspoModal: React.FC<NewStoreInspoModalProps> = ({ isOpen, 
               </button>
             ) : (
               <div className="text-xs text-slate-500 flex items-center gap-2">
-                <img
-                  src={currentUser.avatar}
+                <AvatarImage
+                  src={currentUser.avatar || './logo.jpg'}
                   className="w-5 h-5 rounded-full object-cover ring-1 ring-slate-200"
                 />
                 <span>
@@ -1055,15 +1088,15 @@ export const NewStoreInspoModal: React.FC<NewStoreInspoModalProps> = ({ isOpen, 
             <button
               type="button"
               onClick={handleCloseAll}
-              className="px-4 py-2 text-xs font-semibold text-slate-500 hover:text-slate-800"
+              className="min-h-11 px-3 py-2 text-sm font-semibold text-slate-500 hover:text-slate-800"
             >
               ยกเลิก
             </button>
             <button
               type="button"
               onClick={handleSubmit}
-              disabled={isSaving}
-              className="px-6 py-2.5 text-xs font-bold rounded-xl bg-amber-600 hover:bg-amber-700 disabled:opacity-60 text-white shadow-lg shadow-amber-600/20 active:scale-95 transition-all flex items-center gap-1.5"
+              disabled={isSaving || isVideoLoading || isLocating || isCompressingPhotos || audioPending > 0}
+              className="min-h-11 px-5 py-2.5 text-sm font-bold rounded-xl bg-amber-600 hover:bg-amber-700 disabled:opacity-60 text-white shadow-lg shadow-amber-600/20 active:scale-95 transition-all flex items-center gap-1.5"
             >
               {isSaving ? (
                 <>

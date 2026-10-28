@@ -10,7 +10,7 @@ export type HandoffStage =
   | 'approved'       // 5. ตัวเต็งอนุมัติ
   | 'ordered';       // 6. ออก PO / สั่งซื้อแล้ว
 
-export type AppViewTab = 'dashboard' | 'suppliers' | 'drink_stores' | 'categories' | 'handoff' | 'settings';
+export type AppViewTab = 'dashboard' | 'suppliers' | 'drink_stores' | 'categories' | 'handoff' | 'settings' | 'members' | 'products';
 
 export interface ViewLogEntry {
   userId: string;
@@ -41,7 +41,8 @@ export interface User {
   alias: string;
   role: UserRole;
   avatar: string;
-  pin: string; // 4-digit PIN
+  pin?: string; // Only submitted when changing credentials; never returned by API
+  revision?: number;
   emailOrId: string;
   createdAt: string;
   lastActiveAt?: string;
@@ -73,6 +74,7 @@ export interface CatalogItem {
 }
 
 export interface ReviewReply {
+  authorId?: string;
   id: string;
   author: string;
   authorAvatar: string;
@@ -83,6 +85,7 @@ export interface ReviewReply {
 }
 
 export interface ReviewerNote {
+  authorId?: string;
   id: string;
   author: string;
   authorAvatar: string;
@@ -107,6 +110,7 @@ export interface AppNotification {
 }
 
 export interface SupplierRecord {
+  revision?: number;
   id: string;
   type: 'supplier';
   country?: CountryOrigin; // 'CN' | 'TH'
@@ -173,6 +177,7 @@ export interface DrinkDetailItem {
 }
 
 export interface StoreInspoRecord {
+  revision?: number;
   id: string;
   type: 'drink_store';
   country?: CountryOrigin; // 'CN' | 'TH'
@@ -243,3 +248,13 @@ export interface InviteLink {
   createdAt: string;
   createdBy: string;
 }
+
+export interface ProductTaxon { id: string; name: string; }
+export interface ProductSet { id: string; name: string; memo: string; productIds: string[]; revision?: number; updatedAt?: string; }
+export interface CuratedProduct {
+  id: string; supplierId: string; supplierName: string; sourceItemId: string; country: CountryOrigin;
+  sourceName: string; sourceMemo: string; title: string; photo: string; dimensions: string; weightKg: string;
+  priceRmb?: number; priceThb?: number; voiceNotes: VoiceNoteEntry[]; supplierVideos: string[];
+  memo: string; categoryId: string; tagIds: string[]; decision: 'pending' | 'keep' | 'hold' | 'reject'; revision: number; updatedAt: string;
+}
+export type ProductChanges = Partial<Pick<CuratedProduct, 'title' | 'memo' | 'categoryId' | 'tagIds' | 'decision'>>;

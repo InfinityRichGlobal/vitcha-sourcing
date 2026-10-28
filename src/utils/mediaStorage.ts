@@ -1,8 +1,9 @@
-/**
- * Media Storage Helper for Video & Multimedia uploads
- * Stores video files of ANY size natively in browser IndexedDB
- * so there are NO file size limits, and localStorage never exceeds quota.
+/** New media is uploaded directly to the central server.
+ * IndexedDB is read only for compatibility with legacy local video links.
  */
+
+import { compressImageFile } from './imageCompressor';
+import { uploadMediaToServer, getRenderServerUrl } from '../services/api';
 
 const DB_NAME = 'vitcha_media_db';
 const DB_VERSION = 1;
@@ -34,50 +35,30 @@ function getDB(): Promise<IDBDatabase> {
 const objectUrlCache = new Map<string, string>();
 
 /**
- * Save video file of ANY size directly into IndexedDB.
- * Returns an 'idb://<key>' URI that can be stored safely in records (only ~20 chars).
- * No file size limit!
+ * Save video file: Uploads to central server first so team can view it.
+ * Upload failure is reported to the form; there is no local fallback.
  */
 export async function saveVideoFile(file: File): Promise<string> {
-  const key = `vid_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
-  try {
-    const db = await getDB();
-    await new Promise<void>((resolve, reject) => {
-      const tx = db.transaction(STORE_NAME, 'readwrite');
-      const store = tx.objectStore(STORE_NAME);
-      const req = store.put(file, key);
-      req.onsuccess = () => resolve();
-      req.onerror = () => reject(req.error);
-    });
-
-    const idbUrl = `idb://${key}`;
-    // Pre-cache object URL for instant zero-latency playback
-    const objUrl = URL.createObjectURL(file);
-    objectUrlCache.set(idbUrl, objUrl);
-    return idbUrl;
-  } catch (err) {
-    console.warn('IndexedDB save failed, falling back to Object URL:', err);
-    // Fallback: create in-memory Object URL
-    const objUrl = URL.createObjectURL(file);
-    objectUrlCache.set(key, objUrl);
-    return objUrl;
-  }
+  // No local fallback: every new record must reference media shared with the team.
+  return await uploadMediaToServer(file);
 }
 
 /**
  * Backwards compatibility helper for existing callers.
- * Stores video with NO size limit and returns the URL.
+ * Returns the shared URL after upload (50 MB maximum).
  */
 export async function readVideoFile(file: File): Promise<string> {
   return saveVideoFile(file);
 }
 
 /**
- * Resolves an 'idb://<key>' URL into a live browser Object URL.
- * If already a standard URL (http/https/data:), returns it directly.
+ * Resolves an 'idb://<key>' URL or relative server URL into a playable URL.
  */
 export async function resolveVideoSrc(url?: string): Promise<string> {
   if (!url) return '';
+  if (url.startsWith('/uploads/')) {
+    return `${getRenderServerUrl()}${url}`;
+  }
   if (!url.startsWith('idb://')) return url;
 
   if (objectUrlCache.has(url)) {
@@ -136,4 +117,11 @@ export function isVideoUrl(url?: string): boolean {
     url.endsWith('.webm') ||
     url.includes('gtv-videos-bucket')
   );
+}
+
+/** Upload every processed image before the record can be saved. */
+export async function uploadImageFile(file: File, maxDimension = 1600, quality = 0.82): Promise<string> {
+  const compressed = await compressImageFile(file, maxDimension, quality);
+  const blob = await (await fetch(compressed)).blob();
+  return uploadMediaToServer(new File([blob], `${file.name.replace(/\.[^.]+$/, '')}.jpg`, { type: 'image/jpeg' }));
 }

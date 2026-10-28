@@ -1,9 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import { AvatarImage } from './AvatarImage';
+import React, { useState, useEffect, useRef } from 'react';
+import { useDialog } from '../hooks/useDialog';
 import { useApp } from '../context/AppContext';
 import { CatalogItem, VoiceNoteEntry } from '../types';
 import { AudioRecorder } from './AudioRecorder';
 import { getItemVoiceNotes } from '../utils/audioHelper';
-import { compressImageFile } from '../utils/imageCompressor';
+import { uploadImageFile as compressImageFile } from '../utils/mediaStorage';
 import { saveVideoFile, deleteVideoFile } from '../utils/mediaStorage';
 import { VideoPlayer } from './VideoPlayer';
 import {
@@ -40,6 +42,7 @@ export const NewSupplierModal: React.FC<NewSupplierModalProps> = ({ isOpen, onCl
 
   const isEditMode = !!editingSupplier;
   const modalOpen = isOpen || isEditMode;
+  const dialogRef = useDialog(modalOpen);
 
   const [country, setCountry] = useState<'CN' | 'TH'>('CN');
   const [name, setName] = useState('');
@@ -78,6 +81,15 @@ export const NewSupplierModal: React.FC<NewSupplierModalProps> = ({ isOpen, onCl
   const [isLocating, setIsLocating] = useState(false);
   const [gpsStatusMsg, setGpsStatusMsg] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [photoTaskCount, setPhotoTaskCount] = useState(0);
+  const photoTaskRef = useRef(0);
+  const savingRef = useRef(false);
+  const audioJobs = useRef(new Set<string>());
+  const [audioPending, setAudioPending] = useState(0);
+  const audioBusy = (id: string, value: boolean) => { if (value) audioJobs.current.add(id); else audioJobs.current.delete(id); setAudioPending(audioJobs.current.size); };
+  const isCompressingPhotos = photoTaskCount > 0;
+  const beginPhotos = () => { photoTaskRef.current++; setPhotoTaskCount(photoTaskRef.current); };
+  const endPhotos = () => { photoTaskRef.current--; setPhotoTaskCount(photoTaskRef.current); };
 
   // Populate form when editingSupplier changes or reset when opening fresh
   useEffect(() => {
@@ -133,6 +145,7 @@ export const NewSupplierModal: React.FC<NewSupplierModalProps> = ({ isOpen, onCl
   if (!modalOpen) return null;
 
   const handleCloseAll = () => {
+    if (savingRef.current || photoTaskRef.current || audioJobs.current.size || isVideoLoading || isLocating) return;
     closeEditItem();
     onClose();
   };
@@ -145,40 +158,67 @@ export const NewSupplierModal: React.FC<NewSupplierModalProps> = ({ isOpen, onCl
   };
 
   // Mass batch photo upload for catalog (with auto-compression)
-  const handleMassCatalogUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleMassCatalogUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
 
-    Array.from(files).forEach(async (file, idx) => {
-      const compressed = await compressImageFile(file, 900, 0.72);
-      if (!compressed) return;
-      const newItem: CatalogItem = {
-        id: `item-${Date.now()}-${idx}-${Math.random().toString(36).substring(2, 5)}`,
-        photo: compressed,
-        name: '',
-        dimensions: '',
-        weightKg: '',
-        priceRmb: undefined,
-        memo: '',
-        voiceNotes: [],
-      };
-      setCatalogItems((prev) => [...prev, newItem]);
-    });
+    beginPhotos();
+    try {
+      const fileList = Array.from(files);
+      const newItems: CatalogItem[] = [];
+      for (let idx = 0; idx < fileList.length; idx++) {
+        const file = fileList[idx];
+        const compressed = await compressImageFile(file, 900, 0.72);
+        if (compressed) {
+          newItems.push({
+            id: `item-${Date.now()}-${idx}-${Math.random().toString(36).substring(2, 5)}`,
+            photo: compressed,
+            name: '',
+            dimensions: '',
+            weightKg: '',
+            priceRmb: undefined,
+            memo: '',
+            voiceNotes: [],
+          });
+        }
+      }
+      if (newItems.length > 0) {
+        setCatalogItems((prev) => [...prev, ...newItems]);
+      }
+    } catch (error) {
+      alert(error instanceof Error ? error.message : 'ประมวลผลรูปไม่สำเร็จ');
+    } finally {
+      endPhotos();
+      e.target.value = '';
+    }
   };
 
   // Generic photo array upload (with auto-compression)
-  const handleMultiPhotoUpload = (
+  const handleMultiPhotoUpload = async (
     e: React.ChangeEvent<HTMLInputElement>,
     setter: React.Dispatch<React.SetStateAction<string[]>>
   ) => {
     const files = e.target.files;
-    if (!files) return;
-    Array.from(files).forEach(async (file) => {
-      const compressed = await compressImageFile(file, 960, 0.72);
-      if (compressed) {
-        setter((prev) => [...prev, compressed]);
+    if (!files || files.length === 0) return;
+    beginPhotos();
+    try {
+      const fileList = Array.from(files);
+      const compressedList: string[] = [];
+      for (const file of fileList) {
+        const compressed = await compressImageFile(file, 960, 0.72);
+        if (compressed) {
+          compressedList.push(compressed);
+        }
       }
-    });
+      if (compressedList.length > 0) {
+        setter((prev) => [...prev, ...compressedList]);
+      }
+    } catch (error) {
+      alert(error instanceof Error ? error.message : 'ประมวลผลรูปไม่สำเร็จ');
+    } finally {
+      endPhotos();
+      e.target.value = '';
+    }
   };
 
   const handleVideoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -201,11 +241,7 @@ export const NewSupplierModal: React.FC<NewSupplierModalProps> = ({ isOpen, onCl
   };
 
   const handleRemoveVideo = (index: number) => {
-    const targetUrl = videos[index];
-    if (targetUrl) {
-      deleteVideoFile(targetUrl);
-    }
-    setVideos((prev) => prev.filter((_, idx) => idx !== index));
+    setVideos(previous => previous.filter((_, i) => i !== index));
   };
 
   const addManualCatalogItem = () => {
@@ -241,10 +277,14 @@ export const NewSupplierModal: React.FC<NewSupplierModalProps> = ({ isOpen, onCl
         setLat(latitude);
         setLng(longitude);
 
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 8000);
         try {
           const res = await fetch(
-            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&accept-language=th,en`
+            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&accept-language=th,en`,
+            { signal: controller.signal }
           );
+          if (!res.ok) throw new Error('Address lookup failed');
           const data = await res.json();
           const addr = data?.address || {};
           const placeParts = [
@@ -265,6 +305,7 @@ export const NewSupplierModal: React.FC<NewSupplierModalProps> = ({ isOpen, onCl
           setAddressText(fallbackCoord);
           setGpsStatusMsg(`✓ บันทึกพิกัดจริง (${latitude.toFixed(4)}, ${longitude.toFixed(4)})`);
         } finally {
+          clearTimeout(timeout);
           setIsLocating(false);
         }
       },
@@ -278,13 +319,15 @@ export const NewSupplierModal: React.FC<NewSupplierModalProps> = ({ isOpen, onCl
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (savingRef.current || photoTaskRef.current || audioJobs.current.size || isVideoLoading || isLocating) return;
+    savingRef.current = true;
     setIsSaving(true);
 
     try {
       const finalName = name.trim() || `ซัพพลายเออร์ #${suppliers.length + 1} (${category})`;
 
       if (isEditMode && editingSupplier) {
-        await updateSupplier(editingSupplier.id, {
+        if (!await updateSupplier(editingSupplier.id, {
           name: finalName,
           chineseName: chineseName.trim() || undefined,
           marketOrCity: marketOrCity.trim() || addressText,
@@ -314,9 +357,9 @@ export const NewSupplierModal: React.FC<NewSupplierModalProps> = ({ isOpen, onCl
             lng,
             addressText: marketOrCity.trim() || addressText,
           },
-        });
+        })) return;
       } else {
-        await addSupplier({
+        if (!await addSupplier({
           name: finalName,
           chineseName: chineseName.trim() || undefined,
           marketOrCity: marketOrCity.trim() || addressText,
@@ -349,13 +392,15 @@ export const NewSupplierModal: React.FC<NewSupplierModalProps> = ({ isOpen, onCl
           status: 'scouted',
           handoffStage: 'awaiting',
           assignedTo: country === 'TH' ? 'ช่างบีม (วิศวกร)' : 'SuperiCez',
-        });
+        })) return;
       }
 
+      savingRef.current = false;
       handleCloseAll();
     } catch (err) {
       alert('เกิดข้อผิดพลาดในการบันทึกข้อมูลขึ้นเซิร์ฟเวอร์ กรุณาลองใหม่อีกครั้ง');
     } finally {
+      savingRef.current = false;
       setIsSaving(false);
     }
   };
@@ -365,17 +410,23 @@ export const NewSupplierModal: React.FC<NewSupplierModalProps> = ({ isOpen, onCl
     if (window.confirm(`ยืนยันการลบรายการ "${editingSupplier.name}" หรือไม่?`)) {
       setIsSaving(true);
       try {
-        await deleteSupplier(editingSupplier.id);
-        handleCloseAll();
+        if (!await deleteSupplier(editingSupplier.id)) return;
+        savingRef.current = false;
+      handleCloseAll();
+      } catch {
+        alert('เซิร์ฟเวอร์ยังไม่ยืนยันการลบ กรุณารีเฟรชเพื่อตรวจสอบรายการ');
       } finally {
-        setIsSaving(false);
+        savingRef.current = false;
+      setIsSaving(false);
       }
     }
   };
 
   return (
-    <div className="fixed inset-0 z-[110] bg-black/45 backdrop-blur-md flex items-center justify-center p-2 sm:p-4 overflow-y-auto">
-      <div className="bg-white border border-slate-200/90 w-full max-w-2xl rounded-2xl shadow-2xl overflow-hidden my-auto animate-in zoom-in-95 max-h-[92vh] flex flex-col text-slate-900">
+    <div ref={dialogRef} role="dialog" aria-modal="true" aria-label="บันทึกรายการ" className="fixed inset-0 z-[110] bg-black/45 backdrop-blur-md flex items-center justify-center p-2 sm:p-4 overflow-y-auto">
+      <div className="bg-white border border-slate-200/90 w-full max-w-2xl rounded-2xl shadow-2xl overflow-hidden my-auto animate-in zoom-in-95 max-h-[92vh] supports-[height:100dvh]:max-h-[92dvh] flex flex-col text-slate-900">
+        {audioPending > 0 && <div role="status" className="border-b border-emerald-100 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">กำลังอัดหรือส่งเสียงขึ้นเซิร์ฟเวอร์ กรุณารอให้ครบก่อนบันทึก</div>}
+        {(isCompressingPhotos || isVideoLoading) && <div role="status" className="border-b border-emerald-100 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-800">{isVideoLoading ? 'กำลังอัปโหลดวิดีโอ กรุณารอให้ครบก่อนบันทึก' : `กำลังประมวลผลรูปภาพ ${photoTaskCount} ชุด กรุณารอสักครู่`}</div>}
         {/* Header */}
         <div className="p-4 border-b border-slate-100 flex items-center justify-between bg-white sticky top-0 z-10">
           <div className="flex items-center gap-2.5">
@@ -406,7 +457,8 @@ export const NewSupplierModal: React.FC<NewSupplierModalProps> = ({ isOpen, onCl
         </div>
 
         {/* Form Body */}
-        <form onSubmit={handleSubmit} className="p-4 sm:p-5 space-y-4 overflow-y-auto flex-1">
+        <form onSubmit={handleSubmit} className="p-4 sm:p-6 space-y-5 overflow-y-auto flex-1 min-h-0">
+          <fieldset disabled={isSaving} className="contents">
           {/* Dual-Country Switcher (จีน / ไทย) */}
           <div className="bg-slate-100 p-1 rounded-xl flex items-center gap-1 border border-slate-200/80">
             <button
@@ -495,7 +547,7 @@ export const NewSupplierModal: React.FC<NewSupplierModalProps> = ({ isOpen, onCl
               <Camera className="w-4 h-4 text-emerald-600" />
               <span>+ เลือกรูปจากอัลบั้มในเครื่อง / ถ่ายภาพป้ายหน้าร้าน (เลือกได้หลายรูป)</span>
               <input
-                type="file"
+                type="file" disabled={isSaving || isVideoLoading}
                 accept="image/*"
                 multiple
                 onChange={(e) => handleMultiPhotoUpload(e, setStorefrontAndAtmosphere)}
@@ -575,7 +627,8 @@ export const NewSupplierModal: React.FC<NewSupplierModalProps> = ({ isOpen, onCl
                   <button
                     type="button"
                     onClick={() => {
-                      handleCloseAll();
+                      savingRef.current = false;
+      handleCloseAll();
                       setActiveTab('settings');
                     }}
                     className="text-[10px] font-bold text-emerald-700 hover:underline"
@@ -615,7 +668,8 @@ export const NewSupplierModal: React.FC<NewSupplierModalProps> = ({ isOpen, onCl
                   <button
                     type="button"
                     onClick={() => {
-                      handleCloseAll();
+                      savingRef.current = false;
+      handleCloseAll();
                       setActiveTab('settings');
                     }}
                     className="text-[10px] font-bold text-emerald-700 hover:underline"
@@ -707,7 +761,7 @@ export const NewSupplierModal: React.FC<NewSupplierModalProps> = ({ isOpen, onCl
               <Camera className="w-4 h-4 text-emerald-600" />
               <span>+ เลือกรูปจากอัลบั้ม / ถ่ายรูปนามบัตร / QR WeChat (ไม่อั้น)</span>
               <input
-                type="file"
+                type="file" disabled={isSaving || isVideoLoading}
                 accept="image/*"
                 multiple
                 onChange={(e) => handleMultiPhotoUpload(e, setContactCards)}
@@ -791,10 +845,10 @@ export const NewSupplierModal: React.FC<NewSupplierModalProps> = ({ isOpen, onCl
                   : '+ เลือกคลิปวิดีโอจากอัลบั้ม / ถ่ายคลิปวิดีโอใหม่ (ไม่จำกัดขนาดไฟล์)'}
               </span>
               <input
-                type="file"
+                type="file" disabled={isSaving || isVideoLoading}
                 accept="video/*"
                 multiple
-                disabled={isVideoLoading}
+
                 onChange={handleVideoUpload}
                 className="hidden"
               />
@@ -831,7 +885,7 @@ export const NewSupplierModal: React.FC<NewSupplierModalProps> = ({ isOpen, onCl
                 เลือกทีเดียว 5-10 รูป ระบบจะสร้างรายการให้ทันทีโดยไม่ต้องพิมพ์
               </span>
               <input
-                type="file"
+                type="file" disabled={isSaving || isVideoLoading}
                 accept="image/*"
                 multiple
                 onChange={handleMassCatalogUpload}
@@ -876,16 +930,18 @@ export const NewSupplierModal: React.FC<NewSupplierModalProps> = ({ isOpen, onCl
                       </div>
                     )}
                     <input
-                      type="file"
+                      type="file" disabled={isSaving || isVideoLoading}
                       accept="image/*"
                       onChange={async (e) => {
                         const f = e.target.files?.[0];
                         if (!f) return;
-                        const compressed = await compressImageFile(f, 900, 0.72);
-                        if (!compressed) return;
-                        const updated = [...catalogItems];
-                        updated[idx].photo = compressed;
-                        setCatalogItems(updated);
+                        beginPhotos();
+                        const itemId = item.id;
+                        try {
+                          const compressed = await compressImageFile(f, 900, 0.72);
+                          setCatalogItems(previous => previous.map(entry => entry.id === itemId ? { ...entry, photo: compressed } : entry));
+                        } catch (error) { alert(error instanceof Error ? error.message : 'ประมวลผลรูปไม่สำเร็จ'); }
+                        finally { endPhotos(); }
                       }}
                       className="hidden"
                     />
@@ -957,15 +1013,12 @@ export const NewSupplierModal: React.FC<NewSupplierModalProps> = ({ isOpen, onCl
                     🎙️ วอยซ์เสียงเฉพาะรายการนี้ (อัดเพิ่มได้ไม่จำกัดจำนวนคลิป):
                   </span>
                   <AudioRecorder
+                    onBusyChange={busy => audioBusy(item.id, busy)}
                     voiceNotes={getItemVoiceNotes(item)}
                     initialAudioUrl={item.voiceNoteUrl}
                     initialDurationSec={item.voiceDurationSec}
                     onVoiceNotesChange={(notes) => {
-                      const updated = [...catalogItems];
-                      updated[idx].voiceNotes = notes;
-                      updated[idx].voiceNoteUrl = notes[0]?.url;
-                      updated[idx].voiceDurationSec = notes[0]?.durationSec || 0;
-                      setCatalogItems(updated);
+                      setCatalogItems(previous => previous.map(entry => entry.id === item.id ? { ...entry, voiceNotes: notes, voiceNoteUrl: notes[0]?.url, voiceDurationSec: notes[0]?.durationSec || 0 } : entry));
                     }}
                     onAudioSaved={(base64, duration) => {
                       const updated = [...catalogItems];
@@ -992,6 +1045,7 @@ export const NewSupplierModal: React.FC<NewSupplierModalProps> = ({ isOpen, onCl
               4. วอยซ์เสียงภาพรวม & โน้ตกันลืม (อัดเสียงได้หลายรายการไม่จำกัด)
             </span>
             <AudioRecorder
+              onBusyChange={busy => audioBusy('main', busy)}
               voiceNotes={mainVoiceNotes}
               initialAudioUrl={mainVoiceUrl}
               initialDurationSec={mainVoiceSec}
@@ -1019,10 +1073,11 @@ export const NewSupplierModal: React.FC<NewSupplierModalProps> = ({ isOpen, onCl
               className="w-full bg-white border border-slate-200 rounded-xl p-3 text-xs text-slate-900 focus:outline-none focus:border-emerald-500"
             />
           </div>
+          </fieldset>
         </form>
 
         {/* Footer Actions */}
-        <div className="p-4 border-t border-slate-100 bg-white flex items-center justify-between gap-2">
+        <div className="shrink-0 p-3 sm:p-4 border-t border-slate-100 bg-white flex flex-wrap items-center justify-between gap-2">
           <div className="flex items-center gap-2">
             {isEditMode ? (
               <button
@@ -1035,8 +1090,8 @@ export const NewSupplierModal: React.FC<NewSupplierModalProps> = ({ isOpen, onCl
               </button>
             ) : (
               <div className="text-xs text-slate-500 flex items-center gap-2">
-                <img
-                  src={currentUser.avatar}
+                <AvatarImage
+                  src={currentUser.avatar || './logo.jpg'}
                   className="w-5 h-5 rounded-full object-cover ring-1 ring-slate-200"
                 />
                 <span>
@@ -1050,20 +1105,25 @@ export const NewSupplierModal: React.FC<NewSupplierModalProps> = ({ isOpen, onCl
             <button
               type="button"
               onClick={handleCloseAll}
-              className="px-4 py-2 text-xs font-semibold text-slate-500 hover:text-slate-800"
+              className="min-h-11 px-3 py-2 text-sm font-semibold text-slate-500 hover:text-slate-800"
             >
               ยกเลิก
             </button>
             <button
               type="button"
               onClick={handleSubmit}
-              disabled={isSaving}
-              className="px-6 py-2.5 text-xs font-bold rounded-xl bg-emerald-600 hover:bg-emerald-700 disabled:opacity-60 text-white shadow-lg shadow-emerald-600/20 active:scale-95 transition-all flex items-center gap-1.5"
+              disabled={isSaving || isVideoLoading || isLocating || isCompressingPhotos || audioPending > 0}
+              className="min-h-11 px-5 py-2.5 text-sm font-bold rounded-xl bg-emerald-600 hover:bg-emerald-700 disabled:opacity-60 text-white shadow-lg shadow-emerald-600/20 active:scale-95 transition-all flex items-center gap-1.5"
             >
               {isSaving ? (
                 <>
                   <RefreshCw className="w-3.5 h-3.5 animate-spin" />
                   <span>กำลังส่งเข้าเซิร์ฟเวอร์ & รีเฟรช...</span>
+                </>
+              ) : isCompressingPhotos ? (
+                <>
+                  <RefreshCw className="w-3.5 h-3.5 animate-spin text-amber-300" />
+                  <span>กำลังบีบอัดรูปภาพ...</span>
                 </>
               ) : (
                 <span>{isEditMode ? '💾 บันทึกการแก้ไข' : 'บันทึกเข้าระบบ'}</span>

@@ -1,3 +1,4 @@
+import { AvatarImage } from './AvatarImage';
 import React, { useState } from 'react';
 import { ViewLogEntry } from '../types';
 import { useApp } from '../context/AppContext';
@@ -34,7 +35,7 @@ export const SeenByBadge: React.FC<SeenByBadgeProps> = ({ viewedBy = [], size = 
         }}
         title={
           isAdmin
-            ? 'แตะเพื่อดูรายชื่อผู้ที่อ่านแล้ว และวันเวลาล่าสุด (สิทธิ์ Admin)'
+            ? 'แตะเพื่อดูรายชื่อผู้ที่อ่านแล้ว และวันเวลาล่าสุด'
             : 'แตะเพื่อดูรายชื่อผู้ที่อ่านรายการนี้แล้ว'
         }
         className={`inline-flex items-center gap-1.5 rounded-full transition-all active:scale-95 ${
@@ -45,7 +46,7 @@ export const SeenByBadge: React.FC<SeenByBadgeProps> = ({ viewedBy = [], size = 
       >
         <div className="flex items-center -space-x-1.5">
           {viewers.slice(0, 4).map((v) => (
-            <img
+            <AvatarImage
               key={v.userId}
               src={v.avatar}
               alt={v.alias}
@@ -121,7 +122,7 @@ export const SeenByBadge: React.FC<SeenByBadgeProps> = ({ viewedBy = [], size = 
                   >
                     <div className="flex items-center gap-2.5 min-w-0">
                       <div className="relative shrink-0">
-                        <img
+                        <AvatarImage
                           src={v.avatar}
                           alt={v.alias}
                           className="w-8 h-8 rounded-full object-cover ring-2 ring-white shadow-xs"
@@ -166,7 +167,7 @@ export const SeenByBadge: React.FC<SeenByBadgeProps> = ({ viewedBy = [], size = 
               <div className="px-4 py-2 bg-slate-900 text-white text-[10px] flex items-center justify-between">
                 <span className="flex items-center gap-1 text-amber-300 font-semibold">
                   <ShieldCheck className="w-3.5 h-3.5" />
-                  <span>สิทธิ์ผู้บริหาร (Admin Audit Log)</span>
+                  <span>ประวัติการอ่าน</span>
                 </span>
                 <span className="text-slate-400">บันทึกอัตโนมัติเมื่อเปิดดู</span>
               </div>
