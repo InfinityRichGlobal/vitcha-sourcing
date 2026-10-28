@@ -247,11 +247,12 @@ export function createApp({ dataDir, defaults = DEFAULT_DATABASE, sessionTtlMs =
         item = { ...target, ...pick(input, fields) };
         validateRecord(item, collection);
         // Concurrent notes, likes, handoff and audit history are not client-editable.
-        touch(item); item.history = [...(target.history || []), { action: 'อัปเดตข้อมูล', user: req.user.alias, timestamp: now() }];
+        touch(item); item.history = [...(target.history || []), { action: 'แก้ไขและอัปเดตข้อมูลรายการ', user: req.user.alias, userAvatar: req.user.avatar, timestamp: now() }];
         list[list.indexOf(target)] = item;
       } else {
         if (input.revision !== undefined) fail(404, 'รายการนี้ถูกลบแล้ว');
-        item = { ...pick(input, [...fields, ...HANDOFF]), id: input.id, type: collection === 'suppliers' ? 'supplier' : 'drink_store', creator: { ...pick(req.user, ['id', 'name', 'alias', 'avatar']), timestamp: now() }, creationHash, reviewerNotes: [], likes: [], viewedBy: [], history: [], revision: 1, updatedAt: now() };
+        const createdAt = now();
+        item = { ...pick(input, [...fields, ...HANDOFF]), id: input.id, type: collection === 'suppliers' ? 'supplier' : 'drink_store', creator: { ...pick(req.user, ['id', 'name', 'alias', 'avatar']), timestamp: createdAt }, creationHash, reviewerNotes: [], likes: [], viewedBy: [], history: [{ action: 'สร้างบันทึกรายการสำรวจใหม่', user: req.user.alias, userAvatar: req.user.avatar, timestamp: createdAt }], revision: 1, updatedAt: createdAt };
         validateRecord(item, collection); list.unshift(item);
       }
       notify(db, req.user, item.type, target ? 'อัปเดตข้อมูลรายการ' : 'เพิ่มรายการใหม่', item.name || item.storeName, item.id);
@@ -310,7 +311,36 @@ export function createApp({ dataDir, defaults = DEFAULT_DATABASE, sessionTtlMs =
       // Views and likes do not invalidate an editor's main-data version.
       if (!['view', 'like'].includes(action)) {
         touch(item);
-        (item.history ||= []).push({ action, user: req.user.alias, timestamp: now() });
+        const stageLabels = {
+          awaiting: 'พาร์ท 1: รอรับช่วงต่อ',
+          rfq_sent: 'พาร์ท 2: ขอสเปก / ส่ง RFQ',
+          sample_test: 'พาร์ท 3: ทดสอบตัวอย่าง Lab/R&D',
+          negotiate: 'พาร์ท 4: ต่อรองราคา & MOQ',
+          approved: 'พาร์ท 5: ตัวเต็งอนุมัติ',
+          ordered: 'พาร์ท 6: สั่งซื้อสำเร็จ',
+        };
+        const statusLabels = {
+          scouted: '1. สำรวจแล้ว',
+          reviewing: '2. เทียบสเปก',
+          rfq_sent: '3. ส่ง RFQ',
+          shortlisted: '4. ตัวเต็ง (Shortlist)',
+          ordered: '5. สั่งซื้อแล้ว (Ordered)',
+        };
+        let historyText = action;
+        if (action === 'handoff') {
+          const parts = [];
+          if (data.handoffStage) parts.push(`ย้ายเข้าสู่ ${stageLabels[data.handoffStage] || data.handoffStage}`);
+          if (data.status) parts.push(`เปลี่ยนสถานะเป็น ${statusLabels[data.status] || data.status}`);
+          if (data.assignedTo !== undefined) parts.push(data.assignedTo ? `มอบหมายผู้รับช่วงต่อ: ${data.assignedTo}` : 'ยกเลิกผู้รับผิดชอบ');
+          if (data.targetFollowUpDate) parts.push(`นัดติดตาม: ${data.targetFollowUpDate}`);
+          if (data.handoffNotes) parts.push(`บันทึกส่งต่องาน: ${clean(data.handoffNotes).slice(0, 80)}`);
+          historyText = parts.length > 0 ? parts.join(' · ') : 'อัปเดตสถานะการส่งต่องาน';
+        } else if (action === 'comment') {
+          historyText = `แสดงความคิดเห็น: "${clean(data.text || 'แนบไฟล์สื่อ').slice(0, 60)}"`;
+        } else if (action === 'reply') {
+          historyText = `ตอบกลับความคิดเห็น${data.replyToAuthor ? ` @${clean(data.replyToAuthor)}` : ''}`;
+        }
+        (item.history ||= []).push({ action: historyText, user: req.user.alias, userAvatar: req.user.avatar, timestamp: now() });
         const notifTitle = action === 'handoff' ? 'อัปเดตงานส่งต่อ' : action === 'reply' ? 'ตอบกลับความคิดเห็น' : 'ความคิดเห็นใหม่';
         notify(db, req.user, action === 'handoff' ? 'status' : action, notifTitle, clean(data.text).slice(0, 120) || item.name || item.storeName, item.id);
       }

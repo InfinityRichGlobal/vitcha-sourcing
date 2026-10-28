@@ -159,15 +159,15 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
 
   return (
     <div id="dashboard-section" className="max-w-6xl mx-auto px-3 sm:px-5 py-3.5 space-y-4 animate-in fade-in">
-      {/* 1. Minimal Compact Hero Bar: Title Left + Compact Country Switcher Right (ไม่มีปุ่ม + ซ้ำซ้อน) */}
-      <div className="bg-white px-4 py-3 rounded-2xl border border-slate-200/90 shadow-2xs flex items-center justify-between gap-2 flex-wrap">
-        <div className="flex items-center gap-2.5 min-w-0">
+      {/* 1. Minimal Compact Hero Bar: Title Left + Compact Country Switcher Right (บรรทัดเดียว ไม่ตัดคำ) */}
+      <div className="bg-white px-3.5 py-2.5 rounded-2xl border border-slate-200/90 shadow-2xs flex items-center justify-between gap-2">
+        <div className="flex items-center gap-2 min-w-0">
           <span className="inline-flex items-center gap-1.5 text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-slate-900 text-white shrink-0">
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
             <span>LIVE</span>
           </span>
-          <h1 className="font-extrabold text-sm sm:text-base text-slate-950 tracking-tight truncate">
-            ศูนย์ปฏิบัติการสำรวจซัพพลายเออร์ & เรฟร้านน้ำ
+          <h1 className="font-extrabold text-xs sm:text-sm text-slate-950 tracking-tight truncate whitespace-nowrap">
+            VITCHA SOURCING HUB
           </h1>
         </div>
 
@@ -176,44 +176,41 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
           <button
             type="button"
             onClick={() => setCountryFilter('all')}
-            className={`px-2.5 py-1 rounded-lg font-bold transition-all flex items-center gap-1 ${
+            className={`px-2 py-1 rounded-lg font-bold transition-all flex items-center gap-1 whitespace-nowrap ${
               countryFilter === 'all'
                 ? 'bg-white text-slate-950 shadow-2xs'
                 : 'text-slate-600 hover:text-slate-950'
             }`}
           >
-            <i aria-hidden="true" className="fa-solid fa-earth-asia text-[10px] text-slate-500" />
-            <span>ทั้งหมด ({suppliers.length + drinkStores.length})</span>
+            <span>🌏 ทั้งหมด ({suppliers.length + drinkStores.length})</span>
           </button>
           <button
             type="button"
             onClick={() => setCountryFilter('CN')}
-            className={`px-2.5 py-1 rounded-lg font-bold transition-all flex items-center gap-1 ${
+            className={`px-2 py-1 rounded-lg font-bold transition-all flex items-center gap-1 whitespace-nowrap ${
               countryFilter === 'CN'
                 ? 'bg-white text-slate-950 shadow-2xs'
                 : 'text-slate-600 hover:text-slate-950'
             }`}
           >
-            <i aria-hidden="true" className="fa-solid fa-location-dot text-[10px] text-rose-500" />
-            <span>จีน ({suppliers.filter((s) => s.country !== 'TH').length + drinkStores.filter((d) => d.country !== 'TH').length})</span>
+            <span>🇨🇳 จีน ({suppliers.filter((s) => s.country !== 'TH').length + drinkStores.filter((d) => d.country !== 'TH').length})</span>
           </button>
           <button
             type="button"
             onClick={() => setCountryFilter('TH')}
-            className={`px-2.5 py-1 rounded-lg font-bold transition-all flex items-center gap-1 ${
+            className={`px-2 py-1 rounded-lg font-bold transition-all flex items-center gap-1 whitespace-nowrap ${
               countryFilter === 'TH'
                 ? 'bg-white text-slate-950 shadow-2xs'
                 : 'text-slate-600 hover:text-slate-950'
             }`}
           >
-            <i aria-hidden="true" className="fa-solid fa-location-dot text-[10px] text-sky-600" />
-            <span>ไทย ({suppliers.filter((s) => s.country === 'TH').length + drinkStores.filter((d) => d.country === 'TH').length})</span>
+            <span>🇹🇭 ไทย ({suppliers.filter((s) => s.country === 'TH').length + drinkStores.filter((d) => d.country === 'TH').length})</span>
           </button>
         </div>
       </div>
 
-      {/* 2. Bento KPI Grid (4 Minimalist Clickable Cards) */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+      {/* 2. Bento KPI Grid (4 Minimalist Clickable Cards - กระชับ ไม่ตกบรรทัด) */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5">
         <button
           type="button"
           onClick={() => {
@@ -221,49 +218,45 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
             setSelectedStatus('all');
             setActiveTab('suppliers');
           }}
-          className="group p-3.5 sm:p-4 rounded-2xl bg-white border border-slate-200/90 hover:border-slate-950/40 text-left transition-all shadow-2xs hover:shadow-sm active:scale-[0.99]"
+          className="group p-3 rounded-2xl bg-white border border-slate-200/90 hover:border-slate-950/40 text-left transition-all shadow-2xs hover:shadow-sm active:scale-[0.99]"
         >
-          <div className="flex items-center justify-between mb-1.5">
-            <span className="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-700 border border-emerald-200/60 flex items-center justify-center">
+          <div className="flex items-center justify-between mb-1">
+            <span className="w-7 h-7 rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-200/60 flex items-center justify-center">
               <i aria-hidden="true" className="fa-solid fa-industry text-xs" />
             </span>
-            <span className="text-[11px] font-bold text-slate-400 group-hover:text-slate-900 flex items-center gap-0.5 transition-colors">
-              <span>เปิดดู</span>
-              <ArrowUpRight className="w-3.5 h-3.5" />
+            <span className="text-[10px] font-bold text-slate-400 group-hover:text-slate-900 flex items-center gap-0.5 transition-colors whitespace-nowrap">
+              <span>ดูทั้งหมด</span>
+              <ArrowUpRight className="w-3 h-3" />
             </span>
           </div>
-          <div className="text-2xl sm:text-3xl font-extrabold text-slate-950 font-mono tracking-tight">
+          <div className="text-xl sm:text-2xl font-extrabold text-slate-950 font-mono tracking-tight">
             {totalSuppliers}
           </div>
-          <div className="text-xs font-bold text-slate-800 mt-0.5 flex items-center gap-1.5">
-            <i aria-hidden="true" className="fa-solid fa-industry text-[11px] text-emerald-600" />
-            <span>ซัพพลายเออร์</span>
+          <div className="text-xs font-bold text-slate-800 mt-0.5 truncate whitespace-nowrap">
+            ซัพพลายเออร์
           </div>
-          <div className="text-[11px] text-slate-400 truncate">โรงงาน อุปกรณ์ & วัตถุดิบ</div>
         </button>
 
         <button
           type="button"
           onClick={() => setActiveTab('drink_stores')}
-          className="group p-3.5 sm:p-4 rounded-2xl bg-white border border-slate-200/90 hover:border-slate-950/40 text-left transition-all shadow-2xs hover:shadow-sm active:scale-[0.99]"
+          className="group p-3 rounded-2xl bg-white border border-slate-200/90 hover:border-slate-950/40 text-left transition-all shadow-2xs hover:shadow-sm active:scale-[0.99]"
         >
-          <div className="flex items-center justify-between mb-1.5">
-            <span className="w-8 h-8 rounded-xl bg-amber-50 text-amber-700 border border-amber-200/60 flex items-center justify-center">
+          <div className="flex items-center justify-between mb-1">
+            <span className="w-7 h-7 rounded-lg bg-amber-50 text-amber-700 border border-amber-200/60 flex items-center justify-center">
               <i aria-hidden="true" className="fa-solid fa-mug-hot text-xs" />
             </span>
-            <span className="text-[11px] font-bold text-slate-400 group-hover:text-slate-900 flex items-center gap-0.5 transition-colors">
-              <span>เปิดดู</span>
-              <ArrowUpRight className="w-3.5 h-3.5" />
+            <span className="text-[10px] font-bold text-slate-400 group-hover:text-slate-900 flex items-center gap-0.5 transition-colors whitespace-nowrap">
+              <span>ดูทั้งหมด</span>
+              <ArrowUpRight className="w-3 h-3" />
             </span>
           </div>
-          <div className="text-2xl sm:text-3xl font-extrabold text-slate-950 font-mono tracking-tight">
+          <div className="text-xl sm:text-2xl font-extrabold text-slate-950 font-mono tracking-tight">
             {totalStores}
           </div>
-          <div className="text-xs font-bold text-slate-800 mt-0.5 flex items-center gap-1.5">
-            <i aria-hidden="true" className="fa-solid fa-mug-hot text-[11px] text-amber-600" />
-            <span>ร้านน้ำ & เรฟเมนู</span>
+          <div className="text-xs font-bold text-slate-800 mt-0.5 truncate whitespace-nowrap">
+            ร้านน้ำ & เรฟ
           </div>
-          <div className="text-[11px] text-slate-400 truncate">รีวิวรสชาติ แก้ว & กิมมิก</div>
         </button>
 
         <button
@@ -272,74 +265,61 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
             setSelectedStatus('shortlisted');
             setActiveTab('suppliers');
           }}
-          className="group p-3.5 sm:p-4 rounded-2xl bg-white border border-slate-200/90 hover:border-orange-400 text-left transition-all shadow-2xs hover:shadow-sm active:scale-[0.99]"
+          className="group p-3 rounded-2xl bg-white border border-slate-200/90 hover:border-orange-400 text-left transition-all shadow-2xs hover:shadow-sm active:scale-[0.99]"
         >
-          <div className="flex items-center justify-between mb-1.5">
-            <span className="w-8 h-8 rounded-xl bg-orange-50 text-orange-600 border border-orange-200/60 flex items-center justify-center">
-              <i aria-hidden="true" className="fa-solid fa-fire text-xs" />
+          <div className="flex items-center justify-between mb-1">
+            <span className="w-7 h-7 rounded-lg bg-orange-50 text-orange-600 border border-orange-200/60 flex items-center justify-center">
+              <i aria-hidden="true" className="fa-solid fa-star text-xs" />
             </span>
-            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-orange-50 text-orange-700 border border-orange-200/60">
-              ตัวเต็งพร้อมดีล
+            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-orange-50 text-orange-700 border border-orange-200/60 whitespace-nowrap">
+              Shortlist
             </span>
           </div>
-          <div className="text-2xl sm:text-3xl font-extrabold text-slate-950 font-mono tracking-tight">
+          <div className="text-xl sm:text-2xl font-extrabold text-slate-950 font-mono tracking-tight">
             {totalShortlisted}
           </div>
-          <div className="text-xs font-bold text-slate-800 mt-0.5 flex items-center gap-1.5">
-            <i aria-hidden="true" className="fa-solid fa-star text-[11px] text-orange-500" />
-            <span>คัดเข้ารอบ (Shortlisted)</span>
+          <div className="text-xs font-bold text-slate-800 mt-0.5 truncate whitespace-nowrap">
+            ตัวเต็งพร้อมดีล
           </div>
-          <div className="text-[11px] text-slate-400 truncate">แตะเพื่อดูรายการตัวเต็ง</div>
         </button>
 
         <button
           type="button"
           onClick={() => setActiveTab('handoff')}
-          className="group p-3.5 sm:p-4 rounded-2xl bg-white border border-slate-200/90 hover:border-blue-400 text-left transition-all shadow-2xs hover:shadow-sm active:scale-[0.99]"
+          className="group p-3 rounded-2xl bg-white border border-slate-200/90 hover:border-blue-400 text-left transition-all shadow-2xs hover:shadow-sm active:scale-[0.99]"
         >
-          <div className="flex items-center justify-between mb-1.5">
-            <span className="w-8 h-8 rounded-xl bg-blue-50 text-blue-600 border border-blue-200/60 flex items-center justify-center">
+          <div className="flex items-center justify-between mb-1">
+            <span className="w-7 h-7 rounded-lg bg-blue-50 text-blue-600 border border-blue-200/60 flex items-center justify-center">
               <i aria-hidden="true" className="fa-solid fa-people-arrows text-xs" />
             </span>
-            <span className="text-[11px] font-bold text-slate-400 group-hover:text-blue-600 flex items-center gap-0.5 transition-colors">
-              <span>ไปหน้าส่งต่อ</span>
-              <ArrowUpRight className="w-3.5 h-3.5" />
+            <span className="text-[10px] font-bold text-slate-400 group-hover:text-blue-600 flex items-center gap-0.5 transition-colors whitespace-nowrap">
+              <span>Handoff</span>
+              <ArrowUpRight className="w-3 h-3" />
             </span>
           </div>
-          <div className="text-2xl sm:text-3xl font-extrabold text-slate-950 font-mono tracking-tight">
+          <div className="text-xl sm:text-2xl font-extrabold text-slate-950 font-mono tracking-tight">
             {totalHandoffActive}
           </div>
-          <div className="text-xs font-bold text-slate-800 mt-0.5 flex items-center gap-1.5">
-            <i aria-hidden="true" className="fa-solid fa-handshake-angle text-[11px] text-blue-600" />
-            <span>งานรับช่วงต่อทีมไทย</span>
+          <div className="text-xs font-bold text-slate-800 mt-0.5 truncate whitespace-nowrap">
+            ส่งต่องานทีมไทย
           </div>
-          <div className="text-[11px] text-slate-400 truncate">แยกพาร์ท ซัพ & ร้านน้ำเรฟ</div>
         </button>
       </div>
 
-      {/* 3. แผนที่มอนิเตอร์พิกัดสำรวจจริง (Live Map Monitor — แสดงก่อนหน้าโซเชียลฟีด) */}
-      <div id="map-section" role="region" aria-label="แผนที่ของทีม" className="bg-white rounded-2xl border border-slate-200/90 p-4 sm:p-5 shadow-2xs space-y-3">
-        <div className="flex items-center justify-between gap-2 flex-wrap">
-          <div className="flex items-center gap-2.5">
-            <span className="w-9 h-9 rounded-xl bg-emerald-50 text-emerald-700 border border-emerald-200/60 flex items-center justify-center shrink-0">
-              <i aria-hidden="true" className="fa-solid fa-map-location-dot text-sm" />
+      {/* 3. แผนที่มอนิเตอร์พิกัดสำรวจจริง (Live Map Monitor) */}
+      <div id="map-section" role="region" aria-label="แผนที่ของทีม" className="bg-white rounded-2xl border border-slate-200/90 p-3.5 sm:p-4 shadow-2xs space-y-2.5">
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2 min-w-0">
+            <span className="w-7 h-7 rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-200/60 flex items-center justify-center shrink-0">
+              <i aria-hidden="true" className="fa-solid fa-map-location-dot text-xs" />
             </span>
-            <div>
-              <h3 className="font-extrabold text-sm sm:text-base text-slate-900 flex items-center gap-1.5">
-                <span>แผนที่มอนิเตอร์พิกัดจริง (Live Map Monitor)</span>
-              </h3>
-              <p className="text-[11px] text-slate-500 flex items-center gap-1 flex-wrap">
-                <span>รวมพิกัดทุกซัพพลายเออร์ (ขอบเขียว</span>
-                <i aria-hidden="true" className="fa-solid fa-industry text-[10px] text-emerald-600" />
-                <span>) และทุกร้านน้ำเรฟ (ขอบส้ม</span>
-                <i aria-hidden="true" className="fa-solid fa-mug-hot text-[10px] text-amber-600" />
-                <span>) — แตะที่หมุดรูปภาพเพื่อเปิดดูดีเทลทันที</span>
-              </p>
-            </div>
+            <h3 className="font-extrabold text-xs sm:text-sm text-slate-900 truncate whitespace-nowrap">
+              แผนที่พิกัดสำรวจ (Live Map)
+            </h3>
           </div>
-          <span className="text-[11px] font-mono font-bold px-2.5 py-1 rounded-full bg-slate-100 text-slate-700 border border-slate-200 flex items-center gap-1">
+          <span className="text-[11px] font-mono font-bold px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-700 border border-slate-200 flex items-center gap-1 shrink-0 whitespace-nowrap">
             <i aria-hidden="true" className="fa-solid fa-location-crosshairs text-[10px] text-emerald-600" />
-            <span>พิกัดทั้งหมด {suppliers.length + drinkStores.length} จุด</span>
+            <span>{suppliers.length + drinkStores.length} พิกัด</span>
           </span>
         </div>
 
@@ -351,41 +331,35 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
         </Suspense>
       </div>
 
-      {/* 4. รายการสำรวจล่าสุด (วางไว้ใต้แผนที่ รูปแบบ Facebook Feed) */}
-      <div data-testid="team-feed" className="bg-white rounded-2xl border border-slate-200/90 p-4 sm:p-5 shadow-2xs space-y-4">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2 border-b border-slate-100">
-          <div className="flex items-start gap-2.5">
-            <span className="w-9 h-9 rounded-xl bg-slate-100 text-slate-700 border border-slate-200/80 flex items-center justify-center shrink-0 mt-0.5">
-              <i aria-hidden="true" className="fa-solid fa-newspaper text-sm" />
+      {/* 4. รายการสำรวจล่าสุด (วางไว้ใต้แผนที่ รูปแบบ Social Feed) */}
+      <div data-testid="team-feed" className="bg-white rounded-2xl border border-slate-200/90 p-3.5 sm:p-4 shadow-2xs space-y-3.5">
+        <div className="flex items-center justify-between gap-2 pb-2 border-b border-slate-100 flex-wrap">
+          <div className="flex items-center gap-2 min-w-0">
+            <span className="w-7 h-7 rounded-lg bg-slate-100 text-slate-700 border border-slate-200/80 flex items-center justify-center shrink-0">
+              <i aria-hidden="true" className="fa-solid fa-newspaper text-xs" />
             </span>
-            <div>
-              <h2 className="font-extrabold text-sm sm:text-base text-slate-950 flex items-center gap-2 flex-wrap">
-                <span>ฟีดรายการสำรวจล่าสุด (Social Feed)</span>
-                <span data-testid="feed-count" className="text-[11px] font-mono font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200">
-                  {combinedFeed.length} โพสต์
-                </span>
-              </h2>
-              <p className="text-xs text-slate-500">
-                กดถูกใจ คอมเมนต์โต้ตอบแบบต่อเนื่อง ดูภาพอัลบั้มทั้งหมด และเช็กสถานะ "อ่านแล้ว" ได้ทันที
-              </p>
-            </div>
+            <h2 className="font-extrabold text-xs sm:text-sm text-slate-950 flex items-center gap-2 whitespace-nowrap">
+              <span>ฟีดรายการสำรวจ (Social Feed)</span>
+              <span data-testid="feed-count" className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200">
+                {combinedFeed.length} โพสต์
+              </span>
+            </h2>
           </div>
 
-          <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl border border-slate-200/80 text-xs self-start sm:self-auto">
+          <div className="flex items-center gap-1 bg-slate-100 p-0.5 rounded-xl border border-slate-200/80 text-[11px] shrink-0">
             <button
               type="button"
               onClick={() => setFeedFilter('all')}
-              className={`px-2.5 py-1 rounded-lg font-bold transition-all flex items-center gap-1 ${
+              className={`px-2 py-1 rounded-lg font-bold transition-all flex items-center gap-1 whitespace-nowrap ${
                 feedFilter === 'all' ? 'bg-white text-slate-900 shadow-2xs' : 'text-slate-600'
               }`}
             >
-              <i aria-hidden="true" className="fa-solid fa-layer-group text-[10px]" />
               <span>ทั้งหมด ({activeSuppliers.length + activeStores.length})</span>
             </button>
             <button
               type="button"
               onClick={() => setFeedFilter('suppliers')}
-              className={`px-2.5 py-1 rounded-lg font-bold transition-all flex items-center gap-1 ${
+              className={`px-2 py-1 rounded-lg font-bold transition-all flex items-center gap-1 whitespace-nowrap ${
                 feedFilter === 'suppliers' ? 'bg-white text-emerald-800 shadow-2xs' : 'text-slate-600'
               }`}
             >
@@ -395,7 +369,7 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
             <button
               type="button"
               onClick={() => setFeedFilter('drink_stores')}
-              className={`px-2.5 py-1 rounded-lg font-bold transition-all flex items-center gap-1 ${
+              className={`px-2 py-1 rounded-lg font-bold transition-all flex items-center gap-1 whitespace-nowrap ${
                 feedFilter === 'drink_stores' ? 'bg-white text-amber-800 shadow-2xs' : 'text-slate-600'
               }`}
             >

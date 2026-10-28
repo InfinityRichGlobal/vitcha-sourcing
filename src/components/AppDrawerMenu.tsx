@@ -1,4 +1,3 @@
-import { AvatarImage } from './AvatarImage';
 import React from 'react';
 import { useApp } from '../context/AppContext';
 import {
@@ -14,26 +13,23 @@ import {
   RotateCcw,
   Database,
   LogOut,
-  Check,
 } from 'lucide-react';
 
 interface AppDrawerMenuProps {
   isOpen: boolean;
   onClose: () => void;
-  onOpenProfile: () => void;
+  onOpenProfile?: () => void;
   onOpenCalculator: () => void;
   onOpenInstall: () => void;
-  onOpenInvites: () => void;
+  onOpenInvites?: () => void;
   onScrollToMap: () => void;
 }
 
 export const AppDrawerMenu: React.FC<AppDrawerMenuProps> = ({
   isOpen,
   onClose,
-  onOpenProfile,
   onOpenCalculator,
   onOpenInstall,
-  onOpenInvites,
   onScrollToMap,
 }) => {
   const {
@@ -43,7 +39,6 @@ export const AppDrawerMenu: React.FC<AppDrawerMenuProps> = ({
     suppliers,
     drinkStores,
     exchangeRate,
-    users,
     switchUser,
     simulatedFromAdmin,
     restoreAdminUser,
@@ -83,38 +78,13 @@ export const AppDrawerMenu: React.FC<AppDrawerMenuProps> = ({
           </button>
         </div>
 
-        {/* Current User Card */}
-        <div className="p-4 border-b border-slate-100 bg-white">
-          <div
-            onClick={() => {
-              onOpenProfile();
-              onClose();
-            }}
-            className="flex items-center justify-between p-2.5 rounded-xl bg-slate-50 border border-slate-200/80 hover:bg-slate-100 cursor-pointer transition-colors"
-          >
-            <div className="flex items-center gap-2.5 min-w-0">
-              <AvatarImage
-                src={currentUser.avatar}
-                alt={currentUser.alias}
-                className="w-9 h-9 rounded-full object-cover ring-2 ring-emerald-500/20"
-              />
-              <div className="min-w-0">
-                <div className="font-bold text-xs text-slate-900 truncate">
-                  {currentUser.alias}
-                </div>
-              </div>
-            </div>
-            <ChevronRight className="w-4 h-4 text-slate-400 shrink-0" />
-          </div>
-        </div>
-
-        {/* Main Navigation Links */}
-        <div className="p-4 space-y-1">
-          <div className="text-[10px] font-bold text-slate-400 tracking-wider uppercase px-2 mb-2">
-            หน้าหลัก & ระบบงาน
+        {/* Main Navigation Links (เรียงลำดับตามความสำคัญ ไม่มีกรอบโปรไฟล์ซ้ำกับ Header) */}
+        <div className="p-3.5 space-y-1">
+          <div className="text-[10px] font-bold text-slate-400 tracking-wider uppercase px-2 mb-1.5">
+            เมนูหลัก (Navigation)
           </div>
 
-          {/* Tab 0: แดชบอร์ดภาพรวม */}
+          {/* 1. หน้าหลักแดชบอร์ด */}
           <button
             onClick={() => {
               setActiveTab('dashboard');
@@ -128,13 +98,12 @@ export const AppDrawerMenu: React.FC<AppDrawerMenuProps> = ({
           >
             <div className="flex items-center gap-2.5">
               <Sparkles className="w-4 h-4 text-emerald-500" />
-              <span>ภาพรวมแดชบอร์ด</span>
+              <span>หน้าหลักแดชบอร์ด</span>
             </div>
-            <span className="text-[10px] text-slate-400">หน้าหลัก</span>
+            <span className="text-[10px] text-slate-400">Home</span>
           </button>
 
-          <button onClick={() => { setActiveTab('products'); onClose(); }} className="flex w-full items-center gap-2.5 rounded-xl px-3 py-3 text-xs font-bold text-slate-700 hover:bg-slate-50"><Layers size={16} className="text-emerald-600"/>รายการสินค้า</button>
-          {/* Tab 1: ซัพพลายเออร์ */}
+          {/* 2. ซัพพลายเออร์ */}
           <button
             onClick={() => {
               setActiveTab('suppliers');
@@ -165,7 +134,7 @@ export const AppDrawerMenu: React.FC<AppDrawerMenuProps> = ({
             </span>
           </button>
 
-          {/* Tab 2: ร้านน้ำ & เรฟ */}
+          {/* 3. ร้านน้ำ & เรฟ */}
           <button
             onClick={() => {
               setActiveTab('drink_stores');
@@ -183,7 +152,7 @@ export const AppDrawerMenu: React.FC<AppDrawerMenuProps> = ({
                   activeTab === 'drink_stores' ? 'text-amber-400' : 'text-amber-600'
                 }`}
               />
-              <span>ร้านน้ำ & เรฟไอเดีย</span>
+              <span>ร้านน้ำ & เรฟ</span>
             </div>
             <span
               className={`text-[11px] font-mono px-2 py-0.5 rounded-full ${
@@ -196,7 +165,32 @@ export const AppDrawerMenu: React.FC<AppDrawerMenuProps> = ({
             </span>
           </button>
 
-          {/* Tab 2.5: ส่องตามหมวดหมู่ */}
+          {/* 4. รายการสินค้า */}
+          <button
+            onClick={() => {
+              setActiveTab('products');
+              onClose();
+            }}
+            className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-bold transition-colors ${
+              activeTab === 'products'
+                ? 'bg-slate-900 text-white shadow-xs'
+                : 'text-slate-700 hover:bg-slate-50'
+            }`}
+          >
+            <div className="flex items-center gap-2.5">
+              <i
+                className={`fa-solid fa-boxes-stacked text-xs ${
+                  activeTab === 'products' ? 'text-teal-400' : 'text-teal-600'
+                }`}
+              />
+              <span>รายการสินค้า</span>
+            </div>
+            <span className="text-[10px] text-teal-700 font-bold bg-teal-50 px-1.5 py-0.5 rounded">
+              แคตตาล็อก
+            </span>
+          </button>
+
+          {/* 5. หมวดหมู่ */}
           <button
             onClick={() => {
               setActiveTab('categories');
@@ -214,14 +208,14 @@ export const AppDrawerMenu: React.FC<AppDrawerMenuProps> = ({
                   activeTab === 'categories' ? 'text-indigo-400' : 'text-indigo-600'
                 }`}
               />
-              <span>ส่องตามหมวดหมู่</span>
+              <span>หมวดหมู่</span>
             </div>
             <span className="text-[10px] text-indigo-600 font-bold bg-indigo-50 px-1.5 py-0.5 rounded">
               แยกประเภท
             </span>
           </button>
 
-          {/* Tab 3: ส่งต่อ & รับช่วง */}
+          {/* 6. ส่งต่องาน (Handoff) */}
           <button
             onClick={() => {
               setActiveTab('handoff');
@@ -235,14 +229,14 @@ export const AppDrawerMenu: React.FC<AppDrawerMenuProps> = ({
           >
             <div className="flex items-center gap-2.5">
               <Users className="w-4 h-4 text-blue-600" />
-              <span>บริหารจัดการรับช่วงต่อ (Handoff)</span>
+              <span>ส่งต่องาน (Handoff)</span>
             </div>
             <span className="text-[10px] text-blue-600 font-bold bg-blue-50 px-1.5 py-0.5 rounded">
               ไปป์ไลน์
             </span>
           </button>
 
-          {/* Tab 3.5: สมาชิก & คำเชิญ (Admin only) */}
+          {/* 7. สมาชิกและคำเชิญ (Admin only) */}
           {currentUser.role === 'admin' && (
             <button
               onClick={() => {
@@ -265,8 +259,8 @@ export const AppDrawerMenu: React.FC<AppDrawerMenuProps> = ({
             </button>
           )}
 
-          {/* Tab 4: ตั้งค่า & สิทธิ์ (Top 2 roles) */}
-          {(currentUser.role === 'admin') && (
+          {/* 8. ตั้งค่าเนื้อหา (Admin only) */}
+          {currentUser.role === 'admin' && (
             <button
               onClick={() => {
                 setActiveTab('settings');
@@ -288,7 +282,7 @@ export const AppDrawerMenu: React.FC<AppDrawerMenuProps> = ({
             </button>
           )}
 
-          {/* Interactive Map Shortcut */}
+          {/* 9. แผนที่พิกัดสำรวจ */}
           <button
             onClick={() => {
               setActiveTab('dashboard');
@@ -361,28 +355,6 @@ export const AppDrawerMenu: React.FC<AppDrawerMenuProps> = ({
         </div>
 
         </>)}
-        {/* Admin Only Section (สมาชิกและคำเชิญ) */}
-        {currentUser.role === 'admin' && (
-          <div className="p-4 pt-2 border-t border-slate-100 space-y-1">
-            <div className="text-[10px] font-bold text-slate-400 tracking-wider uppercase px-2 mb-2">
-              จัดการทีม
-            </div>
-
-            <button
-              onClick={() => {
-                onOpenInvites();
-                onClose();
-              }}
-              className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-bold bg-slate-900 text-white hover:bg-slate-800 transition-colors"
-            >
-              <div className="flex items-center gap-2.5">
-                <ShieldCheck className="w-4 h-4 text-amber-400" />
-                <span>สมาชิกและคำเชิญ (Invite)</span>
-              </div>
-              <ChevronRight className="w-4 h-4 text-slate-400" />
-            </button>
-          </div>
-        )}
 
         {/* Tools & Utilities */}
         <div className="p-4 pt-2 border-t border-slate-100 space-y-1 flex-1">

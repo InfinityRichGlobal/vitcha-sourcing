@@ -451,129 +451,137 @@ export function ProductWorkspace({
           </p>
         </div>
       ) : (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {filtered.map((product, index) => (
+        <div className="grid gap-3 grid-cols-2 sm:grid-cols-3 lg:grid-cols-4">
+          {filtered.map((product) => (
             <article
               key={product.id}
-              className={`overflow-hidden rounded-2xl border bg-white ${selected.has(product.id) ? "border-emerald-500 ring-1 ring-emerald-500" : "border-slate-200"}`}
+              className={`group flex flex-col justify-between overflow-hidden rounded-2xl border bg-white p-2.5 shadow-2xs transition-all hover:shadow-sm ${selected.has(product.id) ? "border-emerald-500 ring-1 ring-emerald-500" : "border-slate-200/90 hover:border-slate-300"}`}
             >
-              <div className="relative">
-                <button
-                  className="block w-full text-left"
-                  onClick={() => setOpened(product)}
-                >
-                  <img
-                    src={product.photo || "./logo.jpg"}
-                    alt={product.title}
-                    loading="lazy"
-                    className="h-44 w-full bg-slate-50 object-contain"
-                  />
-                </button>
-                {canManage && (
-                  <label className="absolute left-3 top-3 grid h-9 w-9 place-items-center rounded-xl border border-slate-200 bg-white shadow-sm">
-                    <input
-                      aria-label={`เลือก ${product.title}`}
-                      type="checkbox"
-                      checked={selected.has(product.id)}
-                      onChange={() => toggle(product.id)}
-                    />
-                  </label>
-                )}
-                <span
-                  className={`absolute right-3 top-3 rounded-lg px-2 py-1 text-xs font-semibold ${statusStyle[product.decision]}`}
-                >
-                  {decisions[product.decision]}
-                </span>
-              </div>
-              <div className="space-y-3 p-4">
-                <div>
-                  <p className="text-xs text-slate-500">
-                    {product.supplierName}
-                  </p>
+              <div>
+                <div className="relative aspect-square w-full overflow-hidden rounded-xl bg-slate-100 border border-slate-200/60">
                   <button
-                    className="mt-1 text-left text-base font-bold text-slate-900"
+                    className="block h-full w-full text-left"
+                    onClick={() => setOpened(product)}
+                  >
+                    <img
+                      src={product.photo || "./logo.jpg"}
+                      alt={product.title}
+                      loading="lazy"
+                      className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-300"
+                    />
+                  </button>
+                  {canManage && (
+                    <label className="absolute left-2 top-2 grid h-7 w-7 place-items-center rounded-lg border border-slate-200/90 bg-white/95 shadow-2xs cursor-pointer">
+                      <input
+                        aria-label={`เลือก ${product.title}`}
+                        type="checkbox"
+                        checked={selected.has(product.id)}
+                        onChange={() => toggle(product.id)}
+                        className="accent-emerald-600"
+                      />
+                    </label>
+                  )}
+                  <span
+                    className={`absolute right-2 top-2 rounded-md px-2 py-0.5 text-[10px] font-bold shadow-2xs ${statusStyle[product.decision]}`}
+                  >
+                    {decisions[product.decision]}
+                  </span>
+                </div>
+
+                <div className="mt-2.5 space-y-1.5 px-0.5">
+                  <div className="flex items-center justify-between gap-1">
+                    <p className="text-[10px] font-semibold text-slate-400 truncate">
+                      {product.supplierName}
+                    </p>
+                    <p className="font-mono text-xs font-extrabold text-emerald-700 shrink-0">
+                      {product.priceThb != null
+                        ? `฿${Number(product.priceThb).toLocaleString()}`
+                        : product.priceRmb != null
+                          ? `¥${Number(product.priceRmb).toLocaleString()}`
+                          : "รอราคา"}
+                    </p>
+                  </div>
+
+                  <button
+                    className="block w-full text-left text-xs sm:text-sm font-extrabold text-slate-900 line-clamp-1 hover:text-emerald-700 transition-colors"
                     onClick={() => setOpened(product)}
                   >
                     {product.title}
                   </button>
-                </div>
-                <div className="flex flex-wrap gap-2 text-xs">
-                  <span className="rounded-md bg-slate-100 px-2 py-1">
-                    {productCategories.find(
-                      (item) => item.id === product.categoryId,
-                    )?.name || "ยังไม่จัดหมวด"}
-                  </span>
-                  {product.tagIds.map((id) => (
-                    <span
-                      key={id}
-                      className="rounded-md bg-emerald-50 px-2 py-1 text-emerald-800"
-                    >
-                      {productTags.find((item) => item.id === id)?.name}
+
+                  <div className="flex flex-wrap gap-1 text-[10px]">
+                    <span className="rounded-md bg-slate-100 px-1.5 py-0.5 font-semibold text-slate-600 truncate max-w-full">
+                      {productCategories.find(
+                        (item) => item.id === product.categoryId,
+                      )?.name || "ยังไม่จัดหมวด"}
                     </span>
-                  ))}
+                    {product.tagIds.map((id) => (
+                      <span
+                        key={id}
+                        className="rounded-md bg-emerald-50 px-1.5 py-0.5 font-semibold text-emerald-800 border border-emerald-200/60"
+                      >
+                        {productTags.find((item) => item.id === id)?.name}
+                      </span>
+                    ))}
+                  </div>
+
+                  <p className="line-clamp-2 text-[11px] text-slate-500 leading-snug">
+                    {product.memo ||
+                      product.sourceMemo ||
+                      "แตะเพื่อดูสเปกและเพิ่มหมายเหตุ"}
+                  </p>
                 </div>
-                <p className="font-mono text-sm font-semibold text-emerald-700">
-                  {product.priceThb != null
-                    ? `฿${Number(product.priceThb).toLocaleString()}`
-                    : product.priceRmb != null
-                      ? `¥${Number(product.priceRmb).toLocaleString()}`
-                      : "ยังไม่ระบุราคา"}
-                </p>
-                <p className="line-clamp-2 min-h-10 whitespace-pre-wrap text-sm text-slate-500">
-                  {product.memo ||
-                    product.sourceMemo ||
-                    "เพิ่มหมายเหตุเพื่อให้ทีมทำงานต่อ"}
-                </p>
-                <div className="flex items-center justify-between gap-2 border-t border-slate-100 pt-3">
-                  <button
-                    className="min-h-10 text-sm font-semibold text-emerald-700"
-                    onClick={() => setOpened(product)}
-                  >
-                    เปิดรายละเอียด
-                  </button>
-                  {activeSet && canManage && (
-                    <div className="flex gap-1">
-                      <button
-                        aria-label={`เลื่อน ${product.title} ขึ้น`}
-                        disabled={
-                          isMutating ||
-                          activeSet.productIds.indexOf(product.id) === 0
-                        }
-                        className="rounded-lg p-2 disabled:opacity-30"
-                        onClick={() => void move(product.id, -1)}
-                      >
-                        <ArrowUp size={17} />
-                      </button>
-                      <button
-                        aria-label={`เลื่อน ${product.title} ลง`}
-                        disabled={
-                          isMutating ||
-                          activeSet.productIds.indexOf(product.id) ===
-                            activeSet.productIds.length - 1
-                        }
-                        className="rounded-lg p-2 disabled:opacity-30"
-                        onClick={() => void move(product.id, 1)}
-                      >
-                        <ArrowDown size={17} />
-                      </button>
-                      <button
-                        title="นำออกจากชุด"
-                        disabled={isMutating}
-                        className="rounded-lg p-2 text-slate-400"
-                        onClick={() =>
-                          void saveProductSet({
-                            ...activeSet,
-                            productIds: activeSet.productIds.filter(
-                              (id) => id !== product.id,
-                            ),
-                          })
-                        }
-                      >
-                        <X size={16} />
-                      </button>
-                    </div>
-                  )}
-                </div>
+              </div>
+
+              <div className="mt-2.5 flex items-center justify-between gap-1.5 border-t border-slate-100 pt-2">
+                <button
+                  className="flex-1 py-1.5 px-2.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-[11px] font-bold transition-colors text-center"
+                  onClick={() => setOpened(product)}
+                >
+                  เปิดรายละเอียด
+                </button>
+                {activeSet && canManage && (
+                  <div className="flex gap-0.5 shrink-0">
+                    <button
+                      aria-label={`เลื่อน ${product.title} ขึ้น`}
+                      disabled={
+                        isMutating ||
+                        activeSet.productIds.indexOf(product.id) === 0
+                      }
+                      className="rounded-lg p-1.5 hover:bg-slate-100 disabled:opacity-30"
+                      onClick={() => void move(product.id, -1)}
+                    >
+                      <ArrowUp size={14} />
+                    </button>
+                    <button
+                      aria-label={`เลื่อน ${product.title} ลง`}
+                      disabled={
+                        isMutating ||
+                        activeSet.productIds.indexOf(product.id) ===
+                          activeSet.productIds.length - 1
+                      }
+                      className="rounded-lg p-1.5 hover:bg-slate-100 disabled:opacity-30"
+                      onClick={() => void move(product.id, 1)}
+                    >
+                      <ArrowDown size={14} />
+                    </button>
+                    <button
+                      title="นำออกจากชุด"
+                      disabled={isMutating}
+                      className="rounded-lg p-1.5 text-slate-400 hover:bg-rose-50 hover:text-rose-600"
+                      onClick={() =>
+                        void saveProductSet({
+                          ...activeSet,
+                          productIds: activeSet.productIds.filter(
+                            (id) => id !== product.id,
+                          ),
+                        })
+                      }
+                    >
+                      <X size={14} />
+                    </button>
+                  </div>
+                )}
               </div>
             </article>
           ))}

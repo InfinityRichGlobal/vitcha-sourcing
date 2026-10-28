@@ -169,7 +169,7 @@ export interface SupplierRecord {
   reviewerNotes: ReviewerNote[];
   viewedBy?: ViewLogEntry[];
   likes?: LikeEntry[];
-  history: Array<{ action: string; user: string; timestamp: string }>;
+  history: Array<{ action: string; user: string; userAvatar?: string; timestamp: string }>;
   updatedAt: string;
 }
 
@@ -239,7 +239,7 @@ export interface StoreInspoRecord {
   reviewerNotes: ReviewerNote[];
   viewedBy?: ViewLogEntry[];
   likes?: LikeEntry[];
-  history: Array<{ action: string; user: string; timestamp: string }>;
+  history: Array<{ action: string; user: string; userAvatar?: string; timestamp: string }>;
   updatedAt: string;
 }
 

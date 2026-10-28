@@ -14,7 +14,7 @@ export const NavigationTabs: React.FC = () => {
   const navItems: Array<{ key: AppViewTab; label: string; icon: React.ReactNode; badge?: number }> = [
     {
       key: 'dashboard',
-      label: 'หน้าหลักแดชบอร์ด',
+      label: 'หน้าหลัก',
       icon: <i aria-hidden="true" className="fa-solid fa-house text-xs" />,
     },
     {
@@ -37,20 +37,20 @@ export const NavigationTabs: React.FC = () => {
     },
     {
       key: 'categories',
-      label: 'ส่องตามหมวดหมู่',
+      label: 'หมวดหมู่',
       icon: <i aria-hidden="true" className="fa-solid fa-layer-group text-xs text-indigo-600" />,
       badge: categories.length + storeCategories.length,
     },
     {
       key: 'handoff',
-      label: 'บริหารส่งต่องาน',
+      label: 'ส่งต่องาน',
       icon: <i aria-hidden="true" className="fa-solid fa-people-arrows text-xs text-blue-600" />,
     },
     ...(currentUser.role === 'admin'
       ? [
           {
             key: 'members' as AppViewTab,
-            label: 'สมาชิก & คำเชิญ',
+            label: 'สมาชิก',
             icon: <i aria-hidden="true" className="fa-solid fa-user-shield text-xs text-purple-600" />,
           },
           {

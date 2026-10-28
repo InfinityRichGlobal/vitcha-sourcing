@@ -59,6 +59,7 @@ export const DetailModal: React.FC<DetailModalProps> = ({
     toggleLikeItem,
     suppliers,
     drinkStores,
+    users,
     quickMessages,
     recordItemView,
     canEditItems,
@@ -585,70 +586,116 @@ export const DetailModal: React.FC<DetailModalProps> = ({
             </div>
           )}
 
-          {/* Location & Tags */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-            <div className="p-3 bg-slate-50 rounded-xl border border-slate-100 space-y-1">
-              <div className="text-slate-400 font-semibold flex items-center justify-between">
-                <span className="flex items-center gap-1">
-                  <MapPin className="w-3.5 h-3.5 text-emerald-600" />
-                  <span>พิกัดสถานที่ / ตลาด / เมือง:</span>
-                </span>
-                {currentItem.location && (
-                  <a
-                    href={`https://www.google.com/maps?q=${currentItem.location.lat},${currentItem.location.lng}`}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="text-[10px] font-bold text-emerald-700 hover:underline"
-                  >
-                    เปิด Google Maps ↗
-                  </a>
-                )}
-              </div>
-              <div className="text-slate-900 font-bold">
-                {isSupplier
-                  ? supplier?.marketOrCity
-                  : store?.location?.addressText || store?.city}
-              </div>
-              {currentItem.location && (
-                <div className="text-[11px] text-slate-500 font-mono">
-                  Lat: {currentItem.location.lat.toFixed(4)}, Lng:{' '}
-                  {currentItem.location.lng.toFixed(4)}
-                </div>
-              )}
-            </div>
-
-            {isSupplier && supplier ? (
-              <div className="p-3 bg-slate-50 rounded-xl border border-slate-100 space-y-1">
-                <div className="text-slate-400 font-semibold flex items-center gap-1">
-                  <Tag className="w-3.5 h-3.5 text-emerald-600" />
-                  <span>จุดเด่นทางลัดที่บันทึกไว้:</span>
-                </div>
-                <div className="flex flex-wrap gap-1 pt-0.5">
+          {/* Compact Category, Rating, Location & Contact Pills */}
+          <div className="p-3 bg-slate-50 rounded-xl border border-slate-100 space-y-2 text-xs">
+            <div className="flex flex-wrap items-center gap-1.5">
+              {isSupplier && supplier ? (
+                <>
+                  <span className="px-2.5 py-1 rounded-lg bg-emerald-600 text-white text-[11px] font-bold inline-flex items-center gap-1">
+                    <i className="fa-solid fa-industry text-[10px]" />
+                    <span>{supplier.category}</span>
+                  </span>
+                  <span className="px-2 py-1 rounded-lg bg-white border border-slate-200 text-slate-700 text-[11px] font-bold">
+                    {supplier.isFactory ? 'โรงงานผลิต' : 'หน้าร้าน / โชว์รูม'}
+                  </span>
+                  <span className="px-2 py-1 rounded-lg bg-amber-50 border border-amber-200 text-amber-700 text-[11px] font-mono font-bold inline-flex items-center gap-1">
+                    <i className="fa-solid fa-star text-[10px] text-amber-500" />
+                    <span>{supplier.rating || 5}/5</span>
+                  </span>
                   {(supplier.quickTags || []).map((t, idx) => (
                     <span
                       key={idx}
-                      className="text-[10px] font-semibold px-2 py-0.5 rounded-md bg-white border border-slate-200 text-slate-700"
+                      className="px-2 py-1 rounded-lg bg-white border border-slate-200 text-slate-700 text-[11px] font-semibold"
                     >
-                      ✓ {t}
+                      #{t}
                     </span>
                   ))}
-                </div>
-              </div>
-            ) : store ? (
-              <div className="p-3 bg-amber-50/40 rounded-xl border border-amber-200/70 space-y-1">
-                <div className="text-amber-800 font-semibold flex items-center gap-1">
-                  <Coffee className="w-3.5 h-3.5 text-amber-600" />
-                  <span>หมวดหมู่เรฟ & คอนเซปต์:</span>
-                </div>
-                <div className="text-xs font-bold text-slate-900">
-                  {store.storeCategory || 'ชาจีนพรีเมียม'}
-                </div>
-                {store.brandConcept && (
-                  <div className="text-[11px] text-slate-600">{store.brandConcept}</div>
+                </>
+              ) : store ? (
+                <>
+                  <span className="px-2.5 py-1 rounded-lg bg-amber-600 text-white text-[11px] font-bold inline-flex items-center gap-1">
+                    <i className="fa-solid fa-mug-hot text-[10px]" />
+                    <span>{store.storeCategory || 'เรฟร้านน้ำ'}</span>
+                  </span>
+                  {store.ratings && (
+                    <span className="px-2 py-1 rounded-lg bg-amber-50 border border-amber-200 text-amber-800 text-[11px] font-mono font-bold inline-flex items-center gap-1">
+                      <i className="fa-solid fa-star text-[10px] text-amber-500" />
+                      <span>
+                        {(
+                          (store.ratings.taste +
+                            store.ratings.aesthetics +
+                            store.ratings.value +
+                            store.ratings.speed) /
+                          4
+                        ).toFixed(1)}
+                      </span>
+                    </span>
+                  )}
+                </>
+              ) : null}
+            </div>
+
+            <div className="flex flex-wrap items-center justify-between gap-2 pt-1.5 border-t border-slate-200/60 text-[11px] text-slate-600">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="inline-flex items-center gap-1 font-semibold text-slate-800">
+                  <MapPin className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                  <span>
+                    {isSupplier
+                      ? supplier?.marketOrCity || supplier?.address || supplier?.location?.addressText
+                      : store?.location?.addressText || store?.city}
+                  </span>
+                </span>
+                {(isSupplier ? supplier?.wechatId : store?.wechatId) && (
+                  <span className="px-2 py-0.5 rounded bg-white border border-slate-200 font-mono">
+                    WeChat: {isSupplier ? supplier?.wechatId : store?.wechatId}
+                  </span>
+                )}
+                {(isSupplier ? supplier?.lineId : store?.lineId) && (
+                  <span className="px-2 py-0.5 rounded bg-white border border-slate-200 font-mono">
+                    LINE: {isSupplier ? supplier?.lineId : store?.lineId}
+                  </span>
+                )}
+                {(isSupplier ? supplier?.phone : store?.phone) && (
+                  <span className="px-2 py-0.5 rounded bg-white border border-slate-200 font-mono">
+                    โทร: {isSupplier ? supplier?.phone : store?.phone}
+                  </span>
                 )}
               </div>
-            ) : null}
+              {currentItem.location && (
+                <a
+                  href={`https://www.google.com/maps?q=${currentItem.location.lat},${currentItem.location.lng}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-[11px] font-bold text-emerald-700 hover:underline shrink-0"
+                >
+                  เปิด Google Maps ↗
+                </a>
+              )}
+            </div>
           </div>
+
+          {/* Full Field Memo / Tasting Notes (แสดงข้อความบันทึกหลักครบเต็มรูป ไม่ตัดคำ) */}
+          {((isSupplier && supplier?.memo) || (!isSupplier && store?.tastingNotes)) && (
+            <div
+              className={`p-3.5 rounded-xl border space-y-1 ${
+                isSupplier
+                  ? 'bg-emerald-50/50 border-emerald-200/80'
+                  : 'bg-amber-50/50 border-amber-200/80'
+              }`}
+            >
+              <div className="text-[11px] font-bold text-slate-600 flex items-center gap-1.5">
+                <i
+                  className={`fa-solid ${
+                    isSupplier ? 'fa-clipboard-check text-emerald-600' : 'fa-quote-left text-amber-600'
+                  } text-[10px]`}
+                />
+                <span>{isSupplier ? 'บันทึกหน้างาน / รายละเอียดหลัก:' : 'บันทึกรีวิวรสชาติ & ไอเดียเรฟ:'}</span>
+              </div>
+              <p className="text-xs sm:text-[13px] text-slate-900 leading-relaxed whitespace-pre-wrap font-medium">
+                {isSupplier ? supplier?.memo : store?.tastingNotes}
+              </p>
+            </div>
+          )}
 
           {/* Supplier Catalog Items */}
           {isSupplier && supplier && (supplier.catalogItems || []).length > 0 && (
@@ -700,7 +747,7 @@ export const DetailModal: React.FC<DetailModalProps> = ({
                         </div>
                       )}
                       {catItem.memo && (
-                        <p className="text-[11px] text-slate-600 line-clamp-2">{catItem.memo}</p>
+                        <p className="text-[11px] text-slate-600 whitespace-pre-wrap leading-relaxed">{catItem.memo}</p>
                       )}
                       {getItemVoiceNotes(catItem).length > 0 && (
                         <div className="flex flex-wrap gap-1 pt-1">
@@ -1221,7 +1268,7 @@ export const DetailModal: React.FC<DetailModalProps> = ({
                     placeholder={`พิมพ์ข้อคิดเห็นใหม่ในฐานะ ${currentUser.alias}...`}
                     value={newReviewText}
                     onChange={(e) => setNewReviewText(e.target.value)}
-                    className="flex-1 min-w-[150px] bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 focus:outline-none focus:border-blue-500 shadow-2xs"
+                    className="flex-1 min-w-[140px] h-8 bg-white border border-slate-200 rounded-lg px-2.5 text-xs text-slate-900 focus:outline-none focus:border-blue-500 shadow-2xs"
                   />
 
                   <button
@@ -1229,9 +1276,10 @@ export const DetailModal: React.FC<DetailModalProps> = ({
                     title="แนบรูปภาพ"
                     disabled={isUploadingCommentAttachment}
                     onClick={() => commentPhotoInputRef.current?.click()}
-                    className="p-2 rounded-xl border border-slate-200 hover:border-emerald-500 hover:bg-emerald-50 text-slate-500 hover:text-emerald-700 transition-colors shrink-0"
+                    className="h-8 px-2.5 rounded-lg border border-slate-200 bg-white hover:border-emerald-500 hover:bg-emerald-50 text-slate-600 hover:text-emerald-700 text-[11px] font-bold inline-flex items-center justify-center gap-1 transition-colors shrink-0"
                   >
-                    <ImageIcon className="w-4 h-4" />
+                    <ImageIcon className="w-3.5 h-3.5" />
+                    <span className="hidden sm:inline">รูปภาพ</span>
                   </button>
 
                   <button
@@ -1243,7 +1291,7 @@ export const DetailModal: React.FC<DetailModalProps> = ({
                     }
                     disabled={isUploadingCommentAttachment}
                     onClick={() => void toggleLiveVoiceRecording('main')}
-                    className={`px-2.5 py-2 rounded-xl border text-xs font-bold inline-flex items-center gap-1.5 transition-all shrink-0 ${
+                    className={`h-8 px-2.5 rounded-lg border text-[11px] font-bold inline-flex items-center justify-center gap-1 transition-all shrink-0 ${
                       recordingCommentTarget === 'main'
                         ? 'bg-rose-600 text-white border-rose-600 animate-pulse shadow-xs'
                         : 'bg-white border-slate-200 hover:border-blue-500 hover:bg-blue-50 text-slate-700 hover:text-blue-700'
@@ -1260,7 +1308,7 @@ export const DetailModal: React.FC<DetailModalProps> = ({
                   <button
                     type="submit"
                     disabled={isUploadingCommentAttachment || recordingCommentTarget === 'main'}
-                    className="px-3.5 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold shadow-xs active:scale-95 transition-all flex items-center gap-1 shrink-0 disabled:opacity-50"
+                    className="h-8 px-3 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-[11px] font-bold shadow-2xs active:scale-95 transition-all inline-flex items-center justify-center gap-1 shrink-0 disabled:opacity-50"
                   >
                     <Send className="w-3 h-3" />
                     <span>โพสต์</span>
@@ -1268,6 +1316,113 @@ export const DetailModal: React.FC<DetailModalProps> = ({
                 </div>
               </form>
             )}
+          </div>
+
+          {/* Bottom Activity & Handoff Log (บันทึกประวัติการอัปเดตและส่งต่องานพาร์ทต่างๆ พร้อมไอคอนผู้รับผิดชอบ) */}
+          <div className="p-3.5 bg-slate-50/90 rounded-xl border border-slate-200/80 space-y-2.5">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <span className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                <i className="fa-solid fa-clock-rotate-left text-emerald-600 text-xs" />
+                <span>ประวัติการดำเนินงาน & ส่งต่องาน (Activity Log)</span>
+              </span>
+              {currentItem.handoffStage && (
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-800 border border-emerald-200">
+                  สถานะส่งต่อ:{' '}
+                  {{
+                    awaiting: 'พาร์ท 1: รอรับช่วงต่อ',
+                    rfq_sent: 'พาร์ท 2: ขอสเปก / ส่ง RFQ',
+                    sample_test: 'พาร์ท 3: ทดสอบตัวอย่าง Lab/R&D',
+                    negotiate: 'พาร์ท 4: ต่อรองราคา & MOQ',
+                    approved: 'พาร์ท 5: ตัวเต็งอนุมัติ',
+                    ordered: 'พาร์ท 6: สั่งซื้อสำเร็จ',
+                  }[currentItem.handoffStage] || currentItem.handoffStage}
+                </span>
+              )}
+            </div>
+
+            {(currentItem.assignedTo || currentItem.targetFollowUpDate || currentItem.handoffNotes) && (
+              <div className="p-2.5 bg-white rounded-lg border border-slate-200/80 text-[11px] space-y-1">
+                <div className="flex flex-wrap items-center gap-3 text-slate-700">
+                  {currentItem.assignedTo && (
+                    <span className="font-bold inline-flex items-center gap-1">
+                      <i className="fa-solid fa-user-check text-emerald-600 text-[10px]" />
+                      <span>ผู้รับช่วงต่อ: {currentItem.assignedTo}</span>
+                    </span>
+                  )}
+                  {currentItem.targetFollowUpDate && (
+                    <span className="font-mono text-slate-500">
+                      กำหนดติดตาม: {currentItem.targetFollowUpDate}
+                    </span>
+                  )}
+                </div>
+                {currentItem.handoffNotes && (
+                  <p className="text-slate-600 whitespace-pre-wrap leading-relaxed">
+                    หมายเหตุส่งต่อ: {currentItem.handoffNotes}
+                  </p>
+                )}
+              </div>
+            )}
+
+            <div className="space-y-1.5 max-h-48 overflow-y-auto pr-1">
+              {(() => {
+                const rawHistory = Array.isArray(currentItem.history) ? currentItem.history : [];
+                const entries =
+                  rawHistory.length > 0
+                    ? rawHistory
+                    : [
+                        {
+                          action: 'สร้างบันทึกรายการสำรวจ',
+                          user: currentItem.creator.alias,
+                          userAvatar: currentItem.creator.avatar,
+                          timestamp: currentItem.creator.timestamp,
+                        },
+                      ];
+                return entries.map((h, idx) => {
+                  const matchedUser = users.find(
+                    (u) => u.alias === h.user || u.name === h.user
+                  );
+                  const avatarUrl =
+                    h.userAvatar ||
+                    matchedUser?.avatar ||
+                    (h.user === currentItem.creator.alias
+                      ? currentItem.creator.avatar
+                      : './logo.jpg');
+                  const actionLabel =
+                    h.action === 'handoff'
+                      ? 'อัปเดตสถานะการส่งต่องาน (Handoff)'
+                      : h.action === 'comment'
+                        ? 'เพิ่มความคิดเห็นในรายการ'
+                        : h.action === 'reply'
+                          ? 'ตอบกลับความคิดเห็น'
+                          : h.action;
+                  return (
+                    <div
+                      key={`${h.timestamp}-${idx}`}
+                      className="flex items-center justify-between gap-2 px-2.5 py-1.5 bg-white rounded-lg border border-slate-200/70 text-[11px]"
+                    >
+                      <div className="flex items-center gap-2 min-w-0">
+                        <AvatarImage
+                          src={avatarUrl}
+                          alt={h.user}
+                          className="w-5 h-5 rounded-full object-cover border border-slate-200 shrink-0"
+                        />
+                        <span className="font-bold text-slate-900 shrink-0">{h.user}</span>
+                        <span className="text-slate-600 truncate">{actionLabel}</span>
+                      </div>
+                      <span className="text-[10px] font-mono text-slate-400 shrink-0">
+                        {new Date(h.timestamp).toLocaleString('th-TH', {
+                          day: '2-digit',
+                          month: '2-digit',
+                          year: '2-digit',
+                          hour: '2-digit',
+                          minute: '2-digit',
+                        })}
+                      </span>
+                    </div>
+                  );
+                });
+              })()}
+            </div>
           </div>
         </div>
 

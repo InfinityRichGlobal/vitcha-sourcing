@@ -8,7 +8,6 @@ import {
   Share2,
   MessageSquare,
   ThumbsUp,
-  UserCheck,
   Send,
   CornerDownRight,
   ChevronDown,
@@ -42,7 +41,6 @@ export const SupplierCard: React.FC<SupplierCardProps> = ({
     openEditItem,
   } = useApp();
 
-  const [currentPhotoIdx, setCurrentPhotoIdx] = useState(0);
   const [lightboxIdx, setLightboxIdx] = useState<number | null>(null);
   const [showComments, setShowComments] = useState(false);
   const [commentInput, setCommentInput] = useState('');
@@ -71,8 +69,6 @@ export const SupplierCard: React.FC<SupplierCardProps> = ({
     allPhotos.length > 0
       ? allPhotos
       : ['https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80'];
-
-  const safePhotoIdx = currentPhotoIdx % displayPhotos.length;
 
   const notes = Array.isArray(supplier.reviewerNotes) ? supplier.reviewerNotes : [];
   const totalCommentsCount = notes.reduce(
@@ -157,10 +153,10 @@ export const SupplierCard: React.FC<SupplierCardProps> = ({
                   <i className="fa-solid fa-industry text-[10px] text-emerald-600" />
                   <span>{supplier.category}</span>
                 </span>
-                {supplier.assignedTo && (
-                  <span className="inline-flex items-center gap-1 text-[11px] text-slate-600 bg-slate-100 px-2 py-0.5 rounded-md">
-                    <UserCheck className="w-3 h-3 text-slate-500" />
-                    <span>{supplier.assignedTo}</span>
+                {supplier.videos && supplier.videos.length > 0 && (
+                  <span className="px-2 py-0.5 rounded-md bg-purple-50 text-purple-700 border border-purple-200 text-[10px] font-bold inline-flex items-center gap-1">
+                    <i className="fa-solid fa-video text-[9px]" />
+                    <span>{supplier.videos.length} คลิป</span>
                   </span>
                 )}
               </div>
@@ -180,7 +176,7 @@ export const SupplierCard: React.FC<SupplierCardProps> = ({
               )}
             </div>
 
-            <h3 className="font-extrabold text-sm sm:text-base text-slate-900 hover:text-emerald-700 transition-colors leading-snug">
+            <h3 className="font-extrabold text-sm text-slate-900 hover:text-emerald-700 transition-colors leading-snug">
               {supplier.name}{' '}
               {supplier.chineseName && (
                 <span className="text-xs font-normal text-slate-400">({supplier.chineseName})</span>
@@ -195,7 +191,7 @@ export const SupplierCard: React.FC<SupplierCardProps> = ({
           )}
 
           {catalogItems.length > 0 && (
-            <div className="p-2.5 rounded-xl bg-slate-50/90 border border-slate-100 flex items-center justify-between gap-2">
+            <div className="p-2 rounded-xl bg-slate-50/90 border border-slate-100 flex items-center justify-between gap-2">
               <div className="min-w-0">
                 <div className="text-xs font-semibold text-slate-800 truncate">
                   {catalogItems[0].name || 'รายการสินค้าหลัก'}
@@ -224,55 +220,43 @@ export const SupplierCard: React.FC<SupplierCardProps> = ({
           )}
         </div>
 
-        {/* 3. Clean Single Photo Carousel with Left / Right Slide Controls */}
-        <div className="relative h-52 w-full bg-slate-100 border-y border-slate-100 overflow-hidden group">
-          {supplier.videos && supplier.videos.length > 0 && (
-            <div className="absolute top-2.5 left-2.5 z-10 px-2 py-0.5 rounded-lg bg-purple-600/90 backdrop-blur-xs text-white text-[10px] font-bold inline-flex items-center gap-1 shadow-sm">
-              <i className="fa-solid fa-video text-[9px]" />
-              <span>{supplier.videos.length} คลิป</span>
-            </div>
-          )}
-
-          <img loading="lazy" decoding="async"
-            src={displayPhotos[safePhotoIdx]}
-            alt={supplier.name}
-            onClick={() => setLightboxIdx(safePhotoIdx)}
-            className="w-full h-full object-cover cursor-pointer"
-          />
-
-          {displayPhotos.length > 1 && (
-            <>
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setCurrentPhotoIdx(
-                    (safePhotoIdx - 1 + displayPhotos.length) % displayPhotos.length
-                  );
-                }}
-                className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-black/55 hover:bg-black/75 text-white flex items-center justify-center shadow-sm transition-all"
-                title="เลื่อนดูรูปก่อนหน้า"
-              >
-                <ChevronLeft className="w-4 h-4" />
-              </button>
-
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setCurrentPhotoIdx((safePhotoIdx + 1) % displayPhotos.length);
-                }}
-                className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-black/55 hover:bg-black/75 text-white flex items-center justify-center shadow-sm transition-all"
-                title="เลื่อนดูรูปถัดไป"
-              >
-                <ChevronRight className="w-4 h-4" />
-              </button>
-
-              <div className="absolute bottom-2 right-2.5 px-2 py-0.5 rounded-md bg-black/65 text-white text-[10px] font-mono font-bold">
-                {safePhotoIdx + 1} / {displayPhotos.length} รูป
-              </div>
-            </>
-          )}
+        {/* 3. Compact 1:1 Thumbnail Strip in a Single Row (แตะดูรูปขยายและเลื่อนซ้าย-ขวาได้) */}
+        <div className="px-4 pb-3">
+          <div className="grid grid-cols-4 gap-1.5">
+            {displayPhotos.slice(0, 4).map((photoUrl, idx) => {
+              const extraCount = displayPhotos.length - 4;
+              const isLastWithMore = idx === 3 && extraCount > 0;
+              return (
+                <button
+                  key={idx}
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setLightboxIdx(idx);
+                  }}
+                  className="relative aspect-square rounded-xl overflow-hidden bg-slate-100 border border-slate-200/80 group cursor-pointer focus:outline-none"
+                  title={`ดูรูปที่ ${idx + 1} / ${displayPhotos.length}`}
+                >
+                  <img
+                    loading="lazy"
+                    decoding="async"
+                    src={photoUrl}
+                    alt={`${supplier.name} ${idx + 1}`}
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
+                  />
+                  {isLastWithMore ? (
+                    <div className="absolute inset-0 bg-black/60 flex items-center justify-center text-white font-mono text-xs font-extrabold">
+                      +{extraCount}
+                    </div>
+                  ) : (
+                    <div className="absolute bottom-1 right-1 px-1 py-0.2 rounded bg-black/55 text-white text-[9px] font-mono">
+                      {idx + 1}/{displayPhotos.length}
+                    </div>
+                  )}
+                </button>
+              );
+            })}
+          </div>
         </div>
 
         {/* 4. Social Summary Row */}

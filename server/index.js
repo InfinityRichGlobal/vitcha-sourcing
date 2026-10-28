@@ -40,6 +40,21 @@ if (cloud) {
 }
 const app = createApp({ dataDir, defaults, recoveryPasswordHash, persistence, mediaStorage });
 await persistence?.flush();
+
+// If running on the legacy Render instance (vitcha-sourcing.onrender.com without SUPABASE_URL),
+// decommission the old link by redirecting visitors to the canonical system (https://vitcha-sourcing-fxjw.onrender.com/)
+// while keeping /api/health returning 200 OK so Render never sends failure emails.
+const isLegacyRenderInstance = Boolean(process.env.RENDER && !cloud);
+if (isLegacyRenderInstance) {
+  app.use((req, res, next) => {
+    if (req.path === '/api/health') return next();
+    if (req.method === 'GET' && !req.path.startsWith('/api')) {
+      return res.redirect(302, 'https://vitcha-sourcing-fxjw.onrender.com/');
+    }
+    return next();
+  });
+}
+
 const dist = path.join(root, '../dist');
 if (fs.existsSync(dist)) {
   app.use(express.static(dist));
