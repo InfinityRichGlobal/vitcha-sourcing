@@ -113,6 +113,18 @@ export const INITIAL_USERS: User[] = [
     lastActiveAt: '2026-10-28T14:15:00Z',
     statusNote: 'ออนไลน์เมื่อ 1.5 ชม. ที่แล้ว · สำรวจตลาดผานหยู กวางโจว',
   },
+  {
+    id: 'user-somo',
+    name: 'Mommy SomO',
+    alias: 'Mommy SomO',
+    role: 'reviewer',
+    avatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&auto=format&fit=crop&q=80',
+    pin: '1234',
+    emailOrId: 'somo@vitcha.com',
+    createdAt: '2026-10-28T09:00:00Z',
+    lastActiveAt: '2026-10-28T16:00:00Z',
+    statusNote: 'ออนไลน์อยู่ขณะนี้ · สมาชิกทีม VITCHA',
+  },
 ];
 
 export const INITIAL_SUPPLIERS: SupplierRecord[] = [

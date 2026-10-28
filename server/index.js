@@ -75,6 +75,16 @@ const DEFAULT_DATABASE = {
       emailOrId: 'mook@vitcha.com',
       createdAt: '2026-10-26T12:00:00Z',
     },
+    {
+      id: 'user-somo',
+      name: 'Mommy SomO',
+      alias: 'Mommy SomO',
+      role: 'reviewer',
+      avatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&auto=format&fit=crop&q=80',
+      pin: '1234',
+      emailOrId: 'somo@vitcha.com',
+      createdAt: '2026-10-28T09:00:00Z',
+    },
   ],
   invites: [
     {

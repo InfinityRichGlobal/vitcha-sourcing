@@ -399,133 +399,97 @@ export const AppDrawerMenu: React.FC<AppDrawerMenuProps> = ({
             <ChevronRight className="w-4 h-4 text-slate-400" />
           </button>
 
-          {/* Member List & Persona Switcher for Website Owner / Admin */}
-          {(currentUser.role === 'admin' || simulatedFromAdmin || currentUser.id === 'user-ice') && (
-            <div className="pt-3 border-t border-slate-100">
-              {/* Return to Admin Button if currently simulating another account */}
+          {/* Persona Switcher: EXCLUSIVE FOR DEVELOPER / SITE OWNER (SuperiCez) ONLY */}
+          {(currentUser.id === 'user-ice' || simulatedFromAdmin) && (
+            <div className="pt-3 border-t border-slate-100 space-y-2">
+              {/* Return to SuperiCez Button if currently simulating another account */}
               {currentUser.id !== 'user-ice' && (
                 <button
                   type="button"
                   onClick={() => restoreAdminUser()}
-                  className="w-full mb-3 p-3 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-700 hover:from-emerald-500 hover:to-teal-600 text-white shadow-md active:scale-[0.98] transition-all flex items-center justify-between font-bold text-xs"
+                  className="w-full p-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-700 hover:from-emerald-500 text-white shadow-xs active:scale-[0.98] transition-all flex items-center justify-between font-bold text-xs"
                 >
                   <div className="flex items-center gap-2">
-                    <span className="w-7 h-7 rounded-full bg-white/20 flex items-center justify-center text-sm shrink-0">
-                      👑
-                    </span>
-                    <div className="text-left">
-                      <div className="text-[10px] text-emerald-100 font-medium">กำลังจำลองมุมมองสมาชิก</div>
-                      <div className="truncate">สลับกลับสู่ไอดีผู้ก่อตั้ง (SuperiCez) ↩</div>
-                    </div>
+                    <span className="text-sm">👑</span>
+                    <span className="truncate">สลับกลับสู่ไอดีผู้ก่อตั้ง (SuperiCez) ↩</span>
                   </div>
-                  <span className="text-[10px] bg-white text-emerald-900 font-extrabold px-2 py-1 rounded-lg shrink-0">
+                  <span className="text-[10px] bg-white text-emerald-900 font-extrabold px-2 py-0.5 rounded shrink-0">
                     คืนสิทธิ์
                   </span>
                 </button>
               )}
 
-              <div className="flex items-center justify-between px-1 mb-2">
-                <div className="flex items-center gap-1.5 text-xs font-extrabold text-slate-900">
-                  <Users className="w-4 h-4 text-emerald-600" />
-                  <span>รายชื่อทีมงาน & สถานะออนไลน์ ({users.length})</span>
+              <div className="flex items-center justify-between px-1">
+                <div className="flex items-center gap-1.5 text-xs font-extrabold text-slate-800">
+                  <ShieldCheck className="w-4 h-4 text-emerald-600" />
+                  <span>จำลองมุมมองสิทธิ์ (เฉพาะผู้พัฒนาเว็บ)</span>
                 </div>
-                <span className="font-mono text-[9px] font-bold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
-                  SuperiCez (Admin)
+                <span className="font-mono text-[9px] font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded">
+                  Dev Mode
                 </span>
               </div>
 
-              <div className="space-y-2">
-                {users.map((u) => {
-                  const isCurrent = u.id === currentUser.id;
-                  const displayAlias = isCurrent ? currentUser.alias : u.alias;
-                  const displayAvatar = isCurrent ? currentUser.avatar : u.avatar;
+              {/* Minimalist Persona Switch Grid (ไม่มีสถานะปลอม แค่กดสลับทดสอบสิทธิ์) */}
+              <div className="grid grid-cols-2 gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => restoreAdminUser()}
+                  className={`p-2 rounded-xl text-xs font-bold border flex items-center justify-between transition-all ${
+                    currentUser.id === 'user-ice'
+                      ? 'bg-slate-900 text-white border-slate-900 shadow-xs'
+                      : 'bg-white hover:bg-slate-50 text-slate-800 border-slate-200'
+                  }`}
+                >
+                  <span className="truncate">👑 SuperiCez</span>
+                  <span className="text-[9px] uppercase font-mono px-1 py-0.5 rounded bg-amber-100 text-amber-800 shrink-0">
+                    Admin
+                  </span>
+                </button>
 
-                  return (
-                    <div
-                      key={u.id}
-                      onClick={() => switchUser(u.id)}
-                      className={`p-2.5 rounded-2xl border text-left flex items-center justify-between gap-2.5 transition-all cursor-pointer ${
-                        isCurrent
-                          ? 'bg-slate-900 text-white border-slate-900 shadow-sm ring-1 ring-slate-800'
-                          : 'bg-white hover:bg-slate-50 text-slate-800 border-slate-200 shadow-2xs'
-                      }`}
-                    >
-                      <div className="flex items-center gap-2.5 min-w-0">
-                        {/* Avatar with Online Pulse Indicator */}
-                        <div className="relative shrink-0">
-                          <img
-                            src={displayAvatar}
-                            alt={displayAlias}
-                            className={`w-9 h-9 rounded-full object-cover border ${
-                              isCurrent ? 'border-emerald-400' : 'border-slate-200'
-                            }`}
-                          />
-                          <span
-                            className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 ${
-                              isCurrent
-                                ? 'border-slate-900 bg-emerald-500 animate-pulse'
-                                : u.id === 'user-beam'
-                                ? 'border-white bg-emerald-500'
-                                : 'border-white bg-slate-400'
-                            }`}
-                          />
-                        </div>
+                <button
+                  type="button"
+                  onClick={() => switchUser('user-mook')}
+                  className={`p-2 rounded-xl text-xs font-bold border flex items-center justify-between transition-all ${
+                    currentUser.id === 'user-mook'
+                      ? 'bg-slate-900 text-white border-slate-900 shadow-xs'
+                      : 'bg-white hover:bg-slate-50 text-slate-800 border-slate-200'
+                  }`}
+                >
+                  <span className="truncate">✏️ มุก (Scout)</span>
+                  <span className="text-[9px] uppercase font-mono px-1 py-0.5 rounded bg-emerald-100 text-emerald-800 shrink-0">
+                    Editor
+                  </span>
+                </button>
 
-                        {/* Name & Status Timestamp */}
-                        <div className="min-w-0 flex-1">
-                          <div className="flex items-center gap-1.5 flex-wrap">
-                            <span className={`font-extrabold text-xs truncate ${isCurrent ? 'text-white' : 'text-slate-900'}`}>
-                              {displayAlias}
-                            </span>
-                            <span
-                              className={`text-[9px] font-mono uppercase px-1.5 py-0.2 rounded-full font-bold ${
-                                isCurrent
-                                  ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-400/40'
-                                  : 'bg-slate-100 text-slate-600 border border-slate-200'
-                              }`}
-                            >
-                              {u.role}
-                            </span>
-                          </div>
+                <button
+                  type="button"
+                  onClick={() => switchUser('user-beam')}
+                  className={`p-2 rounded-xl text-xs font-bold border flex items-center justify-between transition-all ${
+                    currentUser.id === 'user-beam'
+                      ? 'bg-slate-900 text-white border-slate-900 shadow-xs'
+                      : 'bg-white hover:bg-slate-50 text-slate-800 border-slate-200'
+                  }`}
+                >
+                  <span className="truncate">🔬 ช่างบีม</span>
+                  <span className="text-[9px] uppercase font-mono px-1 py-0.5 rounded bg-blue-100 text-blue-800 shrink-0">
+                    Reviewer
+                  </span>
+                </button>
 
-                          <div className={`text-[10px] truncate mt-0.5 ${isCurrent ? 'text-slate-300' : 'text-slate-500'}`}>
-                            {u.name}
-                          </div>
-
-                          {/* Last Active Timestamp Stamp */}
-                          <div
-                            className={`text-[9px] flex items-center gap-1 mt-1 font-mono ${
-                              isCurrent ? 'text-emerald-300' : 'text-slate-500'
-                            }`}
-                          >
-                            <i className="fa-regular fa-clock text-[9px]" />
-                            <span className="truncate">
-                              {isCurrent
-                                ? 'ออนไลน์อยู่ขณะนี้ · เซิร์ฟเวอร์ Render'
-                                : u.statusNote
-                                ? u.statusNote
-                                : `บันทึกล่าสุด: ${new Date(u.createdAt).toLocaleDateString('th-TH')}`}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Switch Button */}
-                      <div className="shrink-0">
-                        {isCurrent ? (
-                          <span className="text-[10px] font-bold px-2 py-1 rounded-lg bg-emerald-500 text-white flex items-center gap-1 shadow-2xs">
-                            <Check className="w-3 h-3" />
-                            <span>เลือกอยู่</span>
-                          </span>
-                        ) : (
-                          <span className="text-[10px] font-bold px-2 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 shadow-2xs transition-colors">
-                            สลับสิทธิ์ ⇄
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })}
+                <button
+                  type="button"
+                  onClick={() => switchUser('user-ann')}
+                  className={`p-2 rounded-xl text-xs font-bold border flex items-center justify-between transition-all ${
+                    currentUser.id === 'user-ann'
+                      ? 'bg-slate-900 text-white border-slate-900 shadow-xs'
+                      : 'bg-white hover:bg-slate-50 text-slate-800 border-slate-200'
+                  }`}
+                >
+                  <span className="truncate">🔬 แอน (จัดซื้อ)</span>
+                  <span className="text-[9px] uppercase font-mono px-1 py-0.5 rounded bg-blue-100 text-blue-800 shrink-0">
+                    Reviewer
+                  </span>
+                </button>
               </div>
             </div>
           )}

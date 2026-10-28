@@ -37,6 +37,8 @@ export const HandoffManagementView: React.FC<HandoffManagementViewProps> = ({ on
     openEditItem,
   } = useApp();
 
+  const realUsers = users.filter((u) => !['user-beam', 'user-ann', 'user-mook'].includes(u.id));
+
   // Dedicated Sub-Page Stage Selector (แยกหน้าย่อยแต่ละสเตจให้ชัดเจน + โหมดดูภาพรวม)
   const [activeStagePage, setActiveStagePage] = useState<HandoffStage | 'overview'>('awaiting');
 
@@ -359,7 +361,7 @@ export const HandoffManagementView: React.FC<HandoffManagementViewProps> = ({ on
               className="w-full bg-slate-50 border border-slate-200 rounded-lg px-2 py-1.5 text-xs font-semibold text-slate-700 focus:outline-none focus:border-emerald-500"
             >
               <option value="">(ยังไม่ระบุ)</option>
-              {users.map((u) => (
+              {realUsers.map((u) => (
                 <option key={u.id} value={u.alias}>
                   {u.alias}
                 </option>
@@ -574,7 +576,7 @@ export const HandoffManagementView: React.FC<HandoffManagementViewProps> = ({ on
               className="bg-slate-50 border border-slate-200 text-slate-700 rounded-xl px-2.5 py-1.5 text-xs font-semibold focus:outline-none focus:border-emerald-500"
             >
               <option value="all">ผู้รับผิดชอบทั้งหมด</option>
-              {users.map((u) => (
+              {realUsers.map((u) => (
                 <option key={u.id} value={u.alias}>
                   {u.alias}
                 </option>

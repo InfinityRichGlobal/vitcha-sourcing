@@ -329,6 +329,8 @@ export const SettingsManagementView: React.FC = () => {
     setTimeout(() => setCopiedId(null), 2000);
   };
 
+  const realUsers = users.filter((u) => !['user-beam', 'user-ann', 'user-mook'].includes(u.id));
+
   return (
     <div className="max-w-6xl mx-auto px-3 sm:px-4 py-4 space-y-5 animate-in fade-in">
       {/* Header Banner + Mockup / Reset System Bar */}
@@ -917,37 +919,37 @@ export const SettingsManagementView: React.FC = () => {
 
       {/* 5. Team Roles & Invite Generator */}
       <div className="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/90 shadow-2xs space-y-4">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
-          <div>
-            <h3 className="font-bold text-sm text-slate-900 flex items-center gap-1.5">
-              <Users className="w-4 h-4 text-blue-600" />
-              <span>5. จัดการสิทธิ์สมาชิกในทีม & ออกลิงก์เชิญ ({users.length} คน)</span>
-            </h3>
-            <p className="text-[11px] text-slate-500">
-              กำหนดระดับสิทธิ์ของสมาชิกแต่ละคน ลบผู้ใช้ หรือตรวจสอบสถานะคำเชิญล่าสุด
-            </p>
-          </div>
-          <button
-            type="button"
-            disabled={isRefreshingUsers}
-            onClick={async () => {
-              setIsRefreshingUsers(true);
-              try {
-                await refreshCentralData();
-              } finally {
-                setTimeout(() => setIsRefreshingUsers(false), 500);
-              }
-            }}
-            className="self-start sm:self-auto px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold flex items-center gap-1.5 transition-all active:scale-95 shadow-2xs"
-          >
-            <RefreshCw className={`w-3.5 h-3.5 text-blue-600 ${isRefreshingUsers ? 'animate-spin' : ''}`} />
-            <span>{isRefreshingUsers ? 'กำลังดึงข้อมูล...' : '🔄 ดึงสมาชิกล่าสุดจาก Render'}</span>
-          </button>
-        </div>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+              <div>
+                <h3 className="font-bold text-sm text-slate-900 flex items-center gap-1.5">
+                  <Users className="w-4 h-4 text-blue-600" />
+                  <span>5. จัดการสิทธิ์สมาชิกจริงในทีม & ออกลิงก์เชิญ ({realUsers.length} คน)</span>
+                </h3>
+                <p className="text-[11px] text-slate-500">
+                  กำหนดระดับสิทธิ์ของสมาชิกจริงในทีม ลบผู้ใช้ หรือตรวจสอบสถานะคำเชิญล่าสุด
+                </p>
+              </div>
+              <button
+                type="button"
+                disabled={isRefreshingUsers}
+                onClick={async () => {
+                  setIsRefreshingUsers(true);
+                  try {
+                    await refreshCentralData();
+                  } finally {
+                    setTimeout(() => setIsRefreshingUsers(false), 500);
+                  }
+                }}
+                className="self-start sm:self-auto px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold flex items-center gap-1.5 transition-all active:scale-95 shadow-2xs"
+              >
+                <RefreshCw className={`w-3.5 h-3.5 text-blue-600 ${isRefreshingUsers ? 'animate-spin' : ''}`} />
+                <span>{isRefreshingUsers ? 'กำลังดึงข้อมูล...' : '🔄 ดึงสมาชิกล่าสุดจาก Render'}</span>
+              </button>
+            </div>
 
-        {/* Member Cards Grid with Delete Capability */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
-          {users.map((u) => {
+            {/* Member Cards Grid with Delete Capability (ซ่อน Account จำลอง ช่างบีม/แอน/มุก ไว้ใช้เฉพาะปุ่มจำลอง) */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
+              {realUsers.map((u) => {
             const isSuperAdmin = u.id === 'user-ice';
             return (
               <div

@@ -312,6 +312,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         return u;
       });
 
+      // Ensure initial users like Mommy SomO and SuperiCez are always included
+      INITIAL_USERS.forEach((initU) => {
+        if (!parsedUsers.some((u) => u.id === initU.id || (initU.emailOrId && u.emailOrId === initU.emailOrId))) {
+          parsedUsers.push(initU);
+        }
+      });
+
       const savedCurrent = localStorage.getItem('vitcha_current_user_v5');
       if (savedCurrent) {
         const parsedCurrent: User = JSON.parse(savedCurrent);
@@ -655,20 +662,31 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           const newUsersFound = data.users.filter((u: User) => !prevIds.has(u.id));
           if (newUsersFound.length > 0) {
             newUsersFound.forEach((nu: User) => {
-              broadcastNotification(
-                '🔔 สมาชิกใหม่เข้าร่วมทีม',
-                `คุณ ${nu.alias || nu.name} สมัครเข้าใช้งานในสิทธิ์ [${nu.role}]`,
-                'system',
-                undefined,
-                nu.avatar,
-                false,
-                { actorId: nu.id, actorAlias: nu.alias || nu.name }
-              );
+              if (!['user-ice', 'user-beam', 'user-ann', 'user-mook', 'user-somo'].includes(nu.id)) {
+                broadcastNotification(
+                  '🔔 สมาชิกใหม่เข้าร่วมทีม',
+                  `คุณ ${nu.alias || nu.name} สมัครเข้าใช้งานในสิทธิ์ [${nu.role}]`,
+                  'system',
+                  undefined,
+                  nu.avatar,
+                  false,
+                  { actorId: nu.id, actorAlias: nu.alias || nu.name }
+                );
+              }
             });
           }
           const userMap = new Map<string, User>();
           prevUsers.forEach((u) => userMap.set(u.id, u));
           data.users.forEach((u: User) => userMap.set(u.id, { ...userMap.get(u.id), ...u }));
+
+          // 2-Way Sync: If local has users not on server, push them to server immediately
+          const serverUserIds = new Set(data.users.map((u: User) => u.id));
+          prevUsers.forEach((pu) => {
+            if (!serverUserIds.has(pu.id)) {
+              postUserToCentral(pu);
+            }
+          });
+
           const merged = Array.from(userMap.values());
           safeSetLocalStorage('vitcha_users_v5', JSON.stringify(merged));
           return merged;
@@ -823,13 +841,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setSimulatedFromAdmin(false);
     sessionStorage.removeItem('vitcha_simulated_admin');
     safeSetLocalStorage('vitcha_current_user_v5', JSON.stringify(admin));
-    broadcastNotification(
-      '👑 สลับกลับสู่ไอดีผู้ก่อตั้ง',
-      'คุณกลับเข้าสู่สิทธิ์ SuperiCez (Admin สูงสุด) เรียบร้อยแล้ว',
-      'system',
-      undefined,
-      admin.avatar
-    );
   };
 
   useEffect(() => {
@@ -1651,19 +1662,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const switchUser = (userId: string) => {
     const found = users.find((u) => u.id === userId);
     if (found) {
-      if (currentUser.id === 'user-ice' || currentUser.role === 'admin') {
+      if (currentUser.id === 'user-ice' || currentUser.role === 'admin' || simulatedFromAdmin) {
         setSimulatedFromAdmin(true);
         sessionStorage.setItem('vitcha_simulated_admin', 'true');
       }
       setCurrentUser(found);
       safeSetLocalStorage('vitcha_current_user_v5', JSON.stringify(found));
-      broadcastNotification(
-        '🎭 จำลองมุมมองสมาชิก',
-        `ขณะนี้กำลังแสดงผลในสิทธิ์ของ: ${found.alias} (${found.role})`,
-        'system',
-        undefined,
-        found.avatar
-      );
     }
   };
 

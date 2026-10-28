@@ -49,6 +49,8 @@ export const InviteManagerModal: React.FC<InviteManagerModalProps> = ({
   const [redeemPin, setRedeemPin] = useState('');
   const [redeemSuccess, setRedeemSuccess] = useState(false);
 
+  const realUsers = users.filter((u) => !['user-beam', 'user-ann', 'user-mook'].includes(u.id));
+
   if (!isOpen) return null;
 
   const handleGenerate = (e: React.FormEvent) => {
@@ -148,7 +150,7 @@ export const InviteManagerModal: React.FC<InviteManagerModalProps> = ({
                 : 'text-slate-600 hover:text-slate-900'
             }`}
           >
-            สมาชิก ({users.length})
+            สมาชิก ({realUsers.length})
           </button>
         </div>
       </div>
@@ -398,35 +400,35 @@ export const InviteManagerModal: React.FC<InviteManagerModalProps> = ({
         </div>
       )}
 
-      {/* Tab 3: Users List */}
+      {/* Tab 3: Users List (ซ่อน Account จำลอง ช่างบีม/แอน/มุก ไว้ใช้เฉพาะปุ่มจำลอง) */}
       {activeTab === 'users' && (
         <div className="bg-white p-5 rounded-2xl border border-slate-200/80 space-y-4 shadow-xs">
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="font-bold text-sm text-slate-900">สมาชิกในทีม ({users.length} คน)</h3>
-              <span className="text-xs text-slate-400">ควบคุมด้วยสิทธิ์ RBAC</span>
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="font-bold text-sm text-slate-900">สมาชิกจริงในทีม ({realUsers.length} คน)</h3>
+                <span className="text-xs text-slate-400">ควบคุมด้วยสิทธิ์ RBAC</span>
+              </div>
+              <button
+                type="button"
+                disabled={isRefreshing}
+                onClick={async () => {
+                  setIsRefreshing(true);
+                  try {
+                    await refreshCentralData();
+                  } finally {
+                    setTimeout(() => setIsRefreshing(false), 500);
+                  }
+                }}
+                className="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-[11px] font-bold flex items-center gap-1 transition-all"
+                title="ดึงสมาชิกล่าสุดจากเซิร์ฟเวอร์ Render"
+              >
+                <RefreshCw className={`w-3 h-3 text-emerald-600 ${isRefreshing ? 'animate-spin' : ''}`} />
+                <span>ดึงสมาชิกล่าสุด</span>
+              </button>
             </div>
-            <button
-              type="button"
-              disabled={isRefreshing}
-              onClick={async () => {
-                setIsRefreshing(true);
-                try {
-                  await refreshCentralData();
-                } finally {
-                  setTimeout(() => setIsRefreshing(false), 500);
-                }
-              }}
-              className="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-[11px] font-bold flex items-center gap-1 transition-all"
-              title="ดึงสมาชิกล่าสุดจากเซิร์ฟเวอร์ Render"
-            >
-              <RefreshCw className={`w-3 h-3 text-emerald-600 ${isRefreshing ? 'animate-spin' : ''}`} />
-              <span>ดึงสมาชิกล่าสุด</span>
-            </button>
-          </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {users.map((u) => {
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {realUsers.map((u) => {
               const isSuperAdmin = u.id === 'user-ice';
               return (
                 <div

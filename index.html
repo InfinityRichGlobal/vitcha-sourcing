@@ -24,6 +24,15 @@
   </head>
   <body class="bg-white text-slate-900 antialiased selection:bg-emerald-500 selection:text-white min-h-screen">
     <div id="root"></div>
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('./sw.js').catch((err) => {
+            console.log('SW registration error:', err);
+          });
+        });
+      }
+    </script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
