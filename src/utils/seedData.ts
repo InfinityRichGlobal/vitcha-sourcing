@@ -150,7 +150,7 @@ export const INITIAL_SUPPLIERS: SupplierRecord[] = [
       ],
     },
     videos: [
-      'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
+      'https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4',
     ],
     catalogItems: [
       {
@@ -584,7 +584,7 @@ export const INITIAL_DRINK_STORES: StoreInspoRecord[] = [
       ],
     },
     videos: [
-      'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
+      'https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4',
     ],
     ratings: {
       taste: 5,
@@ -727,7 +727,7 @@ export const INITIAL_DRINK_STORES: StoreInspoRecord[] = [
       ],
     },
     videos: [
-      'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
+      'https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4',
     ],
     ratings: {
       taste: 5,

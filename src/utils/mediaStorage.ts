@@ -57,11 +57,17 @@ export async function readVideoFile(
   return saveVideoFile(file, options);
 }
 
+export const FALLBACK_DEMO_VIDEO_URL =
+  'https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4';
+
 /**
  * Resolves an 'idb://<key>' URL or relative server URL into a playable URL.
  */
 export async function resolveVideoSrc(url?: string): Promise<string> {
   if (!url) return '';
+  if (url.includes('gtv-videos-bucket')) {
+    return FALLBACK_DEMO_VIDEO_URL;
+  }
   if (url.startsWith('/uploads/') || url.startsWith('/media/')) {
     return `${getRenderServerUrl()}${url}`;
   }
