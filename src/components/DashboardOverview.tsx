@@ -159,26 +159,26 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
 
   return (
     <div id="dashboard-section" className="max-w-6xl mx-auto px-3 sm:px-5 py-3.5 space-y-4 animate-in fade-in">
-      {/* 1. Minimal Compact Hero Bar: มีกรอบการ์ดสีขาว + LIVE + VITCHA HUB + ปุ่มธงคู่ตัวเลข */}
-      <div className="bg-white px-4 py-3 rounded-2xl border border-slate-200/90 shadow-2xs flex items-center justify-between gap-2">
-        <div className="flex items-center gap-2.5 shrink-0">
-          <span className="inline-flex items-center gap-1.5 text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-slate-900 text-white shrink-0">
+      {/* 1. Minimal Compact Hero Bar: มีกรอบการ์ดสีขาว + LIVE + VITCHA SOURCING + ปุ่มธงคู่ตัวเลข */}
+      <div className="bg-white px-3.5 sm:px-4 py-2.5 sm:py-3 rounded-2xl border border-slate-200/90 shadow-2xs flex items-center justify-between gap-1.5 sm:gap-2">
+        <div className="flex items-center gap-2 shrink-0">
+          <span className="inline-flex items-center gap-1 text-[9px] sm:text-[10px] font-mono font-bold px-1.5 sm:px-2 py-0.5 rounded-full bg-slate-900 text-white shrink-0">
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
             <span>LIVE</span>
           </span>
-          <h1 className="font-extrabold text-sm sm:text-base text-slate-950 tracking-tight whitespace-nowrap">
-            VITCHA HUB
+          <h1 className="font-extrabold text-xs sm:text-base text-slate-950 tracking-tight whitespace-nowrap">
+            VITCHA SOURCING
           </h1>
         </div>
 
         {/* Compact Flag Country Filter Pill on Right */}
-        <div className="flex items-center gap-1 bg-slate-100 p-0.5 rounded-xl border border-slate-200/80 text-[11px] shrink-0">
+        <div className="flex items-center gap-0.5 sm:gap-1 bg-slate-100 p-0.5 rounded-xl border border-slate-200/80 text-[11px] shrink-0">
           <button
             type="button"
             aria-label="ทั้งหมด"
             title="ทั้งหมด"
             onClick={() => setCountryFilter('all')}
-            className={`px-2.5 py-1 rounded-lg font-bold transition-all flex items-center gap-1 whitespace-nowrap ${
+            className={`px-2 sm:px-2.5 py-1 rounded-lg font-bold transition-all flex items-center gap-1 whitespace-nowrap ${
               countryFilter === 'all'
                 ? 'bg-white text-slate-950 shadow-2xs'
                 : 'text-slate-600 hover:text-slate-950'
@@ -192,7 +192,7 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
             aria-label="จีน"
             title="จีน"
             onClick={() => setCountryFilter('CN')}
-            className={`px-2.5 py-1 rounded-lg font-bold transition-all flex items-center gap-1 whitespace-nowrap ${
+            className={`px-2 sm:px-2.5 py-1 rounded-lg font-bold transition-all flex items-center gap-1 whitespace-nowrap ${
               countryFilter === 'CN'
                 ? 'bg-white text-slate-950 shadow-2xs'
                 : 'text-slate-600 hover:text-slate-950'
@@ -206,7 +206,7 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
             aria-label="ไทย"
             title="ไทย"
             onClick={() => setCountryFilter('TH')}
-            className={`px-2.5 py-1 rounded-lg font-bold transition-all flex items-center gap-1 whitespace-nowrap ${
+            className={`px-2 sm:px-2.5 py-1 rounded-lg font-bold transition-all flex items-center gap-1 whitespace-nowrap ${
               countryFilter === 'TH'
                 ? 'bg-white text-slate-950 shadow-2xs'
                 : 'text-slate-600 hover:text-slate-950'
