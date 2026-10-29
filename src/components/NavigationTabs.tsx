@@ -64,6 +64,10 @@ export const NavigationTabs: React.FC = () => {
             label: 'ตั้งค่าเนื้อหา',
             icon: <Settings className="w-3.5 h-3.5 text-slate-600" />,
           },
+        ]
+      : []),
+    ...(currentUser.id === 'user-ice'
+      ? [
           {
             key: 'trash' as AppViewTab,
             label: 'ถังขยะ',

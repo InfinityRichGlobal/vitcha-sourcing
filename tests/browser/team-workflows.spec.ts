@@ -293,6 +293,8 @@ test("failed audio upload keeps save disabled until retry; uploaded audio and vi
     })
     .click();
   const form = page.getByRole("dialog");
+  await form.locator('input[placeholder*="FEST"]').fill('ซัพพลายเออร์ทดสอบ');
+  await form.locator('select').first().selectOption({ index: 1 });
   await page.route("**/api/upload", (route) =>
     route.fulfill({
       status: 503,

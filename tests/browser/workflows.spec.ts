@@ -75,7 +75,10 @@ async function newSupplier(page: Page) {
   await navigateTab(page, 'ซัพพลายเออร์');
   await page.getByTitle('เพิ่มข้อมูลใหม่ (ซัพพลายเออร์ หรือ ร้านน้ำ & เรฟ)').click();
   await page.getByRole('button', { name: 'เพิ่มซัพพลายเออร์ โรงงาน · อุปกรณ์ · วัตถุดิบชา & บรรจุภัณฑ์' }).click();
-  return page.getByRole('dialog');
+  const dialog = page.getByRole('dialog');
+  await dialog.locator('input[placeholder*="FEST"]').fill('ซัพพลายเออร์ทดสอบ');
+  await dialog.locator('select').first().selectOption({ index: 1 });
+  return dialog;
 }
 
 test('overlapping photo batches keep save disabled until every image is ready', async ({ page }) => {
@@ -157,6 +160,8 @@ test('store bulk photos are included and inline replacement preserves a concurre
     window.Image = function () { const img = new NativeImage(); Object.defineProperty(img, 'src', { set(v) { setTimeout(() => descriptor.set!.call(img, v), 1000); } }); return img; } as typeof Image;
   });
   await dialog.locator('input[type="file"][accept="image/*"]').nth(4).setInputFiles({ name: 'replacement.png', mimeType: 'image/png', buffer: pixel });
+  await dialog.locator('input[placeholder*="CHAGEE"]').fill('ร้านน้ำทดสอบ');
+  await dialog.locator('button:has-text("ชาผลไม้")').first().click();
   await dialog.getByPlaceholder('ชื่อเมนูเครื่องดื่ม (เว้นว่างได้)').first().fill('Name typed during image processing');
   const save = dialog.getByRole('button', { name: 'บันทึกร้านน้ำ', exact: true });
   await expect(save).toBeDisabled(); await expect(save).toBeEnabled();

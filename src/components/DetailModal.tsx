@@ -4,7 +4,7 @@ import { SupplierRecord, StoreInspoRecord, LocationRecord, PipelineStatus } from
 import { useApp } from '../context/AppContext';
 import { SeenByBadge } from './SeenByBadge';
 import { openExecutiveReport } from '../utils/exportReport';
-import { getDemoVoiceWavDataUri, getItemVoiceNotes } from '../utils/audioHelper';
+import { getItemVoiceNotes } from '../utils/audioHelper';
 import { VideoPlayer } from './VideoPlayer';
 import {
   X,
@@ -94,10 +94,6 @@ export const DetailModal: React.FC<DetailModalProps> = ({
 
   const [activeImageIndex, setActiveImageIndex] = useState<number | null>(null);
   const [newReviewText, setNewReviewText] = useState('');
-  const [isPlayingAudio, setIsPlayingAudio] = useState(false);
-  const [playingSubAudioId, setPlayingSubAudioId] = useState<string | null>(null);
-  const audioRef = React.useRef<HTMLAudioElement | null>(null);
-  const subAudioRef = React.useRef<HTMLAudioElement | null>(null);
 
   // Threaded reply states (supports continuous replies to any reply + collapsible threads)
   const [replyTarget, setReplyTarget] = useState<{ noteId: string; author: string } | null>(null);
@@ -137,8 +133,6 @@ export const DetailModal: React.FC<DetailModalProps> = ({
       recordItemView(item.id, item.type);
     }
     setActiveImageIndex(null);
-    setIsPlayingAudio(false);
-    setPlayingSubAudioId(null);
     return () => {
       if (commentTimerRef.current) clearInterval(commentTimerRef.current);
       if (commentRecorderRef.current?.state === 'recording') commentRecorderRef.current.stop();
@@ -383,49 +377,7 @@ export const DetailModal: React.FC<DetailModalProps> = ({
   const mainVoiceClips = getItemVoiceNotes(currentItem);
   const mainAudioSrc =
     mainVoiceClips[0]?.url ||
-    (isSupplier ? supplier?.voiceNoteUrl : store?.voiceNoteUrl) ||
-    ((isSupplier ? supplier?.voiceDurationSec : store?.voiceDurationSec)
-      ? getDemoVoiceWavDataUri(4)
-      : undefined);
-
-  const toggleAudio = () => {
-    if (!audioRef.current) return;
-    if (isPlayingAudio) {
-      audioRef.current.pause();
-      setIsPlayingAudio(false);
-    } else {
-      audioRef.current
-        .play()
-        .then(() => setIsPlayingAudio(true))
-        .catch(() => {
-          if (audioRef.current) {
-            audioRef.current.src = getDemoVoiceWavDataUri(4);
-            audioRef.current.play();
-            setIsPlayingAudio(true);
-          }
-        });
-    }
-  };
-
-  const toggleSubAudio = (subId: string, url?: string) => {
-    if (!subAudioRef.current) return;
-    if (playingSubAudioId === subId) {
-      subAudioRef.current.pause();
-      setPlayingSubAudioId(null);
-    } else {
-      subAudioRef.current.src = url || getDemoVoiceWavDataUri(4);
-      subAudioRef.current
-        .play()
-        .then(() => setPlayingSubAudioId(subId))
-        .catch(() => {
-          if (subAudioRef.current) {
-            subAudioRef.current.src = getDemoVoiceWavDataUri(4);
-            subAudioRef.current.play();
-            setPlayingSubAudioId(subId);
-          }
-        });
-    }
-  };
+    (isSupplier ? supplier?.voiceNoteUrl : store?.voiceNoteUrl);
 
   return (
     <div className="fixed inset-0 z-[90] bg-black/45 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4 overflow-y-auto">
@@ -478,16 +430,16 @@ export const DetailModal: React.FC<DetailModalProps> = ({
           </div>
 
           {/* Row 2: Separate Action Toolbar Row (แก้ไข · ถูกใจ · แชร์ LINE · PDF · พิมพ์) */}
-          <div className="flex items-center gap-1.5 flex-wrap pt-2 border-t border-slate-100">
+          <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pt-2 border-t border-slate-100 select-none">
             {/* Edit Item Button (เฉพาะ 2 สิทธิ์ระดับบน Admin & Editor) */}
             {canEditItems && (
               <button
                 type="button"
                 onClick={() => openEditItem(currentItem)}
-                className="px-2.5 py-1 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200/90 text-[11px] font-bold active:scale-95 transition-all inline-flex items-center gap-1"
+                className="h-7 sm:h-8 px-2.5 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200/90 text-xs font-bold active:scale-95 transition-all inline-flex items-center gap-1 whitespace-nowrap shrink-0"
                 title="แก้ไขข้อมูลรายการนี้ (Admin / Editor)"
               >
-                <Pencil className="w-3 h-3 text-amber-600" />
+                <Pencil className="w-3 h-3 text-amber-600 shrink-0" />
                 <span>แก้ไข</span>
               </button>
             )}
@@ -497,10 +449,10 @@ export const DetailModal: React.FC<DetailModalProps> = ({
               <button
                 type="button"
                 onClick={handleDeleteItem}
-                className="px-2.5 py-1 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-[11px] font-bold active:scale-95 transition-all inline-flex items-center gap-1"
-                title="ย้ายรายการนี้ไปถังขยะ (Owner / Admin)"
+                className="h-7 sm:h-8 px-2.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-xs font-bold active:scale-95 transition-all inline-flex items-center gap-1 whitespace-nowrap shrink-0"
+                title="ย้ายรายการนี้ไปถังขยะ"
               >
-                <Trash2 className="w-3 h-3 text-rose-600" />
+                <Trash2 className="w-3 h-3 text-rose-600 shrink-0" />
                 <span>ย้ายไปถังขยะ</span>
               </button>
             )}
@@ -509,7 +461,7 @@ export const DetailModal: React.FC<DetailModalProps> = ({
             <button
               type="button"
               onClick={() => toggleLikeItem(currentItem.id, currentItem.type)}
-              className={`px-2.5 py-1 rounded-lg border transition-all active:scale-95 inline-flex items-center gap-1 text-[11px] font-bold ${
+              className={`h-7 sm:h-8 px-2.5 rounded-xl border transition-all active:scale-95 inline-flex items-center gap-1 text-xs font-bold whitespace-nowrap shrink-0 ${
                 isLikedByMe
                   ? 'bg-blue-50 text-blue-700 border-blue-200'
                   : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
@@ -517,7 +469,7 @@ export const DetailModal: React.FC<DetailModalProps> = ({
               title={`ถูกใจ (${likes.length})`}
             >
               <ThumbsUp
-                className={`w-3 h-3 ${isLikedByMe ? 'fill-blue-600 text-blue-600' : ''}`}
+                className={`w-3 h-3 shrink-0 ${isLikedByMe ? 'fill-blue-600 text-blue-600' : ''}`}
               />
               <span>ถูกใจ{likes.length > 0 ? ` (${likes.length})` : ''}</span>
             </button>
@@ -526,10 +478,10 @@ export const DetailModal: React.FC<DetailModalProps> = ({
             <button
               type="button"
               onClick={() => onShareToLine(currentItem)}
-              className="px-2.5 py-1 rounded-lg bg-[#06C755] hover:bg-[#05b34c] text-white text-[11px] font-bold transition-all active:scale-95 inline-flex items-center gap-1"
+              className="h-7 sm:h-8 px-2.5 rounded-xl bg-[#06C755] hover:bg-[#05b34c] text-white text-xs font-bold transition-all active:scale-95 inline-flex items-center gap-1 whitespace-nowrap shrink-0 shadow-2xs"
               title="แชร์ลิงก์เข้า LINE"
             >
-              <Share2 className="w-3 h-3" />
+              <Share2 className="w-3 h-3 shrink-0" />
               <span>แชร์ LINE</span>
             </button>
 
@@ -537,10 +489,10 @@ export const DetailModal: React.FC<DetailModalProps> = ({
             <button
               type="button"
               onClick={() => openExecutiveReport(currentItem, convertCnyToThb, 'pdf')}
-              className="px-2.5 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-[11px] font-bold transition-all active:scale-95 inline-flex items-center gap-1"
+              className="h-7 sm:h-8 px-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition-all active:scale-95 inline-flex items-center gap-1 whitespace-nowrap shrink-0"
               title="ดาวน์โหลดรายงานเป็นไฟล์ PDF"
             >
-              <FileDown className="w-3 h-3 text-emerald-400" />
+              <FileDown className="w-3 h-3 text-emerald-400 shrink-0" />
               <span>ดาวน์โหลด PDF</span>
             </button>
 
@@ -548,10 +500,10 @@ export const DetailModal: React.FC<DetailModalProps> = ({
             <button
               type="button"
               onClick={() => openExecutiveReport(currentItem, convertCnyToThb, 'print')}
-              className="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-[11px] font-bold transition-all border border-slate-200/80 active:scale-95 inline-flex items-center gap-1"
+              className="h-7 sm:h-8 px-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-all border border-slate-200/80 active:scale-95 inline-flex items-center gap-1 whitespace-nowrap shrink-0"
               title="พิมพ์รายงานฉบับจัดหน้าสวยงาม (Print)"
             >
-              <Printer className="w-3 h-3 text-slate-600" />
+              <Printer className="w-3 h-3 text-slate-600 shrink-0" />
               <span>พิมพ์</span>
             </button>
           </div>
@@ -607,6 +559,7 @@ export const DetailModal: React.FC<DetailModalProps> = ({
           </div>
 
           {/* Voice Memo Player (รองรับหลายคลิปเสียงไม่จำกัด) */}
+          {/* Main Voice Note Clips (Direct Native Audio Player) */}
           {mainVoiceClips.length > 0 && (
             <div className="p-3 bg-emerald-50/70 border border-emerald-200/80 rounded-xl space-y-2">
               <div className="text-xs font-bold text-emerald-950 flex items-center justify-between">
@@ -615,51 +568,37 @@ export const DetailModal: React.FC<DetailModalProps> = ({
                   <span>วอยซ์เสียงบันทึกหน้างานจริง ({mainVoiceClips.length} คลิป)</span>
                 </span>
                 <span className="text-[10px] font-mono text-emerald-700">
-                  แตะ ▶ เพื่อฟังแต่ละคลิป
+                  แตะ ▶ เพื่อฟังเสียงบันทึก
                 </span>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                {mainVoiceClips.map((clip, cIdx) => {
-                  const isClipPlaying = playingSubAudioId === `main-${clip.id || cIdx}`;
-                  return (
-                    <div
-                      key={clip.id || cIdx}
-                      className="p-2 bg-white border border-emerald-200 rounded-xl flex items-center justify-between gap-2 shadow-2xs"
-                    >
-                      <div className="flex items-center gap-2.5 min-w-0">
-                        <button
-                          type="button"
-                          onClick={() => toggleSubAudio(`main-${clip.id || cIdx}`, clip.url)}
-                          className="w-8 h-8 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white flex items-center justify-center shadow-xs transition-colors shrink-0"
-                        >
-                          {isClipPlaying ? (
-                            <Pause className="w-3.5 h-3.5" />
-                          ) : (
-                            <Play className="w-3.5 h-3.5 ml-0.5" />
-                          )}
-                        </button>
-                        <div className="min-w-0">
-                          <div className="text-xs font-bold text-slate-900 truncate">
-                            {clip.label || `คลิปเสียง #${cIdx + 1}`}
-                          </div>
-                          <div className="text-[10px] text-emerald-700 font-mono">
-                            {clip.durationSec || 4} วินาที ·{' '}
-                            {isClipPlaying ? 'กำลังเล่น...' : 'แตะเพื่อฟัง'}
-                          </div>
-                        </div>
+                {mainVoiceClips.map((clip, cIdx) => (
+                  <div
+                    key={clip.id || cIdx}
+                    className="p-2.5 bg-white border border-emerald-200 rounded-xl flex flex-col justify-between gap-1.5 shadow-2xs"
+                  >
+                    <div className="flex items-center justify-between gap-2 min-w-0">
+                      <div className="text-xs font-bold text-slate-900 truncate flex items-center gap-1.5">
+                        <Volume2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                        <span className="truncate">{clip.label || `คลิปเสียง #${cIdx + 1}`}</span>
                       </div>
+                      <span className="text-[10px] text-emerald-700 font-mono shrink-0">
+                        {clip.durationSec ? `${clip.durationSec} วินาที` : 'เสียงบันทึก'}
+                      </span>
                     </div>
-                  );
-                })}
+                    {clip.url && (
+                      <audio
+                        controls
+                        preload="metadata"
+                        playsInline
+                        src={clip.url}
+                        className="h-8 w-full rounded-lg"
+                      />
+                    )}
+                  </div>
+                ))}
               </div>
-
-              <audio
-                ref={audioRef}
-                src={mainAudioSrc}
-                onEnded={() => setIsPlayingAudio(false)}
-                className="hidden"
-              />
             </div>
           )}
 
@@ -947,27 +886,19 @@ export const DetailModal: React.FC<DetailModalProps> = ({
                         <p className="text-[11px] text-slate-600 whitespace-pre-wrap leading-relaxed">{catItem.memo}</p>
                       )}
                       {getItemVoiceNotes(catItem).length > 0 && (
-                        <div className="flex flex-wrap gap-1 pt-1">
-                          {getItemVoiceNotes(catItem).map((vClip, vIdx) => {
-                            const subKey = `${catItem.id}-v-${vClip.id || vIdx}`;
-                            return (
-                              <button
-                                key={subKey}
-                                type="button"
-                                onClick={() => toggleSubAudio(subKey, vClip.url)}
-                                className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] font-bold"
-                              >
-                                {playingSubAudioId === subKey ? (
-                                  <Pause className="w-2.5 h-2.5" />
-                                ) : (
-                                  <Play className="w-2.5 h-2.5" />
-                                )}
-                                <span>
-                                  {vClip.label || `ฟังเสียง #${vIdx + 1}`} ({vClip.durationSec || 4}s)
-                                </span>
-                              </button>
-                            );
-                          })}
+                        <div className="space-y-1 pt-1">
+                          {getItemVoiceNotes(catItem).map((vClip, vIdx) => (
+                            <div key={vIdx} className="flex flex-col sm:flex-row sm:items-center gap-1 bg-emerald-50/90 p-1.5 rounded-lg border border-emerald-200/80">
+                              <span className="text-[10px] font-bold text-emerald-900 truncate min-w-0 flex items-center gap-1">
+                                <Volume2 className="w-3 h-3 text-emerald-600 shrink-0" />
+                                <span className="truncate">{vClip.label || `เสียง #${vIdx + 1}`}</span>
+                                {vClip.durationSec ? `(${vClip.durationSec}s)` : ''}
+                              </span>
+                              {vClip.url && (
+                                <audio controls preload="metadata" playsInline src={vClip.url} className="h-6 w-full sm:w-44 shrink-0" />
+                              )}
+                            </div>
+                          ))}
                         </div>
                       )}
                     </div>
@@ -1020,27 +951,19 @@ export const DetailModal: React.FC<DetailModalProps> = ({
                         <p className="text-[11px] text-slate-600">{drink.gimmickNotes}</p>
                       )}
                       {getItemVoiceNotes(drink).length > 0 && (
-                        <div className="flex flex-wrap gap-1 pt-1">
-                          {getItemVoiceNotes(drink).map((vClip, vIdx) => {
-                            const subKey = `${drink.id}-v-${vClip.id || vIdx}`;
-                            return (
-                              <button
-                                key={subKey}
-                                type="button"
-                                onClick={() => toggleSubAudio(subKey, vClip.url)}
-                                className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-amber-50 text-amber-800 border border-amber-200 text-[10px] font-bold"
-                              >
-                                {playingSubAudioId === subKey ? (
-                                  <Pause className="w-2.5 h-2.5" />
-                                ) : (
-                                  <Play className="w-2.5 h-2.5" />
-                                )}
-                                <span>
-                                  {vClip.label || `ฟังเสียง #${vIdx + 1}`} ({vClip.durationSec || 4}s)
-                                </span>
-                              </button>
-                            );
-                          })}
+                        <div className="space-y-1 pt-1">
+                          {getItemVoiceNotes(drink).map((vClip, vIdx) => (
+                            <div key={vIdx} className="flex flex-col sm:flex-row sm:items-center gap-1 bg-amber-50/90 p-1.5 rounded-lg border border-amber-200/80">
+                              <span className="text-[10px] font-bold text-amber-900 truncate min-w-0 flex items-center gap-1">
+                                <Volume2 className="w-3 h-3 text-amber-600 shrink-0" />
+                                <span className="truncate">{vClip.label || `เสียง #${vIdx + 1}`}</span>
+                                {vClip.durationSec ? `(${vClip.durationSec}s)` : ''}
+                              </span>
+                              {vClip.url && (
+                                <audio controls preload="metadata" playsInline src={vClip.url} className="h-6 w-full sm:w-44 shrink-0" />
+                              )}
+                            </div>
+                          ))}
                         </div>
                       )}
                     </div>
@@ -1049,12 +972,6 @@ export const DetailModal: React.FC<DetailModalProps> = ({
               </div>
             </div>
           )}
-
-          <audio
-            ref={subAudioRef}
-            onEnded={() => setPlayingSubAudioId(null)}
-            className="hidden"
-          />
 
           {/* Photo Gallery */}
           <div className="space-y-2">
@@ -1631,20 +1548,20 @@ export const DetailModal: React.FC<DetailModalProps> = ({
         </div>
 
         {/* Footer */}
-        <div className="p-3.5 border-t border-slate-100 bg-white flex items-center justify-between">
-          <div className="text-[11px] text-slate-400 font-mono">
+        <div className="p-3 sm:p-3.5 border-t border-slate-100 bg-white flex items-center justify-between gap-2 select-none">
+          <div className="text-[11px] text-slate-400 font-mono truncate hidden sm:block">
             ID: {currentItem.id} · ปรับปรุง:{' '}
             {new Date(currentItem.updatedAt).toLocaleTimeString('th-TH')}
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center justify-end gap-1.5 sm:gap-2 w-full sm:w-auto">
             {canDeleteItems && (
               <button
                 type="button"
                 onClick={handleDeleteItem}
-                className="px-3.5 py-1.5 text-xs font-bold rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 flex items-center gap-1.5 transition-colors"
+                className="px-2.5 sm:px-3 py-1.5 text-xs font-bold rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 flex items-center justify-center gap-1.5 transition-colors whitespace-nowrap active:scale-95 shrink-0"
                 title="ย้ายรายการนี้ไปถังขยะ"
               >
-                <Trash2 className="w-3.5 h-3.5 text-rose-600" />
+                <Trash2 className="w-3.5 h-3.5 text-rose-600 shrink-0" />
                 <span>ย้ายไปถังขยะ</span>
               </button>
             )}
@@ -1652,17 +1569,17 @@ export const DetailModal: React.FC<DetailModalProps> = ({
               <button
                 type="button"
                 onClick={() => openEditItem(currentItem)}
-                className="px-3.5 py-1.5 text-xs font-bold rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-300 flex items-center gap-1.5 transition-colors"
+                className="px-2.5 sm:px-3.5 py-1.5 text-xs font-bold rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-300 flex items-center justify-center gap-1.5 transition-colors whitespace-nowrap active:scale-95 shrink-0"
               >
-                <Pencil className="w-3.5 h-3.5 text-amber-600" />
-                <span>แก้ไขข้อมูลรายการนี้</span>
+                <Pencil className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                <span>แก้ไขข้อมูล</span>
               </button>
             )}
             <button
               onClick={onClose}
-              className="px-4 py-1.5 text-xs font-bold rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 transition-colors"
+              className="px-3.5 sm:px-4 py-1.5 text-xs font-bold rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 transition-colors whitespace-nowrap active:scale-95 shrink-0"
             >
-              ปิดหน้าต่าง
+              ปิด
             </button>
           </div>
         </div>

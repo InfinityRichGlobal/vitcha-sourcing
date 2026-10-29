@@ -14,6 +14,20 @@ interface MapViewProps {
   initialFilterType?: 'all' | 'suppliers' | 'drink_stores' | 'locations';
 }
 
+function resolveItemCountry(item: { country?: string; location?: { lat?: number; lng?: number } }): 'CN' | 'TH' {
+  const lat = item.location?.lat;
+  const lng = item.location?.lng;
+  if (typeof lat === 'number' && typeof lng === 'number' && lat !== 0 && lng !== 0) {
+    if (lat >= 5 && lat <= 20.8 && lng >= 97 && lng <= 106) {
+      return 'TH';
+    }
+    if (lat >= 18.2 && lat <= 54 && lng >= 73 && lng <= 135) {
+      return 'CN';
+    }
+  }
+  return item.country === 'TH' ? 'TH' : 'CN';
+}
+
 export const MapView: React.FC<MapViewProps> = ({
   onSelectSupplier,
   onSelectStoreInspo,
@@ -32,8 +46,8 @@ export const MapView: React.FC<MapViewProps> = ({
   const [filterType, setFilterType] = useState<'all' | 'suppliers' | 'drink_stores' | 'locations'>(
     initialFilterType || 'all'
   );
-  const [regionFocus, setRegionFocus] = useState<'CN' | 'TH' | 'ALL'>(
-    initialFilterType === 'locations' ? 'ALL' : 'CN'
+  const [regionFocus, setRegionFocus] = useState<'ALL' | 'TH' | 'CN'>(
+    'ALL'
   );
 
   useEffect(() => {
@@ -133,7 +147,7 @@ export const MapView: React.FC<MapViewProps> = ({
     if (filterType === 'all' || filterType === 'suppliers') {
       suppliers.forEach((s) => {
         if (!s.location?.lat || !s.location?.lng) return;
-        const itemCountry = s.country || 'CN';
+        const itemCountry = resolveItemCountry(s);
         if (regionFocus !== 'ALL' && regionFocus !== itemCountry) return;
 
         const photo =
@@ -165,9 +179,7 @@ export const MapView: React.FC<MapViewProps> = ({
         });
 
         markersLayerRef.current?.addLayer(marker);
-        if (regionFocus === 'ALL' || regionFocus === itemCountry) {
-          bounds.extend([s.location.lat, s.location.lng]);
-        }
+        bounds.extend([s.location.lat, s.location.lng]);
       });
     }
 
@@ -175,7 +187,7 @@ export const MapView: React.FC<MapViewProps> = ({
     if (filterType === 'all' || filterType === 'drink_stores') {
       drinkStores.forEach((d) => {
         if (!d.location?.lat || !d.location?.lng) return;
-        const itemCountry = d.country || 'CN';
+        const itemCountry = resolveItemCountry(d);
         if (regionFocus !== 'ALL' && regionFocus !== itemCountry) return;
 
         const photo =
@@ -207,9 +219,7 @@ export const MapView: React.FC<MapViewProps> = ({
         });
 
         markersLayerRef.current?.addLayer(marker);
-        if (regionFocus === 'ALL' || regionFocus === itemCountry) {
-          bounds.extend([d.location.lat, d.location.lng]);
-        }
+        bounds.extend([d.location.lat, d.location.lng]);
       });
     }
 
@@ -217,7 +227,7 @@ export const MapView: React.FC<MapViewProps> = ({
     if (filterType === 'all' || filterType === 'locations') {
       locations.forEach((loc) => {
         if (!loc.location?.lat || !loc.location?.lng) return;
-        const itemCountry = loc.country || 'TH';
+        const itemCountry = resolveItemCountry(loc);
         if (regionFocus !== 'ALL' && regionFocus !== itemCountry) return;
 
         const photo =
@@ -249,9 +259,7 @@ export const MapView: React.FC<MapViewProps> = ({
         });
 
         markersLayerRef.current?.addLayer(marker);
-        if (regionFocus === 'ALL' || regionFocus === itemCountry) {
-          bounds.extend([loc.location.lat, loc.location.lng]);
-        }
+        bounds.extend([loc.location.lat, loc.location.lng]);
       });
     }
 
@@ -262,19 +270,21 @@ export const MapView: React.FC<MapViewProps> = ({
       map.fitBounds(bounds, {
         padding: [36, 36],
         maxZoom: regionFocus === 'ALL' ? 12 : 13,
-        animate: false,
+        animate: true,
       });
     } else if (regionFocus === 'CN') {
-      map.setView([23.115, 113.325], 11, { animate: false });
+      map.setView([23.115, 113.325], 11, { animate: true });
     } else if (regionFocus === 'TH') {
-      map.setView([13.7563, 100.5018], 11, { animate: false });
+      map.setView([13.7563, 100.5018], 11, { animate: true });
+    } else {
+      map.setView([18.0, 107.0], 5, { animate: true });
     }
   }, [suppliers, drinkStores, locations, filterType, regionFocus, mapAttempt]);
 
   useEffect(() => { setSelectedPin(null); }, [filterType, regionFocus]);
-  const regionSuppliers = suppliers.filter(s => regionFocus === 'ALL' || (s.country || 'CN') === regionFocus);
-  const regionStores = drinkStores.filter(s => regionFocus === 'ALL' || (s.country || 'CN') === regionFocus);
-  const regionLocations = locations.filter(l => regionFocus === 'ALL' || (l.country || 'TH') === regionFocus);
+  const regionSuppliers = suppliers.filter(s => regionFocus === 'ALL' || resolveItemCountry(s) === regionFocus);
+  const regionStores = drinkStores.filter(d => regionFocus === 'ALL' || resolveItemCountry(d) === regionFocus);
+  const regionLocations = locations.filter(l => regionFocus === 'ALL' || resolveItemCountry(l) === regionFocus);
 
   // Combined list of pinned items for quick-jump bar below map
   const quickPinItems = [
@@ -282,7 +292,7 @@ export const MapView: React.FC<MapViewProps> = ({
       ? suppliers.map((s) => ({
           id: s.id,
           title: s.name,
-          country: s.country || 'CN',
+          country: resolveItemCountry(s),
           lat: s.location.lat,
           lng: s.location.lng,
           type: 'supplier' as const,
@@ -293,7 +303,7 @@ export const MapView: React.FC<MapViewProps> = ({
       ? drinkStores.map((d) => ({
           id: d.id,
           title: d.storeName,
-          country: d.country || 'CN',
+          country: resolveItemCountry(d),
           lat: d.location.lat,
           lng: d.location.lng,
           type: 'drink_store' as const,
@@ -304,7 +314,7 @@ export const MapView: React.FC<MapViewProps> = ({
       ? locations.map((loc) => ({
           id: loc.id,
           title: loc.name,
-          country: loc.country || 'TH',
+          country: resolveItemCountry(loc),
           lat: loc.location.lat,
           lng: loc.location.lng,
           type: 'location' as const,
@@ -324,102 +334,104 @@ export const MapView: React.FC<MapViewProps> = ({
     <div className="space-y-2 min-w-0 max-w-full overflow-hidden" data-testid="english-map" data-map-status={mapStatus} data-map-error={mapFailure}>
       <span className="sr-only">Map language: English</span>
       <div className="relative isolate w-full h-[380px] sm:h-[430px] overflow-hidden rounded-2xl border border-slate-200/90 shadow-2xs bg-slate-100">
-        {/* Top Left Corner: Ultra-Compact Type Filter Bar */}
-        <div className="absolute top-1.5 left-1.5 z-[400] flex items-center gap-0.5 bg-white/90 backdrop-blur-md p-0.5 rounded-lg border border-slate-200/80 shadow-2xs max-w-[calc(100%-80px)] overflow-x-auto no-scrollbar">
+        {/* Top Left Corner: 3 Distinct Colored Buttons with FontAwesome IconFonts */}
+        <div className="absolute top-1.5 left-1.5 z-[400] flex items-center gap-1 bg-white/95 backdrop-blur-md p-1 rounded-xl border border-slate-200/90 shadow-2xs max-w-[calc(100%-110px)] overflow-x-auto no-scrollbar">
           <button
             type="button"
             onClick={() => setFilterType('all')}
-            className={`flex items-center gap-1 px-1.5 sm:px-2 py-0.5 rounded-md text-[10px] sm:text-[11px] font-bold transition-all ${
+            className={`flex items-center gap-1.5 px-2 py-1 rounded-lg text-[10px] sm:text-[11px] font-bold transition-all whitespace-nowrap ${
               filterType === 'all'
                 ? 'bg-slate-900 text-white shadow-2xs'
-                : 'text-slate-600 hover:text-slate-900'
+                : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
             }`}
           >
-            <Layers className="w-2.5 h-2.5 hidden sm:inline" />
+            <i className="fa-solid fa-layer-group text-[10px]" />
             <span>ทั้งหมด ({regionSuppliers.length + regionStores.length + regionLocations.length})</span>
           </button>
 
           <button
             type="button"
             onClick={() => setFilterType('suppliers')}
-            className={`flex items-center gap-1 px-1.5 sm:px-2 py-0.5 rounded-md text-[10px] sm:text-[11px] font-bold transition-all ${
+            className={`flex items-center gap-1.5 px-2 py-1 rounded-lg text-[10px] sm:text-[11px] font-bold transition-all whitespace-nowrap ${
               filterType === 'suppliers'
                 ? 'bg-emerald-600 text-white shadow-2xs'
-                : 'text-slate-600 hover:text-emerald-700'
+                : 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200/70'
             }`}
           >
-            <Factory className="w-2.5 h-2.5 hidden sm:inline" />
+            <i className="fa-solid fa-industry text-[10px]" />
             <span>ซัพ ({regionSuppliers.length})</span>
           </button>
 
           <button
             type="button"
             onClick={() => setFilterType('drink_stores')}
-            className={`flex items-center gap-1 px-1.5 sm:px-2 py-0.5 rounded-md text-[10px] sm:text-[11px] font-bold transition-all ${
+            className={`flex items-center gap-1.5 px-2 py-1 rounded-lg text-[10px] sm:text-[11px] font-bold transition-all whitespace-nowrap ${
               filterType === 'drink_stores'
                 ? 'bg-amber-600 text-white shadow-2xs'
-                : 'text-slate-600 hover:text-amber-700'
+                : 'bg-amber-50 text-amber-700 hover:bg-amber-100 border border-amber-200/70'
             }`}
           >
-            <Coffee className="w-2.5 h-2.5 hidden sm:inline" />
+            <i className="fa-solid fa-mug-hot text-[10px]" />
             <span>ร้านน้ำ ({regionStores.length})</span>
           </button>
 
-          {/* New Location Filter Pill (สีฟ้าตามคำสั่งผู้ใช้) */}
           <button
             type="button"
             onClick={() => setFilterType('locations')}
-            className={`flex items-center gap-1 px-1.5 sm:px-2 py-0.5 rounded-md text-[10px] sm:text-[11px] font-bold transition-all ${
+            className={`flex items-center gap-1.5 px-2 py-1 rounded-lg text-[10px] sm:text-[11px] font-bold transition-all whitespace-nowrap ${
               filterType === 'locations'
                 ? 'bg-sky-600 text-white shadow-2xs'
-                : 'text-slate-600 hover:text-sky-700'
+                : 'bg-sky-50 text-sky-700 hover:bg-sky-100 border border-sky-200/70'
             }`}
           >
-            <MapPin className="w-2.5 h-2.5 hidden sm:inline" />
+            <i className="fa-solid fa-map-location-dot text-[10px]" />
             <span>สถานที่ ({regionLocations.length})</span>
           </button>
         </div>
 
-        {/* Top Right Corner: Ultra-Compact Flag Region Switcher (ชิดมุมขวาบน ธงจีน / ธงไทย / รวม) */}
-        <div className="absolute top-1.5 right-1.5 z-[400] flex items-center gap-0.5 bg-white/90 backdrop-blur-md p-0.5 rounded-lg border border-slate-200/80 shadow-2xs">
+        {/* Top Right Corner: Minimal Country Switcher: โลก (ALL) -> ไทย (TH) -> จีน (CN) */}
+        <div className="absolute top-1.5 right-1.5 z-[400] flex items-center gap-0.5 bg-white/95 backdrop-blur-md p-1 rounded-xl border border-slate-200/90 shadow-2xs">
           <button
             type="button"
-            aria-label="China"
-            title="โซนจีน (China)"
-            onClick={() => setRegionFocus('CN')}
-            className={`px-1.5 sm:px-2 py-0.5 rounded-md text-[10px] sm:text-[11px] font-bold transition-all flex items-center gap-1 ${
-              regionFocus === 'CN'
-                ? 'bg-rose-600 text-white shadow-2xs'
-                : 'text-slate-700 hover:bg-slate-100'
+            aria-label="All regions"
+            title="รวมทุกโซน / แผนที่โลก"
+            onClick={() => setRegionFocus('ALL')}
+            className={`px-1.5 sm:px-2 py-1 rounded-lg text-[10px] sm:text-[11px] font-bold transition-all flex items-center gap-1 whitespace-nowrap ${
+              regionFocus === 'ALL'
+                ? 'bg-slate-900 text-white shadow-2xs'
+                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
             }`}
           >
-            <span className="text-xs leading-none">🇨🇳</span>
+            <span className="text-xs leading-none">🌐</span>
+            <span className="hidden sm:inline">โลก</span>
           </button>
           <button
             type="button"
             aria-label="Thailand"
-            title="โซนไทย (Thailand)"
+            title="โซนไทย"
             onClick={() => setRegionFocus('TH')}
-            className={`px-1.5 sm:px-2 py-0.5 rounded-md text-[10px] sm:text-[11px] font-bold transition-all flex items-center gap-1 ${
+            className={`px-1.5 sm:px-2 py-1 rounded-lg text-[10px] sm:text-[11px] font-bold transition-all flex items-center gap-1 whitespace-nowrap ${
               regionFocus === 'TH'
                 ? 'bg-sky-600 text-white shadow-2xs'
-                : 'text-slate-700 hover:bg-slate-100'
+                : 'text-slate-600 hover:text-sky-700 hover:bg-sky-50'
             }`}
           >
             <span className="text-xs leading-none">🇹🇭</span>
+            <span className="hidden sm:inline">ไทย</span>
           </button>
           <button
             type="button"
-            aria-label="All regions"
-            title="รวมทุกโซน (All regions)"
-            onClick={() => setRegionFocus('ALL')}
-            className={`px-1.5 sm:px-2 py-0.5 rounded-md text-[10px] sm:text-[11px] font-bold transition-all flex items-center gap-1 ${
-              regionFocus === 'ALL'
-                ? 'bg-slate-900 text-white shadow-2xs'
-                : 'text-slate-700 hover:bg-slate-100'
+            aria-label="China"
+            title="โซนจีน"
+            onClick={() => setRegionFocus('CN')}
+            className={`px-1.5 sm:px-2 py-1 rounded-lg text-[10px] sm:text-[11px] font-bold transition-all flex items-center gap-1 whitespace-nowrap ${
+              regionFocus === 'CN'
+                ? 'bg-rose-600 text-white shadow-2xs'
+                : 'text-slate-600 hover:text-rose-700 hover:bg-rose-50'
             }`}
           >
-            <span className="text-xs leading-none">🌏</span>
+            <span className="text-xs leading-none">🇨🇳</span>
+            <span className="hidden sm:inline">จีน</span>
           </button>
         </div>
 

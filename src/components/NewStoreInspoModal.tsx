@@ -296,7 +296,16 @@ export const NewStoreInspoModal: React.FC<NewStoreInspoModalProps> = ({ isOpen, 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (savingRef.current || audioJobs.current.size || isVideoLoading || isLocating) return;
-    const finalCategory = storeCategory.trim() || (isEditMode && editingStore ? editingStore.storeCategory : '') || (storeCategories[0] || 'ชาผลไม้ & ชีสที');
+    const finalName = storeName.trim();
+    if (!finalName) {
+      alert('กรุณากรอกชื่อร้านค้า / แบรนด์');
+      return;
+    }
+    const finalCategory = storeCategory.trim();
+    if (!finalCategory) {
+      alert('กรุณาเลือกหมวดหมู่ร้านน้ำ & เรฟ');
+      return;
+    }
     if (photoTaskRef.current > 0 || drinkItems.some((it) => it.photo?.startsWith('blob:'))) {
       alert('กำลังอัปโหลดรูปภาพ กรุณารอสักครู่');
       return;
@@ -305,7 +314,6 @@ export const NewStoreInspoModal: React.FC<NewStoreInspoModalProps> = ({ isOpen, 
     setIsSaving(true);
 
     try {
-      const finalName = storeName.trim() || (isEditMode && editingStore ? editingStore.storeName : `ร้านน้ำ #${drinkStores.length + 1} (${city || 'ทั่วไป'})`);
 
       if (isEditMode && editingStore) {
         if (!await updateStoreInspo(editingStore.id, {
@@ -489,7 +497,8 @@ export const NewStoreInspoModal: React.FC<NewStoreInspoModalProps> = ({ isOpen, 
             <div className="pt-1">
               <label className="text-[11px] font-bold text-slate-700 block mb-1.5 flex items-center gap-1.5">
                 <i className="fa-solid fa-mug-hot text-amber-600 text-[10px]" />
-                <span>หมวดหมู่ร้านน้ำ & เรฟ (จำเป็นต้องเลือก) *</span>
+                <span>หมวดหมู่ร้านน้ำ & เรฟ</span>
+                <span className="text-red-500 font-bold">*</span>
               </label>
               <div className="flex flex-wrap gap-1.5">
                 {storeCategories.map((cat) => (

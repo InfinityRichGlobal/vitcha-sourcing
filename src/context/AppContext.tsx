@@ -282,7 +282,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       notificationsInitialized.current = true;
       incoming.forEach((n: AppNotification) => seenNotifications.current.add(n.id));
       setNotifications(incoming);
-      if (data.user?.role === 'admin') void fetchTrash();
+      if (data.user?.id === 'user-ice') void fetchTrash();
       return true;
     } catch (error) {
       if (!controller.signal.aborted && mounted.current) {
@@ -386,7 +386,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const deleteStoreInspo = (id: string) => deleteItem(id, 'drink_store');
   const deleteLocation = (id: string) => deleteItem(id, 'location');
   const fetchTrash = async () => {
-    if (!getSessionToken() || currentUser.role !== 'admin') return;
+    if (!getSessionToken() || currentUser.id !== 'user-ice') return;
     try {
       const res = await requestJson('/api/trash');
       if (res && Array.isArray(res.items)) {

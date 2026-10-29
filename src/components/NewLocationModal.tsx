@@ -316,10 +316,18 @@ export const NewLocationModal: React.FC<NewLocationModalProps> = ({ isOpen, onCl
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const finalLocationType = locationType || (isEditMode && editingLocation ? editingLocation.locationType : '') || (locationTypes[0] || 'ห้างสรรพสินค้า / ศูนย์การค้า');
+    const finalName = name.trim();
+    if (!finalName) {
+      alert('กรุณากรอกชื่อห้าง / โครงการ / ตึก');
+      return;
+    }
+    const finalLocationType = locationType.trim();
+    if (!finalLocationType) {
+      alert('กรุณาเลือกประเภทสถานที่');
+      return;
+    }
     setIsSaving(true);
     try {
-      const finalName = name.trim() || (isEditMode && editingLocation ? editingLocation.name : `ทำเล #${locations.length + 1} (${zoneOrFloor || 'ทั่วไป'})`);
       const locationPayload = {
         country,
         name: finalName,
@@ -565,7 +573,7 @@ export const NewLocationModal: React.FC<NewLocationModalProps> = ({ isOpen, onCl
                     className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs bg-white focus:outline-sky-500 font-semibold"
                     required
                   >
-                    <option value="">-- กรุณาเลือกประเภทสถานที่ (จำเป็น) --</option>
+                    <option value="">-- เลือกประเภทสถานที่ --</option>
                     {locationTypes.map((t) => (
                       <option key={t} value={t}>
                         {t}

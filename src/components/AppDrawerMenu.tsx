@@ -316,8 +316,8 @@ export const AppDrawerMenu: React.FC<AppDrawerMenuProps> = ({
             </button>
           )}
 
-          {/* 8.5. ถังขยะและประวัติที่ลบ (Admin only) */}
-          {currentUser.role === 'admin' && (
+          {/* 8.5. ถังขยะและประวัติที่ลบ (Owner only) */}
+          {currentUser.id === 'user-ice' && (
             <button
               onClick={() => {
                 setActiveTab('trash');

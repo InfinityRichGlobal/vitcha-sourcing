@@ -309,7 +309,16 @@ export const NewSupplierModal: React.FC<NewSupplierModalProps> = ({ isOpen, onCl
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (savingRef.current || audioJobs.current.size || isVideoLoading || isLocating) return;
-    const finalCategory = category.trim() || (isEditMode && editingSupplier ? editingSupplier.category : '') || (categories[0] || 'ใบชา & วัตถุดิบชา');
+    const finalName = name.trim();
+    if (!finalName) {
+      alert('กรุณากรอกชื่อร้าน / ซัพพลายเออร์');
+      return;
+    }
+    const finalCategory = category.trim();
+    if (!finalCategory) {
+      alert('กรุณาเลือกหมวดหมู่อุปกรณ์/สินค้า');
+      return;
+    }
     if (photoTaskRef.current > 0 || catalogItems.some((it) => it.photo?.startsWith('blob:'))) {
       alert('กำลังอัปโหลดรูปภาพ กรุณารอสักครู่');
       return;
@@ -318,7 +327,6 @@ export const NewSupplierModal: React.FC<NewSupplierModalProps> = ({ isOpen, onCl
     setIsSaving(true);
 
     try {
-      const finalName = name.trim() || (isEditMode && editingSupplier ? editingSupplier.name : `ซัพพลายเออร์ #${suppliers.length + 1} (${finalCategory})`);
 
       if (isEditMode && editingSupplier) {
         if (!await updateSupplier(editingSupplier.id, {
@@ -611,8 +619,8 @@ export const NewSupplierModal: React.FC<NewSupplierModalProps> = ({ isOpen, onCl
 
               <div>
                 <div className="flex items-center justify-between mb-1">
-                  <label className="text-[11px] font-medium text-slate-500">
-                    หมวดหมู่อุปกรณ์/สินค้า
+                  <label className="text-[11px] font-semibold text-slate-700 block">
+                    หมวดหมู่อุปกรณ์/สินค้า <span className="text-red-500 font-bold">*</span>
                   </label>
                   <button
                     type="button"
@@ -632,7 +640,7 @@ export const NewSupplierModal: React.FC<NewSupplierModalProps> = ({ isOpen, onCl
                   className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 focus:outline-none focus:border-emerald-500 font-medium"
                   required
                 >
-                  <option value="">-- กรุณาเลือกหมวดหมู่สินค้า (จำเป็น) --</option>
+                  <option value="">-- เลือกหมวดหมู่สินค้า --</option>
                   {categories.map((cat) => (
                     <option key={cat} value={cat}>
                       {cat}

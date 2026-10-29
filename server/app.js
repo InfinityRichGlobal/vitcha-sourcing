@@ -485,12 +485,12 @@ export function createApp({ dataDir, defaults = DEFAULT_DATABASE, sessionTtlMs =
     requireAdmin(req); const db = read(); db.invites = db.invites.filter(i => i.id !== req.params.id); save(db); res.json({ success: true });
   });
   app.get('/api/trash', (req, res) => {
-    requireAdmin(req);
+    requireFounder(req);
     const db = read();
     res.json({ success: true, items: db.trash || [] });
   });
   app.post('/api/trash/:id/restore', (req, res) => {
-    requireAdmin(req);
+    requireFounder(req);
     const db = read();
     const trash = db.trash || [];
     const item = trash.find(x => x.id === req.params.id);
@@ -505,7 +505,7 @@ export function createApp({ dataDir, defaults = DEFAULT_DATABASE, sessionTtlMs =
     res.json({ success: true, item });
   });
   app.delete('/api/trash/:id', (req, res) => {
-    requireAdmin(req);
+    requireFounder(req);
     const db = read();
     db.trash = (db.trash || []).filter(x => x.id !== req.params.id);
     save(db);
