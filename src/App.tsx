@@ -2,6 +2,7 @@ import React, { useState, useEffect, lazy, Suspense } from 'react';
 import { ConnectionStatus } from './components/ConnectionStatus';
 import { AppProvider, useApp } from './context/AppContext';
 import { TopHeader } from './components/TopHeader';
+import { PullToRefresh } from './components/PullToRefresh';
 import { NavigationTabs } from './components/NavigationTabs';
 import { DashboardOverview } from './components/DashboardOverview';
 import { SupplierList } from './components/SupplierList';
@@ -186,6 +187,9 @@ const MainApp: React.FC = () => {
       <ConnectionStatus />
       {/* Real-time In-App Floating Toast Notification */}
       <NotificationToast onSelectItem={handleSelectFromNotification} />
+
+      {/* Pull To Refresh Gesture on Mobile & Standalone PWA */}
+      <PullToRefresh />
 
       {/* 1. Header with "ฉันจะเป็นหัวแถว", Menu Drawer, Install App, and Notifications */}
       <TopHeader
