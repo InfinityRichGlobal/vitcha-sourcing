@@ -14,6 +14,8 @@ const SettingsManagementView = lazy(() => import('./components/SettingsManagemen
 const MembersManagementView = lazy(() => import('./components/MembersManagementView').then(m => ({ default: m.MembersManagementView })));
 const ProductWorkspace = lazy(() => import('./components/ProductWorkspace').then(m => ({ default: m.ProductWorkspace })));
 const TrashView = lazy(() => import('./components/TrashView').then(m => ({ default: m.TrashView })));
+const LeadLabView = lazy(() => import('./components/LeadLabView').then(m => ({ default: m.LeadLabView })));
+const FranchiseStoreView = lazy(() => import('./components/FranchiseStoreView').then(m => ({ default: m.FranchiseStoreView })));
 const NewSupplierModal = lazy(() => import('./components/NewSupplierModal').then(m => ({ default: m.NewSupplierModal })));
 const NewStoreInspoModal = lazy(() => import('./components/NewStoreInspoModal').then(m => ({ default: m.NewStoreInspoModal })));
 const NewLocationModal = lazy(() => import('./components/NewLocationModal').then(m => ({ default: m.NewLocationModal })));
@@ -270,6 +272,16 @@ const MainApp: React.FC = () => {
           <SettingsManagementView />
         )}
         {activeTab === 'trash' && <TrashView />}
+        {activeTab === 'lead_lab' && (
+          <LeadLabView
+            onOpenStoreSimulator={() => setActiveTab('franchise_stores')}
+          />
+        )}
+        {activeTab === 'franchise_stores' && (
+          <FranchiseStoreView
+            onNavigateToLab={() => setActiveTab('lead_lab')}
+          />
+        )}
       </Suspense>
       </main>
 

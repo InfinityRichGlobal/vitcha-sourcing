@@ -1,4 +1,4 @@
-import { SupplierRecord, StoreInspoRecord, User, InviteLink, AppNotification } from '../types';
+import { SupplierRecord, StoreInspoRecord, User, InviteLink, AppNotification, LabItem, LabFormulaStatus, FranchiseStore } from '../types';
 
 const RENDER_CONFIG_KEY = 'vitcha_render_server_url';
 // The migrated service uses durable Supabase storage. Retire saved settings
@@ -114,6 +114,17 @@ export const clearNotificationsApi = (params: { id?: string; all?: boolean }) =>
 export const getDriveStatusApi = () => requestJson('/api/drive/status');
 export const saveDriveConfigApi = (config: { clientId: string; clientSecret: string; refreshToken: string; folderId?: string }) =>
   sendJson('/api/drive/config', config);
+
+export const postLeadLabItemApi = (value: Partial<LabItem>) => sendJson('/api/lead-lab/items', value);
+export const deleteLeadLabItemApi = (id: string) => sendJson(`/api/lead-lab/items/${encodeURIComponent(id)}`, {}, 'DELETE');
+export const likeLeadLabItemApi = (id: string) => sendJson(`/api/lead-lab/items/${encodeURIComponent(id)}/like`, {});
+export const commentLeadLabItemApi = (id: string, payload: { content: string; sweetnessTarget?: string }) => sendJson(`/api/lead-lab/items/${encodeURIComponent(id)}/comments`, payload);
+export const likeLeadLabCommentApi = (id: string, commentId: string) => sendJson(`/api/lead-lab/items/${encodeURIComponent(id)}/comments/${encodeURIComponent(commentId)}/like`, {});
+export const cycleLeadLabItemApi = (id: string, payload: { action: 'close'; summary?: string; nextTitle?: string }) => sendJson(`/api/lead-lab/items/${encodeURIComponent(id)}/cycle`, payload);
+export const updateLeadLabStatusApi = (id: string, status: LabFormulaStatus) => sendJson(`/api/lead-lab/items/${encodeURIComponent(id)}/status`, { status });
+
+export const postFranchiseStoreApi = (value: Partial<FranchiseStore>) => sendJson('/api/franchise-stores', value);
+export const deleteFranchiseStoreApi = (id: string) => sendJson(`/api/franchise-stores/${encodeURIComponent(id)}`, {}, 'DELETE');
 
 export async function uploadMediaToServer(
   file: File,

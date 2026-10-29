@@ -307,7 +307,7 @@ export function createApp({ dataDir, defaults = DEFAULT_DATABASE, sessionTtlMs =
           read: isRead,
         };
       });
-    res.json({ version, ...productData(db), ...pick(db, ['suppliers', 'drinkStores', 'locations', 'categories', 'storeCategories', 'locationTypes', 'quickTagsList', 'quickMessages', 'updatedAt', 'revision']), suppliers: (db.suppliers || []).map(item => currentRecord(db, item)), drinkStores: (db.drinkStores || []).map(item => currentRecord(db, item)), locations: (db.locations || []).map(item => currentRecord(db, item)), users: db.users.filter(u => !MOCK_IDS.has(u.id)).map(publicUser), invites: req.user.role === 'admin' ? db.invites : [], notifications: userNotifications, ...sessionResult(req.session, db) });
+    res.json({ version, ...productData(db), ...pick(db, ['suppliers', 'drinkStores', 'locations', 'leadLabItems', 'franchiseStores', 'categories', 'storeCategories', 'locationTypes', 'quickTagsList', 'quickMessages', 'updatedAt', 'revision']), suppliers: (db.suppliers || []).map(item => currentRecord(db, item)), drinkStores: (db.drinkStores || []).map(item => currentRecord(db, item)), locations: (db.locations || []).map(item => currentRecord(db, item)), leadLabItems: db.leadLabItems || [], franchiseStores: db.franchiseStores || [], users: db.users.filter(u => !MOCK_IDS.has(u.id)).map(publicUser), invites: req.user.role === 'admin' ? db.invites : [], notifications: userNotifications, ...sessionResult(req.session, db) });
   });
   app.get('/api/backup', (req, res) => { requireFounder(req); res.json(read()); });
   for (const [route, collection] of [['suppliers', 'suppliers'], ['drink-stores', 'drinkStores'], ['locations', 'locations']]) {
@@ -572,6 +572,240 @@ export function createApp({ dataDir, defaults = DEFAULT_DATABASE, sessionTtlMs =
     if (changed) save(db);
     res.json({ success: true });
   });
+  // ==========================================
+  // LEAD LAB 🧪 & FRANCHISE STORES ENDPOINTS
+  // ==========================================
+  app.get('/api/lead-lab/items', (req, res) => {
+    requireReader(req);
+    const db = read();
+    res.json({ success: true, items: db.leadLabItems || [] });
+  });
+
+  app.post('/api/lead-lab/items', (req, res) => {
+    requireWriter(req);
+    const db = read();
+    const item = req.body;
+    if (!item || !item.name) fail(400, 'Missing name or item data');
+    const list = db.leadLabItems ||= [];
+    const idx = list.findIndex(x => x.id === item.id);
+    const nowIso = now();
+    let saved;
+    if (idx >= 0) {
+      saved = { ...list[idx], ...item, updatedAt: nowIso };
+      list[idx] = saved;
+    } else {
+      const id = item.id || `lab-${randomUUID()}`;
+      saved = {
+        ...item,
+        id,
+        createdById: req.user.id,
+        createdByName: req.user.alias || req.user.name,
+        createdByAvatar: req.user.avatar,
+        likedBy: item.likedBy || [],
+        revisionCycles: item.revisionCycles || [{
+          cycleNumber: 1,
+          title: 'รอบที่ 1: ตั้งสูตรทดลองเริ่มต้นและเทสต์ระดับความหวาน',
+          status: 'active',
+          createdAt: nowIso,
+          createdBy: req.user.alias || req.user.name,
+          comments: []
+        }],
+        createdAt: nowIso,
+        updatedAt: nowIso,
+      };
+      list.unshift(saved);
+    }
+    notify(db, req.user, 'lead_lab', idx >= 0 ? 'อัปเดตสูตร R&D' : 'เพิ่มสูตร R&D ใหม่', saved.name, saved.id);
+    save(db);
+    res.json({ success: true, item: saved });
+  });
+
+  app.delete('/api/lead-lab/items/:id', (req, res) => {
+    requireAdmin(req);
+    const db = read();
+    const list = db.leadLabItems ||= [];
+    const idx = list.findIndex(x => x.id === req.params.id);
+    if (idx < 0) fail(404, 'ไม่พบรายการสูตร');
+    const removed = list.splice(idx, 1)[0];
+    save(db);
+    res.json({ success: true, item: removed });
+  });
+
+  app.post('/api/lead-lab/items/:id/like', (req, res) => {
+    requireReader(req);
+    const db = read();
+    const list = db.leadLabItems ||= [];
+    const item = list.find(x => x.id === req.params.id);
+    if (!item) fail(404, 'ไม่พบสูตร');
+    item.likedBy ||= [];
+    const userId = req.user.id;
+    if (item.likedBy.includes(userId)) {
+      item.likedBy = item.likedBy.filter(id => id !== userId);
+    } else {
+      item.likedBy.push(userId);
+    }
+    item.updatedAt = now();
+    save(db);
+    res.json({ success: true, likedBy: item.likedBy });
+  });
+
+  app.post('/api/lead-lab/items/:id/comments', (req, res) => {
+    requireReader(req);
+    const db = read();
+    const list = db.leadLabItems ||= [];
+    const item = list.find(x => x.id === req.params.id);
+    if (!item) fail(404, 'ไม่พบสูตร');
+    const { content, sweetnessTarget } = req.body;
+    if (!content || !content.trim()) fail(400, 'กรุณาระบุความคิดเห็น');
+    item.revisionCycles ||= [];
+    let activeCycle = item.revisionCycles.find(c => c.status === 'active');
+    if (!activeCycle) {
+      activeCycle = {
+        cycleNumber: item.revisionCycles.length + 1,
+        title: `รอบที่ ${item.revisionCycles.length + 1}: เปิดรอบพัฒนาต่อ`,
+        status: 'active',
+        createdAt: now(),
+        createdBy: req.user.alias || req.user.name,
+        comments: []
+      };
+      item.revisionCycles.push(activeCycle);
+    }
+    const newComment = {
+      id: `comm-${randomUUID()}`,
+      authorId: req.user.id,
+      authorName: req.user.alias || req.user.name,
+      authorAvatar: req.user.avatar,
+      createdAt: now(),
+      content: content.trim(),
+      sweetnessTarget: sweetnessTarget || 'all',
+      likes: [],
+    };
+    activeCycle.comments.push(newComment);
+    item.updatedAt = now();
+    notify(db, req.user, 'lead_lab', 'คอมเมนต์ความคิดเห็นต่อสูตร', `${item.name} (${sweetnessTarget && sweetnessTarget !== 'all' ? `หวาน ${sweetnessTarget}%` : 'ภาพรวม'})`, item.id);
+    save(db);
+    res.json({ success: true, item, comment: newComment });
+  });
+
+  app.post('/api/lead-lab/items/:id/comments/:commentId/like', (req, res) => {
+    requireReader(req);
+    const db = read();
+    const list = db.leadLabItems ||= [];
+    const item = list.find(x => x.id === req.params.id);
+    if (!item) fail(404, 'ไม่พบสูตร');
+    let targetComment = null;
+    for (const c of item.revisionCycles || []) {
+      const found = (c.comments || []).find(cm => cm.id === req.params.commentId);
+      if (found) { targetComment = found; break; }
+    }
+    if (!targetComment) fail(404, 'ไม่พบคอมเมนต์');
+    targetComment.likes ||= [];
+    const userId = req.user.id;
+    if (targetComment.likes.includes(userId)) {
+      targetComment.likes = targetComment.likes.filter(id => id !== userId);
+    } else {
+      targetComment.likes.push(userId);
+    }
+    item.updatedAt = now();
+    save(db);
+    res.json({ success: true, likes: targetComment.likes });
+  });
+
+  app.post('/api/lead-lab/items/:id/cycle', (req, res) => {
+    requireWriter(req);
+    const db = read();
+    const list = db.leadLabItems ||= [];
+    const item = list.find(x => x.id === req.params.id);
+    if (!item) fail(404, 'ไม่พบสูตร');
+    const { action, summary, nextTitle } = req.body;
+    item.revisionCycles ||= [];
+    const nowIso = now();
+    if (action === 'close') {
+      const active = item.revisionCycles.find(c => c.status === 'active');
+      if (active) {
+        active.status = 'closed';
+        active.closedAt = nowIso;
+        active.closedBy = req.user.alias || req.user.name;
+        active.summary = summary || 'ปิดประเด็นรอบนี้เรียบร้อยแล้ว';
+      }
+      if (nextTitle) {
+        item.revisionCycles.push({
+          cycleNumber: item.revisionCycles.length + 1,
+          title: nextTitle,
+          status: 'active',
+          createdAt: nowIso,
+          createdBy: req.user.alias || req.user.name,
+          comments: []
+        });
+      }
+    }
+    item.updatedAt = nowIso;
+    notify(db, req.user, 'lead_lab', 'สรุปปิดประเด็นและประกาศรอบใหม่', item.name, item.id);
+    save(db);
+    res.json({ success: true, item });
+  });
+
+  app.post('/api/lead-lab/items/:id/status', (req, res) => {
+    requireAdmin(req);
+    const db = read();
+    const list = db.leadLabItems ||= [];
+    const item = list.find(x => x.id === req.params.id);
+    if (!item) fail(404, 'ไม่พบสูตร');
+    const { status } = req.body;
+    if (!['approved', 'testing', 'shelved'].includes(status)) fail(400, 'สถานะไม่ถูกต้อง');
+    item.status = status;
+    item.updatedAt = now();
+    notify(db, req.user, 'lead_lab', `ปรับสถานะสูตรเป็น "${status === 'approved' ? 'ผ่านเกณฑ์อนุมัติ' : status === 'shelved' ? 'พักสูตร' : 'กำลังทดลอง'}"`, item.name, item.id);
+    save(db);
+    res.json({ success: true, item });
+  });
+
+  // FRANCHISE STORES ENDPOINTS
+  app.get('/api/franchise-stores', (req, res) => {
+    requireReader(req);
+    const db = read();
+    res.json({ success: true, stores: db.franchiseStores || [] });
+  });
+
+  app.post('/api/franchise-stores', (req, res) => {
+    requireWriter(req);
+    const db = read();
+    const store = req.body;
+    if (!store || !store.name) fail(400, 'Missing store name');
+    const list = db.franchiseStores ||= [];
+    const idx = list.findIndex(x => x.id === store.id);
+    const nowIso = now();
+    let saved;
+    if (idx >= 0) {
+      saved = { ...list[idx], ...store, updatedAt: nowIso };
+      list[idx] = saved;
+    } else {
+      const id = store.id || `store-${randomUUID()}`;
+      saved = {
+        ...store,
+        id,
+        menuItems: store.menuItems || [],
+        createdAt: nowIso,
+        updatedAt: nowIso,
+      };
+      list.push(saved);
+    }
+    notify(db, req.user, 'franchise_store', idx >= 0 ? 'อัปเดตร้านแฟรนไชส์' : 'เปิดร้านแฟรนไชส์ใหม่', saved.name, saved.id);
+    save(db);
+    res.json({ success: true, store: saved });
+  });
+
+  app.delete('/api/franchise-stores/:id', (req, res) => {
+    requireAdmin(req);
+    const db = read();
+    const list = db.franchiseStores ||= [];
+    const idx = list.findIndex(x => x.id === req.params.id);
+    if (idx < 0) fail(404, 'ไม่พบร้าน');
+    const removed = list.splice(idx, 1)[0];
+    save(db);
+    res.json({ success: true, store: removed });
+  });
+
   app.post('/api/sync', (_req, _res) => fail(410, 'ปิดการเขียนทับฐานข้อมูลจากเครื่องผู้ใช้แล้ว'));
   app.post('/api/system/samples', (req, res) => {
     requireFounder(req); const db = read();
@@ -607,6 +841,12 @@ export function createApp({ dataDir, defaults = DEFAULT_DATABASE, sessionTtlMs =
     if (snapshot.productWorkspace && typeof snapshot.productWorkspace === 'object') {
       db.productWorkspace = snapshot.productWorkspace;
     }
+    if (Array.isArray(snapshot.leadLabItems)) {
+      db.leadLabItems = snapshot.leadLabItems;
+    }
+    if (Array.isArray(snapshot.franchiseStores)) {
+      db.franchiseStores = snapshot.franchiseStores;
+    }
     if (Array.isArray(snapshot.notifications)) {
       db.notifications = [...snapshot.notifications, ...(db.notifications || [])].slice(0, 80);
     }
@@ -620,14 +860,16 @@ export function createApp({ dataDir, defaults = DEFAULT_DATABASE, sessionTtlMs =
     if (clean(req.body.password) !== expectedPassword) fail(403, 'รหัสผ่านยืนยันการล้างข้อมูลไม่ถูกต้อง');
     if (req.body.confirm === 'CLEAR_MOCKUP') {
       // Only explicitly marked samples are safe to delete; real IDs may share a prefix.
-      const isMockItem = x => x.isMockup === true;
+      const isMockItem = x => x.isMockup === true || x.isMock === true;
       db.suppliers = (db.suppliers || []).filter(x => !isMockItem(x));
       db.drinkStores = (db.drinkStores || []).filter(x => !isMockItem(x));
       db.locations = (db.locations || []).filter(x => !isMockItem(x));
+      db.leadLabItems = (db.leadLabItems || []).filter(x => !isMockItem(x));
+      db.franchiseStores = (db.franchiseStores || []).filter(x => !isMockItem(x));
       save(db); return res.json({ success: true });
     }
     if (req.body.confirm !== 'CLEAR_RECORDS') fail(400, 'กรุณายืนยันการล้างรายการ');
-    db.suppliers = []; db.drinkStores = []; db.locations = []; db.productWorkspace = {}; db.notifications = []; save(db); res.json({ success: true });
+    db.suppliers = []; db.drinkStores = []; db.locations = []; db.leadLabItems = []; db.franchiseStores = []; db.productWorkspace = {}; db.notifications = []; save(db); res.json({ success: true });
   });
   app.post('/api/system/import', (req, res) => {
     requireFounder(req); const db = read(); expectRevision(db, req.body.revision);

@@ -4,7 +4,7 @@ import { useApp } from '../context/AppContext';
 import { AppViewTab } from '../types';
 
 export const NavigationTabs: React.FC = () => {
-  const { activeTab, setActiveTab, currentUser, suppliers, drinkStores, locations, products, categories, storeCategories, trashItems } = useApp();
+  const { activeTab, setActiveTab, currentUser, suppliers, drinkStores, locations, products, categories, storeCategories, trashItems, leadLabItems, franchiseStores } = useApp();
 
   // ซ่อนแถบนี้บนหน้าแรก (แดชบอร์ด) เพราะอยู่บน TAB เมนูโลโก้และกล่อง 4 กรอบหน้าแดชบอร์ดแล้ว
   if (activeTab === 'dashboard') {
@@ -28,6 +28,18 @@ export const NavigationTabs: React.FC = () => {
       label: 'ร้านน้ำ & เรฟ',
       icon: <i aria-hidden="true" className="fa-solid fa-mug-hot text-xs text-amber-600" />,
       badge: drinkStores.length,
+    },
+    {
+      key: 'lead_lab',
+      label: 'LEAD LAB 🧪',
+      icon: <i aria-hidden="true" className="fa-solid fa-flask-vial text-xs text-purple-600" />,
+      badge: leadLabItems.length,
+    },
+    {
+      key: 'franchise_stores',
+      label: 'ร้านแฟรนไชส์',
+      icon: <i aria-hidden="true" className="fa-solid fa-store text-xs text-emerald-600" />,
+      badge: franchiseStores.length,
     },
     {
       key: 'locations',

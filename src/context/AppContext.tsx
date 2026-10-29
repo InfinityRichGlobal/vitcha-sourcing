@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
-import { User, SupplierRecord, StoreInspoRecord, LocationRecord, ExchangeRateConfig, InviteLink, PipelineStatus, UserRole, AppNotification, HandoffStage, AppViewTab, QuickMessageTemplate, CuratedProduct, ProductTaxon, ProductSet, ProductChanges, TrashedItem } from '../types';
-import { INITIAL_SUPPLIERS, INITIAL_DRINK_STORES, INITIAL_LOCATIONS, INITIAL_CATEGORIES, INITIAL_STORE_CATEGORIES, INITIAL_LOCATION_TYPES, INITIAL_QUICK_TAGS, INITIAL_QUICK_MESSAGES } from '../utils/seedData';
-import { getRenderServerUrl, saveRenderServerUrl, checkServerHealth, fetchCentralData, sendJson, requestJson, getSessionToken, setSessionToken, loginUserApi, ApiError, markNotificationsReadApi, clearNotificationsApi } from '../services/api';
+import { User, SupplierRecord, StoreInspoRecord, LocationRecord, ExchangeRateConfig, InviteLink, PipelineStatus, UserRole, AppNotification, HandoffStage, AppViewTab, QuickMessageTemplate, CuratedProduct, ProductTaxon, ProductSet, ProductChanges, TrashedItem, LabItem, LabFormulaStatus, FranchiseStore } from '../types';
+import { INITIAL_SUPPLIERS, INITIAL_DRINK_STORES, INITIAL_LOCATIONS, INITIAL_CATEGORIES, INITIAL_STORE_CATEGORIES, INITIAL_LOCATION_TYPES, INITIAL_QUICK_TAGS, INITIAL_QUICK_MESSAGES, INITIAL_LEAD_LAB_ITEMS, INITIAL_FRANCHISE_STORES } from '../utils/seedData';
+import { getRenderServerUrl, saveRenderServerUrl, checkServerHealth, fetchCentralData, sendJson, requestJson, getSessionToken, setSessionToken, loginUserApi, ApiError, markNotificationsReadApi, clearNotificationsApi, postLeadLabItemApi, deleteLeadLabItemApi, likeLeadLabItemApi, commentLeadLabItemApi, likeLeadLabCommentApi, cycleLeadLabItemApi, updateLeadLabStatusApi, postFranchiseStoreApi, deleteFranchiseStoreApi } from '../services/api';
 
 interface AppContextType {
   products: CuratedProduct[];
@@ -13,6 +13,17 @@ interface AppContextType {
   manageProductTaxonomy: (kind: 'categories' | 'tags', action: 'add' | 'rename' | 'delete', id: string, name?: string) => Promise<boolean>;
   saveProductSet: (set: ProductSet) => Promise<boolean>;
   deleteProductSet: (set: ProductSet) => Promise<boolean>;
+  leadLabItems: LabItem[];
+  franchiseStores: FranchiseStore[];
+  saveLeadLabItem: (item: Partial<LabItem>) => Promise<boolean>;
+  deleteLeadLabItem: (id: string) => Promise<boolean>;
+  toggleLikeLeadLabItem: (id: string) => Promise<boolean>;
+  addLeadLabComment: (id: string, content: string, sweetnessTarget?: 'all' | '0' | '50' | '100') => Promise<boolean>;
+  toggleLikeLeadLabComment: (id: string, commentId: string) => Promise<boolean>;
+  cycleLeadLabRevision: (id: string, summary: string, nextTitle?: string) => Promise<boolean>;
+  setLeadLabStatus: (id: string, status: LabFormulaStatus) => Promise<boolean>;
+  saveFranchiseStore: (store: Partial<FranchiseStore>) => Promise<boolean>;
+  deleteFranchiseStore: (id: string) => Promise<boolean>;
   currentUser: User;
   actionError: string | null;
   clearActionError: () => void;
@@ -201,6 +212,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [suppliers, setSuppliers] = useState<SupplierRecord[]>([]);
   const [drinkStores, setDrinkStores] = useState<StoreInspoRecord[]>([]);
   const [locations, setLocations] = useState<LocationRecord[]>([]);
+  const [leadLabItems, setLeadLabItems] = useState<LabItem[]>(INITIAL_LEAD_LAB_ITEMS);
+  const [franchiseStores, setFranchiseStores] = useState<FranchiseStore[]>(INITIAL_FRANCHISE_STORES);
   const [invites, setInvites] = useState<InviteLink[]>([]);
   const [categories, setCategories] = useState(INITIAL_CATEGORIES);
   const [storeCategories, setStoreCategories] = useState(INITIAL_STORE_CATEGORIES);
@@ -272,6 +285,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       setProducts(data.products || []); setProductCategories(data.productCategories || []); setProductTags(data.productTags || []); setProductSets(data.productSets || []); productTaxonomyRevision.current = data.productTaxonomyRevision || 0;
       setUsers(data.users); setInvites(data.invites);
       setSuppliers(data.suppliers); setDrinkStores(data.drinkStores); setLocations(data.locations || []);
+      setLeadLabItems(data.leadLabItems && data.leadLabItems.length ? data.leadLabItems : INITIAL_LEAD_LAB_ITEMS);
+      setFranchiseStores(data.franchiseStores && data.franchiseStores.length ? data.franchiseStores : INITIAL_FRANCHISE_STORES);
       databaseRevision.current = data.revision || 0;
       settingsRef.current = Object.fromEntries(settingsKeys.map(k => [k, data[k] || []]));
       setCategories(data.categories || []); setStoreCategories(data.storeCategories || []);
@@ -491,6 +506,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           suppliers: INITIAL_SUPPLIERS,
           drinkStores: INITIAL_DRINK_STORES,
           locations: INITIAL_LOCATIONS,
+          leadLabItems: INITIAL_LEAD_LAB_ITEMS,
+          franchiseStores: INITIAL_FRANCHISE_STORES,
         },
       });
       commandIds.current.delete('sample-load');
@@ -527,6 +544,111 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setNotifications(p => p.filter(n => n.id !== id));
     try { await clearNotificationsApi({ id }); } catch (e) { console.warn('Failed to sync notification clear:', e); }
   };
+  const saveLeadLabItem = async (item: Partial<LabItem>) => {
+    return perform('save-lead-lab', async () => {
+      const res = await postLeadLabItemApi(item);
+      if (res?.item) {
+        setLeadLabItems(p => {
+          const idx = p.findIndex(x => x.id === res.item.id);
+          if (idx >= 0) { const next = [...p]; next[idx] = res.item; return next; }
+          return [res.item, ...p];
+        });
+      }
+    });
+  };
+
+  const deleteLeadLabItem = async (id: string) => {
+    return perform('delete-lead-lab', async () => {
+      await deleteLeadLabItemApi(id);
+      setLeadLabItems(p => p.filter(x => x.id !== id));
+    });
+  };
+
+  const toggleLikeLeadLabItem = async (id: string) => {
+    const userId = currentUser.id;
+    setLeadLabItems(p => p.map(item => {
+      if (item.id !== id) return item;
+      const liked = item.likedBy?.includes(userId);
+      const nextLiked = liked ? item.likedBy.filter(x => x !== userId) : [...(item.likedBy || []), userId];
+      return { ...item, likedBy: nextLiked };
+    }));
+    try {
+      const res = await likeLeadLabItemApi(id);
+      if (res?.likedBy) {
+        setLeadLabItems(p => p.map(x => x.id === id ? { ...x, likedBy: res.likedBy } : x));
+      }
+      return true;
+    } catch {
+      return false;
+    }
+  };
+
+  const addLeadLabComment = async (id: string, content: string, sweetnessTarget?: 'all' | '0' | '50' | '100') => {
+    return perform('comment-lead-lab', async () => {
+      const res = await commentLeadLabItemApi(id, { content, sweetnessTarget });
+      if (res?.item) {
+        setLeadLabItems(p => p.map(x => x.id === id ? res.item : x));
+      }
+    });
+  };
+
+  const toggleLikeLeadLabComment = async (id: string, commentId: string) => {
+    try {
+      const res = await likeLeadLabCommentApi(id, commentId);
+      if (res?.likes) {
+        setLeadLabItems(p => p.map(item => {
+          if (item.id !== id) return item;
+          const nextCycles = (item.revisionCycles || []).map(cycle => ({
+            ...cycle,
+            comments: (cycle.comments || []).map(comm => comm.id === commentId ? { ...comm, likes: res.likes } : comm)
+          }));
+          return { ...item, revisionCycles: nextCycles };
+        }));
+      }
+      return true;
+    } catch {
+      return false;
+    }
+  };
+
+  const cycleLeadLabRevision = async (id: string, summary: string, nextTitle?: string) => {
+    return perform('cycle-lead-lab', async () => {
+      const res = await cycleLeadLabItemApi(id, { action: 'close', summary, nextTitle });
+      if (res?.item) {
+        setLeadLabItems(p => p.map(x => x.id === id ? res.item : x));
+      }
+    });
+  };
+
+  const setLeadLabStatus = async (id: string, status: LabFormulaStatus) => {
+    return perform('status-lead-lab', async () => {
+      const res = await updateLeadLabStatusApi(id, status);
+      if (res?.item) {
+        setLeadLabItems(p => p.map(x => x.id === id ? res.item : x));
+      }
+    });
+  };
+
+  const saveFranchiseStore = async (store: Partial<FranchiseStore>) => {
+    return perform('save-franchise-store', async () => {
+      const res = await postFranchiseStoreApi(store);
+      if (res?.store) {
+        setFranchiseStores(p => {
+          const idx = p.findIndex(x => x.id === res.store.id);
+          if (idx >= 0) { const next = [...p]; next[idx] = res.store; return next; }
+          return [...p, res.store];
+        });
+      }
+    });
+  };
+
+  const deleteFranchiseStore = async (id: string) => {
+    return perform('delete-franchise-store', async () => {
+      await deleteFranchiseStoreApi(id);
+      setFranchiseStores(p => p.filter(x => x.id !== id));
+    });
+  };
+
   const updateExchangeRate = (rate: number, isAuto = false) => { if (rate > 0 && Number.isFinite(rate)) setExchangeRate(p => ({ ...p, rate, isAuto, lastUpdated: new Date().toLocaleTimeString('th-TH') })); };
   const toggleCurrencyMode = () => setExchangeRate(p => ({ ...p, currencyMode: p.currencyMode === 'CNY_TO_THB' ? 'THB_TO_CNY' : 'CNY_TO_THB' }));
   const convertCnyToThb = (n: number) => Math.round(n * exchangeRate.rate * 100) / 100;
@@ -537,6 +659,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   return <AppContext.Provider value={{
     products, productCategories, productTags, productSets, saveProduct, updateProducts, manageProductTaxonomy, saveProductSet, deleteProductSet,
     currentUser, users, suppliers, drinkStores, locations, invites, categories, storeCategories, locationTypes, quickTagsList, quickMessages, exchangeRate, syncStatus, pendingSyncCount,
+    leadLabItems, franchiseStores, saveLeadLabItem, deleteLeadLabItem, toggleLikeLeadLabItem, addLeadLabComment, toggleLikeLeadLabComment, cycleLeadLabRevision, setLeadLabStatus, saveFranchiseStore, deleteFranchiseStore,
     activeTab, filterResetVersion, countryFilter, searchQuery, selectedCategory, selectedStatus, selectedTag, selectedRating, notifications, activeToast,
     actionError, clearActionError: () => setActionError(null), isMutating: mutationCount > 0,
     setActiveTab, setCountryFilter, setSearchQuery, setSelectedCategory, setSelectedStatus, setSelectedTag, setSelectedRating,

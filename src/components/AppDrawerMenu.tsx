@@ -40,6 +40,8 @@ export const AppDrawerMenu: React.FC<AppDrawerMenuProps> = ({
     suppliers,
     drinkStores,
     locations,
+    leadLabItems,
+    franchiseStores,
     trashItems,
     exchangeRate,
     switchUser,
@@ -166,6 +168,68 @@ export const AppDrawerMenu: React.FC<AppDrawerMenuProps> = ({
               }`}
             >
               {drinkStores.length}
+            </span>
+          </button>
+
+          {/* 3.1. LEAD LAB 🧪 */}
+          <button
+            onClick={() => {
+              setActiveTab('lead_lab');
+              onClose();
+            }}
+            className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-bold transition-colors ${
+              activeTab === 'lead_lab'
+                ? 'bg-slate-900 text-white shadow-xs'
+                : 'text-slate-700 hover:bg-slate-50'
+            }`}
+          >
+            <div className="flex items-center gap-2.5">
+              <i
+                className={`fa-solid fa-flask-vial text-xs ${
+                  activeTab === 'lead_lab' ? 'text-violet-400' : 'text-violet-600'
+                }`}
+              />
+              <span>LEAD LAB 🧪 (แล็บคนหัวแถว)</span>
+            </div>
+            <span
+              className={`text-[11px] font-mono px-2 py-0.5 rounded-full ${
+                activeTab === 'lead_lab'
+                  ? 'bg-slate-800 text-violet-300'
+                  : 'bg-violet-50 text-violet-700 font-bold'
+              }`}
+            >
+              {leadLabItems.length}
+            </span>
+          </button>
+
+          {/* 3.2. ร้านแฟรนไชส์จำลอง & เมนูบอร์ด */}
+          <button
+            onClick={() => {
+              setActiveTab('franchise_stores');
+              onClose();
+            }}
+            className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-bold transition-colors ${
+              activeTab === 'franchise_stores'
+                ? 'bg-slate-900 text-white shadow-xs'
+                : 'text-slate-700 hover:bg-slate-50'
+            }`}
+          >
+            <div className="flex items-center gap-2.5">
+              <i
+                className={`fa-solid fa-store text-xs ${
+                  activeTab === 'franchise_stores' ? 'text-emerald-400' : 'text-emerald-600'
+                }`}
+              />
+              <span>ร้านแฟรนไชส์จำลอง (Simulator)</span>
+            </div>
+            <span
+              className={`text-[11px] font-mono px-2 py-0.5 rounded-full ${
+                activeTab === 'franchise_stores'
+                  ? 'bg-slate-800 text-emerald-300'
+                  : 'bg-emerald-50 text-emerald-700 font-bold'
+              }`}
+            >
+              {franchiseStores.length}
             </span>
           </button>
 

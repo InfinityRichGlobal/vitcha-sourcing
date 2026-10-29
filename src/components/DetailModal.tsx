@@ -235,9 +235,7 @@ export const DetailModal: React.FC<DetailModalProps> = ({
   const handleDeleteItem = async () => {
     if (!currentItem) return;
     const name = isSupplier ? supplier?.name : isLocation ? location?.name : store?.storeName;
-    const ok = window.confirm(
-      `ต้องการย้ายรายการ "${name || 'รายการนี้'}" ไปยังถังขยะหรือไม่?\n\n(รายการจะถูกย้ายไปถังขยะทันที และสามารถกู้คืนได้โดยผู้ดูแลระบบ/เจ้าของระบบ)`
-    );
+    const ok = window.confirm(`ยืนยันการลบรายการ "${name || 'รายการนี้'}" หรือไม่?`);
     if (!ok) return;
     try {
       if (currentItem.type === 'supplier') {

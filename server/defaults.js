@@ -164,6 +164,8 @@ export const DEFAULT_DATABASE = {
   suppliers: [],
   drinkStores: [],
   locations: [],
+  leadLabItems: [],
+  franchiseStores: [],
   notifications: [],
   categories: [
     'เคาน์เตอร์ & สเตนเลส',

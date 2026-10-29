@@ -10,7 +10,7 @@ export type HandoffStage =
   | 'approved'       // 5. ตัวเต็งอนุมัติ
   | 'ordered';       // 6. ออก PO / สั่งซื้อแล้ว
 
-export type AppViewTab = 'dashboard' | 'suppliers' | 'drink_stores' | 'locations' | 'categories' | 'handoff' | 'settings' | 'members' | 'products' | 'trash';
+export type AppViewTab = 'dashboard' | 'suppliers' | 'drink_stores' | 'locations' | 'categories' | 'handoff' | 'settings' | 'members' | 'products' | 'lead_lab' | 'franchise_stores' | 'trash';
 
 export interface TrashedItem {
   id: string;
@@ -382,3 +382,116 @@ export interface CuratedProduct {
   memo: string; categoryId: string; tagIds: string[]; decision: 'pending' | 'keep' | 'hold' | 'reject'; revision: number; updatedAt: string;
 }
 export type ProductChanges = Partial<Pick<CuratedProduct, 'title' | 'memo' | 'categoryId' | 'tagIds' | 'decision'>>;
+
+// ==========================================
+// LEAD LAB 🧪 & FRANCHISE STORES TYPES
+// ==========================================
+
+export type LabItemType = 'drink' | 'topping';
+export type LabFormulaStatus = 'approved' | 'testing' | 'shelved';
+
+export interface SweetnessDetail {
+  level: '0' | '50' | '100';
+  label: string;
+  syrupMl: number;
+  sweetenerType: string;
+  baseLiquidMl: number;
+  milkOrMixerMl?: number;
+  brix: number;
+  caloriesKcal: number;
+  tasteNotes: string;
+}
+
+export interface LabComment {
+  id: string;
+  authorId: string;
+  authorName: string;
+  authorAvatar?: string;
+  createdAt: string;
+  content: string;
+  sweetnessTarget?: 'all' | '0' | '50' | '100';
+  likes: string[];
+}
+
+export interface LabRevisionCycle {
+  cycleNumber: number;
+  title: string;
+  status: 'active' | 'closed';
+  createdAt: string;
+  createdBy: string;
+  closedAt?: string;
+  closedBy?: string;
+  summary?: string;
+  comments: LabComment[];
+}
+
+export interface RecipeIngredient {
+  name: string;
+  quantity: number;
+  unit: string;
+  costThb: number;
+}
+
+export interface LabItem {
+  id: string;
+  type: LabItemType;
+  code: string;
+  name: string;
+  nameEn: string;
+  category: string;
+  status: LabFormulaStatus;
+  photoUrl: string;
+  description: string;
+  sweetnessLevels: {
+    zero: SweetnessDetail;
+    half: SweetnessDetail;
+    full: SweetnessDetail;
+  };
+  technicalSpecs?: {
+    brewingTempC?: number;
+    extractionTimeSec?: number;
+    teaLeavesG?: number;
+    waterMl?: number;
+    shelfLifeHours?: number;
+  };
+  ingredients: RecipeIngredient[];
+  costIngredientThb: number;
+  costPackagingThb: number;
+  costTotalThb: number;
+  suggestedPriceThb: number;
+  likedBy: string[];
+  revisionCycles: LabRevisionCycle[];
+  createdById: string;
+  createdByName: string;
+  createdByAvatar?: string;
+  createdAt: string;
+  updatedAt: string;
+  isMock?: boolean;
+}
+
+export interface StoreMenuItem {
+  id: string;
+  labItemId: string;
+  customName?: string;
+  retailPriceThb: number;
+  badge?: 'Best Seller' | 'Must Try' | 'New' | 'Signature' | 'Seasonal' | 'None';
+  displayOrder: number;
+  isAvailable: boolean;
+  recommendedToppingIds?: string[];
+}
+
+export interface FranchiseStore {
+  id: string;
+  name: string;
+  brandTagline: string;
+  branch: string;
+  themeColor: string;
+  logoUrl?: string;
+  contactNumber?: string;
+  openingHours?: string;
+  menuItems: StoreMenuItem[];
+  createdAt: string;
+  updatedAt: string;
+  isMock?: boolean;
+}
+

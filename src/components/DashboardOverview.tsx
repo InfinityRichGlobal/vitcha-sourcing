@@ -42,6 +42,7 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
     suppliers,
     drinkStores,
     locations,
+    leadLabItems,
     categories,
     storeCategories,
     quickTagsList,
@@ -405,10 +406,8 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
         {/* 6. LEAD LAB 🧪 (แล็บของคนที่จะเป็นหัวแถว · นวัตกรรมเครื่องดื่ม & ท็อปปิ้ง) */}
         <button
           type="button"
-          onClick={() => {
-            // LEAD LAB
-          }}
-          className="group p-3 rounded-2xl bg-gradient-to-br from-white via-white to-violet-50/70 border border-violet-200/90 hover:border-violet-500 text-left transition-all shadow-2xs hover:shadow-sm active:scale-[0.99] relative overflow-hidden ring-1 ring-violet-500/10"
+          onClick={() => setActiveTab('lead_lab')}
+          className="group p-3 rounded-2xl bg-gradient-to-br from-white via-white to-violet-50/70 border border-violet-200/90 hover:border-violet-500 text-left transition-all shadow-2xs hover:shadow-sm active:scale-[0.99] relative overflow-hidden ring-1 ring-violet-500/10 cursor-pointer"
         >
           <div className="flex items-center justify-between mb-1">
             <span className="w-7 h-7 rounded-lg bg-violet-100 text-violet-700 border border-violet-300/80 flex items-center justify-center shadow-2xs">
@@ -419,7 +418,7 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
             </span>
           </div>
           <div className="text-xl sm:text-2xl font-extrabold text-slate-950 font-mono tracking-tight flex items-baseline gap-1">
-            <span>12</span>
+            <span>{leadLabItems?.length || 12}</span>
             <span className="text-[10px] font-bold text-violet-700 font-sans">สูตร</span>
           </div>
           <div className="text-xs font-extrabold text-violet-950 mt-0.5 whitespace-nowrap flex items-center gap-1">
