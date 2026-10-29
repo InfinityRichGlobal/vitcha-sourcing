@@ -119,6 +119,18 @@ const MainApp: React.FC = () => {
           commentSection.scrollIntoView({ behavior: 'smooth' });
         }
       }, 200);
+      return;
+    }
+
+    const foundLocation = locations.find((l) => l.id === targetId);
+    if (foundLocation) {
+      setSelectedDetailItem(foundLocation);
+      setTimeout(() => {
+        const commentSection = document.getElementById('detail-comments-section');
+        if (commentSection) {
+          commentSection.scrollIntoView({ behavior: 'smooth' });
+        }
+      }, 200);
     }
   };
 

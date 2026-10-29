@@ -109,8 +109,11 @@ export interface AppNotification {
   title: string;
   message: string;
   timestamp: string;
-  type: 'supplier' | 'drink_store' | 'comment' | 'reply' | 'status' | 'system';
+  type: 'supplier' | 'drink_store' | 'location' | 'comment' | 'reply' | 'status' | 'system';
   targetId?: string;
+  targetName?: string;
+  targetType?: string;
+  targetLocation?: string;
   avatar?: string;
   actorId?: string;
   actorAlias?: string;
