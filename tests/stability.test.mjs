@@ -108,3 +108,49 @@ test('saved legacy endpoints converge on the migrated service without changing u
   assert.equal(api.getRenderServerUrl(), 'https://vitcha-sourcing-fxjw.onrender.com');
   saved = 'https://custom.example'; assert.equal(api.getRenderServerUrl(), saved);
 });
+
+function browserSession(t) {
+  let expired = 0;
+  const storage = () => {
+    const values = new Map();
+    return { getItem: key => values.get(key) ?? null, setItem: (key, value) => values.set(key, value), removeItem: key => values.delete(key) };
+  };
+  for (const [key, value] of Object.entries({
+    sessionStorage: storage(), localStorage: storage(),
+    window: { location: { hostname: 'localhost', origin: 'http://localhost' }, dispatchEvent: () => { expired++; } },
+  })) {
+    const previous = Object.getOwnPropertyDescriptor(globalThis, key);
+    Object.defineProperty(globalThis, key, { configurable: true, value });
+    t.after(() => { if (previous) Object.defineProperty(globalThis, key, previous); else delete globalThis[key]; });
+  }
+  api.setSessionToken('old-session');
+  return { expired: () => expired };
+}
+
+test('a late 401 from a previous login must not erase the new session', async t => {
+  const session = browserSession(t);
+  let finish;
+  t.mock.method(globalThis, 'fetch', () => new Promise(resolve => { finish = resolve; }));
+  const pending = api.requestJson('/api/data');
+  api.setSessionToken('new-session');
+  finish({ ok: false, status: 401, json: async () => ({ error: 'Expired old session' }) });
+  await assert.rejects(pending, e => e.status === 401);
+  assert.equal(api.getSessionToken(), 'new-session'); assert.equal(session.expired(), 0);
+});
+
+test('a custom health server cannot invalidate the current login', async t => {
+  const session = browserSession(t);
+  t.mock.method(globalThis, 'fetch', async (_url, init) => {
+    assert.equal(init.headers.has('Authorization'), false);
+    return { ok: false, status: 401, json: async () => ({ error: 'Not allowed' }) };
+  });
+  assert.equal((await api.checkServerHealth('https://custom.example')).ok, false);
+  assert.equal(api.getSessionToken(), 'old-session'); assert.equal(session.expired(), 0);
+});
+
+test('a 401 for the current authenticated session still clears it', async t => {
+  const session = browserSession(t);
+  t.mock.method(globalThis, 'fetch', async () => ({ ok: false, status: 401, json: async () => ({ error: 'Expired' }) }));
+  await assert.rejects(api.requestJson('/api/data'), e => e.status === 401);
+  assert.equal(api.getSessionToken(), null); assert.equal(session.expired(), 1);
+});

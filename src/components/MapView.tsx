@@ -265,19 +265,22 @@ export const MapView: React.FC<MapViewProps> = ({
 
     const focusKey = `${regionFocus}:${filterType}`;
     if (lastFocusRef.current === focusKey) return;
+    // Apply the initial bounds immediately so the first zoom click cannot be
+    // swallowed by Leaflet while its initial fit animation is still running.
+    const animate = lastFocusRef.current !== null;
     lastFocusRef.current = focusKey;
     if (bounds.isValid()) {
       map.fitBounds(bounds, {
         padding: [36, 36],
         maxZoom: regionFocus === 'ALL' ? 12 : 13,
-        animate: true,
+        animate,
       });
     } else if (regionFocus === 'CN') {
-      map.setView([23.115, 113.325], 11, { animate: true });
+      map.setView([23.115, 113.325], 11, { animate });
     } else if (regionFocus === 'TH') {
-      map.setView([13.7563, 100.5018], 11, { animate: true });
+      map.setView([13.7563, 100.5018], 11, { animate });
     } else {
-      map.setView([18.0, 107.0], 5, { animate: true });
+      map.setView([18.0, 107.0], 5, { animate });
     }
   }, [suppliers, drinkStores, locations, filterType, regionFocus, mapAttempt]);
 

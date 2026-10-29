@@ -87,12 +87,9 @@ export function createApp({ dataDir, defaults = DEFAULT_DATABASE, sessionTtlMs =
   const storage = persistence || createPersistence(path.join(dataDir, 'database.json'), defaults);
   const uploads = path.join(dataDir, 'uploads');
   fs.mkdirSync(uploads, { recursive: true });
-  const sessions = new Map();
-  const revokedTokens = new Set();
   const sessionSecret = recoveryPasswordHash || process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY || 'vitcha-persistent-session-secret-v1';
   const attempts = new Map();
   const read = () => storage.read();
-  const afterCommit = callback => storage.afterCommit ? storage.afterCommit(callback) : callback();
   // Every read/validate/write transaction below is synchronous (no await between
   // read and save). Run one Node writer per DATA_DIR; revisions protect stale clients.
   const save = db => { db.updatedAt = now(); db.revision = revision(db) + 1; storage.save(db); };
@@ -161,16 +158,27 @@ export function createApp({ dataDir, defaults = DEFAULT_DATABASE, sessionTtlMs =
     const sig = createHmac('sha256', `${sessionSecret}:${credential}`).update(payload).digest('base64url');
     return `${payload}.${sig}`;
   }
+  const sessionDigest = token => createHash('sha256').update(token).digest('hex');
+  function pruneSessionState(db) {
+    const at = Date.now();
+    db.revokedSessions = Object.fromEntries(Object.entries(db.revokedSessions || {}).filter(([, expires]) => expires > at));
+    db.sessionOverrides = Object.fromEntries(Object.entries(db.sessionOverrides || {}).filter(([, session]) => session.expires > at));
+  }
+  function persistSessionOverride(db, token, session) {
+    // Persist only a token digest, never the bearer token. State changes must
+    // commit with the database so other workers and restarts see the same rights.
+    pruneSessionState(db);
+    db.sessionOverrides[sessionDigest(token)] = { ...session };
+  }
   function resolveSession(token, db) {
-    if (!token || typeof token !== 'string' || revokedTokens.has(token)) return null;
-    const existing = sessions.get(token);
+    if (!token || typeof token !== 'string') return null;
+    const digest = sessionDigest(token);
+    if ((db.revokedSessions?.[digest] || 0) > Date.now()) return null;
+    const existing = db.sessionOverrides?.[digest];
     if (existing) {
       const actor = db.users.find(u => u.id === existing.userId);
-      if (!actor || existing.expires <= Date.now() || (actor.pinHash || actor.pin) !== existing.credential) {
-        sessions.delete(token);
-        return null;
-      }
-      return existing;
+      if (!actor || existing.expires <= Date.now() || (actor.pinHash || actor.pin) !== existing.credential) return null;
+      return { ...existing };
     }
     const parts = token.split('.');
     if (parts.length !== 2) return null;
@@ -191,7 +199,6 @@ export function createApp({ dataDir, defaults = DEFAULT_DATABASE, sessionTtlMs =
     const b = Buffer.from(expectedSig);
     if (a.length !== b.length || !timingSafeEqual(a, b)) return null;
     const restored = { userId: actor.id, expires: parsed.e, credential };
-    sessions.set(token, restored);
     return restored;
   }
   function issueSession(user, db) {
@@ -199,11 +206,9 @@ export function createApp({ dataDir, defaults = DEFAULT_DATABASE, sessionTtlMs =
     const credential = user.pinHash || user.pin;
     const token = signSessionToken(user.id, expires, credential);
     const s = { userId: user.id, expires, credential };
-    afterCommit(() => sessions.set(token, s));
     return { token, ...sessionResult(s, db) };
   }
-  function rateLimit(req) {
-    const key = req.ip;
+  function rateLimit(req, key = req.ip) {
     const at = Date.now();
     for (const [k, v] of attempts) if (v.until <= at) attempts.delete(k);
     const entry = attempts.get(key) || { count: 0, until: at + 15 * 60000 };
@@ -224,9 +229,12 @@ export function createApp({ dataDir, defaults = DEFAULT_DATABASE, sessionTtlMs =
     const db = read();
     const user = db.users.find(u => !MOCK_IDS.has(u.id) && [clean(u.emailOrId).toLowerCase(), u.id.toLowerCase(), u.id.replace(/^user-/, '').toLowerCase()].includes(key));
     const recovery = !!user && !!recoveryPasswordHash && verifyPin({ pinHash: recoveryPasswordHash }, pin);
-    if (!user || (!recovery && !verifyPin(user, pin))) { rateLimit(req); fail(401, 'ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง'); }
+    const attemptKey = `login:${req.ip}:${user?.id || key}`;
+    const blocked = attempts.get(attemptKey);
+    if (!recovery && blocked && blocked.until > Date.now() && blocked.count >= 30) fail(429, 'ลองหลายครั้งเกินไป กรุณารอ 15 นาที');
+    if (!user || (!recovery && !verifyPin(user, pin))) { rateLimit(req, attemptKey); fail(401, 'ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง'); }
+    attempts.delete(attemptKey);
     if (!recovery && !user.pinHash) { user.pinHash = pinHash(pin); delete user.pin; save(db); }
-    for (const [token, s] of sessions) if (s.expires <= Date.now()) sessions.delete(token);
     res.json({ success: true, ...issueSession(user, db) });
   });
   app.get('/api/invite/:code', (req, res) => {
@@ -257,7 +265,7 @@ export function createApp({ dataDir, defaults = DEFAULT_DATABASE, sessionTtlMs =
     const db = read();
     const s = resolveSession(token, db);
     const actor = s && db.users.find(u => u.id === s.userId);
-    if (!s || !actor) { sessions.delete(token); return res.status(401).json({ error: 'เซสชันหมดอายุ กรุณาเข้าสู่ระบบใหม่' }); }
+    if (!s || !actor) { return res.status(401).json({ error: 'เซสชันหมดอายุ กรุณาเข้าสู่ระบบใหม่' }); }
     if (s.simulatedId && actor.id !== 'user-ice') return res.status(403).json({ error: 'ไม่มีสิทธิ์จำลองบัญชี' });
     const user = db.users.find(u => u.id === (s.simulatedId || s.userId));
     if (!user) return res.status(401).json({ error: 'ไม่พบบัญชีผู้ใช้' });
@@ -267,14 +275,22 @@ export function createApp({ dataDir, defaults = DEFAULT_DATABASE, sessionTtlMs =
   app.use('/api', express.json({ limit: '75mb' }));
   registerProductRoutes(app, { read, save, requireWriter });
   app.get('/api/session', (req, res) => res.json(sessionResult(req.session, read())));
-  app.post('/api/logout', (req, res) => { sessions.delete(req.token); if (req.token) revokedTokens.add(req.token); res.json({ success: true }); });
+  app.post('/api/logout', (req, res) => {
+    const db = read(); pruneSessionState(db);
+    const digest = sessionDigest(req.token);
+    db.revokedSessions[digest] = req.session.expires;
+    delete db.sessionOverrides[digest];
+    save(db); res.json({ success: true });
+  });
   app.post('/api/simulate', (req, res) => {
     if (req.session.userId !== 'user-ice') fail(403, 'ไม่สามารถดำเนินการนี้ได้');
     const id = req.body.userId;
     if (id !== 'user-ice' && !MOCK_IDS.has(id)) fail(400, 'เลือกบัญชีจำลองที่กำหนดไว้');
     if (!read().users.some(u => u.id === id)) fail(404, 'ไม่พบบัญชีจำลอง');
-    req.session.simulatedId = id === 'user-ice' ? undefined : id;
-    res.json(sessionResult(req.session, read()));
+    const db = read();
+    const nextSession = { ...req.session, simulatedId: id === 'user-ice' ? undefined : id };
+    persistSessionOverride(db, req.token, nextSession);
+    save(db); res.json(sessionResult(nextSession, db));
   });
   app.get('/api/data', (req, res) => {
     const db = read();
@@ -461,8 +477,11 @@ export function createApp({ dataDir, defaults = DEFAULT_DATABASE, sessionTtlMs =
         user.pinHash = pinHash(input.pin); delete user.pin;
       }
     }
-    user.revision = revision(user) + 1; save(db);
-    if (user.id === req.session.userId) afterCommit(() => { req.session.credential = user.pinHash || user.pin; });
+    user.revision = revision(user) + 1;
+    if (user.id === req.session.userId && (user.pinHash || user.pin) !== req.session.credential) {
+      persistSessionOverride(db, req.token, { ...req.session, credential: user.pinHash || user.pin });
+    }
+    save(db);
     res.json({ success: true, user: publicUser(user) });
   });
   app.delete('/api/users/:id', (req, res) => {
@@ -496,6 +515,9 @@ export function createApp({ dataDir, defaults = DEFAULT_DATABASE, sessionTtlMs =
     const item = trash.find(x => x.id === req.params.id);
     if (!item) fail(404, 'ไม่พบรายการในถังขยะ');
     const targetCollection = item._trashedFrom || (item.type === 'supplier' ? 'suppliers' : item.type === 'drink_store' ? 'drinkStores' : 'locations');
+    if (!['suppliers', 'drinkStores', 'locations'].includes(targetCollection)) fail(400, 'ประเภทรายการในถังขยะไม่ถูกต้อง');
+    if ((db[targetCollection] || []).some(record => record.id === item.id)) fail(409, 'มีรายการรหัสนี้อยู่แล้ว กรุณาตรวจสอบก่อนกู้คืน');
+    touch(item);
     delete item._trashedFrom;
     delete item.trashedAt;
     delete item.trashedBy;
@@ -593,8 +615,12 @@ export function createApp({ dataDir, defaults = DEFAULT_DATABASE, sessionTtlMs =
   });
   app.post('/api/system/clear', (req, res) => {
     requireFounder(req); const db = read(); expectRevision(db, req.body.revision);
+    const expectedPassword = { CLEAR_RECORDS: '5888', CLEAR_MOCKUP: '5999' }[req.body.confirm];
+    if (!expectedPassword) fail(400, 'กรุณายืนยันการล้างรายการ');
+    if (clean(req.body.password) !== expectedPassword) fail(403, 'รหัสผ่านยืนยันการล้างข้อมูลไม่ถูกต้อง');
     if (req.body.confirm === 'CLEAR_MOCKUP') {
-      const isMockItem = x => x.isMockup === true || String(x.id).startsWith('demo-') || String(x.id).startsWith('sup-') || String(x.id).startsWith('store-') || String(x.id).startsWith('loc-');
+      // Only explicitly marked samples are safe to delete; real IDs may share a prefix.
+      const isMockItem = x => x.isMockup === true;
       db.suppliers = (db.suppliers || []).filter(x => !isMockItem(x));
       db.drinkStores = (db.drinkStores || []).filter(x => !isMockItem(x));
       db.locations = (db.locations || []).filter(x => !isMockItem(x));

@@ -15,6 +15,8 @@ import {
 import { useApp } from '../context/AppContext';
 import { TrashedItem } from '../types';
 
+const itemName = (item: TrashedItem) => item.name || item.storeName || 'รายการไม่มีชื่อ';
+
 export const TrashView: React.FC = () => {
   const {
     currentUser,
@@ -57,7 +59,7 @@ export const TrashView: React.FC = () => {
     try {
       const ok = await restoreTrashItem(item.id);
       if (ok) {
-        setSuccessMessage(`กู้คืน "${item.name}" กลับสู่ระบบเรียบร้อยแล้ว`);
+        setSuccessMessage(`กู้คืน "${itemName(item)}" กลับสู่ระบบเรียบร้อยแล้ว`);
         setTimeout(() => setSuccessMessage(null), 4000);
       }
     } finally {
@@ -67,7 +69,7 @@ export const TrashView: React.FC = () => {
 
   const handlePermanentDelete = async (item: TrashedItem) => {
     const confirmed = window.confirm(
-      `คำเตือน: คุณต้องการลบ "${item.name}" ถาวรใช่หรือไม่?\n\nการกระทำนี้ไม่สามารถย้อนกลับได้ ข้อมูลและรูปภาพจะถูกลบออกจากฐานข้อมูลอย่างสมบูรณ์`
+      `คำเตือน: คุณต้องการลบ "${itemName(item)}" ถาวรใช่หรือไม่?\n\nการกระทำนี้ไม่สามารถย้อนกลับได้ ข้อมูลและรูปภาพจะถูกลบออกจากฐานข้อมูลอย่างสมบูรณ์`
     );
     if (!confirmed) return;
 
@@ -76,7 +78,7 @@ export const TrashView: React.FC = () => {
     try {
       const ok = await permanentDeleteTrashItem(item.id);
       if (ok) {
-        setSuccessMessage(`ลบ "${item.name}" ถาวรเรียบร้อยแล้ว`);
+        setSuccessMessage(`ลบ "${itemName(item)}" ถาวรเรียบร้อยแล้ว`);
         setTimeout(() => setSuccessMessage(null), 4000);
       }
     } finally {
@@ -87,7 +89,7 @@ export const TrashView: React.FC = () => {
   const filteredItems = trashItems.filter((item) => {
     const matchesQuery =
       !searchQuery.trim() ||
-      (item.name || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+      itemName(item).toLowerCase().includes(searchQuery.toLowerCase()) ||
       (item.category || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
       (item.storeCategory || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
       (item.locationType || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -213,7 +215,7 @@ export const TrashView: React.FC = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {filteredItems.map((item) => {
             const typeInfo = getTypeLabel(item.type);
-            const firstPhoto = item.photos && item.photos.length > 0 ? item.photos[0] : null;
+            const firstPhoto = Array.isArray(item.photos) ? item.photos[0] : Object.values(item.photos || {}).flat().find(photo => typeof photo === 'string' && photo.length > 0);
             const isRestoring = restoringId === item.id;
             const isDeleting = deletingId === item.id;
 
@@ -228,7 +230,7 @@ export const TrashView: React.FC = () => {
                     {firstPhoto ? (
                       <img
                         src={firstPhoto}
-                        alt={item.name}
+                        alt={itemName(item)}
                         className="w-16 h-16 rounded-xl object-contain bg-slate-50 border border-slate-200 shrink-0"
                       />
                     ) : (
@@ -251,7 +253,7 @@ export const TrashView: React.FC = () => {
                         )}
                       </div>
                       <h3 className="font-extrabold text-slate-900 text-sm mt-1.5 line-clamp-2 leading-snug">
-                        {item.name}
+                        {itemName(item)}
                       </h3>
                       <div className="text-[11px] text-slate-400 font-mono mt-0.5 truncate">
                         ID: {item.id}

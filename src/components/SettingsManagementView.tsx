@@ -341,11 +341,7 @@ export const SettingsManagementView: React.FC = () => {
           onClick={() => {
             const pwd = window.prompt('กรุณากรอกรหัสผ่านเพื่อล้างเฉพาะข้อมูล Mockup ออกจากระบบ:');
             if (pwd === null) return;
-            if (pwd.trim() !== '5999') {
-              alert('รหัสผ่านไม่ถูกต้อง');
-              return;
-            }
-            clearMockupOnly();
+            clearMockupOnly(pwd.trim());
           }}
           className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 text-xs font-bold active:scale-95 transition-all"
         >
@@ -358,11 +354,7 @@ export const SettingsManagementView: React.FC = () => {
           onClick={() => {
             const pwd = window.prompt('กรุณากรอกรหัสผ่านเพื่อยืนยันการล้างข้อมูลทั้งหมดเป็น 0:');
             if (pwd === null) return;
-            if (pwd.trim() !== '5888') {
-              alert('รหัสผ่านไม่ถูกต้อง');
-              return;
-            }
-            resetSystemData(true);
+            resetSystemData(pwd.trim());
           }}
           className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-xs font-bold active:scale-95 transition-all"
         >

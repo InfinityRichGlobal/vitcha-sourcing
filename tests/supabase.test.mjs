@@ -8,11 +8,12 @@ import { PGlite } from '@electric-sql/pglite';
 import { createApp } from '../server/app.js';
 import { createSupabasePersistence } from '../server/supabase-persistence.js';
 
-async function fixture(t) {
+async function fixture(t, { simulation = false } = {}) {
   const db = new PGlite();
   await db.exec('create role anon; create role authenticated; create role service_role bypassrls;');
   await db.exec(fs.readFileSync('deployment/supabase.sql', 'utf8'));
   const body = { users: [{ id: 'user-ice', emailOrId: 'ice', name: 'Test', alias: 'Test', pin: 'fixture-password', role: 'admin', avatar: '' }], invites: [], suppliers: [], drinkStores: [], notifications: [] };
+  if (simulation) body.users.push({ id: 'user-ann', emailOrId: 'ann', name: 'Ann', alias: 'Ann', pin: '', role: 'viewer', avatar: '' });
   await db.query('insert into public.vitcha_state(id,body) values ($1,$2)', ['main', JSON.stringify(body)]);
   let failWrite = false, loseAcknowledgement = false, beforeCommit = null;
   const request = async (route, options = {}) => {
@@ -103,4 +104,45 @@ test('SQL denies anonymous and regular authenticated access to private data and 
     await assert.rejects(f.db.query('select public.vitcha_commit(1,$1,$2)', ['{}', randomUUID()]), e => e.code === '42501');
     await f.db.exec('reset role');
   }
+});
+
+test('logout remains revoked on an already-running peer and a fresh server', async t => {
+  const f = await fixture(t); const a = await f.start(); const b = await f.start();
+  assert.equal((await b.call('/api/data', undefined, a.token)).status, 200);
+  assert.equal((await a.call('/api/logout', {}, a.token)).status, 200);
+  assert.equal((await b.call('/api/data', undefined, a.token)).status, 401);
+  const c = await f.start();
+  assert.equal((await c.call('/api/data', undefined, a.token)).status, 401);
+  assert.equal((await b.call('/api/data', undefined, b.token)).status, 200);
+});
+
+test('failed logout commit does not claim success or revoke the live session', async t => {
+  const f = await fixture(t); const a = await f.start();
+  f.failWrites(true);
+  assert.equal((await a.call('/api/logout', {}, a.token)).status, 503);
+  assert.equal((await a.call('/api/data', undefined, a.token)).status, 200);
+});
+
+test('the session retained after a PIN change also survives on a fresh server', async t => {
+  const f = await fixture(t); const a = await f.start(); const b = await f.start();
+  assert.equal((await a.call('/api/users', { id: 'user-ice', revision: 0, pin: 'new-fixture-password' }, a.token)).status, 200);
+  assert.equal((await a.call('/api/data', undefined, a.token)).status, 200);
+  assert.equal((await b.call('/api/data', undefined, a.token)).status, 200);
+  assert.equal((await b.call('/api/data', undefined, b.token)).status, 401);
+  const c = await f.start();
+  assert.equal((await c.call('/api/data', undefined, a.token)).status, 200);
+});
+
+test('simulation stays read-only across servers and failed exit cannot restore owner privileges', async t => {
+  const f = await fixture(t, { simulation: true }); const a = await f.start(); const b = await f.start();
+  assert.equal((await a.call('/api/simulate', { userId: 'user-ann' }, a.token)).status, 200);
+  const simulated = await b.call('/api/data', undefined, a.token);
+  assert.equal(simulated.data.user.id, 'user-ann'); assert.equal(simulated.data.simulated, true);
+  assert.equal((await b.call('/api/invites', { role: 'admin' }, a.token)).status, 403);
+  f.failWrites(true);
+  assert.equal((await a.call('/api/simulate', { userId: 'user-ice' }, a.token)).status, 503);
+  assert.equal((await a.call('/api/data', undefined, a.token)).data.user.id, 'user-ann');
+  f.failWrites(false);
+  assert.equal((await a.call('/api/simulate', { userId: 'user-ice' }, a.token)).status, 200);
+  assert.equal((await b.call('/api/data', undefined, a.token)).data.user.id, 'user-ice');
 });

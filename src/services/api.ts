@@ -65,12 +65,13 @@ export async function requestJson(path: string, init: RequestInit = {}, timeoutM
   const headers = new Headers(init.headers);
   const token = getSessionToken();
   // Never send a session to a custom health-check server.
-  if (token && baseUrl === getRenderServerUrl()) headers.set('Authorization', `Bearer ${token}`);
+  const sessionRequest = Boolean(token && baseUrl === getRenderServerUrl());
+  if (sessionRequest) headers.set('Authorization', `Bearer ${token}`);
   try {
     const response = await fetch(`${baseUrl}${path}`, { ...init, headers, cache: 'no-store', signal: controller.signal });
     const data = await response.json();
     if (!response.ok) {
-      if (response.status === 401 && !['/api/login', '/api/register'].includes(path)) {
+      if (response.status === 401 && sessionRequest && token === getSessionToken() && baseUrl === getRenderServerUrl() && !['/api/login', '/api/register'].includes(path)) {
         setSessionToken(null);
         window.dispatchEvent(new Event('vitcha:session-expired'));
       }

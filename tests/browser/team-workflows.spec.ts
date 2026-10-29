@@ -95,6 +95,65 @@ test("private maintenance controls appear only in the actual primary session", a
   );
 });
 
+test("both maintenance menus send confirmation passwords and preserve data on rejection", async ({ page }) => {
+  const token = await login(page, "ice");
+  const before = await data(page, token);
+  await navigateTab(page, "ตั้งค่าเนื้อหา");
+  for (const surface of ['settings', 'drawer']) {
+    for (const [name, confirm] of [['ล้างเฉพาะ Mockup', 'CLEAR_MOCKUP'], ['ล้างข้อมูลเป็น 0', 'CLEAR_RECORDS']]) {
+      if (surface === 'drawer') await page.getByRole('button', { name: /แพลตฟอร์ม/ }).click();
+      const container = surface === 'drawer' ? page.locator('.fixed.inset-0') : page.locator('main');
+      page.once('dialog', dialog => dialog.accept('wrong-confirmation'));
+      const responsePromise = page.waitForResponse(response => new URL(response.url()).pathname === '/api/system/clear');
+      await container.getByRole('button', { name, exact: true }).click();
+      const response = await responsePromise;
+      expect(response.request().postDataJSON()).toMatchObject({ confirm, password: 'wrong-confirmation' });
+      expect(response.status()).toBe(403);
+      await expect(page.getByRole('alert')).toContainText('รหัสผ่านยืนยันการล้างข้อมูลไม่ถูกต้อง');
+      await page.getByRole('button', { name: 'ปิดข้อความแจ้งเตือน', exact: true }).click();
+    }
+  }
+  const after = await data(page, token);
+  for (const collection of ['suppliers', 'drinkStores', 'locations']) expect(after[collection]).toEqual(before[collection]);
+});
+
+test('deleted drink stores retain their name and photo, can be searched and restored', async ({ page }) => {
+  const token = await login(page, 'ice');
+  const headers = { Authorization: `Bearer ${token}` };
+  const snapshot = await data(page, token);
+  const store = { ...snapshot.drinkStores[0], id: 'qa-trash-store', storeName: 'ร้านทดสอบถังขยะ', revision: undefined };
+  delete store.name;
+  expect((await page.request.post('/api/drink-stores', { headers, data: store })).ok()).toBeTruthy();
+  expect((await page.request.delete(`/api/drink-stores/${store.id}`, { headers, data: { revision: 1 } })).ok()).toBeTruthy();
+  await navigateTab(page, 'ถังขยะ');
+  await expect(page.getByRole('heading', { name: store.storeName, exact: true })).toBeVisible();
+  await page.getByPlaceholder('ค้นหาตามชื่อรายการ, หมวดหมู่, หรือผู้ลบ...').fill(store.storeName);
+  await expect(page.getByRole('heading', { name: store.storeName, exact: true })).toBeVisible();
+  await expect(page.locator('main img').first()).toHaveAttribute('src', store.photos.storefrontAndAtmosphere[0]);
+  await capture(page, { path: 'test-results/trash-store.png' });
+  await page.getByRole('button', { name: 'กู้คืนสู่ระบบ', exact: true }).click();
+  await expect(page.getByText(`กู้คืน "${store.storeName}" กลับสู่ระบบเรียบร้อยแล้ว`, { exact: true })).toBeVisible();
+  const restored = (await data(page, token)).drinkStores.find((record: any) => record.id === store.id);
+  expect(restored.storeName).toBe(store.storeName);
+  expect(restored.revision).toBeGreaterThan(1);
+});
+
+test('failed logout reports the failure and keeps the session until the server confirms', async ({ page }) => {
+  await login(page, 'ice');
+  await page.route('**/api/logout', route => route.fulfill({ status: 503, contentType: 'application/json', body: JSON.stringify({ error: 'QA logout unavailable' }) }));
+  await page.getByRole('button', { name: /แพลตฟอร์ม/ }).click();
+  await page.getByRole('button', { name: 'ออกจากระบบ (Lock PIN)', exact: true }).click();
+  await expect(page.getByRole('alert')).toContainText('ออกจากระบบไม่สำเร็จ');
+  expect(await page.evaluate(() => sessionStorage.getItem('vitcha_session_token'))).toBeTruthy();
+  await page.getByRole('button', { name: 'ปิดข้อความแจ้งเตือน', exact: true }).click();
+  await page.unroute('**/api/logout');
+  await page.getByRole('button', { name: /แพลตฟอร์ม/ }).click();
+  const response = page.waitForResponse(r => new URL(r.url()).pathname === '/api/logout');
+  await page.getByRole('button', { name: 'ออกจากระบบ (Lock PIN)', exact: true }).click();
+  expect((await response).ok()).toBeTruthy();
+  await expect.poll(() => page.evaluate(() => sessionStorage.getItem('vitcha_session_token'))).toBeNull();
+});
+
 test("invitation copy contains spaced greeting, recipient and a unique link; existing-account login works", async ({
   page,
   context,

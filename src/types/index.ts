@@ -14,7 +14,8 @@ export type AppViewTab = 'dashboard' | 'suppliers' | 'drink_stores' | 'locations
 
 export interface TrashedItem {
   id: string;
-  name: string;
+  name?: string;
+  storeName?: string;
   type: 'supplier' | 'drink_store' | 'location';
   _trashedFrom: 'suppliers' | 'drinkStores' | 'locations';
   trashedAt: string;
@@ -22,7 +23,7 @@ export interface TrashedItem {
   category?: string;
   storeCategory?: string;
   locationType?: string;
-  photos?: string[];
+  photos?: Record<string, string[]> | string[];
   notes?: string;
   rating?: number;
   [key: string]: any;

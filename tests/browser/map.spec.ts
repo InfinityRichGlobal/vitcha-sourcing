@@ -21,12 +21,20 @@ test('China basemap loads with English labels and keeps its zoom across polling'
   await expect(map).toHaveAttribute('data-map-status', 'ready', { timeout: 60000 });
   await expect(map.locator('.leaflet-tile-loaded').first()).toBeVisible();
   await expect(map.getByText('Map language: English')).toBeVisible();
-  // A marker's projected separation changes with zoom. It must not snap back on polling.
+  // Compare two pins' screen separation: a single pin can stay at the zoom center.
   const markers = map.locator('.leaflet-marker-icon');
-  const before = await markers.first().getAttribute('style');
+  const separation = () => markers.evaluateAll(nodes => {
+    const a = nodes[0].getBoundingClientRect();
+    const b = nodes[1].getBoundingClientRect();
+    return Math.hypot(a.x - b.x, a.y - b.y);
+  });
+  const before = await separation();
+  expect(before).toBeGreaterThan(0);
   await map.locator('.leaflet-control-zoom-in').click();
-  await expect.poll(() => markers.first().getAttribute('style')).not.toBe(before);
+  await expect.poll(separation).toBeGreaterThan(before * 1.5);
+  await expect(map.locator('.leaflet-zoom-anim')).toHaveCount(0);
+  const zoomed = await separation();
   await page.waitForResponse(response => new URL(response.url()).pathname === '/api/data' && response.request().method() === 'GET');
-  await expect(markers.first()).not.toHaveAttribute('style', before || '');
+  await expect.poll(separation).toBeCloseTo(zoomed, 0);
   await map.screenshot({ path: 'test-results/english-china-map.png' });
 });

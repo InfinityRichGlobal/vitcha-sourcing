@@ -156,7 +156,7 @@ test('bulk overwrite is disabled, explicit founder clear handles empty arrays wi
   await call('/api/suppliers', token, item);
   assert.equal((await call('/api/sync', token, { users: [], suppliers: [] })).status, 410);
   const before = (await call('/api/data', token, undefined, 'GET')).data;
-  assert.equal((await call('/api/system/clear', token, { revision: before.revision, confirm: 'CLEAR_RECORDS' })).status, 200);
+  assert.equal((await call('/api/system/clear', token, { revision: before.revision, confirm: 'CLEAR_RECORDS', password: '5888' })).status, 200);
   const after = (await call('/api/data', token, undefined, 'GET')).data;
   assert.deepEqual(after.suppliers, []); assert.equal(after.users.length, before.users.length);
 });
@@ -164,6 +164,69 @@ test('media upload rejects active content and browser-only video URLs', async t 
   const { call, login } = await setup(t); const token = await login('review');
   assert.equal((await call('/api/upload', token, { mimeType: 'text/html', base64: 'data:text/html;base64,PGgxPng8L2gxPg==' })).status, 400);
   assert.equal((await call('/api/suppliers', token, { ...item, videos: ['idb://local'] })).status, 400);
+});
+
+test('clear requires the matching password server-side and rejected requests preserve data', async t => {
+  const { call, login } = await setup(t);
+  const token = await login('ice');
+  const admin = await login('admin');
+  await call('/api/suppliers', token, item);
+  const before = (await call('/api/data', token, undefined, 'GET')).data;
+  for (const [confirm, password] of [['CLEAR_RECORDS', undefined], ['CLEAR_RECORDS', 'wrong'], ['CLEAR_RECORDS', '5999'], ['CLEAR_MOCKUP', undefined], ['CLEAR_MOCKUP', '5888']]) {
+    assert.equal((await call('/api/system/clear', token, { revision: before.revision, confirm, password })).status, 403);
+  }
+  assert.equal((await call('/api/system/clear', admin, { revision: before.revision, confirm: 'CLEAR_RECORDS', password: '5888' })).status, 403);
+  assert.equal((await call('/api/system/clear', token, { revision: before.revision - 1, confirm: 'CLEAR_RECORDS', password: '5888' })).status, 409);
+  const after = (await call('/api/data', token, undefined, 'GET')).data;
+  assert.equal(after.revision, before.revision);
+  assert.deepEqual(after.suppliers, before.suppliers);
+});
+
+test('mockup clear preserves real records with legacy-looking IDs in every collection', async t => {
+  const { call, login } = await setup(t); const token = await login('ice');
+  const records = [
+    ['suppliers', 'suppliers', item],
+    ['drink-stores', 'drinkStores', { ...item, id: 'store-real', storeName: 'Real store', drinkItems: [], ratings: { taste: 4, aesthetics: 4, value: 4, speed: 4 } }],
+    ['locations', 'locations', { ...item, id: 'loc-real', ratings: { footTraffic: 4, visibility: 4, accessibility: 4, valueRoi: 4 } }],
+  ];
+  for (const [route, , record] of records) {
+    assert.equal((await call(`/api/${route}`, token, record)).status, 200);
+    assert.equal((await call(`/api/${route}`, token, { ...record, id: `sample-${record.id}`, isMockup: true })).status, 200);
+  }
+  const before = (await call('/api/data', token, undefined, 'GET')).data;
+  assert.equal((await call('/api/system/clear', token, { revision: before.revision, confirm: 'CLEAR_MOCKUP', password: '5999' })).status, 200);
+  const after = (await call('/api/data', token, undefined, 'GET')).data;
+  for (const [, collection, record] of records) assert.deepEqual(after[collection].map(x => x.id), [record.id]);
+  assert.deepEqual(after.users, before.users);
+});
+
+test('trash restore cannot duplicate a live record and preserves both versions on conflict', async t => {
+  const { call, login } = await setup(t); const token = await login('ice');
+  await call('/api/suppliers', token, item);
+  assert.equal((await call('/api/suppliers/sup-test', token, { revision: 1 }, 'DELETE')).status, 200);
+  assert.equal((await call('/api/suppliers', token, { ...item, name: 'New live record' })).status, 200);
+  assert.equal((await call('/api/trash/sup-test/restore', token, {})).status, 409);
+  assert.equal((await call('/api/trash', token, undefined, 'GET')).data.items.length, 1);
+  const data = (await call('/api/data', token, undefined, 'GET')).data;
+  assert.equal(data.suppliers.length, 1); assert.equal(data.suppliers[0].name, 'New live record');
+});
+
+test('restoring a record invalidates edits based on its pre-deletion revision', async t => {
+  const { call, login } = await setup(t); const token = await login('ice');
+  await call('/api/suppliers', token, item);
+  await call('/api/suppliers/sup-test', token, { revision: 1 }, 'DELETE');
+  assert.equal((await call('/api/trash/sup-test/restore', token, {})).status, 200);
+  assert.equal((await call('/api/suppliers', token, { ...item, name: 'Stale overwrite', revision: 1 })).status, 409);
+});
+
+test('login throttling blocks credential checks across aliases but not another account', async t => {
+  const { call, login } = await setup(t);
+  for (let i = 0; i < 31; i++) await call('/api/login', null, { idOrEmail: 'ice', pin: 'wrong' });
+  assert.equal((await call('/api/login', null, { idOrEmail: 'user-ice', pin: '876543' })).status, 429);
+  assert.ok(await login('admin'));
+  const later = Date.now() + 16 * 60000;
+  t.mock.method(Date, 'now', () => later);
+  assert.ok(await login('ice'));
 });
 
 test('retrying a create after a lost response does not duplicate the record', async t => {
@@ -262,7 +325,7 @@ test('configured recovery credential accepts the exact account after throttling 
   const {scryptSync}=await import('node:crypto'); const recovery='test-only-recovery'; const salt='private-test-salt';
   const {call,login,dir}=await setup(t,{recoveryPasswordHash:`${salt}:${scryptSync(recovery,salt,32).toString('hex')}`});
   const before=JSON.parse(fs.readFileSync(path.join(dir,'database.json'))).users.map(u=>u.pinHash);
-  for(let i=0;i<31;i++) await call('/api/login',null,{idOrEmail:'nobody',pin:'bad'});
+  for(let i=0;i<31;i++) await call('/api/login',null,{idOrEmail:'ice',pin:'bad'});
   for(const id of ['ice','admin','review','view']) {
     const result=await call('/api/login',null,{idOrEmail:id,pin:recovery});assert.equal(result.status,200);
     const data=await call('/api/data',result.data.token,undefined,'GET');assert.doesNotMatch(JSON.stringify(data),/test-only-recovery|passwordHash|pinHash/);

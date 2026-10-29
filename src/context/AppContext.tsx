@@ -92,8 +92,8 @@ interface AppContextType {
   recordItemView: (targetId: string, type: 'supplier' | 'drink_store' | 'location') => void;
   toggleLikeItem: (targetId: string, type: 'supplier' | 'drink_store' | 'location') => void;
   loadFullMockupData: () => void;
-  resetSystemData: (clearEmpty?: boolean) => void;
-  clearMockupOnly: () => void;
+  resetSystemData: (password: string) => void;
+  clearMockupOnly: (password: string) => void;
 
   // Handoff & Operations (บริหารจัดการรับช่วงต่อ)
   updateHandoff: (
@@ -442,7 +442,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     catch (error) { setActionError(error instanceof Error ? error.message : 'เชื่อมต่อไม่ได้'); return false; }
   };
   const loginWithPin = loginWithCredentials;
-  const logout = () => { void sendJson('/api/logout', {}).catch(() => {}); clearSession(); };
+  const logout = async () => {
+    if (pendingActions.current.has('logout')) return;
+    const token = getSessionToken();
+    pendingActions.current.add('logout'); setActionError(null);
+    try {
+      await sendJson('/api/logout', {});
+      if (token === getSessionToken()) clearSession();
+    } catch {
+      if (token === getSessionToken()) setActionError('ออกจากระบบไม่สำเร็จ เซิร์ฟเวอร์ยังไม่ยืนยัน กรุณาลองอีกครั้ง');
+    } finally { pendingActions.current.delete('logout'); }
+  };
   const switchUser = (userId: string) => perform('simulate', () => sendJson('/api/simulate', { userId }));
   const restoreAdminUser = () => switchUser('user-ice');
   const registerUserWithInvite: AppContextType['registerUserWithInvite'] = async (code, name, alias, emailOrId, pin, avatar) => {
@@ -486,13 +496,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       commandIds.current.delete('sample-load');
     });
   };
-  const resetSystemData = (clearEmpty = false) => {
-    if (!clearEmpty) { loadFullMockupData(); return; }
-    void perform('reset', () => sendJson('/api/system/clear', { revision: databaseRevision.current, confirm: 'CLEAR_RECORDS' }));
+  const resetSystemData = (password: string) => {
+    void perform('reset', () => sendJson('/api/system/clear', { revision: databaseRevision.current, confirm: 'CLEAR_RECORDS', password }));
   };
-  const clearMockupOnly = () => {
+  const clearMockupOnly = (password: string) => {
     if (currentUser.id !== 'user-ice' || simulatedFromAdmin) { setActionError('ไม่สามารถดำเนินการนี้ได้ (เฉพาะเจ้าของระบบ)'); return; }
-    void perform('reset-mockup', () => sendJson('/api/system/clear', { revision: databaseRevision.current, confirm: 'CLEAR_MOCKUP' }));
+    void perform('reset-mockup', () => sendJson('/api/system/clear', { revision: databaseRevision.current, confirm: 'CLEAR_MOCKUP', password }));
   };
   const broadcastNotification: AppContextType['broadcastNotification'] = async (title, message, type, targetId, avatar, suppressToast, options) => {
     const n: AppNotification = { id: crypto.randomUUID(), title, message, type, targetId, avatar, timestamp: new Date().toISOString(), read: false };
