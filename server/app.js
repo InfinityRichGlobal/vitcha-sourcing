@@ -13,9 +13,9 @@ const ROLES = ['admin', 'reviewer', 'viewer'];
 const STAGES = ['awaiting', 'rfq_sent', 'sample_test', 'negotiate', 'approved', 'ordered'];
 const STATUSES = ['scouted', 'reviewing', 'rfq_sent', 'shortlisted', 'ordered'];
 const HANDOFF = ['assignedTo', 'targetFollowUpDate', 'handoffNotes', 'handoffStage', 'status'];
-const SUPPLIER = ['name', 'chineseName', 'marketOrCity', 'category', 'rating', 'quickTags', 'isFactory', 'phone', 'wechatId', 'lineId', 'address', 'photos', 'videos', 'catalogItems', 'memo', 'voiceNoteUrl', 'voiceDurationSec', 'voiceNotes', 'location', 'country'];
-const STORE = ['storeName', 'chineseName', 'storeCategory', 'brandConcept', 'city', 'phone', 'lineId', 'wechatId', 'photos', 'videos', 'ratings', 'drinkItems', 'tastingNotes', 'voiceNoteUrl', 'voiceDurationSec', 'voiceNotes', 'location', 'country'];
-const LOCATION = ['name', 'foreignName', 'locationType', 'zoneOrFloor', 'unitNumber', 'location', 'spaceSpecs', 'leaseTerms', 'ratings', 'photos', 'videos', 'voiceNoteUrl', 'voiceDurationSec', 'voiceNotes', 'quickTags', 'country'];
+const SUPPLIER = ['name', 'chineseName', 'marketOrCity', 'category', 'rating', 'quickTags', 'isFactory', 'phone', 'wechatId', 'lineId', 'address', 'photos', 'videos', 'catalogItems', 'memo', 'voiceNoteUrl', 'voiceDurationSec', 'voiceNotes', 'location', 'country', 'isMockup'];
+const STORE = ['storeName', 'chineseName', 'storeCategory', 'brandConcept', 'city', 'phone', 'lineId', 'wechatId', 'photos', 'videos', 'ratings', 'drinkItems', 'tastingNotes', 'voiceNoteUrl', 'voiceDurationSec', 'voiceNotes', 'location', 'country', 'isMockup'];
+const LOCATION = ['name', 'foreignName', 'locationType', 'zoneOrFloor', 'unitNumber', 'location', 'spaceSpecs', 'leaseTerms', 'ratings', 'photos', 'videos', 'voiceNoteUrl', 'voiceDurationSec', 'voiceNotes', 'quickTags', 'country', 'isMockup'];
 const now = () => new Date().toISOString();
 const pick = (obj, keys) => Object.fromEntries(keys.filter(k => obj[k] !== undefined).map(k => [k, obj[k]]));
 const clean = value => typeof value === 'string' ? value.trim() : '';
@@ -566,8 +566,9 @@ export function createApp({ dataDir, defaults = DEFAULT_DATABASE, sessionTtlMs =
         const nextId = clean(source.id) && !existingIds.has(clean(source.id)) ? clean(source.id) : `demo-${randomUUID()}`;
         existingIds.add(nextId);
         const record = {
-          ...pick(source, [...fields, ...HANDOFF]),
+          ...pick(source, [...fields, ...HANDOFF, 'isMockup']),
           id: nextId,
+          isMockup: true,
           type: collection === 'suppliers' ? 'supplier' : collection === 'drinkStores' ? 'drink_store' : 'location',
           creator: source.creator?.id ? source.creator : { ...pick(req.user, ['id', 'name', 'alias', 'avatar']), timestamp: now() },
           reviewerNotes: Array.isArray(source.reviewerNotes) ? source.reviewerNotes : [],
@@ -592,6 +593,13 @@ export function createApp({ dataDir, defaults = DEFAULT_DATABASE, sessionTtlMs =
   });
   app.post('/api/system/clear', (req, res) => {
     requireFounder(req); const db = read(); expectRevision(db, req.body.revision);
+    if (req.body.confirm === 'CLEAR_MOCKUP') {
+      const isMockItem = x => x.isMockup === true || String(x.id).startsWith('demo-') || String(x.id).startsWith('sup-') || String(x.id).startsWith('store-') || String(x.id).startsWith('loc-');
+      db.suppliers = (db.suppliers || []).filter(x => !isMockItem(x));
+      db.drinkStores = (db.drinkStores || []).filter(x => !isMockItem(x));
+      db.locations = (db.locations || []).filter(x => !isMockItem(x));
+      save(db); return res.json({ success: true });
+    }
     if (req.body.confirm !== 'CLEAR_RECORDS') fail(400, 'กรุณายืนยันการล้างรายการ');
     db.suppliers = []; db.drinkStores = []; db.locations = []; db.productWorkspace = {}; db.notifications = []; save(db); res.json({ success: true });
   });

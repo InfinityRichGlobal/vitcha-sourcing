@@ -144,6 +144,7 @@ export interface SupplierRecord {
   id: string;
   type: 'supplier';
   country?: CountryOrigin; // 'CN' | 'TH'
+  isMockup?: boolean;
   name: string;
   chineseName?: string;
   marketOrCity?: string; // e.g. 'ตลาดเครื่องครัวผานหยู กวางโจว', 'ตลาดชาฟางชุน', 'กทม.'
@@ -184,6 +185,7 @@ export interface SupplierRecord {
     alias: string;
     avatar: string;
     timestamp: string;
+    role?: UserRole;
   };
   reviewerNotes: ReviewerNote[];
   viewedBy?: ViewLogEntry[];
@@ -211,6 +213,7 @@ export interface StoreInspoRecord {
   id: string;
   type: 'drink_store';
   country?: CountryOrigin; // 'CN' | 'TH'
+  isMockup?: boolean;
   storeCategory?: string; // หมวดหมู่เฉพาะของร้านน้ำ แยกจากซัพพลายเออร์
   storeName: string;
   chineseName?: string;
@@ -254,6 +257,7 @@ export interface StoreInspoRecord {
     alias: string;
     avatar: string;
     timestamp: string;
+    role?: UserRole;
   };
   reviewerNotes: ReviewerNote[];
   viewedBy?: ViewLogEntry[];
@@ -304,6 +308,7 @@ export interface LocationRecord {
   id: string;
   type: 'location';
   country?: CountryOrigin;       // 'CN' | 'TH'
+  isMockup?: boolean;
   name: string;                  // ชื่อทำเล / โครงการ
   foreignName?: string;          // ชื่ออังกฤษ / จีน
   locationType: LocationType;    // ประเภทห้าง / อาคาร
@@ -341,6 +346,7 @@ export interface LocationRecord {
     alias: string;
     avatar: string;
     timestamp: string;
+    role?: UserRole;
   };
   reviewerNotes: ReviewerNote[];
   viewedBy?: ViewLogEntry[];

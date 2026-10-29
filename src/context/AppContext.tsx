@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { User, SupplierRecord, StoreInspoRecord, LocationRecord, ExchangeRateConfig, InviteLink, PipelineStatus, UserRole, AppNotification, HandoffStage, AppViewTab, QuickMessageTemplate, CuratedProduct, ProductTaxon, ProductSet, ProductChanges, TrashedItem } from '../types';
-import { INITIAL_SUPPLIERS, INITIAL_DRINK_STORES, INITIAL_CATEGORIES, INITIAL_STORE_CATEGORIES, INITIAL_LOCATION_TYPES, INITIAL_QUICK_TAGS, INITIAL_QUICK_MESSAGES } from '../utils/seedData';
+import { INITIAL_SUPPLIERS, INITIAL_DRINK_STORES, INITIAL_LOCATIONS, INITIAL_CATEGORIES, INITIAL_STORE_CATEGORIES, INITIAL_LOCATION_TYPES, INITIAL_QUICK_TAGS, INITIAL_QUICK_MESSAGES } from '../utils/seedData';
 import { getRenderServerUrl, saveRenderServerUrl, checkServerHealth, fetchCentralData, sendJson, requestJson, getSessionToken, setSessionToken, loginUserApi, ApiError, markNotificationsReadApi, clearNotificationsApi } from '../services/api';
 
 interface AppContextType {
@@ -93,6 +93,7 @@ interface AppContextType {
   toggleLikeItem: (targetId: string, type: 'supplier' | 'drink_store' | 'location') => void;
   loadFullMockupData: () => void;
   resetSystemData: (clearEmpty?: boolean) => void;
+  clearMockupOnly: () => void;
 
   // Handoff & Operations (บริหารจัดการรับช่วงต่อ)
   updateHandoff: (
@@ -473,13 +474,25 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const loadFullMockupData = () => {
     if (currentUser.id !== 'user-ice' || simulatedFromAdmin) { setActionError('ไม่สามารถดำเนินการนี้ได้'); return; }
     void perform('demo', async () => {
-      await sendJson('/api/system/samples', { revision: databaseRevision.current, operationId: commandId('sample-load'), snapshot: { suppliers: INITIAL_SUPPLIERS, drinkStores: INITIAL_DRINK_STORES } });
+      await sendJson('/api/system/samples', {
+        revision: databaseRevision.current,
+        operationId: commandId('sample-load'),
+        snapshot: {
+          suppliers: INITIAL_SUPPLIERS,
+          drinkStores: INITIAL_DRINK_STORES,
+          locations: INITIAL_LOCATIONS,
+        },
+      });
       commandIds.current.delete('sample-load');
     });
   };
   const resetSystemData = (clearEmpty = false) => {
     if (!clearEmpty) { loadFullMockupData(); return; }
     void perform('reset', () => sendJson('/api/system/clear', { revision: databaseRevision.current, confirm: 'CLEAR_RECORDS' }));
+  };
+  const clearMockupOnly = () => {
+    if (currentUser.id !== 'user-ice' || simulatedFromAdmin) { setActionError('ไม่สามารถดำเนินการนี้ได้ (เฉพาะเจ้าของระบบ)'); return; }
+    void perform('reset-mockup', () => sendJson('/api/system/clear', { revision: databaseRevision.current, confirm: 'CLEAR_MOCKUP' }));
   };
   const broadcastNotification: AppContextType['broadcastNotification'] = async (title, message, type, targetId, avatar, suppressToast, options) => {
     const n: AppNotification = { id: crypto.randomUUID(), title, message, type, targetId, avatar, timestamp: new Date().toISOString(), read: false };
@@ -520,7 +533,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setActiveTab, setCountryFilter, setSearchQuery, setSelectedCategory, setSelectedStatus, setSelectedTag, setSelectedRating,
     dismissToast, markAllNotificationsRead, markNotificationRead, clearAllNotifications, clearNotification, broadcastNotification, addCategory, editCategory, deleteCategory, addStoreCategory, editStoreCategory, deleteStoreCategory,
     addLocationType, editLocationType, deleteLocationType,
-    addQuickTag, editQuickTag, deleteQuickTag, addQuickMessage, editQuickMessage, deleteQuickMessage, updateUserRole, recordItemView, toggleLikeItem, loadFullMockupData, resetSystemData,
+    addQuickTag, editQuickTag, deleteQuickTag, addQuickMessage, editQuickMessage, deleteQuickMessage, updateUserRole, recordItemView, toggleLikeItem, loadFullMockupData, resetSystemData, clearMockupOnly,
     updateHandoff, addSupplier, updateSupplier, deleteSupplier, addStoreInspo, updateStoreInspo, deleteStoreInspo, addLocation, updateLocation, deleteLocation, canEditItems, canDeleteItems, canComment, canAddItems,
     trashItems, fetchTrash, restoreTrashItem, permanentDeleteTrashItem,
     editingSupplier, editingStore, editingLocation, openEditItem, closeEditItem, addReviewerNote, addReviewReply, updatePipelineStatus, updateExchangeRate, toggleCurrencyMode, convertCnyToThb, convertThbToCny,

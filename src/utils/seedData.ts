@@ -1,5 +1,4 @@
-import { User, SupplierRecord, StoreInspoRecord, LocationRecord, InviteLink, QuickMessageTemplate } from '../types';
-import { getDemoVoiceWavDataUri } from './audioHelper';
+import { User, SupplierRecord, StoreInspoRecord, LocationRecord, QuickMessageTemplate } from '../types';
 
 export const INITIAL_CATEGORIES: string[] = [
   "เคาน์เตอร์ & สเตนเลส",
@@ -88,7 +87,106 @@ export const INITIAL_USERS: User[] = [
     "emailOrId": "supericez",
     "createdAt": "2026-10-26T10:00:00Z",
     "lastActiveAt": "2026-10-29T12:45:00Z",
-    "statusNote": "ออนไลน์อยู่ขณะนี้ · เซิร์ฟเวอร์ Render กลาง"
+    "statusNote": "ออนไลน์อยู่ขณะนี้ · ผู้ก่อตั้ง VITCHA (สำรวจจีน)"
+  },
+  {
+    "id": "user-1793177529069",
+    "name": "MommySomO",
+    "alias": "MommySomO",
+    "role": "admin",
+    "avatar": "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&auto=format&fit=crop&q=80",
+    "emailOrId": "somo@vitcha.com",
+    "createdAt": "2026-10-28T09:00:00Z",
+    "lastActiveAt": "2026-10-29T12:50:00Z",
+    "statusNote": "ออนไลน์อยู่ขณะนี้ · ผู้ร่วมก่อตั้ง VITCHA (สำรวจจีน)"
+  },
+  {
+    "id": "user-p-ohm",
+    "name": "P.ohm (ผู้บริหาร & หัวหน้างาน)",
+    "alias": "P.ohm",
+    "role": "admin",
+    "avatar": "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&auto=format&fit=crop&q=80",
+    "emailOrId": "ohm@vitcha.com",
+    "createdAt": "2026-10-26T10:30:00Z",
+    "lastActiveAt": "2026-10-29T12:30:00Z",
+    "statusNote": "ออนไลน์อยู่ขณะนี้ · ผู้บริหาร VITCHA (สำรวจจีน)"
+  },
+  {
+    "id": "user-05523ee4-203c-4ecb-8a79-abc02a2c533e",
+    "name": "P.ตุ้ย (ผู้บริหาร & หัวหน้างาน)",
+    "alias": "P.ตุ้ย",
+    "role": "admin",
+    "avatar": "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&auto=format&fit=crop&q=80",
+    "emailOrId": "tui@vitcha.com",
+    "createdAt": "2026-10-28T10:00:00Z",
+    "lastActiveAt": "2026-10-29T12:40:00Z",
+    "statusNote": "ออนไลน์อยู่ขณะนี้ · ผู้บริหาร VITCHA (สำรวจจีน)"
+  },
+  {
+    "id": "user-074ec1a3-c143-48ef-bf22-0c6afc11d4f8",
+    "name": "น้องเมย์ (R&D สูตรเครื่องดื่ม & ชิมชา)",
+    "alias": "น้องเมย์",
+    "role": "admin",
+    "avatar": "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=150&auto=format&fit=crop&q=80",
+    "emailOrId": "may@vitcha.com",
+    "createdAt": "2026-10-28T11:00:00Z",
+    "lastActiveAt": "2026-10-29T12:55:00Z",
+    "statusNote": "ออนไลน์อยู่แล็บ · R&D สูตรเครื่องดื่ม & ชิมชา"
+  },
+  {
+    "id": "user-6ed8144d-a03f-438a-b78e-f4df23a6cadd",
+    "name": "Zeen (สำรวจทำเลในไทย)",
+    "alias": "Zeen",
+    "role": "admin",
+    "avatar": "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=150&auto=format&fit=crop&q=80",
+    "emailOrId": "zeen@vitcha.com",
+    "createdAt": "2026-10-28T11:30:00Z",
+    "lastActiveAt": "2026-10-29T12:20:00Z",
+    "statusNote": "สำรวจหน้างานในไทย · โลเคชั่น & ทำเลเปิดร้าน"
+  },
+  {
+    "id": "user-80e9b44f-085e-4b9b-a341-9d07dab08b5c",
+    "name": "Mild (สำรวจทำเลในไทย)",
+    "alias": "Mild",
+    "role": "admin",
+    "avatar": "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&auto=format&fit=crop&q=80",
+    "emailOrId": "mild@vitcha.com",
+    "createdAt": "2026-10-28T11:45:00Z",
+    "lastActiveAt": "2026-10-29T12:25:00Z",
+    "statusNote": "สำรวจหน้างานในไทย · โลเคชั่น & ทำเลเปิดร้าน"
+  },
+  {
+    "id": "user-name-pkg",
+    "name": "เนม (แพ็กเกจจิ้ง & อุปกรณ์ร้าน)",
+    "alias": "เนม",
+    "role": "admin",
+    "avatar": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80",
+    "emailOrId": "name@vitcha.com",
+    "createdAt": "2026-10-28T12:00:00Z",
+    "lastActiveAt": "2026-10-29T12:15:00Z",
+    "statusNote": "ออนไลน์ · แพ็กเกจจิ้ง & อุปกรณ์ร้าน"
+  },
+  {
+    "id": "user-ayai-booth",
+    "name": "ayai (บูธ คีออส & โครงสร้างร้าน)",
+    "alias": "ayai",
+    "role": "admin",
+    "avatar": "https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?w=150&auto=format&fit=crop&q=80",
+    "emailOrId": "ayai@vitcha.com",
+    "createdAt": "2026-10-28T12:15:00Z",
+    "lastActiveAt": "2026-10-29T12:35:00Z",
+    "statusNote": "ออนไลน์ · บูธ คีออส โครงสร้างร้าน & อุปกรณ์"
+  },
+  {
+    "id": "user-d514853d-e30c-4ff2-b5a0-c4949d96588c",
+    "name": "Lek (ผู้จัดการอุปกรณ์เครื่องจักรในร้าน)",
+    "alias": "Lek",
+    "role": "admin",
+    "avatar": "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=150&auto=format&fit=crop&q=80",
+    "emailOrId": "lek@vitcha.com",
+    "createdAt": "2026-10-28T12:30:00Z",
+    "lastActiveAt": "2026-10-29T12:50:00Z",
+    "statusNote": "ออนไลน์ · ดูแลอุปกรณ์เครื่องจักรในร้านทั้งหมด"
   },
   {
     "id": "user-beam",
@@ -116,17 +214,6 @@ export const INITIAL_USERS: User[] = [
     "avatar": "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=150&auto=format&fit=crop&q=80",
     "emailOrId": "mook@vitcha.com",
     "createdAt": "2026-10-26T12:00:00Z"
-  },
-  {
-    "id": "user-1793177529069",
-    "name": "MommySomO",
-    "alias": "MommySomO",
-    "role": "admin",
-    "avatar": "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&auto=format&fit=crop&q=80",
-    "emailOrId": "somo@vitcha.com",
-    "createdAt": "2026-10-28T09:00:00Z",
-    "lastActiveAt": "2026-10-29T12:50:00Z",
-    "statusNote": "ออนไลน์อยู่ขณะนี้ · ผู้ร่วมก่อตั้ง VITCHA"
   }
 ];
 
@@ -135,7 +222,8 @@ export const INITIAL_SUPPLIERS: SupplierRecord[] = [
     "id": "sup-1",
     "type": "supplier",
     "country": "CN",
-    "name": "FEST (Guangzhou Rongchuan Electrical)",
+    "isMockup": true,
+    "name": "FEST (Guangzhou Rongchuan Electrical) เครื่องซีล & จ่ายไซรัป",
     "chineseName": "广州荣创电器设备有限公司 (FEST)",
     "marketOrCity": "ตลาดเครื่องครัวผานหยู (Panyu Guangzhou)",
     "category": "เครื่องซีลแก้ว",
@@ -150,10 +238,10 @@ export const INITIAL_SUPPLIERS: SupplierRecord[] = [
     "phone": "+86 18925080756",
     "wechatId": "rongchuan_fest_sales",
     "address": "Panyu District, Guangzhou, Guangdong",
-    "assignedTo": "MommySomO",
+    "assignedTo": "Lek",
     "targetFollowUpDate": "2026-11-05",
     "handoffStage": "ordered",
-    "handoffNotes": "ออกใบสั่งซื้อ (PO) เครื่องซีลแก้ว RC-95 จำนวน 5 เครื่อง และเครื่องจ่ายไซรัป 5 เครื่องแล้ว รอนัดรับขึ้นตู้ชิปปิ้งวันที่ 7 พ.ย.",
+    "handoffNotes": "ออกใบสั่งซื้อ (PO) เครื่องซีลแก้ว RC-95 จำนวน 5 เครื่อง และเครื่องจ่ายไซรัป 16 ช่อง 5 เครื่องแล้ว นัดส่งมอบขึ้นตู้ชิปปิ้งกวางโจว",
     "status": "ordered",
     "photos": {
       "storefrontAndAtmosphere": [
@@ -176,38 +264,28 @@ export const INITIAL_SUPPLIERS: SupplierRecord[] = [
         "weightKg": "28 kg",
         "priceRmb": 2800,
         "priceThb": 14224,
-        "memo": "รองรับปากแก้ว 90 และ 95mm มีเซนเซอร์คู่ ซีลได้เร็ว 400 แก้ว/ชม. สเปกไฟตรงกับไทย 220V 50Hz มอเตอร์ทองแดงแท้ ทนทานต่อการเปิดร้านต่อเนื่อง 12 ชม."
+        "memo": "รองรับปากแก้ว 90 และ 95mm เซนเซอร์คู่ ซีลได้เร็ว 400 แก้ว/ชม. สเปกไฟตรงกับไทย 220V 50Hz มอเตอร์ทองแดงแท้ เปิดต่อเนื่อง 12 ชม."
       },
       {
         "id": "cat-1-2",
-        "name": "FEST Syrup Dosing Machine (เครื่องจ่ายของเหลว 16 ช่อง)",
+        "name": "FEST Syrup Dosing Machine (เครื่องจ่ายไซรัป 16 ช่อง)",
         "photo": "https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=600&auto=format&fit=crop&q=80",
         "dimensions": "260 x 365 x 410 mm",
         "weightKg": "9 kg",
         "priceRmb": 1650,
         "priceThb": 8382,
-        "memo": "ลองกดเทสต์ของเหลวความหนืดสูงได้ดี จ่ายซ้ำแม่นยำ +/- 1g ล้างทำความสะอาดง่ายด้วยระบบ Flush รวดเร็ว"
-      },
-      {
-        "id": "cat-1-3",
-        "name": "ม้วนฟิล์มซีลฝาแก้วพิมพ์ลาย OEM VITCHA (Matte Finish)",
-        "photo": "https://images.unsplash.com/photo-1576092768241-dec231879fc3?w=600&auto=format&fit=crop&q=80",
-        "dimensions": "หน้ากว้าง 130mm หนา 55 ไมครอน",
-        "weightKg": "2.5 kg/ม้วน",
-        "priceRmb": 85,
-        "priceThb": 431,
-        "memo": "ซีลได้ประมาณ 3,000 แก้วต่อม้วน เนื้อฟิล์มด้านสัมผัสพรีเมียม ลอกง่ายไม่ติดขอบ"
+        "memo": "กดจ่ายของเหลวความหนืดสูงได้ดี จ่ายซ้ำแม่นยำ +/- 1g ล้างทำความสะอาดง่ายด้วยระบบ Flush อัตโนมัติ"
       }
     ],
-    "memo": "โรงงานใหญ่มาก เซลส์พูดอังกฤษคล่อง อะไหล่สวิตช์และซีลยางมีสต็อกพร้อมส่ง FOB กวางโจวได้ทันที บริการหลังการขายมีวิดีโอคอลแนะนำการตั้งค่า",
+    "memo": "โรงงานใหญ่ระดับท็อปของกวางโจว เซลส์คุยอังกฤษคล่อง อะไหล่สวิตช์และซีลยางมีสต็อกพร้อมส่ง FOB กวางโจวได้ทันที",
     "voiceNoteUrl": "",
-    "voiceDurationSec": 0,
+    "voiceDurationSec": 38,
     "voiceNotes": [
       {
         "id": "vn-sup1-1",
         "url": "",
         "durationSec": 38,
-        "label": "บันทึกเสียงเทสต์เสียงมอเตอร์เครื่องซีลหน้างาน",
+        "label": "บันทึกเสียงเทสต์เสียงมอเตอร์เครื่องซีลหน้างานจริง",
         "createdAt": "2026-10-26T14:40:00Z"
       }
     ],
@@ -221,337 +299,221 @@ export const INITIAL_SUPPLIERS: SupplierRecord[] = [
       "name": "SuperiCez",
       "alias": "SuperiCez",
       "avatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
+      "role": "admin",
       "timestamp": "2026-10-26T14:35:00Z"
     },
     "reviewerNotes": [
       {
         "id": "note-sup1-1",
-        "authorId": "user-1793177529069",
-        "author": "MommySomO",
-        "authorAvatar": "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&auto=format&fit=crop&q=80",
-        "authorRole": "admin",
-        "text": "พี่ไอซ์คะ ส้มโอเช็กสเปกเครื่องซีล RC-95 แล้วค่ะ ระบบฟันตัดและเซนเซอร์ดีมาก ถ้าสั่งพ่วงเครื่องจ่ายไซรัป 16 ช่องด้วย เค้าให้ส่วนลดเพิ่มไหมคะ?",
-        "timestamp": "2026-10-26T15:10:00Z",
-        "replies": [
-          {
-            "id": "rep-sup1-1-1",
-            "authorId": "user-ice",
-            "author": "SuperiCez",
-            "authorAvatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
-            "authorRole": "admin",
-            "text": "พี่คุยกับผู้จัดการโรงงานแล้วครับ ถ้าสั่งคู่กันเป็นเซ็ต 5 สาขา ลดเหลือเครื่องละ 2,550 หยวน แถมม้วนฟิล์มสำรองให้อีก 4 ม้วนครับ",
-            "timestamp": "2026-10-26T15:25:00Z"
-          },
-          {
-            "id": "rep-sup1-1-2",
-            "authorId": "user-1793177529069",
-            "author": "MommySomO",
-            "authorAvatar": "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&auto=format&fit=crop&q=80",
-            "authorRole": "admin",
-            "text": "ดีมากเลยค่ะ งั้นส้มโอขอคอนเฟิร์มยอดสั่งเซ็ตนี้เลยนะคะ เดี๋ยวจัดการออกใบสั่งซื้อและแจ้งชิปปิ้งเข้าตรวจรับของวันที่ 7 นี้ค่ะ",
-            "timestamp": "2026-10-26T16:00:00Z"
-          }
-        ]
-      },
-      {
-        "id": "note-sup1-2",
         "authorId": "user-ice",
         "author": "SuperiCez",
         "authorAvatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
         "authorRole": "admin",
-        "text": "ฝากส้มโอเช็กหัวปลั๊กไฟด้วยนะ ของโรงงานเป็นแบบสามตามาตรฐาน ขาตรงตามเต้ารับห้างในไทย เสียบใช้งานได้ทันทีไม่ต้องแปลง",
-        "timestamp": "2026-10-26T16:45:00Z",
+        "text": "พี่มาดูโชว์รูม FEST ที่ผานหยู เครื่องซีล RC-95 ตัวจริงแน่นมาก มอเตอร์ทองแดงแท้ ซีลได้ 400 แก้ว/ชม. สเปกไฟ 220V 50Hz ใช้กับไฟสาขาในไทยได้เลย สั่งคู่เครื่องจ่ายไซรัป 16 ช่อง ได้ราคาส่งพิเศษ @Lek ดูสเปกมอเตอร์กับรอบการซีลหน่อย @เนม เช็กขนาดปากแก้ว 95mm",
+        "timestamp": "2026-10-26T15:10:00Z",
         "replies": [
           {
-            "id": "rep-sup1-2-1",
-            "authorId": "user-1793177529069",
-            "author": "MommySomO",
-            "authorAvatar": "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&auto=format&fit=crop&q=80",
+            "id": "rep-sup1-1-1",
+            "authorId": "user-d514853d-e30c-4ff2-b5a0-c4949d96588c",
+            "author": "Lek",
+            "authorAvatar": "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=150&auto=format&fit=crop&q=80",
             "authorRole": "admin",
-            "text": "ตรวจเอกสารสเปกแล้วค่ะ สายไฟ 1.5 sq.mm มีสายดินเรียบร้อย ผ่านมาตรฐานความปลอดภัยหน้าบาร์ค่ะ 👍",
-            "timestamp": "2026-10-26T17:15:00Z"
+            "text": "รับเรื่องครับพี่ไอซ์ สเปกมอเตอร์ 350W ตัวนี้ทนทานมากครับ ในไทยใช้ไฟบ้านปกติได้เลย เดี๋ยวผมเทียบกับไดอะแกรมบาร์เครื่องดื่มให้ครับ",
+            "timestamp": "2026-10-26T15:25:00Z"
+          },
+          {
+            "id": "rep-sup1-1-2",
+            "authorId": "user-name-pkg",
+            "author": "เนม",
+            "authorAvatar": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80",
+            "authorRole": "admin",
+            "text": "เช็กแล้วค่ะพี่ไอซ์ ม้วนฟิล์มและแก้ว PP 95mm ของเราใช้กับบล็อกจับ RC-95 ได้พอดีเป๊ะค่ะ ซีลสนิทไม่รั่วซึมแน่นอนค่ะ",
+            "timestamp": "2026-10-26T15:35:00Z"
+          },
+          {
+            "id": "rep-sup1-1-3",
+            "authorId": "user-ayai-booth",
+            "author": "ayai",
+            "authorAvatar": "https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?w=150&auto=format&fit=crop&q=80",
+            "authorRole": "admin",
+            "text": "ถ้าลงเคาน์เตอร์บาร์ สั่งตัดช่องหลุม Drop-in 40x40cm สวยเนียนกับท็อปสเตนเลสเลยครับพี่ไอซ์",
+            "timestamp": "2026-10-26T15:45:00Z"
           }
         ]
       }
     ],
-    "viewedBy": [
-      {
-        "userId": "user-ice",
-        "name": "SuperiCez",
-        "alias": "SuperiCez",
-        "avatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
-        "role": "admin",
-        "lastViewedAt": "2026-10-29T11:20:00Z",
-        "viewCount": 24
-      },
-      {
-        "userId": "user-1793177529069",
-        "name": "MommySomO",
-        "alias": "MommySomO",
-        "avatar": "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&auto=format&fit=crop&q=80",
-        "role": "admin",
-        "lastViewedAt": "2026-10-29T12:15:00Z",
-        "viewCount": 19
-      }
-    ],
-    "likes": [
-      {
-        "userId": "user-ice",
-        "alias": "SuperiCez",
-        "avatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
-        "timestamp": "2026-10-27T10:15:00Z"
-      },
-      {
-        "userId": "user-1793177529069",
-        "alias": "MommySomO",
-        "avatar": "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&auto=format&fit=crop&q=80",
-        "timestamp": "2026-10-27T14:30:00Z"
-      }
-    ],
     "history": [
       {
-        "action": "สร้างบันทึกซัพพลายเออร์ FEST",
+        "action": "สร้างรายการซัพพลายเออร์",
         "user": "SuperiCez",
         "userAvatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
         "timestamp": "2026-10-26T14:35:00Z"
       },
       {
-        "action": "ย้ายเข้าสู่ พาร์ท 2: ขอสเปก / ส่ง RFQ",
-        "user": "MommySomO",
-        "userAvatar": "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&auto=format&fit=crop&q=80",
-        "timestamp": "2026-10-26T15:10:00Z"
-      },
-      {
-        "action": "ย้ายเข้าสู่ พาร์ท 4: ต่อรองราคา & MOQ",
+        "action": "ส่งต่องานให้ Lek (อุปกรณ์เครื่องจักร)",
         "user": "SuperiCez",
         "userAvatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
-        "timestamp": "2026-10-26T15:25:00Z"
-      },
-      {
-        "action": "ย้ายเข้าสู่ พาร์ท 5: ตัวเต็งอนุมัติ",
-        "user": "MommySomO",
-        "userAvatar": "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&auto=format&fit=crop&q=80",
-        "timestamp": "2026-10-26T16:00:00Z"
-      },
-      {
-        "action": "เปลี่ยนสถานะเป็น 5. สั่งซื้อแล้ว (Ordered) และย้ายเข้าสู่ พาร์ท 6: สั่งซื้อสำเร็จ",
-        "user": "MommySomO",
-        "userAvatar": "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&auto=format&fit=crop&q=80",
-        "timestamp": "2026-10-27T09:30:00Z"
+        "timestamp": "2026-10-26T15:10:00Z"
       }
     ],
-    "updatedAt": "2026-10-27T09:30:00Z"
+    "updatedAt": "2026-10-26T15:45:00Z"
   },
   {
     "id": "sup-2",
     "type": "supplier",
     "country": "CN",
-    "name": "Guangzhou Beiliton Catering Equipment",
-    "chineseName": "广州贝利顿餐饮设备有限公司",
-    "marketOrCity": "Zhongcun, Panyu District, Guangzhou",
+    "isMockup": true,
+    "name": "Foshan Shunde Chuangyu บาร์สเตนเลส 304 สั่งทำพิเศษ",
+    "chineseName": "佛山市顺德区创誉不锈钢商用吧台设备",
+    "marketOrCity": "ซุ่นเต๋อ ฝอซาน (Shunde Foshan)",
     "category": "เคาน์เตอร์ & สเตนเลส",
     "rating": 5,
     "quickTags": [
       "โรงงานผลิตเอง (Manufacturer)",
+      "รองรับส่งออก (Export Ready)",
       "มีโชว์รูมให้ดูของจริง",
-      "คุยภาษาอังกฤษได้",
-      "มีสต็อกพร้อมส่งทันที",
-      "มีตัวอย่างให้ทดลอง (Samples)"
+      "มีบริการจัดส่งในไทย"
     ],
-    "phone": "+86 18682379180",
-    "wechatId": "glenzero_beiliton",
-    "address": "No. 32 Zhonghan Road, Panyu, Guangzhou",
-    "assignedTo": "SuperiCez",
+    "phone": "+86 13825567890",
+    "wechatId": "chuangyu_bar_custom",
+    "address": "Ronggui, Shunde District, Foshan, Guangdong",
+    "assignedTo": "ayai",
     "targetFollowUpDate": "2026-11-08",
-    "handoffStage": "approved",
-    "handoffNotes": "เคาน์เตอร์สเตนเลส 304 ขนาด 3.0 x 0.8 ม. อนุมัติแบบแล้ว ถอดประกอบ 2 ท่อนเข้าตู้คอนเทนเนอร์ได้พอดี ราคาสรุป 13,500 หยวน",
+    "handoffStage": "negotiate",
+    "handoffNotes": "ส่งแบบแปลน Drawing บาร์น้ำ 2.4 เมตร สเตนเลส 304 หนา 1.2 มม. ให้โรงงานขึ้นม็อคอัพ 3D ถังน้ำแข็งฝังบาร์และซิงค์หลุมลึก",
     "status": "shortlisted",
     "photos": {
       "storefrontAndAtmosphere": [
-        "https://images.unsplash.com/photo-1556911220-e15b29be8c8f?w=800&auto=format&fit=crop&q=80",
-        "https://images.unsplash.com/photo-1581092580497-e0d23cbdf1dc?w=800&auto=format&fit=crop&q=80"
+        "https://images.unsplash.com/photo-1590725140246-20acdb816e88?w=800&auto=format&fit=crop&q=80",
+        "https://images.unsplash.com/photo-1584622650111-993a426fbf0a?w=800&auto=format&fit=crop&q=80"
       ],
       "contactCards": [
-        "https://images.unsplash.com/photo-1589829545856-d10d557cf95f?w=800&auto=format&fit=crop&q=80"
+        "https://images.unsplash.com/photo-1557804506-669a67965ba0?w=800&auto=format&fit=crop&q=80"
       ]
     },
-    "videos": [
-      "https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4"
-    ],
     "catalogItems": [
       {
         "id": "cat-2-1",
-        "name": "Modular Stainless Steel Tea Counter (เคาน์เตอร์สเตนเลส 3.0 x 0.8 x 0.85 ม.)",
-        "photo": "https://images.unsplash.com/photo-1556911220-e15b29be8c8f?w=600&auto=format&fit=crop&q=80",
-        "dimensions": "3000 x 800 x 850 mm",
-        "weightKg": "140 kg",
-        "priceRmb": 13500,
-        "priceThb": 68580,
-        "memo": "สเตนเลส SUS304 หนา 1.2 มม. ฝังหลุมน้ำแข็งฉนวน PU โฟม รางท็อปปิงหล่อเย็น 8 ช่อง และที่ล้างเชกเกอร์ Pitcher Rinser"
-      },
-      {
-        "id": "cat-2-2",
-        "name": "Under-Counter Stainless Storage Refrigerator (ตู้แช่ใต้เคาน์เตอร์ 1.8 ม.)",
-        "photo": "https://images.unsplash.com/photo-1581092580497-e0d23cbdf1dc?w=600&auto=format&fit=crop&q=80",
-        "dimensions": "1800 x 700 x 800 mm",
-        "weightKg": "85 kg",
+        "name": "Custom Modular Bar Station 304 (เคาน์เตอร์บาร์น้ำโมดูลาร์ 2.4m)",
+        "photo": "https://images.unsplash.com/photo-1590725140246-20acdb816e88?w=600&auto=format&fit=crop&q=80",
+        "dimensions": "2400 x 750 x 850 mm",
+        "weightKg": "125 kg",
         "priceRmb": 4800,
         "priceThb": 24384,
-        "memo": "ระบบ Digital Temp Control แช่นมสดและผลไม้ตัดแต่งสดที่ 2-4°C คอมเพรสเซอร์ R290 ประหยัดพลังงาน"
-      }
-    ],
-    "memo": "เป็นตัวเลือกอันดับ 1 สำหรับเคาน์เตอร์คีออสก์ 3x2 เมตรของ VITAMINZAAR และ VIT CHA สามารถถอดประกอบ 2 ท่อนเพื่อขนส่งได้สะดวก",
-    "voiceNotes": [
-      {
-        "id": "vn-sup2-1",
-        "url": "",
-        "durationSec": 42,
-        "label": "เช็กความหนาเหล็กสเตนเลส 304 และระบบระบายน้ำทิ้ง",
-        "createdAt": "2026-10-27T11:25:00Z"
+        "memo": "ท็อปสเตนเลสเกรด 304 หนา 1.2 มม. ฉนวนโฟม PU ถังน้ำแข็งเก็บความเย็นได้ 18 ชม. ซิงค์ล้างแก้ว Pitcher Rinser ในตัว"
       }
     ],
     "location": {
-      "lat": 22.9351,
-      "lng": 113.3421,
-      "addressText": "Zhongcun, Panyu District, Guangzhou, China"
+      "lat": 22.7564,
+      "lng": 113.2451,
+      "addressText": "Shunde District, Foshan, Guangdong, China"
     },
     "creator": {
-      "id": "user-ice",
-      "name": "SuperiCez",
-      "alias": "SuperiCez",
-      "avatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
-      "timestamp": "2026-10-27T11:20:00Z"
+      "id": "user-p-ohm",
+      "name": "P.ohm (ผู้บริหาร & หัวหน้างาน)",
+      "alias": "P.ohm",
+      "avatar": "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&auto=format&fit=crop&q=80",
+      "role": "admin",
+      "timestamp": "2026-10-27T10:00:00Z"
     },
     "reviewerNotes": [
       {
         "id": "note-sup2-1",
-        "authorId": "user-ice",
-        "author": "SuperiCez",
-        "authorAvatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
+        "authorId": "user-p-ohm",
+        "author": "P.ohm",
+        "authorAvatar": "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&auto=format&fit=crop&q=80",
         "authorRole": "admin",
-        "text": "ส้มโอครับ เคาน์เตอร์รุ่นนี้พี่สั่งเพิ่มรูเจาะร้อยสายไฟกับท่อน้ำทิ้ง 3 จุดตามแบบ Layout ร้านเราเรียบร้อยแล้ว โรงงานคิดค่าเจาะฟรีครับ",
-        "timestamp": "2026-10-27T12:00:00Z",
+        "text": "โรงงานสเตนเลสซุ่นเต๋องานพับขอบเนียนมาก สเตนเลส 304 แท้ หนา 1.2 มม. มีซิงค์หลุมลึก ถังน้ำแข็งฝังบาร์พร้อมโฟมฉนวนหนา 5 ซม. เก็บน้ำแข็งได้ 18 ชม. @ayai ลองดูแบบ Drawing นะว่าขนาดบาร์ 2.4 เมตร ลงกับสเปกคีออสเราได้ไหม @Lek ดูตำแหน่งร้อยท่อไฟเข้าเครื่องซีลด้วย",
+        "timestamp": "2026-10-27T10:45:00Z",
         "replies": [
           {
             "id": "rep-sup2-1-1",
-            "authorId": "user-1793177529069",
-            "author": "MommySomO",
-            "authorAvatar": "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&auto=format&fit=crop&q=80",
+            "authorId": "user-ayai-booth",
+            "author": "ayai",
+            "authorAvatar": "https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?w=150&auto=format&fit=crop&q=80",
             "authorRole": "admin",
-            "text": "ยอดเยี่ยมเลยค่ะพี่ไอซ์ รางท็อปปิงหล่อเย็น 8 หลุมจะช่วยให้ผลไม้สดคงความเย็นฉ่ำตลอดวัน เมนูวิตามินบาร์ของเราจะทำงานสะดวกมากค่ะ",
-            "timestamp": "2026-10-27T12:30:00Z"
+            "text": "แบบนี้ดีมากเลยครับพี่โอม ซ่อนงานระบบท่อน้ำดีและน้ำทิ้งเรียบร้อย ผมจะนำระยะไปชนกับแบบ Kiosk 3x2 เมตร ที่เราจะลงเซ็นทรัลครับ",
+            "timestamp": "2026-10-27T11:10:00Z"
+          },
+          {
+            "id": "rep-sup2-1-2",
+            "authorId": "user-d514853d-e30c-4ff2-b5a0-c4949d96588c",
+            "author": "Lek",
+            "authorAvatar": "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=150&auto=format&fit=crop&q=80",
+            "authorRole": "admin",
+            "text": "ฝากสั่งโรงงานเจาะรูกลม 60mm สำหรับร้อยสายไฟเครื่องจ่ายไซรัปและเครื่องปั่นสมูทตี้เพิ่มตรงมุมขวา 2 รูด้วยครับ จะได้ไม่ต้องมากรีดเองในไทย",
+            "timestamp": "2026-10-27T11:20:00Z"
           }
         ]
       }
     ],
-    "viewedBy": [
-      {
-        "userId": "user-ice",
-        "name": "SuperiCez",
-        "alias": "SuperiCez",
-        "avatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
-        "role": "admin",
-        "lastViewedAt": "2026-10-29T11:20:00Z",
-        "viewCount": 21
-      },
-      {
-        "userId": "user-1793177529069",
-        "name": "MommySomO",
-        "alias": "MommySomO",
-        "avatar": "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&auto=format&fit=crop&q=80",
-        "role": "admin",
-        "lastViewedAt": "2026-10-29T12:15:00Z",
-        "viewCount": 17
-      }
-    ],
-    "likes": [
-      {
-        "userId": "user-ice",
-        "alias": "SuperiCez",
-        "avatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
-        "timestamp": "2026-10-27T10:15:00Z"
-      },
-      {
-        "userId": "user-1793177529069",
-        "alias": "MommySomO",
-        "avatar": "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&auto=format&fit=crop&q=80",
-        "timestamp": "2026-10-27T14:30:00Z"
-      }
-    ],
     "history": [
       {
-        "action": "สร้างบันทึกซัพพลายเออร์เคาน์เตอร์สเตนเลส",
-        "user": "SuperiCez",
-        "userAvatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
-        "timestamp": "2026-10-27T11:20:00Z"
-      },
-      {
-        "action": "ย้ายเข้าสู่ พาร์ท 5: ตัวเต็งอนุมัติ",
-        "user": "MommySomO",
-        "userAvatar": "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&auto=format&fit=crop&q=80",
-        "timestamp": "2026-10-27T12:30:00Z"
+        "action": "สำรวจโรงงานสเตนเลสฝอซาน",
+        "user": "P.ohm",
+        "userAvatar": "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&auto=format&fit=crop&q=80",
+        "timestamp": "2026-10-27T10:00:00Z"
       }
     ],
-    "updatedAt": "2026-10-27T12:30:00Z"
+    "updatedAt": "2026-10-27T11:20:00Z"
   },
   {
     "id": "sup-3",
     "type": "supplier",
     "country": "CN",
-    "name": "Guangdong Yuanyang Intelligent Equipment",
-    "chineseName": "广东远洋智能餐饮设备有限公司",
-    "marketOrCity": "Sihui, Zhaoqing, Guangdong",
-    "category": "เครื่องสกัดชา",
-    "rating": 4,
+    "isMockup": true,
+    "name": "Guangzhou Bio-Eco Packaging แก้ว Slim Cup & หลอดไบโอ",
+    "chineseName": "广州绿源环保包装实业有限公司",
+    "marketOrCity": "เขตไป๋หยุน กวางโจว (Baiyun Guangzhou)",
+    "category": "บรรจุภัณฑ์ & แก้ว",
+    "rating": 5,
     "quickTags": [
       "โรงงานผลิตเอง (Manufacturer)",
-      "มีโชว์รูมให้ดูของจริง",
+      "สั่งขั้นต่ำน้อย (Low MOQ)",
       "รองรับส่งออก (Export Ready)",
       "มีตัวอย่างให้ทดลอง (Samples)"
     ],
-    "phone": "+86 18802065136",
-    "wechatId": "yuanyang_teapresso",
-    "address": "Fenggang North Road, Sihui, Zhaoqing, Guangdong",
-    "assignedTo": "SuperiCez",
-    "targetFollowUpDate": "2026-11-09",
+    "phone": "+86 13928812345",
+    "wechatId": "bio_cup_gz",
+    "address": "Baiyun District, Guangzhou, Guangdong",
+    "assignedTo": "เนม",
+    "targetFollowUpDate": "2026-11-06",
     "handoffStage": "sample_test",
-    "handoffNotes": "นัดวิดีโอคอลทดสอบแรงดันสกัดชาสดแก้วต่อแก้วผ่าน WeChat เพื่อเปรียบเทียบค่าความเข้มข้นสารสกัด (TDS)",
+    "handoffNotes": "ขอตัวอย่างแก้ว Slim Cup 16oz/22oz เนื้อด้าน (Matte) พิมพ์ลาย 4 สี พร้อมหลอดไบโอ PLA 12mm สำหรับดูดไข่มุก",
     "status": "reviewing",
     "photos": {
       "storefrontAndAtmosphere": [
-        "https://images.unsplash.com/photo-1517256064527-09c73fc73e38?w=800&auto=format&fit=crop&q=80",
+        "https://images.unsplash.com/photo-1576092768241-dec231879fc3?w=800&auto=format&fit=crop&q=80",
         "https://images.unsplash.com/photo-1544816155-12df9643f363?w=800&auto=format&fit=crop&q=80"
       ],
-      "contactCards": []
+      "contactCards": [
+        "https://images.unsplash.com/photo-1557804506-669a67965ba0?w=800&auto=format&fit=crop&q=80"
+      ]
     },
-    "videos": [
-      "https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4"
-    ],
     "catalogItems": [
       {
         "id": "cat-3-1",
-        "name": "Commercial Teapresso Extraction Machine (เครื่องสกัดชาแก้วต่อแก้ว)",
-        "photo": "https://images.unsplash.com/photo-1517256064527-09c73fc73e38?w=600&auto=format&fit=crop&q=80",
-        "dimensions": "420 x 560 x 650 mm",
-        "weightKg": "38 kg",
-        "priceRmb": 9800,
-        "priceThb": 49784,
-        "memo": "สกัดชาสดใน 45 วินาที ควบคุมอุณหภูมิและความดันได้ 3 สเต็ป รสชาสกัดออกมาเข้มข้นมาก กลิ่นหอมระเหยไม่สูญเสียไประหว่างต้ม"
+        "name": "VITCHA Custom 90mm Slim Cup 22oz (แก้วสลิมคัพเนื้อด้าน)",
+        "photo": "https://images.unsplash.com/photo-1576092768241-dec231879fc3?w=600&auto=format&fit=crop&q=80",
+        "dimensions": "ปาก 90mm สูง 178mm ก้น 56mm",
+        "weightKg": "18 g/ใบ",
+        "priceRmb": 0.29,
+        "priceThb": 1.47,
+        "memo": "พลาสติก PP Food Grade เกรดส่งออก จับกระชับมือ ทรงเพรียวสลิมแบบ CHAGEE พิมพ์ลาย 4 สีระบบ UV"
       }
     ],
-    "memo": "เครื่องสกัดชาทันสมัยมาก เหมาะกับแฟลกชิพ VIT CHA ที่จะโชว์นวัตกรรมชาไทยสกัดสดแก้วต่อแก้ว",
-    "voiceNotes": [],
     "location": {
-      "lat": 23.3562,
-      "lng": 112.6841,
-      "addressText": "Fenggang North Road, Sihui, Zhaoqing, China"
+      "lat": 23.1611,
+      "lng": 113.2755,
+      "addressText": "Baiyun District, Guangzhou, Guangdong, China"
     },
     "creator": {
-      "id": "user-ice",
-      "name": "SuperiCez",
-      "alias": "SuperiCez",
-      "avatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
-      "timestamp": "2026-10-27T15:40:00Z"
+      "id": "user-1793177529069",
+      "name": "MommySomO",
+      "alias": "MommySomO",
+      "avatar": "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&auto=format&fit=crop&q=80",
+      "role": "admin",
+      "timestamp": "2026-10-27T13:30:00Z"
     },
     "reviewerNotes": [
       {
@@ -560,261 +522,195 @@ export const INITIAL_SUPPLIERS: SupplierRecord[] = [
         "author": "MommySomO",
         "authorAvatar": "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&auto=format&fit=crop&q=80",
         "authorRole": "admin",
-        "text": "พี่ไอซ์คะ เครื่อง Teapresso ตัวนี้ถ้าเอามาสกัดใบชาอัสสัมหมักของไทย จะได้ครีม่าชาลอยหน้าสวยมากค่ะ เหมาะเป็นกิมมิกหน้าร้าน",
-        "timestamp": "2026-10-27T16:10:00Z",
+        "text": "เดินโซนแพ็กเกจจิ้ง เจอแก้วทรง Slim Cup 22oz พิมพ์ลาย VITCHA สวยพรีเมียมมาก สัมผัสด้าน (Matte) ไม่ลื่นมือ พร้อมหลอดไบโอ PLA เจาะซีลง่าย ไม่ยุบตัว @เนม ดูสเปกความหนากับขั้นต่ำ MOQ 10,000 ใบให้ทีจ้า",
+        "timestamp": "2026-10-27T14:00:00Z",
         "replies": [
           {
             "id": "rep-sup3-1-1",
+            "authorId": "user-name-pkg",
+            "author": "เนม",
+            "authorAvatar": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80",
+            "authorRole": "admin",
+            "text": "ดูตัวอย่างแล้วสวยเก๋มากค่ะพี่ส้มโอ ความหนา 18 กรัมกำลังแข็งแรงเวลาจับไม่ยวบ MOQ 10,000 ใบต่อลาย ต้นทุนตกแก้วละประมาณ 1.45 บาท ถือว่าดีมากค่ะ เดี๋ยวเนมคอนเฟิร์มปรู๊ฟสีกับเซลส์ทาง WeChat ให้เลยค่ะ",
+            "timestamp": "2026-10-27T14:20:00Z"
+          },
+          {
+            "id": "rep-sup3-1-2",
             "authorId": "user-ice",
             "author": "SuperiCez",
             "authorAvatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
             "authorRole": "admin",
-            "text": "ใช่เลยครับ พี่นัดแล็บเอาตัวอย่างผงชาบดหยาบไปลองรันโปรแกรมแรงดัน 9 บาร์ดูแล้ว เดี๋ยวส่งคลิปให้ดูครับ",
-            "timestamp": "2026-10-27T16:40:00Z"
+            "text": "ผ่านเลยครับ สีแบรนด์ VITCHA ขอโทนเขียวมัทฉะตัดทองตาม CI นะครับ",
+            "timestamp": "2026-10-27T14:30:00Z"
           }
         ]
       }
     ],
-    "viewedBy": [
-      {
-        "userId": "user-ice",
-        "name": "SuperiCez",
-        "alias": "SuperiCez",
-        "avatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
-        "role": "admin",
-        "lastViewedAt": "2026-10-29T11:20:00Z",
-        "viewCount": 16
-      },
-      {
-        "userId": "user-1793177529069",
-        "name": "MommySomO",
-        "alias": "MommySomO",
-        "avatar": "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&auto=format&fit=crop&q=80",
-        "role": "admin",
-        "lastViewedAt": "2026-10-29T12:15:00Z",
-        "viewCount": 12
-      }
-    ],
-    "likes": [
-      {
-        "userId": "user-ice",
-        "alias": "SuperiCez",
-        "avatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
-        "timestamp": "2026-10-27T10:15:00Z"
-      },
-      {
-        "userId": "user-1793177529069",
-        "alias": "MommySomO",
-        "avatar": "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&auto=format&fit=crop&q=80",
-        "timestamp": "2026-10-27T14:30:00Z"
-      }
-    ],
     "history": [
       {
-        "action": "สร้างบันทึกซัพพลายเออร์เครื่องสกัดชา",
-        "user": "SuperiCez",
-        "userAvatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
-        "timestamp": "2026-10-27T15:40:00Z"
+        "action": "สำรวจโรงงานแก้วไป๋หยุน",
+        "user": "MommySomO",
+        "userAvatar": "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&auto=format&fit=crop&q=80",
+        "timestamp": "2026-10-27T13:30:00Z"
       }
     ],
-    "updatedAt": "2026-10-27T16:40:00Z"
+    "updatedAt": "2026-10-27T14:30:00Z"
   },
   {
-    "id": "sup-th-1",
+    "id": "sup-4",
     "type": "supplier",
-    "country": "TH",
-    "name": "สยาม ชาออร์แกนิก & สารสกัดพรีมิกซ์ (เชียงใหม่ / กทม.)",
-    "marketOrCity": "อ.แม่แตง เชียงใหม่ & โชว์รูมลาดพร้าว กทม.",
+    "country": "CN",
+    "isMockup": true,
+    "name": "Yunnan Ancient Mountain Tea Co. ชาดำยูนนาน & ชาอู่หลงพีช",
+    "chineseName": "云南古道茶业有限公司 (芳村分部)",
+    "marketOrCity": "ตลาดชาฟางชุน กวางโจว (Fangcun Tea Market)",
     "category": "ใบชา & วัตถุดิบ",
     "rating": 5,
     "quickTags": [
       "โรงงานผลิตเอง (Manufacturer)",
       "มีตัวอย่างให้ทดลอง (Samples)",
-      "มีบริการจัดส่งในไทย",
-      "มี มอก./อย./COA รับรอง"
+      "มี มอก./อย./COA รับรอง",
+      "มีสต็อกพร้อมส่งทันที"
     ],
-    "phone": "081-884-2391",
-    "lineId": "@siamtea_extract",
-    "address": "ซอยลาดพร้าว 71 แขวงสะพานสอง เขตวังทองหลาง กทม.",
-    "assignedTo": "MommySomO",
-    "targetFollowUpDate": "2026-11-06",
-    "handoffStage": "approved",
-    "handoffNotes": "ผลเทสต์แล็บจับคู่ใบชาอัสสัมหมักกับสูตรวิตามินซีสดผ่านเกณฑ์ รสชาติเข้มข้น หอมละมุน ได้เครดิตเทอม 30 วัน",
-    "status": "shortlisted",
+    "phone": "+86 13711223344",
+    "wechatId": "yunnan_fangcun_tea",
+    "address": "Fangcun, Liwan District, Guangzhou, Guangdong",
+    "assignedTo": "น้องเมย์",
+    "targetFollowUpDate": "2026-11-04",
+    "handoffStage": "sample_test",
+    "handoffNotes": "ส่งใบชาอู่หลงพีชขาว และชาเขียวมะลิระแนงสด แซมเปิลอย่างละ 500g ให้แล็บ R&D กทม. ทดลองสกัด",
+    "status": "reviewing",
     "photos": {
       "storefrontAndAtmosphere": [
-        "https://images.unsplash.com/photo-1544787219-7f47ccb76574?w=800&auto=format&fit=crop&q=80",
-        "https://images.unsplash.com/photo-1556911220-e15b29be8c8f?w=800&auto=format&fit=crop&q=80"
+        "https://images.unsplash.com/photo-1576092768241-dec231879fc3?w=800&auto=format&fit=crop&q=80",
+        "https://images.unsplash.com/photo-1597481499750-3e6b22637e12?w=800&auto=format&fit=crop&q=80"
       ],
       "contactCards": [
-        "https://images.unsplash.com/photo-1589829545856-d10d557cf95f?w=800&auto=format&fit=crop&q=80"
+        "https://images.unsplash.com/photo-1557804506-669a67965ba0?w=800&auto=format&fit=crop&q=80"
       ]
     },
-    "videos": [
-      "https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4"
-    ],
     "catalogItems": [
       {
-        "id": "cat-th-1-1",
-        "name": "ใบชาอัสสัมหมักสูตรพิเศษสำหรับชาไทยวิตามิน (10 kg)",
-        "photo": "https://images.unsplash.com/photo-1544787219-7f47ccb76574?w=600&auto=format&fit=crop&q=80",
-        "weightKg": "10 kg/กระสอบ",
-        "priceThb": 3800,
-        "memo": "กลิ่นหอมเฉพาะตัว สีส้มธรรมชาติ ไม่แต่งกลิ่นเคมี เข้ากับสูตรสารสกัดวิตามินซีของ Zen Biotech ได้อย่างลงตัว ไม่ตกตะกอน"
-      },
-      {
-        "id": "cat-th-1-2",
-        "name": "มัทฉะออร์แกนิกเชียงใหม่ เกรดพิธีการ (Ceremonial Grade 1 kg)",
-        "photo": "https://images.unsplash.com/photo-1513558161293-cdaf765ed2fd?w=600&auto=format&fit=crop&q=80",
-        "weightKg": "1 kg/ถุงฟอยล์",
-        "priceThb": 2400,
-        "memo": "สีเขียวมรกตธรรมชาติ บดละเอียดด้วยโม่หิน รสหวานอูมามิ ไม่ฝาดขม เข้ากับยูซุสปาร์กลิง"
+        "id": "cat-4-1",
+        "name": "White Peach Oolong (ชาอู่หลงกลิ่นพีชขาวเกรดส่งออก)",
+        "photo": "https://images.unsplash.com/photo-1576092768241-dec231879fc3?w=600&auto=format&fit=crop&q=80",
+        "dimensions": "ถุงฟอยล์สูญญากาศ 500g",
+        "weightKg": "0.5 kg",
+        "priceRmb": 65,
+        "priceThb": 330,
+        "memo": "อบกลิ่นพีชธรรมชาติ ไม่ฉุนเคมี สกัดน้ำชาร้อน 90°C ให้กลิ่นหอมฟุ้งติดทนนาน ชงได้ทั้งชานมและชาใส"
       }
     ],
-    "memo": "ซัพพลายเออร์ไทย เกรดส่งออก มีใบรับรองออร์แกนิกและอย. พร้อมส่งตัวอย่างเข้าแล็บทดสอบได้ทันที มีทีม R&D ช่วยเกลี่ยรสชาติ",
-    "voiceNotes": [],
     "location": {
-      "lat": 13.8055,
-      "lng": 100.5739,
-      "addressText": "Ladprao 71, Wang Thonglang, Bangkok, Thailand"
+      "lat": 23.0944,
+      "lng": 113.2272,
+      "addressText": "Fangcun, Liwan District, Guangzhou, Guangdong, China"
     },
     "creator": {
-      "id": "user-1793177529069",
-      "name": "MommySomO",
-      "alias": "MommySomO",
-      "avatar": "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&auto=format&fit=crop&q=80",
-      "timestamp": "2026-10-27T10:00:00Z"
+      "id": "user-05523ee4-203c-4ecb-8a79-abc02a2c533e",
+      "name": "P.ตุ้ย (ผู้บริหาร & หัวหน้างาน)",
+      "alias": "P.ตุ้ย",
+      "avatar": "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&auto=format&fit=crop&q=80",
+      "role": "admin",
+      "timestamp": "2026-10-27T15:00:00Z"
     },
     "reviewerNotes": [
       {
-        "id": "note-th1-1",
-        "authorId": "user-1793177529069",
-        "author": "MommySomO",
-        "authorAvatar": "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&auto=format&fit=crop&q=80",
+        "id": "note-sup4-1",
+        "authorId": "user-05523ee4-203c-4ecb-8a79-abc02a2c533e",
+        "author": "P.ตุ้ย",
+        "authorAvatar": "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&auto=format&fit=crop&q=80",
         "authorRole": "admin",
-        "text": "ส้มโอพาตัวอย่างใบชาอัสสัมหมักไปเข้าห้องแล็บเทสต์รสชาติกับสูตร Lucky 13 แล้วค่ะ รสชาติดีเลิศมาก ไม่ติดฝาดในคอเลย",
-        "timestamp": "2026-10-27T11:00:00Z",
+        "text": "มาตลาดชาฟางชุน ชิมใบชาอู่หลงพีชขาวตัวนี้แล้วว้าวมาก กลิ่นดอกไม้หอมละมุน บอดี้แน่น ไม่ฝาดลิ้นเลย และมีชาเขียวมะลิระแนงสดอีกตัว @น้องเมย์ พี่ขอแซมเปิลอย่างละ 500 กรัม ส่งด่วนไปให้ที่แล็บ กทม. ลองสกัดเทสสูตรชานมและชาผลไม้ดูนะ",
+        "timestamp": "2026-10-27T15:30:00Z",
         "replies": [
           {
-            "id": "rep-th1-1-1",
-            "authorId": "user-ice",
-            "author": "SuperiCez",
-            "authorAvatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
+            "id": "rep-sup4-1-1",
+            "authorId": "user-074ec1a3-c143-48ef-bf22-0c6afc11d4f8",
+            "author": "น้องเมย์",
+            "authorAvatar": "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=150&auto=format&fit=crop&q=80",
             "authorRole": "admin",
-            "text": "เยี่ยมเลยส้มโอ สั่งจองสต็อกล็อตแรก 100 กิโลกรัมไว้ก่อนเลยนะ จะได้ทันวันเปิดตัวสาขา",
-            "timestamp": "2026-10-27T11:20:00Z"
+            "text": "ได้รับ Tracking แล้วค่ะพี่ตุ้ย เดี๋ยวถึงแล็บเมย์จะเทสอุณหภูมิน้ำ 85°C กับ 90°C วัดค่า Brix และทำ sensory test เทียบกับนมสดและชีสโฟมทันทีค่ะ",
+            "timestamp": "2026-10-27T16:00:00Z"
+          },
+          {
+            "id": "rep-sup4-1-2",
+            "authorId": "user-1793177529069",
+            "author": "MommySomO",
+            "authorAvatar": "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&auto=format&fit=crop&q=80",
+            "authorRole": "admin",
+            "text": "เน้นกลิ่นหอมฟุ้งตอนยกดื่มนะจ๊ะน้องเมย์ ลูกค้าผู้หญิงชอบแนวนี้มาก",
+            "timestamp": "2026-10-27T16:15:00Z"
           }
         ]
       }
     ],
-    "viewedBy": [
-      {
-        "userId": "user-ice",
-        "name": "SuperiCez",
-        "alias": "SuperiCez",
-        "avatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
-        "role": "admin",
-        "lastViewedAt": "2026-10-29T11:20:00Z",
-        "viewCount": 25
-      },
-      {
-        "userId": "user-1793177529069",
-        "name": "MommySomO",
-        "alias": "MommySomO",
-        "avatar": "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&auto=format&fit=crop&q=80",
-        "role": "admin",
-        "lastViewedAt": "2026-10-29T12:15:00Z",
-        "viewCount": 22
-      }
-    ],
-    "likes": [
-      {
-        "userId": "user-ice",
-        "alias": "SuperiCez",
-        "avatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
-        "timestamp": "2026-10-27T10:15:00Z"
-      },
-      {
-        "userId": "user-1793177529069",
-        "alias": "MommySomO",
-        "avatar": "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&auto=format&fit=crop&q=80",
-        "timestamp": "2026-10-27T14:30:00Z"
-      }
-    ],
     "history": [
       {
-        "action": "สร้างบันทึกซัพพลายเออร์ไทย",
-        "user": "MommySomO",
-        "userAvatar": "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&auto=format&fit=crop&q=80",
-        "timestamp": "2026-10-27T10:00:00Z"
-      },
-      {
-        "action": "ย้ายเข้าสู่ พาร์ท 5: ตัวเต็งอนุมัติ",
-        "user": "SuperiCez",
-        "userAvatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
-        "timestamp": "2026-10-27T11:20:00Z"
+        "action": "สำรวจตลาดชาฟางชุน กวางโจว",
+        "user": "P.ตุ้ย",
+        "userAvatar": "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&auto=format&fit=crop&q=80",
+        "timestamp": "2026-10-27T15:00:00Z"
       }
     ],
-    "updatedAt": "2026-10-27T11:20:00Z"
+    "updatedAt": "2026-10-27T16:15:00Z"
   },
   {
     "id": "sup-5",
     "type": "supplier",
     "country": "CN",
-    "name": "Foshan SnowPeak Commercial Ice Systems",
-    "chineseName": "佛山雪峰商用制冰机厂",
-    "marketOrCity": "Shunde Industrial Zone, Foshan (ฝอซาน)",
+    "isMockup": true,
+    "name": "Jiangmen Cooltech Ice เครื่องทำน้ำแข็งเกล็ดหิมะ & ตู้แช่เย็น",
+    "chineseName": "江门酷泰克制冷设备制造有限公司",
+    "marketOrCity": "เจียงเหมิน กวางตุ้ง (Jiangmen Guangdong)",
     "category": "ตู้ทำน้ำแข็ง",
     "rating": 5,
     "quickTags": [
       "โรงงานผลิตเอง (Manufacturer)",
-      "มีโชว์รูมให้ดูของจริง",
+      "มี มอก./อย./COA รับรอง",
       "รองรับส่งออก (Export Ready)",
       "มีสต็อกพร้อมส่งทันที"
     ],
-    "phone": "+86 13922819044",
-    "wechatId": "snowpeak_foshan",
-    "address": "Shunde District, Foshan, Guangdong",
-    "assignedTo": "SuperiCez",
-    "targetFollowUpDate": "2026-11-12",
-    "handoffStage": "negotiate",
-    "handoffNotes": "คอมเพรสเซอร์ Secop เยอรมัน ทำน้ำแข็งก้อนสี่เหลี่ยมใสวันละ 350 กก. กำลังต่อรองราคาสั่ง 5 เครื่องพร้อมแถมไส้กรองน้ำ RO",
-    "status": "shortlisted",
+    "phone": "+86 13631899988",
+    "wechatId": "cooltech_ice_sales",
+    "address": "Jianghai District, Jiangmen, Guangdong",
+    "assignedTo": "Lek",
+    "targetFollowUpDate": "2026-11-10",
+    "handoffStage": "rfq_sent",
+    "handoffNotes": "ขอใบเสนอราคาเครื่องทำน้ำแข็งเกล็ดหิมะ 150kg/วัน คอมเพรสเซอร์ Embraco ยุโรป สเปกไฟไทย 220V 50Hz",
+    "status": "rfq_sent",
     "photos": {
       "storefrontAndAtmosphere": [
-        "https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80",
-        "https://images.unsplash.com/photo-1581092335397-9583fe92d232?w=800&auto=format&fit=crop&q=80"
+        "https://images.unsplash.com/photo-1584622650111-993a426fbf0a?w=800&auto=format&fit=crop&q=80"
       ],
-      "contactCards": []
+      "contactCards": [
+        "https://images.unsplash.com/photo-1557804506-669a67965ba0?w=800&auto=format&fit=crop&q=80"
+      ]
     },
-    "videos": [
-      "https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4"
-    ],
     "catalogItems": [
       {
         "id": "cat-5-1",
-        "name": "SnowPeak SP-350P Cube Ice Maker (เครื่องทำน้ำแข็ง 350kg/24h)",
-        "photo": "https://images.unsplash.com/photo-1581092335397-9583fe92d232?w=600&auto=format&fit=crop&q=80",
-        "dimensions": "760 x 830 x 1720 mm",
-        "weightKg": "92 kg",
-        "priceRmb": 4600,
-        "priceThb": 23368,
-        "memo": "ก้อนน้ำแข็งหนาละลายช้า เหมาะกับชาผลไม้และโซดาวิตามิน มีระบบล้างถังอัตโนมัติ UV Sterilize ปลอดเชื้อ"
+        "name": "Cooltech 150kg/day Snow Flake Ice Maker (เครื่องทำน้ำแข็งเกล็ดหิมะ)",
+        "photo": "https://images.unsplash.com/photo-1584622650111-993a426fbf0a?w=600&auto=format&fit=crop&q=80",
+        "dimensions": "600 x 650 x 850 mm",
+        "weightKg": "65 kg",
+        "priceRmb": 4200,
+        "priceThb": 21336,
+        "memo": "น้ำแข็งเกล็ดเคี้ยวเพลิน ละลายช้า คอมเพรสเซอร์ Embraco ระบายความร้อนดีเยี่ยม สอดใต้เคาน์เตอร์บาร์ได้"
       }
     ],
-    "memo": "เดินดูไลน์ผลิตที่ฝอซานแล้ว งานเชื่อมสเตนเลส 304 เนี๊ยบมาก เสียงพัดลมระบายความร้อนเงียบกว่ารุ่นทั่วไป 30%",
-    "voiceNotes": [],
     "location": {
-      "lat": 22.8052,
-      "lng": 113.2932,
-      "addressText": "Shunde District, Foshan, Guangdong, China"
+      "lat": 22.5786,
+      "lng": 113.0816,
+      "addressText": "Jianghai District, Jiangmen, Guangdong, China"
     },
     "creator": {
       "id": "user-ice",
       "name": "SuperiCez",
       "alias": "SuperiCez",
       "avatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
-      "timestamp": "2026-10-27T15:20:00Z"
+      "role": "admin",
+      "timestamp": "2026-10-27T17:00:00Z"
     },
     "reviewerNotes": [
       {
@@ -823,133 +719,96 @@ export const INITIAL_SUPPLIERS: SupplierRecord[] = [
         "author": "SuperiCez",
         "authorAvatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
         "authorRole": "admin",
-        "text": "ส้มโอ คอมเพรสเซอร์ Secop ตัวนี้ทนมาก น้ำแข็งก้อนใสสี่เหลี่ยมใส่แก้วแล้วดูพรีเมียม ถ่ายรูปเครื่องดื่มสวยแน่นอน",
-        "timestamp": "2026-10-27T16:05:00Z",
+        "text": "เครื่องทำน้ำแข็งเกล็ดหิมะไฮสปีด ผลิตน้ำแข็งได้ 150 กิโลกรัมต่อวัน เม็ดน้ำแข็งแบบเคี้ยวเพลินละลายช้า คอมเพรสเซอร์ Embraco ยุโรป ทนความร้อนสูง @Lek เช็กเรื่องระบบกรองน้ำ RO และขนาดทางน้ำเข้า 4 หุนให้หน่อย",
+        "timestamp": "2026-10-27T17:30:00Z",
         "replies": [
           {
             "id": "rep-sup5-1-1",
-            "authorId": "user-1793177529069",
-            "author": "MommySomO",
-            "authorAvatar": "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&auto=format&fit=crop&q=80",
+            "authorId": "user-d514853d-e30c-4ff2-b5a0-c4949d96588c",
+            "author": "Lek",
+            "authorAvatar": "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=150&auto=format&fit=crop&q=80",
             "authorRole": "admin",
-            "text": "เห็นด้วยเลยค่ะพี่ไอซ์ ยิ่งละลายช้ายิ่งไม่ทำให้รสชาติเครื่องดื่มจืดเร็วด้วยค่ะ ขอราคาลด 5 เครื่องเลยนะคะ",
-            "timestamp": "2026-10-27T16:30:00Z"
+            "text": "เช็กสเปกคอมเพรสเซอร์เรียบร้อยครับ ตัวนี้ใช้น้ำยา R290 ประหยัดไฟและเป็นมิตรต่อสิ่งแวดล้อม เดี๋ยวผมสั่งเตรียมชุดกรองตะกอน + กรองคลอรีน 3 ขั้นตอนรอไว้ที่สาขาไทยครับ",
+            "timestamp": "2026-10-27T18:00:00Z"
+          },
+          {
+            "id": "rep-sup5-1-2",
+            "authorId": "user-ayai-booth",
+            "author": "ayai",
+            "authorAvatar": "https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?w=150&auto=format&fit=crop&q=80",
+            "authorRole": "admin",
+            "text": "ขนาดตู้กว้าง 60 ลึก 65 สูง 85 ซม. สอดใต้เคาน์เตอร์บาร์น้ำของโรงงานซุ่นเต๋อได้เป๊ะเลยครับ",
+            "timestamp": "2026-10-27T18:15:00Z"
           }
         ]
       }
     ],
-    "viewedBy": [
-      {
-        "userId": "user-ice",
-        "name": "SuperiCez",
-        "alias": "SuperiCez",
-        "avatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
-        "role": "admin",
-        "lastViewedAt": "2026-10-29T11:20:00Z",
-        "viewCount": 19
-      },
-      {
-        "userId": "user-1793177529069",
-        "name": "MommySomO",
-        "alias": "MommySomO",
-        "avatar": "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&auto=format&fit=crop&q=80",
-        "role": "admin",
-        "lastViewedAt": "2026-10-29T12:15:00Z",
-        "viewCount": 15
-      }
-    ],
-    "likes": [
-      {
-        "userId": "user-ice",
-        "alias": "SuperiCez",
-        "avatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
-        "timestamp": "2026-10-27T10:15:00Z"
-      },
-      {
-        "userId": "user-1793177529069",
-        "alias": "MommySomO",
-        "avatar": "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&auto=format&fit=crop&q=80",
-        "timestamp": "2026-10-27T14:30:00Z"
-      }
-    ],
     "history": [
       {
-        "action": "สร้างบันทึกซัพพลายเออร์ตู้ทำน้ำแข็ง",
+        "action": "สำรวจโรงงานเครื่องทำน้ำแข็งเจียงเหมิน",
         "user": "SuperiCez",
         "userAvatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
-        "timestamp": "2026-10-27T15:20:00Z"
+        "timestamp": "2026-10-27T17:00:00Z"
       }
     ],
-    "updatedAt": "2026-10-27T16:30:00Z"
+    "updatedAt": "2026-10-27T18:15:00Z"
   },
   {
     "id": "sup-6",
     "type": "supplier",
     "country": "CN",
-    "name": "Shenzhen PackArt Custom Cup & Lid OEM",
-    "chineseName": "深圳品艺餐饮包装制品有限公司",
-    "marketOrCity": "Longgang District, Shenzhen (เซินเจิ้น)",
-    "category": "บรรจุภัณฑ์ & แก้ว",
+    "isMockup": true,
+    "name": "Guangzhou Vitality Bio-Ingredients วิตามินซี & ชีสโฟมฮอกไกโด",
+    "chineseName": "广州维他力生物配料科技有限公司",
+    "marketOrCity": "หวงผู่ กวางโจว (Huangpu Guangzhou)",
+    "category": "วิตามิน & ผงพรีมิกซ์",
     "rating": 5,
     "quickTags": [
-      "สั่งขั้นต่ำน้อย (Low MOQ)",
+      "มี มอก./อย./COA รับรอง",
       "มีตัวอย่างให้ทดลอง (Samples)",
-      "คุยภาษาอังกฤษได้",
-      "รองรับส่งออก (Export Ready)"
+      "โรงงานผลิตเอง (Manufacturer)",
+      "สั่งขั้นต่ำน้อย (Low MOQ)"
     ],
-    "phone": "+86 13590218830",
-    "wechatId": "packart_sz",
-    "address": "Longgang, Shenzhen, Guangdong, China",
-    "assignedTo": "MommySomO",
-    "targetFollowUpDate": "2026-11-10",
-    "handoffStage": "rfq_sent",
-    "handoffNotes": "ส่งไฟล์โลโก้ VIT CHA และ VITAMINZAAR ให้ขึ้นดัมมี่แก้ว PP Injection 700ml และฝา 3 รู",
-    "status": "rfq_sent",
+    "phone": "+86 13580011223",
+    "wechatId": "vitality_premix_gz",
+    "address": "Huangpu District, Guangzhou, Guangdong",
+    "assignedTo": "น้องเมย์",
+    "targetFollowUpDate": "2026-11-07",
+    "handoffStage": "sample_test",
+    "handoffNotes": "ทดสอบการละลายและความคงตัวของวิตามินซีคอมเพล็กซ์ในชาผลไม้เย็น และวัดระยะเวลาการคงตัวของชั้นชีสโฟม",
+    "status": "reviewing",
     "photos": {
       "storefrontAndAtmosphere": [
-        "https://images.unsplash.com/photo-1576092768241-dec231879fc3?w=800&auto=format&fit=crop&q=80",
-        "https://images.unsplash.com/photo-1513558161293-cdaf765ed2fd?w=800&auto=format&fit=crop&q=80"
+        "https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=800&auto=format&fit=crop&q=80"
       ],
-      "contactCards": []
+      "contactCards": [
+        "https://images.unsplash.com/photo-1557804506-669a67965ba0?w=800&auto=format&fit=crop&q=80"
+      ]
     },
-    "videos": [
-      "https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4"
-    ],
     "catalogItems": [
       {
         "id": "cat-6-1",
-        "name": "แก้ว PP Injection ผิวทรายด้าน 650ml พิมพ์ 6 สี + ฝา 3 รู",
-        "photo": "https://images.unsplash.com/photo-1576092768241-dec231879fc3?w=600&auto=format&fit=crop&q=80",
-        "dimensions": "ปากแก้ว 90mm สูง 175mm",
-        "weightKg": "18g/ใบ",
-        "priceRmb": 0.42,
-        "priceThb": 2.13,
-        "memo": "MOQ เริ่มต้น 10,000 ใบ คละได้ 2 ลาย พิมพ์สีคมชัดไม่ลอกเมื่อโดนไอน้ำ สัมผัสด้านหรูหรา"
-      },
-      {
-        "id": "cat-6-2",
-        "name": "กระป๋องใส PET ทรงขวดสารสกัด ซีลฝาอะลูมิเนียม Easy-Open (500ml)",
-        "photo": "https://images.unsplash.com/photo-1513558161293-cdaf765ed2fd?w=600&auto=format&fit=crop&q=80",
-        "dimensions": "ปากกว้าง 55mm สูง 160mm",
-        "weightKg": "22g/ใบ",
-        "priceRmb": 0.65,
-        "priceThb": 3.3,
-        "memo": "สำหรับเมนู Grab & Go และเดลิเวอรี่ เก็บความซ่าโซดาได้ข้ามวัน ฝาปิดแน่นสนิท 100%"
+        "name": "Vitamin C Bio-Complex Powder (วิตามินซีคอมเพล็กซ์ชงดื่ม)",
+        "photo": "https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=600&auto=format&fit=crop&q=80",
+        "dimensions": "กระปุก 1 kg",
+        "weightKg": "1.0 kg",
+        "priceRmb": 88,
+        "priceThb": 447,
+        "memo": "ละลายน้ำเย็นได้ใน 5 วินาที ไม่เปลี่ยนสีน้ำชา รสชาติเปรี้ยวนุ่ม ไม่ทิ้งกลิ่นยา ปริมาณ 1,000mg ต่อช้อนเสิร์ฟ"
       }
     ],
-    "memo": "โรงงานทำแก้วส่งแบรนด์ดังในเซินเจิ้นหลายเจ้า งานฉีดพลาสติกหนาแข็งแรง บีบไม่ยวบ ถือถนัดมือ",
-    "voiceNotes": [],
     "location": {
-      "lat": 22.7209,
-      "lng": 114.2468,
-      "addressText": "Longgang District, Shenzhen, Guangdong, China"
+      "lat": 23.1075,
+      "lng": 113.4567,
+      "addressText": "Huangpu District, Guangzhou, Guangdong, China"
     },
     "creator": {
       "id": "user-1793177529069",
       "name": "MommySomO",
       "alias": "MommySomO",
       "avatar": "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&auto=format&fit=crop&q=80",
-      "timestamp": "2026-10-27T17:10:00Z"
+      "role": "admin",
+      "timestamp": "2026-10-27T19:00:00Z"
     },
     "reviewerNotes": [
       {
@@ -958,487 +817,194 @@ export const INITIAL_SUPPLIERS: SupplierRecord[] = [
         "author": "MommySomO",
         "authorAvatar": "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&auto=format&fit=crop&q=80",
         "authorRole": "admin",
-        "text": "ส้มโอส่งไฟล์ Artwork AI ให้โรงงานเทสต์พิมพ์ Proofing แล้วค่ะ เค้าบอก 3 วันเสร็จพร้อมส่งตัวอย่างมาไทย",
-        "timestamp": "2026-10-27T17:40:00Z",
+        "text": "โรงงานวัตถุดิบสุขภาพ มีวิตามินซีคอมเพล็กซ์แบบละลายน้ำเร็วไม่ทิ้งกลิ่นยา และผงชีสโฟมฮอกไกโดตีขึ้นฟูเนียนนุ่ม มีเอกสาร COA และใบรับรองฮาลาล/ISO ครบ @น้องเมย์ ดูส่วนผสมว่าทนความร้อนและความเปรี้ยวของชาผลไม้ได้กี่ชั่วโมงนะ",
+        "timestamp": "2026-10-27T19:30:00Z",
         "replies": [
           {
             "id": "rep-sup6-1-1",
-            "authorId": "user-ice",
-            "author": "SuperiCez",
-            "authorAvatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
+            "authorId": "user-074ec1a3-c143-48ef-bf22-0c6afc11d4f8",
+            "author": "น้องเมย์",
+            "authorAvatar": "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=150&auto=format&fit=crop&q=80",
             "authorRole": "admin",
-            "text": "ดีมากครับ ฝากส้มโอกำชับเรื่องความแน่นของฝา 3 รูด้วยนะ เวลาไรเดอร์ส่งอาหารต้องไม่รั่วซึม",
-            "timestamp": "2026-10-27T18:05:00Z"
+            "text": "ผงชีสโฟมตัวนี้ตีขึ้นรูปเร็วมากค่ะพี่ส้มโอ โฟมคงตัวเกิน 45 นาทีไม่ยุบตัว และวิตามินซีละลายในชาผลไม้เย็นแล้วรสชาติกลมกล่อม ไม่เปรี้ยวแหลมจนเสียรสชาค่ะ",
+            "timestamp": "2026-10-27T20:00:00Z"
+          },
+          {
+            "id": "rep-sup6-1-2",
+            "authorId": "user-p-ohm",
+            "author": "P.ohm",
+            "authorAvatar": "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&auto=format&fit=crop&q=80",
+            "authorRole": "admin",
+            "text": "ขอเอกสาร COA ล็อตผลิตส่งให้พี่ด้วยนะ จะได้ให้ฝ่ายทะเบียนยื่นตรวจสอบมาตรฐาน อย. นำเข้า",
+            "timestamp": "2026-10-27T20:15:00Z"
           }
         ]
       }
     ],
-    "viewedBy": [
-      {
-        "userId": "user-ice",
-        "name": "SuperiCez",
-        "alias": "SuperiCez",
-        "avatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
-        "role": "admin",
-        "lastViewedAt": "2026-10-29T11:20:00Z",
-        "viewCount": 18
-      },
-      {
-        "userId": "user-1793177529069",
-        "name": "MommySomO",
-        "alias": "MommySomO",
-        "avatar": "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&auto=format&fit=crop&q=80",
-        "role": "admin",
-        "lastViewedAt": "2026-10-29T12:15:00Z",
-        "viewCount": 16
-      }
-    ],
-    "likes": [
-      {
-        "userId": "user-ice",
-        "alias": "SuperiCez",
-        "avatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
-        "timestamp": "2026-10-27T10:15:00Z"
-      },
-      {
-        "userId": "user-1793177529069",
-        "alias": "MommySomO",
-        "avatar": "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&auto=format&fit=crop&q=80",
-        "timestamp": "2026-10-27T14:30:00Z"
-      }
-    ],
     "history": [
       {
-        "action": "สร้างบันทึกซัพพลายเออร์บรรจุภัณฑ์แก้ว",
+        "action": "สำรวจโรงงานวัตถุดิบหวงผู่",
         "user": "MommySomO",
         "userAvatar": "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&auto=format&fit=crop&q=80",
-        "timestamp": "2026-10-27T17:10:00Z"
+        "timestamp": "2026-10-27T19:00:00Z"
       }
     ],
-    "updatedAt": "2026-10-27T18:05:00Z"
-  },
-  {
-    "id": "sup-th-2",
-    "type": "supplier",
-    "country": "TH",
-    "name": "ไทยไบโอแพ็ค & สเตนเลสคัสต้อม (สมุทรปราการ)",
-    "marketOrCity": "บางพลี สมุทรปราการ",
-    "category": "เคาน์เตอร์ & สเตนเลส",
-    "rating": 4,
-    "quickTags": [
-      "โรงงานผลิตเอง (Manufacturer)",
-      "มีบริการจัดส่งในไทย",
-      "มี มอก./อย./COA รับรอง"
-    ],
-    "phone": "089-442-9910",
-    "lineId": "@thaibiostainless",
-    "address": "ถนนบางนา-ตราด กม.14 ต.บางพลีใหญ่ อ.บางพลี จ.สมุทรปราการ",
-    "assignedTo": "SuperiCez",
-    "targetFollowUpDate": "2026-11-04",
-    "handoffStage": "ordered",
-    "handoffNotes": "สั่งผลิตเคาน์เตอร์บาร์สเตนเลส 304 ขนาด 2.2 เมตรสำหรับสาขาคีออสก์แรกเรียบร้อย ช่างจะเข้าติดตั้งวันที่ 15 พ.ย.",
-    "status": "ordered",
-    "photos": {
-      "storefrontAndAtmosphere": [
-        "https://images.unsplash.com/photo-1556911220-e15b29be8c8f?w=800&auto=format&fit=crop&q=80"
-      ],
-      "contactCards": []
-    },
-    "videos": [
-      "https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4"
-    ],
-    "catalogItems": [
-      {
-        "id": "cat-th-2-1",
-        "name": "เคาน์เตอร์บาร์สเตนเลส 304 พร้อมถังน้ำแข็งฉนวน PU ในตัว (2.2 เมตร)",
-        "photo": "https://images.unsplash.com/photo-1556911220-e15b29be8c8f?w=600&auto=format&fit=crop&q=80",
-        "dimensions": "2200 x 750 x 850 mm",
-        "weightKg": "115 kg",
-        "priceThb": 34500,
-        "memo": "ข้อดีคือสั่งแก้ขนาดตามพื้นที่ห้างในไทยได้ด่วนภายใน 7 วัน มีทีมช่างเข้าไปติดตั้งถึงหน้าสาขา"
-      }
-    ],
-    "memo": "เหมาะสำหรับสาขาที่ต้องการเปิดด่วนในไทย หรือพื้นที่เข้ามุมที่ต้องสั่งตัดพิเศษ",
-    "voiceNotes": [],
-    "location": {
-      "lat": 13.605,
-      "lng": 100.706,
-      "addressText": "Bang Phli, Samut Prakan, Thailand"
-    },
-    "creator": {
-      "id": "user-ice",
-      "name": "SuperiCez",
-      "alias": "SuperiCez",
-      "avatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
-      "timestamp": "2026-10-27T18:00:00Z"
-    },
-    "reviewerNotes": [
-      {
-        "id": "note-th2-1",
-        "authorId": "user-ice",
-        "author": "SuperiCez",
-        "authorAvatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
-        "authorRole": "admin",
-        "text": "ส้มโอ เจ้านี้พี่ให้เข้ามาวัดพื้นที่สาขาคีออสก์แรกแล้ว สเตนเลสเกรด 304 แท้ งานเชื่อมเรียบร้อยดีมากครับ",
-        "timestamp": "2026-10-27T18:30:00Z",
-        "replies": [
-          {
-            "id": "rep-th2-1-1",
-            "authorId": "user-1793177529069",
-            "author": "MommySomO",
-            "authorAvatar": "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&auto=format&fit=crop&q=80",
-            "authorRole": "admin",
-            "text": "ดีเลยค่ะ ส้มโอช่วยประสานงานเรื่องใบอนุญาตเข้าทำงานในห้างให้ช่างแล้วค่ะ พร้อมเข้าติดตั้งได้เลย",
-            "timestamp": "2026-10-27T19:00:00Z"
-          }
-        ]
-      }
-    ],
-    "viewedBy": [
-      {
-        "userId": "user-ice",
-        "name": "SuperiCez",
-        "alias": "SuperiCez",
-        "avatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
-        "role": "admin",
-        "lastViewedAt": "2026-10-29T11:20:00Z",
-        "viewCount": 17
-      },
-      {
-        "userId": "user-1793177529069",
-        "name": "MommySomO",
-        "alias": "MommySomO",
-        "avatar": "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&auto=format&fit=crop&q=80",
-        "role": "admin",
-        "lastViewedAt": "2026-10-29T12:15:00Z",
-        "viewCount": 14
-      }
-    ],
-    "likes": [
-      {
-        "userId": "user-ice",
-        "alias": "SuperiCez",
-        "avatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
-        "timestamp": "2026-10-27T10:15:00Z"
-      },
-      {
-        "userId": "user-1793177529069",
-        "alias": "MommySomO",
-        "avatar": "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&auto=format&fit=crop&q=80",
-        "timestamp": "2026-10-27T14:30:00Z"
-      }
-    ],
-    "history": [
-      {
-        "action": "สร้างบันทึกซัพพลายเออร์ไทย",
-        "user": "SuperiCez",
-        "userAvatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
-        "timestamp": "2026-10-27T18:00:00Z"
-      }
-    ],
-    "updatedAt": "2026-10-27T19:00:00Z"
+    "updatedAt": "2026-10-27T20:15:00Z"
   },
   {
     "id": "sup-7",
     "type": "supplier",
     "country": "CN",
-    "name": "Guangzhou VitBlend Pro Commercial Blender",
-    "chineseName": "广州维特宝商用静音破壁机厂",
-    "marketOrCity": "Huadu District, Guangzhou (กว่างโจว ฮวาตู)",
+    "isMockup": true,
+    "name": "Zhongshan BlendMax Machinery เครื่องปั่นสมูทตี้ซับเสียง 2200W",
+    "chineseName": "中山市博兰麦斯商用电器制造有限公司",
+    "marketOrCity": "จงซาน กวางตุ้ง (Zhongshan Guangdong)",
     "category": "เครื่องปั่นสมูทตี้",
     "rating": 5,
     "quickTags": [
       "โรงงานผลิตเอง (Manufacturer)",
-      "มีโชว์รูมให้ดูของจริง",
-      "มีสต็อกพร้อมส่งทันที",
-      "มีตัวอย่างให้ทดลอง (Samples)"
+      "มี มอก./อย./COA รับรอง",
+      "รองรับส่งออก (Export Ready)",
+      "มีสต็อกพร้อมส่งทันที"
     ],
-    "phone": "+86 13826019942",
-    "wechatId": "vitblend_pro",
-    "address": "Huadu District, Guangzhou, Guangdong",
-    "assignedTo": "MommySomO",
-    "targetFollowUpDate": "2026-11-11",
-    "handoffStage": "sample_test",
-    "handoffNotes": "สั่งเครื่องตัวอย่างมาทดสอบเสียงปั่นหน้าร้าน ตู้เก็บเสียงครอบสนิทระดับเสียงไม่เกิน 58 เดซิเบล ไม่รบกวนลูกค้า",
-    "status": "reviewing",
+    "phone": "+86 13411228899",
+    "wechatId": "blendmax_commercial",
+    "address": "Xiaolan Town, Zhongshan, Guangdong",
+    "assignedTo": "Lek",
+    "targetFollowUpDate": "2026-11-09",
+    "handoffStage": "approved",
+    "handoffNotes": "อนุมัติสั่งซื้อเครื่องปั่นสมูทตี้ 2200W พร้อมกล่องซับเสียง 4 เครื่อง มอเตอร์รอบจัด 38,000 RPM ปั่นเนียน 15 วินาที",
+    "status": "shortlisted",
     "photos": {
       "storefrontAndAtmosphere": [
-        "https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80"
+        "https://images.unsplash.com/photo-1570222094114-d054a817e56b?w=800&auto=format&fit=crop&q=80"
       ],
-      "contactCards": []
+      "contactCards": [
+        "https://images.unsplash.com/photo-1557804506-669a67965ba0?w=800&auto=format&fit=crop&q=80"
+      ]
     },
-    "videos": [
-      "https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4"
-    ],
     "catalogItems": [
       {
         "id": "cat-7-1",
-        "name": "VitBlend QuietShield QB-2200 (เครื่องปั่นสมูทตี้เก็บเสียงไร้แปรงถ่าน)",
-        "photo": "https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=600&auto=format&fit=crop&q=80",
-        "dimensions": "220 x 240 x 480 mm",
+        "name": "BlendMax Ultra-Quiet Commercial Blender (เครื่องปั่นซับเสียง 2200W)",
+        "photo": "https://images.unsplash.com/photo-1570222094114-d054a817e56b?w=600&auto=format&fit=crop&q=80",
+        "dimensions": "230 x 270 x 480 mm",
         "weightKg": "8.5 kg",
-        "priceRmb": 2100,
-        "priceThb": 10668,
-        "memo": "มอเตอร์ไร้แปรงถ่าน Brushless DC ทนทาน ปั่นน้ำแข็งละเอียดเป็นเกล็ดหิมะใน 12 วินาที มีฝาครอบซับเสียงหนา 8 มม."
+        "priceRmb": 1350,
+        "priceThb": 6858,
+        "memo": "มอเตอร์ทองแดง 2200W ใบมีดไททาเนียม 6 แฉก โถปั่น Tritan BPA-Free 1.8 ลิตร ซับเสียงดังไม่เกิน 68 dB"
       }
     ],
-    "memo": "ตอบโจทย์ร้านสไตล์มินิมอลที่ต้องการความเงียบ ไม่ส่งเสียงดังรบกวนตอนชงชาและปั่นสมูทตี้",
-    "voiceNotes": [],
     "location": {
-      "lat": 23.4012,
-      "lng": 113.2195,
-      "addressText": "Huadu, Guangzhou, Guangdong, China"
+      "lat": 22.6811,
+      "lng": 113.2422,
+      "addressText": "Xiaolan Town, Zhongshan, Guangdong, China"
     },
     "creator": {
-      "id": "user-1793177529069",
-      "name": "MommySomO",
-      "alias": "MommySomO",
-      "avatar": "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&auto=format&fit=crop&q=80",
-      "timestamp": "2026-10-28T09:15:00Z"
+      "id": "user-05523ee4-203c-4ecb-8a79-abc02a2c533e",
+      "name": "P.ตุ้ย (ผู้บริหาร & หัวหน้างาน)",
+      "alias": "P.ตุ้ย",
+      "avatar": "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&auto=format&fit=crop&q=80",
+      "role": "admin",
+      "timestamp": "2026-10-27T21:00:00Z"
     },
     "reviewerNotes": [
       {
         "id": "note-sup7-1",
-        "authorId": "user-1793177529069",
-        "author": "MommySomO",
-        "authorAvatar": "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&auto=format&fit=crop&q=80",
+        "authorId": "user-05523ee4-203c-4ecb-8a79-abc02a2c533e",
+        "author": "P.ตุ้ย",
+        "authorAvatar": "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&auto=format&fit=crop&q=80",
         "authorRole": "admin",
-        "text": "พี่ไอซ์คะ เครื่องปั่นตัวนี้เงียบมากจริงๆ ค่ะ ปั่นผลไม้แช่แข็งกับน้ำแข็งก้อนออกมาเนียนนุ่มเหมือนไอศกรีมเลยค่ะ",
-        "timestamp": "2026-10-28T10:00:00Z",
+        "text": "เครื่องปั่นสมูทตี้ 2200W มอเตอร์ญี่ปุ่น รอบจัด 38,000 RPM ปั่นน้ำแข็งละเอียดเป็นเนื้อไอศกรีมใน 15 วินาที พร้อมกล่องอะคริลิกซับเสียง หน้าร้านไม่หนวกหูแน่นอน @Lek ลองดูใบมีดสเตนเลสไททาเนียม 6 แฉกนะ",
+        "timestamp": "2026-10-27T21:30:00Z",
         "replies": [
           {
             "id": "rep-sup7-1-1",
-            "authorId": "user-ice",
-            "author": "SuperiCez",
-            "authorAvatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
+            "authorId": "user-d514853d-e30c-4ff2-b5a0-c4949d96588c",
+            "author": "Lek",
+            "authorAvatar": "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=150&auto=format&fit=crop&q=80",
             "authorRole": "admin",
-            "text": "มอเตอร์ Brushless แบบนี้ประหยัดไฟและไม่ร้อนด้วยครับ ส้มโอลองสั่งโถสำรองเพิ่มอีก 2 ใบต่อสาขาด้วยนะ",
-            "timestamp": "2026-10-28T10:30:00Z"
-          }
-        ]
-      }
-    ],
-    "viewedBy": [
-      {
-        "userId": "user-ice",
-        "name": "SuperiCez",
-        "alias": "SuperiCez",
-        "avatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
-        "role": "admin",
-        "lastViewedAt": "2026-10-29T11:20:00Z",
-        "viewCount": 14
-      },
-      {
-        "userId": "user-1793177529069",
-        "name": "MommySomO",
-        "alias": "MommySomO",
-        "avatar": "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&auto=format&fit=crop&q=80",
-        "role": "admin",
-        "lastViewedAt": "2026-10-29T12:15:00Z",
-        "viewCount": 12
-      }
-    ],
-    "likes": [
-      {
-        "userId": "user-ice",
-        "alias": "SuperiCez",
-        "avatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
-        "timestamp": "2026-10-27T10:15:00Z"
-      },
-      {
-        "userId": "user-1793177529069",
-        "alias": "MommySomO",
-        "avatar": "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&auto=format&fit=crop&q=80",
-        "timestamp": "2026-10-27T14:30:00Z"
-      }
-    ],
-    "history": [
-      {
-        "action": "สร้างบันทึกซัพพลายเออร์เครื่องปั่นสมูทตี้",
-        "user": "MommySomO",
-        "userAvatar": "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&auto=format&fit=crop&q=80",
-        "timestamp": "2026-10-28T09:15:00Z"
-      }
-    ],
-    "updatedAt": "2026-10-28T10:30:00Z"
-  },
-  {
-    "id": "sup-th-3",
-    "type": "supplier",
-    "country": "TH",
-    "name": "Zen Biotech & Vitamin Premix Lab (ปทุมธานี)",
-    "marketOrCity": "อุทยานวิทยาศาสตร์ประเทศไทย คลองหลวง ปทุมธานี",
-    "category": "วิตามิน & ผงพรีมิกซ์",
-    "rating": 5,
-    "quickTags": [
-      "โรงงานผลิตเอง (Manufacturer)",
-      "มีตัวอย่างให้ทดลอง (Samples)",
-      "มีบริการจัดส่งในไทย",
-      "มี มอก./อย./COA รับรอง"
-    ],
-    "phone": "02-564-7788",
-    "lineId": "@zenbiotech_lab",
-    "address": "อุทยานวิทยาศาสตร์ประเทศไทย ถนนพหลโยธิน ต.คลองหนึ่ง อ.คลองหลวง จ.ปทุมธานี",
-    "assignedTo": "MommySomO",
-    "targetFollowUpDate": "2026-11-07",
-    "handoffStage": "negotiate",
-    "handoffNotes": "ขอราคาพรีมิกซ์วิตามินซี 200% RDI + ซิงก์ และสารสกัดแอล-ธีอะนีน สำหรับสูตรเครื่องดื่ม VITAMINZAAR ขั้นต่ำ 50 กก.",
-    "status": "shortlisted",
-    "photos": {
-      "storefrontAndAtmosphere": [
-        "https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80"
-      ],
-      "contactCards": []
-    },
-    "videos": [
-      "https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4"
-    ],
-    "catalogItems": [
-      {
-        "id": "cat-th-3-1",
-        "name": "พรีมิกซ์วิตามินซี 200% + ซิงก์ สูตรละลายน้ำใสพิเศษ (Food Grade 25 kg)",
-        "photo": "https://images.unsplash.com/photo-1544787219-7f47ccb76574?w=600&auto=format&fit=crop&q=80",
-        "weightKg": "25 kg/ถัง",
-        "priceThb": 18500,
-        "memo": "เกรดยาและอาหาร ละลายน้ำเร็วภายใน 5 วินาที น้ำใสไม่ขุ่น ทนต่อความร้อนและความเย็น ไม่เปลี่ยนสีเมื่อผสมกับชา"
-      }
-    ],
-    "memo": "พาร์ทเนอร์วิจัยและผลิตสารสกัดวิตามินชั้นนำ มีใบรับรอง COA, GMP, HACCP ครบถ้วน เคลมประโยชน์บนฉลากได้ถูกต้องตามกฎหมาย",
-    "voiceNotes": [],
-    "location": {
-      "lat": 14.0784,
-      "lng": 100.6012,
-      "addressText": "Thailand Science Park, Khlong Luang, Pathum Thani, Thailand"
-    },
-    "creator": {
-      "id": "user-1793177529069",
-      "name": "MommySomO",
-      "alias": "MommySomO",
-      "avatar": "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&auto=format&fit=crop&q=80",
-      "timestamp": "2026-10-28T11:00:00Z"
-    },
-    "reviewerNotes": [
-      {
-        "id": "note-th3-1",
-        "authorId": "user-1793177529069",
-        "author": "MommySomO",
-        "authorAvatar": "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&auto=format&fit=crop&q=80",
-        "authorRole": "admin",
-        "text": "ส้มโอคุยกับทีมนักวิจัยแล้วค่ะ พรีมิกซ์ตัวนี้ใส่ในชาสกัดสดแล้วรสชาติไม่เพี้ยนเลย ยังคงความหอมของใบชาเต็มที่ค่ะ",
-        "timestamp": "2026-10-28T11:45:00Z",
-        "replies": [
+            "text": "มอเตอร์ 2200W กำลังขับสูงสะใจมากครับพี่ตุ้ย ใบมีดไททาเนียมทนทานไม่สึกหรอง่าย ตัวนี้ผมให้ผ่านเลยครับ สั่งเป็นเครื่องหลัก 2 เครื่องต่อสาขาได้เลย",
+            "timestamp": "2026-10-27T21:50:00Z"
+          },
           {
-            "id": "rep-th3-1-1",
-            "authorId": "user-ice",
-            "author": "SuperiCez",
-            "authorAvatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
+            "id": "rep-sup7-1-2",
+            "authorId": "user-name-pkg",
+            "author": "เนม",
+            "authorAvatar": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80",
             "authorRole": "admin",
-            "text": "จุดนี้สำคัญมากครับ ถ้าน้ำใสและไม่เปลี่ยนกลิ่นชา ลูกค้าจะติดใจแน่นอน เตรียมทำสัญญาความร่วมมือได้เลยครับ",
-            "timestamp": "2026-10-28T12:15:00Z"
+            "text": "โถปั่นวัสดุ Tritan ปลอดสาร BPA น้ำหนักเบา บาริสต้าเทมือเดียวคล่องตัวแน่นอนค่ะ",
+            "timestamp": "2026-10-27T22:00:00Z"
           }
         ]
       }
     ],
-    "viewedBy": [
-      {
-        "userId": "user-ice",
-        "name": "SuperiCez",
-        "alias": "SuperiCez",
-        "avatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
-        "role": "admin",
-        "lastViewedAt": "2026-10-29T11:20:00Z",
-        "viewCount": 20
-      },
-      {
-        "userId": "user-1793177529069",
-        "name": "MommySomO",
-        "alias": "MommySomO",
-        "avatar": "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&auto=format&fit=crop&q=80",
-        "role": "admin",
-        "lastViewedAt": "2026-10-29T12:15:00Z",
-        "viewCount": 18
-      }
-    ],
-    "likes": [
-      {
-        "userId": "user-ice",
-        "alias": "SuperiCez",
-        "avatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
-        "timestamp": "2026-10-27T10:15:00Z"
-      },
-      {
-        "userId": "user-1793177529069",
-        "alias": "MommySomO",
-        "avatar": "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&auto=format&fit=crop&q=80",
-        "timestamp": "2026-10-27T14:30:00Z"
-      }
-    ],
     "history": [
       {
-        "action": "สร้างบันทึกซัพพลายเออร์สารสกัดวิตามิน",
-        "user": "MommySomO",
-        "userAvatar": "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&auto=format&fit=crop&q=80",
-        "timestamp": "2026-10-28T11:00:00Z"
+        "action": "สำรวจโรงงานเครื่องปั่นจงซาน",
+        "user": "P.ตุ้ย",
+        "userAvatar": "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&auto=format&fit=crop&q=80",
+        "timestamp": "2026-10-27T21:00:00Z"
       }
     ],
-    "updatedAt": "2026-10-28T12:15:00Z"
+    "updatedAt": "2026-10-27T22:00:00Z"
   },
   {
     "id": "sup-8",
     "type": "supplier",
     "country": "CN",
-    "name": "Haizhu Barista & Tea Tools Hub",
-    "chineseName": "广州海珠区吧台器具与茶饮配件批发",
-    "marketOrCity": "Haizhu Wholesale Market, Guangzhou",
-    "category": "อื่นๆ",
-    "rating": 4,
+    "isMockup": true,
+    "name": "Guangzhou Golden Leaf เครื่องสกัดชาแรงดันสูง Teaspresso (9 บาร์)",
+    "chineseName": "广州金叶茶萃设备研发制造中心",
+    "marketOrCity": "เทียนเหอ กวางโจว (Tianhe Guangzhou)",
+    "category": "เครื่องสกัดชา",
+    "rating": 5,
     "quickTags": [
-      "มีโชว์รูมให้ดูของจริง",
-      "สั่งขั้นต่ำน้อย (Low MOQ)",
-      "มีสต็อกพร้อมส่งทันที"
+      "โรงงานผลิตเอง (Manufacturer)",
+      "มี มอก./อย./COA รับรอง",
+      "รองรับส่งออก (Export Ready)",
+      "มีตัวอย่างให้ทดลอง (Samples)"
     ],
-    "phone": "+86 13711208833",
-    "wechatId": "haizhu_barista",
-    "address": "Haizhu District, Guangzhou, Guangdong",
-    "assignedTo": "SuperiCez",
-    "targetFollowUpDate": "2026-11-14",
-    "handoffStage": "awaiting",
-    "handoffNotes": "รวบรวมอุปกรณ์เสริมหน้าบาร์: ช้อนบาร์ เหยือกตวงสเกลเลเซอร์ เชกเกอร์ไทเทเนียมทอง และขวดบีบซอส",
-    "status": "scouted",
+    "phone": "+86 18819922888",
+    "wechatId": "teaspresso_gz",
+    "address": "Tianhe District, Guangzhou, Guangdong",
+    "assignedTo": "Lek",
+    "targetFollowUpDate": "2026-11-12",
+    "handoffStage": "approved",
+    "handoffNotes": "เครื่องสกัดชาเอสเปรสโซ Teaspresso 9 บาร์ สกัดชาร้อนสดแก้วต่อแก้วใน 45 วินาที สั่งจองเครื่องเดโม 2 เครื่องสำหรับสาขาแรก",
+    "status": "ordered",
     "photos": {
       "storefrontAndAtmosphere": [
-        "https://images.unsplash.com/photo-1517256064527-09c73fc73e38?w=800&auto=format&fit=crop&q=80"
+        "https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?w=800&auto=format&fit=crop&q=80"
       ],
-      "contactCards": []
+      "contactCards": [
+        "https://images.unsplash.com/photo-1557804506-669a67965ba0?w=800&auto=format&fit=crop&q=80"
+      ]
     },
-    "videos": [
-      "https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4"
-    ],
     "catalogItems": [
       {
         "id": "cat-8-1",
-        "name": "ชุดกระบอกเชกเกอร์สเตนเลส 304 เคลือบไทเทเนียมทอง (Boston Shaker Set)",
-        "photo": "https://images.unsplash.com/photo-1517256064527-09c73fc73e38?w=600&auto=format&fit=crop&q=80",
-        "dimensions": "500ml + 750ml",
-        "weightKg": "0.6 kg/ชุด",
-        "priceRmb": 45,
-        "priceThb": 228,
-        "memo": "จับถนัดมือ เก็บความเย็นดี ไม่ลื่นเวลาเขย่า ดูหรูหราเข้ากับโทนร้าน"
+        "name": "Teaspresso 9-Bar Extraction System (เครื่องสกัดชาแรงดันสูง)",
+        "photo": "https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?w=600&auto=format&fit=crop&q=80",
+        "dimensions": "420 x 480 x 520 mm",
+        "weightKg": "32 kg",
+        "priceRmb": 6800,
+        "priceThb": 34544,
+        "memo": "แรงดันคงที่ 9 บาร์ ควบคุมอุณหภูมิน้ำ +/- 0.5°C หน้าจอสัมผัสโปรแกรมสกัดชา 8 สูตร ดึงรสชาติชาสดสดใหม่แก้วต่อแก้ว"
       }
     ],
-    "memo": "แหล่งรวมอุปกรณ์ชิ้นเล็กชิ้นน้อย ราคาขายส่งถูกมาก สั่งคละแบบได้ตามใจชอบ",
-    "voiceNotes": [],
     "location": {
-      "lat": 23.0833,
-      "lng": 113.3167,
-      "addressText": "Haizhu District, Guangzhou, Guangdong, China"
+      "lat": 23.1345,
+      "lng": 113.3312,
+      "addressText": "Tianhe District, Guangzhou, Guangdong, China"
     },
     "creator": {
       "id": "user-ice",
       "name": "SuperiCez",
       "alias": "SuperiCez",
       "avatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
-      "timestamp": "2026-10-28T14:00:00Z"
+      "role": "admin",
+      "timestamp": "2026-10-28T09:00:00Z"
     },
     "reviewerNotes": [
       {
@@ -1447,64 +1013,39 @@ export const INITIAL_SUPPLIERS: SupplierRecord[] = [
         "author": "SuperiCez",
         "authorAvatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
         "authorRole": "admin",
-        "text": "ส้มโอ อุปกรณ์บาร์ชิ้นเล็กๆ ที่นี่ราคาดีมาก เดี๋ยวพี่เลือกเป็นชุดมาตรฐานสำหรับ 1 สาขาให้นะครับ",
-        "timestamp": "2026-10-28T14:30:00Z",
+        "text": "เครื่องสกัดชาเอสเปรสโซ Teaspresso 9 บาร์ ใช้เวลาสกัดแค่ 45 วินาที ได้น้ำชาสดเข้มข้น ดึงกลิ่นเทอร์พีนของใบชาออกมาได้สูงสุด แทนการต้มชาทิ้งไว้ทั้งวัน ชนะคู่แข่งขาดลอย @Lek @น้องเมย์ ดูกระบวนการนี้นะ",
+        "timestamp": "2026-10-28T09:30:00Z",
         "replies": [
           {
             "id": "rep-sup8-1-1",
-            "authorId": "user-1793177529069",
-            "author": "MommySomO",
-            "authorAvatar": "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&auto=format&fit=crop&q=80",
+            "authorId": "user-074ec1a3-c143-48ef-bf22-0c6afc11d4f8",
+            "author": "น้องเมย์",
+            "authorAvatar": "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=150&auto=format&fit=crop&q=80",
             "authorRole": "admin",
-            "text": "ขอบคุณค่ะพี่ไอซ์ ขอเน้นวัสดุสเตนเลส 304 สีทองหรือสีดำด้านนะคะ เข้ากับชุดพนักงานเรามากค่ะ ✨",
-            "timestamp": "2026-10-28T15:00:00Z"
+            "text": "ว้าวมากค่ะพี่ไอซ์ ถ้าน้ำชาร้อนสกัดสดแก้วต่อแก้ว ชาผลไม้และชานมของ VITCHA จะสดชื่นมาก ไม่มีกลิ่นชาค้างคืนแน่นอนค่ะ!",
+            "timestamp": "2026-10-28T09:50:00Z"
+          },
+          {
+            "id": "rep-sup8-1-2",
+            "authorId": "user-d514853d-e30c-4ff2-b5a0-c4949d96588c",
+            "author": "Lek",
+            "authorAvatar": "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=150&auto=format&fit=crop&q=80",
+            "authorRole": "admin",
+            "text": "ระบบแรงดัน 9 บาร์ ตัวนี้มีเกจวัดแม่นยำ ล้างตะแกรง Portafilter ง่าย เดี๋ยวผมเตรียมสเปกปั๊มน้ำแรงดันคงที่ 2 บาร์เข้าเครื่องไว้ให้ครับ",
+            "timestamp": "2026-10-28T10:10:00Z"
           }
         ]
       }
     ],
-    "viewedBy": [
-      {
-        "userId": "user-ice",
-        "name": "SuperiCez",
-        "alias": "SuperiCez",
-        "avatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
-        "role": "admin",
-        "lastViewedAt": "2026-10-29T11:20:00Z",
-        "viewCount": 12
-      },
-      {
-        "userId": "user-1793177529069",
-        "name": "MommySomO",
-        "alias": "MommySomO",
-        "avatar": "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&auto=format&fit=crop&q=80",
-        "role": "admin",
-        "lastViewedAt": "2026-10-29T12:15:00Z",
-        "viewCount": 10
-      }
-    ],
-    "likes": [
-      {
-        "userId": "user-ice",
-        "alias": "SuperiCez",
-        "avatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
-        "timestamp": "2026-10-27T10:15:00Z"
-      },
-      {
-        "userId": "user-1793177529069",
-        "alias": "MommySomO",
-        "avatar": "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&auto=format&fit=crop&q=80",
-        "timestamp": "2026-10-27T14:30:00Z"
-      }
-    ],
     "history": [
       {
-        "action": "สร้างบันทึกซัพพลายเออร์อุปกรณ์บาร์",
+        "action": "สำรวจเครื่องสกัดชาเทียนเหอ",
         "user": "SuperiCez",
         "userAvatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
-        "timestamp": "2026-10-28T14:00:00Z"
+        "timestamp": "2026-10-28T09:00:00Z"
       }
     ],
-    "updatedAt": "2026-10-28T15:00:00Z"
+    "updatedAt": "2026-10-28T10:10:00Z"
   }
 ];
 
@@ -1513,30 +1054,24 @@ export const INITIAL_DRINK_STORES: StoreInspoRecord[] = [
     "id": "store-1",
     "type": "drink_store",
     "country": "CN",
+    "isMockup": true,
     "storeCategory": "ชานมพรีเมียม & ชาสด",
-    "storeName": "CHAGEE 霸王茶姬 (Grandview Mall Flagship)",
-    "chineseName": "霸王茶姬 (广州正佳广场店)",
-    "brandConcept": "Modern Oriental Tea House (เน้นชาสด+นมคุณภาพสูง ดีไซน์หรูหราแบบตะวันออก)",
+    "storeName": "CHAGEE 霸王茶姬 (Guangzhou Flagship)",
+    "chineseName": "霸王茶姬 (广州天河城旗舰店)",
+    "brandConcept": "Modern Oriental Tea Bar · ชานมมะลิใบชาสดพรีเมียม",
     "city": "กวางโจว (Guangzhou)",
-    "assignedTo": "MommySomO",
-    "targetFollowUpDate": "2026-11-05",
-    "handoffStage": "approved",
-    "handoffNotes": "วิเคราะห์โครงสร้างต้นทุนและวิธีบาลานซ์กลิ่นชามะลิกับนมสดเสร็จสมบูรณ์ ถอดเป็นสูตรชาไทยใสพรีเมียมประจำร้าน VIT CHA",
     "photos": {
       "storefrontAndAtmosphere": [
         "https://images.unsplash.com/photo-1554118811-1e0d58224f24?w=800&auto=format&fit=crop&q=80",
         "https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?w=800&auto=format&fit=crop&q=80"
       ],
       "menuBoard": [
-        "https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?w=800&auto=format&fit=crop&q=80"
+        "https://images.unsplash.com/photo-1576092768241-dec231879fc3?w=800&auto=format&fit=crop&q=80"
       ],
       "drinkCups": [
-        "https://images.unsplash.com/photo-1576092768241-dec231879fc3?w=800&auto=format&fit=crop&q=80"
+        "https://images.unsplash.com/photo-1544787219-7f47ccb76574?w=800&auto=format&fit=crop&q=80"
       ]
     },
-    "videos": [
-      "https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4"
-    ],
     "ratings": {
       "taste": 5,
       "aesthetics": 5,
@@ -1546,396 +1081,202 @@ export const INITIAL_DRINK_STORES: StoreInspoRecord[] = [
     "drinkItems": [
       {
         "id": "drink-1-1",
-        "photo": "https://images.unsplash.com/photo-1576092768241-dec231879fc3?w=600&auto=format&fit=crop&q=80",
-        "name": "Boyar String (伯牙绝弦) - Jasmine Green Milk Tea",
-        "priceRmb": 18,
-        "priceThb": 91.44,
-        "cupSize": "500ml",
-        "fitMenuTarget": "นำเทคนิคบาลานซ์กลิ่นดอกมะลิมาใช้กับสูตรชาไทยใส และสูตรชาส้มยูซุ",
-        "gimmickNotes": "แก้วกระดาษลายพรีเมียม ฝาแบบเสียบหลอด 3 รู กลิ่นหอมชาชัดเจน ไม่หวานเลี่ยน ดื่มง่ายมาก"
-      },
-      {
-        "id": "drink-1-2",
-        "photo": "https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?w=600&auto=format&fit=crop&q=80",
-        "name": "White Peach Oolong Latte (春日桃桃)",
+        "name": "Bo Ya Jue Xian (ชานมมะลิสลิมคัพพรีเมียม)",
+        "photo": "https://images.unsplash.com/photo-1544787219-7f47ccb76574?w=600&auto=format&fit=crop&q=80",
         "priceRmb": 20,
-        "priceThb": 101.6,
-        "cupSize": "500ml",
-        "fitMenuTarget": "ต้นแบบเมนูชาผลไม้ละมุน กลิ่นพีชและอู่หลง",
-        "gimmickNotes": "ท็อปด้วยวิปครีมเบานุ่ม โรยเกล็ดถั่วพีแคนกรุบกรอบ"
+        "priceThb": 102,
+        "cupSize": "Slim Cup 22oz",
+        "fitMenuTarget": "Signature Menu VITCHA",
+        "gimmickNotes": "กลิ่นหอมฟุ้งมะลิระแนง ผสมนมสด 0% Trans Fat หวานกำลังดี ปลอกแก้วเชือกถักถือเดินสะดวก"
       }
     ],
-    "tastingNotes": "รสชาติชาเขียวมะลิหอมฟุ้งเข้าจมูก เบสชาเข้มแต่ไม่ฝาด นมสดนุ่มละมุนมาก ไม่มีความข้นเหนียวในคอ ระบบหน้าร้านทำเร็วมาก 1 แก้วไม่เกิน 40 วินาที",
-    "voiceNotes": [
-      {
-        "id": "vn-st1-1",
-        "url": "",
-        "durationSec": 45,
-        "label": "บรรยายกลิ่นชาสัมผัสแรกและกิมมิกฝาแก้ว 3 รู",
-        "createdAt": "2026-10-26T19:25:00Z"
-      }
-    ],
+    "tastingNotes": "กลิ่นหอมดอกไม้ยาวนาน บอดี้ชานมเนียนละมุน ไม่เลี่ยน ดื่มง่ายมาก เป็นเรฟสำคัญสำหรับ Signature ชานม VITCHA",
     "location": {
-      "lat": 23.1322,
-      "lng": 113.3274,
-      "addressText": "Grandview Plaza 1F, Tianhe District, Guangzhou, China"
+      "lat": 23.1311,
+      "lng": 113.3245,
+      "addressText": "Teemall, Tianhe District, Guangzhou, China"
     },
+    "assignedTo": "น้องเมย์",
+    "targetFollowUpDate": "2026-11-04",
+    "handoffStage": "sample_test",
+    "handoffNotes": "แกะสูตรชานมมะลิ 'Bo Ya Jue Xian' คุมต้นทุนต่อแก้วไม่เกิน 18.50 บาท",
     "creator": {
       "id": "user-ice",
       "name": "SuperiCez",
       "alias": "SuperiCez",
       "avatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
-      "timestamp": "2026-10-26T19:20:00Z"
+      "role": "admin",
+      "timestamp": "2026-10-26T16:00:00Z"
     },
     "reviewerNotes": [
       {
-        "id": "note-st1-1",
-        "authorId": "user-1793177529069",
-        "author": "MommySomO",
-        "authorAvatar": "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&auto=format&fit=crop&q=80",
+        "id": "note-store1-1",
+        "authorId": "user-ice",
+        "author": "SuperiCez",
+        "authorAvatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
         "authorRole": "admin",
-        "text": "พี่ไอซ์คะ แบรนด์นี้จัดการแถวคิวดีมากค่ะ ลูกค้าเยอะแต่รอไม่เกิน 3 นาที กิมมิกฝา 3 รูทำให้ได้รับกลิ่นชาเต็มๆ ตอนยกดื่ม เราต้องนำมาใช้กับแก้ว VIT CHA ให้ได้ค่ะ",
-        "timestamp": "2026-10-26T20:10:00Z",
+        "text": "คิวแน่นตลอดทั้งวัน ชานมมะลิ 'Bo Ya Jue Xian' กลิ่นหอมฟุ้ง แก้วทรง Slim Cup สวยหรูหรา ถือเดินในห้างแล้วคนมองตามตลอด น้องเมย์แกะสูตรสัดส่วนชาต่อนมสดพรีเมียมให้ที",
+        "timestamp": "2026-10-26T16:20:00Z",
         "replies": [
           {
-            "id": "rep-st1-1-1",
-            "authorId": "user-ice",
-            "author": "SuperiCez",
-            "authorAvatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
+            "id": "rep-store1-1-1",
+            "authorId": "user-074ec1a3-c143-48ef-bf22-0c6afc11d4f8",
+            "author": "น้องเมย์",
+            "authorAvatar": "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=150&auto=format&fit=crop&q=80",
             "authorRole": "admin",
-            "text": "เห็นด้วย 100% เลยครับ ส้มโอ พี่ให้โรงงาน PackArt ที่เซินเจิ้นขึ้นบล็อกฝา 3 รูตามเรฟนี้เรียบร้อยแล้วครับ",
-            "timestamp": "2026-10-26T20:45:00Z"
+            "text": "เมย์ลองแกะสัดส่วนแล้วค่ะ ใช้ใบชามะลิพิเศษผสมนมสด 0% Trans Fat ความหวาน 50% กำลังดีงาม ได้กลิ่นหอมติดปลายลิ้นยาวนาน ต้นทุนวัตถุดิบต่อแก้วคุมได้ไม่เกิน 18.50 บาทค่ะ",
+            "timestamp": "2026-10-26T16:45:00Z"
+          },
+          {
+            "id": "rep-store1-1-2",
+            "authorId": "user-1793177529069",
+            "author": "MommySomO",
+            "authorAvatar": "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&auto=format&fit=crop&q=80",
+            "authorRole": "admin",
+            "text": "แพ็กเกจจิ้งแก้วยาวมีปลอกหิ้วเชือกถักเก๋มาก @เนม ออกแบบกระเป๋าหิ้วสไตล์นี้ให้แบรนด์ VITCHA ด้วยนะจ๊ะ",
+            "timestamp": "2026-10-26T17:00:00Z"
+          },
+          {
+            "id": "rep-store1-1-3",
+            "authorId": "user-name-pkg",
+            "author": "เนม",
+            "authorAvatar": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80",
+            "authorRole": "admin",
+            "text": "จัดให้ค่ะพี่ส้มโอ ตอนนี้ดราฟต์แบบกระเป๋าฟอยล์เก็บความเย็นลาย VITCHA Monogram ไว้เรียบร้อยแล้วค่ะ",
+            "timestamp": "2026-10-26T17:15:00Z"
           }
         ]
       }
     ],
-    "viewedBy": [
-      {
-        "userId": "user-ice",
-        "name": "SuperiCez",
-        "alias": "SuperiCez",
-        "avatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
-        "role": "admin",
-        "lastViewedAt": "2026-10-29T11:20:00Z",
-        "viewCount": 26
-      },
-      {
-        "userId": "user-1793177529069",
-        "name": "MommySomO",
-        "alias": "MommySomO",
-        "avatar": "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&auto=format&fit=crop&q=80",
-        "role": "admin",
-        "lastViewedAt": "2026-10-29T12:15:00Z",
-        "viewCount": 21
-      }
-    ],
-    "likes": [
-      {
-        "userId": "user-ice",
-        "alias": "SuperiCez",
-        "avatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
-        "timestamp": "2026-10-27T10:15:00Z"
-      },
-      {
-        "userId": "user-1793177529069",
-        "alias": "MommySomO",
-        "avatar": "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&auto=format&fit=crop&q=80",
-        "timestamp": "2026-10-27T14:30:00Z"
-      }
-    ],
     "history": [
       {
-        "action": "สร้างบันทึกร้านน้ำเรฟ CHAGEE",
+        "action": "สำรวจร้าน CHAGEE กวางโจว",
         "user": "SuperiCez",
         "userAvatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
-        "timestamp": "2026-10-26T19:20:00Z"
-      },
-      {
-        "action": "ย้ายเข้าสู่ พาร์ท 5: ตัวเต็งอนุมัติ",
-        "user": "MommySomO",
-        "userAvatar": "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&auto=format&fit=crop&q=80",
-        "timestamp": "2026-10-26T20:45:00Z"
+        "timestamp": "2026-10-26T16:00:00Z"
       }
     ],
-    "updatedAt": "2026-10-26T20:45:00Z"
+    "updatedAt": "2026-10-26T17:15:00Z"
   },
   {
     "id": "store-2",
     "type": "drink_store",
     "country": "CN",
+    "isMockup": true,
     "storeCategory": "ชาผลไม้สด & คราฟต์โซดา",
-    "storeName": "HEYTEA 喜茶 (Taikoo Hui Guangzhou)",
-    "chineseName": "喜茶 (广州太古汇店)",
-    "brandConcept": "New Asian Tea Culture & Fruit Sparklers (ผู้นำชีสโฟมและเครื่องดื่มผลไม้แยกเลเยอร์สดชื่น)",
+    "storeName": "HEYTEA 喜茶 (Grandview Mall)",
+    "chineseName": "喜茶 (广州正佳广场店)",
+    "brandConcept": "Inspiring Tea Creations · ชาผลไม้ชิ้นสด & ครีมชีสนิวซีแลนด์",
     "city": "กวางโจว (Guangzhou)",
-    "assignedTo": "SuperiCez",
-    "targetFollowUpDate": "2026-11-07",
-    "handoffStage": "sample_test",
-    "handoffNotes": "ให้ทีม R&D ทดลองแยกเลเยอร์ผลไม้สดกับโซดาวิตามินตามอัตราส่วนของ HEYTEA เพื่อความสดชื่นสูงสุด",
     "photos": {
       "storefrontAndAtmosphere": [
-        "https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=800&auto=format&fit=crop&q=80",
-        "https://images.unsplash.com/photo-1442512595331-e89e73853f31?w=800&auto=format&fit=crop&q=80"
+        "https://images.unsplash.com/photo-1559925393-8be0ec4767c8?w=800&auto=format&fit=crop&q=80"
       ],
-      "menuBoard": [],
+      "menuBoard": [
+        "https://images.unsplash.com/photo-1576092768241-dec231879fc3?w=800&auto=format&fit=crop&q=80"
+      ],
       "drinkCups": [
         "https://images.unsplash.com/photo-1513558161293-cdaf765ed2fd?w=800&auto=format&fit=crop&q=80"
       ]
     },
-    "videos": [
-      "https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4"
-    ],
     "ratings": {
       "taste": 5,
       "aesthetics": 5,
       "value": 4,
-      "speed": 4
+      "speed": 5
     },
     "drinkItems": [
       {
         "id": "drink-2-1",
+        "name": "Succulent Grapes Cheese Tea (ชาเขียวองุ่นสดชีสโฟม)",
         "photo": "https://images.unsplash.com/photo-1513558161293-cdaf765ed2fd?w=600&auto=format&fit=crop&q=80",
-        "name": "Very Grape Cheese Boom (多肉葡萄)",
-        "priceRmb": 22,
-        "priceThb": 111.76,
-        "cupSize": "650ml",
-        "fitMenuTarget": "เป็นเรฟสำหรับ A1 เบอร์รีบลูม และ B1 คอรัลพั้นช์ ของ VITAMINZAAR",
-        "gimmickNotes": "3 เลเยอร์: ล่างสุดเนื้อองุ่นคัดสด+บุกคริสตัล, กลางน้ำองุ่นปั่นกับชาเขียวมะลิ, บนสุดชีสโฟมเค็มนัว"
+        "priceRmb": 28,
+        "priceThb": 142,
+        "cupSize": "U Cup 650ml",
+        "fitMenuTarget": "Fruit & Cheese Bar",
+        "gimmickNotes": "องุ่นสดปอกมือเนื้อเด้ง ชีสโฟมนิวซีแลนด์รสเค็มนัวตัดเปรี้ยวสดชื่น"
       }
     ],
-    "tastingNotes": "การแยก 3 เลเยอร์สีเหมือนคอนเซปต์ของ VITAMINZAAR เป๊ะ! เลเยอร์ล่างให้เคี้ยวเพลิน ตรงกลางสดชื่นตัดเลี่ยนด้วยโซดาและผลไม้สด",
-    "voiceNotes": [],
+    "tastingNotes": "รสสัมผัสหลายเลเยอร์ มีทั้งน้ำชาผลไม้ เกล็ดหิมะปั่น และชีสโฟมหนานุ่ม",
     "location": {
-      "lat": 23.1338,
-      "lng": 113.3325,
-      "addressText": "Taikoo Hui B1, Tianhe Road, Guangzhou, China"
+      "lat": 23.1325,
+      "lng": 113.3278,
+      "addressText": "Grandview Mall, Tianhe District, Guangzhou, China"
     },
-    "creator": {
-      "id": "user-ice",
-      "name": "SuperiCez",
-      "alias": "SuperiCez",
-      "avatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
-      "timestamp": "2026-10-27T18:15:00Z"
-    },
-    "reviewerNotes": [
-      {
-        "id": "note-st2-1",
-        "authorId": "user-1793177529069",
-        "author": "MommySomO",
-        "authorAvatar": "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&auto=format&fit=crop&q=80",
-        "authorRole": "admin",
-        "text": "เมนู Very Grape ตัวนี้เนื้อสัมผัสบุกคริสตัลเคี้ยวเพลินมากค่ะ เข้ากับเครื่องดื่มรสเปรี้ยวอมหวานอย่างสมบูรณ์แบบ",
-        "timestamp": "2026-10-27T19:00:00Z",
-        "replies": [
-          {
-            "id": "rep-st2-1-1",
-            "authorId": "user-ice",
-            "author": "SuperiCez",
-            "authorAvatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
-            "authorRole": "admin",
-            "text": "พี่คุยกับซัพพลายเออร์ที่กวางโจวแล้ว ได้สเปกบุกคริสตัลแคลอรี่ต่ำรสชาติเดียวกันเลยครับ พร้อมใส่ในเมนูเราทันที",
-            "timestamp": "2026-10-27T19:30:00Z"
-          }
-        ]
-      }
-    ],
-    "viewedBy": [
-      {
-        "userId": "user-ice",
-        "name": "SuperiCez",
-        "alias": "SuperiCez",
-        "avatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
-        "role": "admin",
-        "lastViewedAt": "2026-10-29T11:20:00Z",
-        "viewCount": 22
-      },
-      {
-        "userId": "user-1793177529069",
-        "name": "MommySomO",
-        "alias": "MommySomO",
-        "avatar": "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&auto=format&fit=crop&q=80",
-        "role": "admin",
-        "lastViewedAt": "2026-10-29T12:15:00Z",
-        "viewCount": 18
-      }
-    ],
-    "likes": [
-      {
-        "userId": "user-ice",
-        "alias": "SuperiCez",
-        "avatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
-        "timestamp": "2026-10-27T10:15:00Z"
-      },
-      {
-        "userId": "user-1793177529069",
-        "alias": "MommySomO",
-        "avatar": "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&auto=format&fit=crop&q=80",
-        "timestamp": "2026-10-27T14:30:00Z"
-      }
-    ],
-    "history": [
-      {
-        "action": "สร้างบันทึกร้านน้ำเรฟ HEYTEA",
-        "user": "SuperiCez",
-        "userAvatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
-        "timestamp": "2026-10-27T18:15:00Z"
-      }
-    ],
-    "updatedAt": "2026-10-27T19:30:00Z"
-  },
-  {
-    "id": "store-th-1",
-    "type": "drink_store",
-    "country": "TH",
-    "storeCategory": "วิตามินบาร์ & สุขภาพ",
-    "storeName": "ชาไทยโมเดิร์น & วิตามิน คราฟต์บาร์ (สยามสแควร์ กทม.)",
-    "brandConcept": "Modern Craft Tea & Healthy Infusion (เสิร์ฟชาสกัดสดผสมวิตามินซีสด)",
-    "city": "กรุงเทพฯ (Bangkok)",
-    "phone": "02-251-8900",
-    "lineId": "@crafttea_bkk",
-    "assignedTo": "MommySomO",
-    "targetFollowUpDate": "2026-11-04",
-    "handoffStage": "ordered",
-    "handoffNotes": "ถอดสูตรการตั้งราคาและขนาดแก้ว 16oz vs 22oz มาเทียบต้นทุนต่อแก้วเรียบร้อย กำหนดต้นทุนวัตถุดิบไม่เกิน 24% ต่อแก้ว",
-    "photos": {
-      "storefrontAndAtmosphere": [
-        "https://images.unsplash.com/photo-1554118811-1e0d58224f24?w=800&auto=format&fit=crop&q=80"
-      ],
-      "menuBoard": [
-        "https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?w=800&auto=format&fit=crop&q=80"
-      ],
-      "drinkCups": [
-        "https://images.unsplash.com/photo-1576092768241-dec231879fc3?w=800&auto=format&fit=crop&q=80"
-      ]
-    },
-    "videos": [
-      "https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4"
-    ],
-    "ratings": {
-      "taste": 5,
-      "aesthetics": 5,
-      "value": 4,
-      "speed": 4
-    },
-    "drinkItems": [
-      {
-        "id": "drink-th-1-1",
-        "photo": "https://images.unsplash.com/photo-1576092768241-dec231879fc3?w=600&auto=format&fit=crop&q=80",
-        "name": "ส้มยูซุคั้นสด ชาไทยวิตามินซ่าส์ (Sparkling Vit-C)",
-        "priceThb": 85,
-        "cupSize": "16 oz",
-        "fitMenuTarget": "สูตรต้นแบบ VITAMINZAAR รสชาติเบอร์ 7 Signature",
-        "gimmickNotes": "แยกเลเยอร์ 3 ชั้น ชัดเจน ด้านล่างเพียวเร่ยูซุ ตรงกลางโซดาวิตามิน ด้านบนชาไทยเข้มข้น"
-      }
-    ],
-    "tastingNotes": "รสชาติสดชื่นมาก กลิ่นส้มยูซุตัดกับความเข้มของชาไทยได้อย่างลงตัว ความซ่ากระจายตัวดี ดื่มแล้วตื่นตัวทันที",
-    "voiceNotes": [],
-    "location": {
-      "lat": 13.7443,
-      "lng": 100.5332,
-      "addressText": "Siam Square One, Pathum Wan, Bangkok, Thailand"
-    },
+    "assignedTo": "น้องเมย์",
+    "targetFollowUpDate": "2026-11-06",
+    "handoffStage": "sample_test",
+    "handoffNotes": "ทดลองสูตรชีสโฟมผสมเกลือชมพูหิมาลายันคู่กับชาองุ่นสด",
     "creator": {
       "id": "user-1793177529069",
       "name": "MommySomO",
       "alias": "MommySomO",
       "avatar": "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&auto=format&fit=crop&q=80",
-      "timestamp": "2026-10-27T14:30:00Z"
+      "role": "admin",
+      "timestamp": "2026-10-27T11:00:00Z"
     },
     "reviewerNotes": [
       {
-        "id": "note-thst1-1",
+        "id": "note-store2-1",
         "authorId": "user-1793177529069",
         "author": "MommySomO",
         "authorAvatar": "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&auto=format&fit=crop&q=80",
         "authorRole": "admin",
-        "text": "แก้วนี้ลูกค้าวัยรุ่นและคนทำงานชอบมากค่ะ ดื่มง่าย สดชื่น เหมาะตั้งราคาขายที่ 79-85 บาท ได้มาร์จิ้นสูงค่ะ",
-        "timestamp": "2026-10-27T15:00:00Z",
+        "text": "เมนูชีสทีองุ่นสดและชาส้มโอผสมวิตามินซีปั่น รสชาติเปรี้ยวหวานสดชื่นสุดๆ ชั้นชีสด้านบนหนาแน่น รสเค็มนัวเข้ากับชาเขียวมะลิมาก @น้องเมย์ ลองแกะสูตรนี้นะ",
+        "timestamp": "2026-10-27T11:30:00Z",
         "replies": [
           {
-            "id": "rep-thst1-1-1",
-            "authorId": "user-ice",
-            "author": "SuperiCez",
-            "authorAvatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
+            "id": "rep-store2-1-1",
+            "authorId": "user-074ec1a3-c143-48ef-bf22-0c6afc11d4f8",
+            "author": "น้องเมย์",
+            "authorAvatar": "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=150&auto=format&fit=crop&q=80",
             "authorRole": "admin",
-            "text": "ถูกต้องเลยครับส้มโอ เมนูนี้จะเป็น Hero Item ชูโรงของแบรนด์เราในงานเปิดตัวเลยครับ",
-            "timestamp": "2026-10-27T15:20:00Z"
+            "text": "สูตรชีสโฟมตัวนี้เมย์ทดลองใช้ครีมชีสผสมนมสดและเกลือชมพูหิมาลายัน ได้รสนัวแบบเดียวกันเลยค่ะ และองุ่นปอกเปลือกสดทำเป็นท็อปปิ้งเคี้ยวเพลินมาก",
+            "timestamp": "2026-10-27T11:50:00Z"
+          },
+          {
+            "id": "rep-store2-1-2",
+            "authorId": "user-p-ohm",
+            "author": "P.ohm",
+            "authorAvatar": "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&auto=format&fit=crop&q=80",
+            "authorRole": "admin",
+            "text": "จุดขายเรื่องผลไม้สดปอกมือแบบนี้ ลูกค้าคนไทยชอบมาก วางระบบบาร์ให้ทำงานเร็วไม่เกิน 90 วินาทีต่อแก้วนะ",
+            "timestamp": "2026-10-27T12:00:00Z"
           }
         ]
       }
     ],
-    "viewedBy": [
-      {
-        "userId": "user-ice",
-        "name": "SuperiCez",
-        "alias": "SuperiCez",
-        "avatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
-        "role": "admin",
-        "lastViewedAt": "2026-10-29T11:20:00Z",
-        "viewCount": 24
-      },
-      {
-        "userId": "user-1793177529069",
-        "name": "MommySomO",
-        "alias": "MommySomO",
-        "avatar": "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&auto=format&fit=crop&q=80",
-        "role": "admin",
-        "lastViewedAt": "2026-10-29T12:15:00Z",
-        "viewCount": 20
-      }
-    ],
-    "likes": [
-      {
-        "userId": "user-ice",
-        "alias": "SuperiCez",
-        "avatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
-        "timestamp": "2026-10-27T10:15:00Z"
-      },
-      {
-        "userId": "user-1793177529069",
-        "alias": "MommySomO",
-        "avatar": "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&auto=format&fit=crop&q=80",
-        "timestamp": "2026-10-27T14:30:00Z"
-      }
-    ],
     "history": [
       {
-        "action": "สร้างบันทึกเรฟร้านน้ำไทยสยาม",
+        "action": "สำรวจร้าน HEYTEA กวางโจว",
         "user": "MommySomO",
         "userAvatar": "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&auto=format&fit=crop&q=80",
-        "timestamp": "2026-10-27T14:30:00Z"
+        "timestamp": "2026-10-27T11:00:00Z"
       }
     ],
-    "updatedAt": "2026-10-27T15:20:00Z"
+    "updatedAt": "2026-10-27T12:00:00Z"
   },
   {
     "id": "store-3",
     "type": "drink_store",
     "country": "CN",
-    "storeCategory": "คาเฟ่ดีไซน์ & แพ็กเกจจิ้ง",
-    "storeName": "Nayuki 奈雪的茶 (Beijing Road Flagship)",
-    "chineseName": "奈雪的茶 (广州北京路旗舰店)",
-    "brandConcept": "Fresh Fruit Tea & Soft Bakery Bar (โทนสีเขียว-ขาวมินิมอล บาร์สเตนเลสเปิดโล่ง)",
+    "isMockup": true,
+    "storeCategory": "วิตามินบาร์ & สุขภาพ",
+    "storeName": "Blueglass Yogurt & Vitamin Bar (Taikoo Hui)",
+    "chineseName": "Blueglass 酸奶 (广州太古汇店)",
+    "brandConcept": "Superfood · Active Lifestyle · วิตามินซี & โพรไบโอติกส์",
     "city": "กวางโจว (Guangzhou)",
-    "assignedTo": "SuperiCez",
-    "targetFollowUpDate": "2026-11-09",
-    "handoffStage": "rfq_sent",
-    "handoffNotes": "นำเลย์เอาต์การวางเครื่องจ่ายไซรัปและเครื่องซีลฝาบนเคาน์เตอร์หน้ากว้าง 3 เมตรมาออกแบบสาขาต้นแบบ",
     "photos": {
       "storefrontAndAtmosphere": [
-        "https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?w=800&auto=format&fit=crop&q=80",
-        "https://images.unsplash.com/photo-1554118811-1e0d58224f24?w=800&auto=format&fit=crop&q=80"
+        "https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?w=800&auto=format&fit=crop&q=80"
       ],
       "menuBoard": [
-        "https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?w=800&auto=format&fit=crop&q=80"
+        "https://images.unsplash.com/photo-1576092768241-dec231879fc3?w=800&auto=format&fit=crop&q=80"
       ],
       "drinkCups": [
-        "https://images.unsplash.com/photo-1544787219-7f47ccb76574?w=800&auto=format&fit=crop&q=80"
+        "https://images.unsplash.com/photo-1553530666-ba11a7da3888?w=800&auto=format&fit=crop&q=80"
       ]
     },
-    "videos": [
-      "https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4"
-    ],
     "ratings": {
       "taste": 5,
       "aesthetics": 5,
@@ -1945,463 +1286,170 @@ export const INITIAL_DRINK_STORES: StoreInspoRecord[] = [
     "drinkItems": [
       {
         "id": "drink-3-1",
-        "photo": "https://images.unsplash.com/photo-1544787219-7f47ccb76574?w=600&auto=format&fit=crop&q=80",
-        "name": "Supreme Orange Jasmine Tea (霸气橙子)",
-        "priceRmb": 19,
-        "priceThb": 96.52,
-        "cupSize": "650ml",
-        "fitMenuTarget": "เรฟเมนูส้มสดผสมชาเขียวมะลิวิตามินซีสูง",
-        "gimmickNotes": "ใส่ส้มสดสไลซ์ 2 ชิ้นใหญ่โชว์ข้างแก้ว สีสวยสดใส ดึงดูดสายตามาก"
+        "name": "VITCHA Glow Collagen Berry Booster",
+        "photo": "https://images.unsplash.com/photo-1553530666-ba11a7da3888?w=600&auto=format&fit=crop&q=80",
+        "priceRmb": 42,
+        "priceThb": 213,
+        "cupSize": "Crystal Cup 500ml",
+        "fitMenuTarget": "Healthy Booster",
+        "gimmickNotes": "เบอร์รี่รวมสกัดสด ผสมคอลลาเจนไดเปปไทด์และวิตามินซีคอมเพล็กซ์ สีชมพูธรรมชาติ"
       }
     ],
-    "tastingNotes": "การจัดวาง Flow การชงของพนักงานลื่นไหลมาก คนตักท็อปปิ้ง คนชงชา และคนซีลฝายืนเรียงกันไม่ต้องเดินชนกันเลย",
-    "voiceNotes": [],
+    "tastingNotes": "หวานอมเปรี้ยว สดชื่นกระปรี้กระเปร่า ดื่มแล้วรู้สึกสุขภาพดี ภาพลักษณ์ลักชูรี",
     "location": {
-      "lat": 23.1255,
-      "lng": 113.2682,
-      "addressText": "Beijing Road Pedestrian Street, Guangzhou, China"
+      "lat": 23.1341,
+      "lng": 113.3325,
+      "addressText": "Taikoo Hui, Tianhe District, Guangzhou, China"
     },
-    "creator": {
-      "id": "user-ice",
-      "name": "SuperiCez",
-      "alias": "SuperiCez",
-      "avatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
-      "timestamp": "2026-10-27T16:40:00Z"
-    },
-    "reviewerNotes": [
-      {
-        "id": "note-st3-1",
-        "authorId": "user-ice",
-        "author": "SuperiCez",
-        "authorAvatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
-        "authorRole": "admin",
-        "text": "การวางตำแหน่งตู้แช่ใต้เคาน์เตอร์ติดกับเครื่องซีลช่วยลดระยะก้าวเดินของบาริสต้าได้ถึง 40% ครับ ส้มโอ",
-        "timestamp": "2026-10-27T17:15:00Z",
-        "replies": [
-          {
-            "id": "rep-st3-1-1",
-            "authorId": "user-1793177529069",
-            "author": "MommySomO",
-            "authorAvatar": "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&auto=format&fit=crop&q=80",
-            "authorRole": "admin",
-            "text": "หน้าร้านเราบาร์กว้าง 3 เมตร เอาสูตร Layout นี้ไปปรับใช้กับเคาน์เตอร์ Beiliton ได้พอดีเป๊ะเลยค่ะ",
-            "timestamp": "2026-10-27T17:45:00Z"
-          }
-        ]
-      }
-    ],
-    "viewedBy": [
-      {
-        "userId": "user-ice",
-        "name": "SuperiCez",
-        "alias": "SuperiCez",
-        "avatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
-        "role": "admin",
-        "lastViewedAt": "2026-10-29T11:20:00Z",
-        "viewCount": 19
-      },
-      {
-        "userId": "user-1793177529069",
-        "name": "MommySomO",
-        "alias": "MommySomO",
-        "avatar": "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&auto=format&fit=crop&q=80",
-        "role": "admin",
-        "lastViewedAt": "2026-10-29T12:15:00Z",
-        "viewCount": 15
-      }
-    ],
-    "likes": [
-      {
-        "userId": "user-ice",
-        "alias": "SuperiCez",
-        "avatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
-        "timestamp": "2026-10-27T10:15:00Z"
-      },
-      {
-        "userId": "user-1793177529069",
-        "alias": "MommySomO",
-        "avatar": "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&auto=format&fit=crop&q=80",
-        "timestamp": "2026-10-27T14:30:00Z"
-      }
-    ],
-    "history": [
-      {
-        "action": "สร้างบันทึกร้านน้ำเรฟ Nayuki",
-        "user": "SuperiCez",
-        "userAvatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
-        "timestamp": "2026-10-27T16:40:00Z"
-      }
-    ],
-    "updatedAt": "2026-10-27T17:45:00Z"
-  },
-  {
-    "id": "store-th-2",
-    "type": "drink_store",
-    "country": "TH",
-    "storeCategory": "มัทฉะ & สเปเชียลตี้",
-    "storeName": "Ari Specialty Matcha & Yuzu Lab (อารีย์ ซอย 4)",
-    "brandConcept": "Minimal White Lab Bar (บาร์ขาวคลีน สไตล์ห้องแล็บสกัดชาและวิตามิน)",
-    "city": "กรุงเทพฯ (Bangkok)",
-    "phone": "082-991-4512",
-    "lineId": "@arimatchalab",
-    "assignedTo": "SuperiCez",
+    "assignedTo": "น้องเมย์",
     "targetFollowUpDate": "2026-11-08",
-    "handoffStage": "approved",
-    "handoffNotes": "โทนสีร้านขาว-เทาตัดสเตนเลสตรงกับ Mood & Tone ของแบรนด์เรามาก ปรับใช้เป็น Design Guideline",
-    "photos": {
-      "storefrontAndAtmosphere": [
-        "https://images.unsplash.com/photo-1442512595331-e89e73853f31?w=800&auto=format&fit=crop&q=80"
-      ],
-      "menuBoard": [],
-      "drinkCups": [
-        "https://images.unsplash.com/photo-1513558161293-cdaf765ed2fd?w=800&auto=format&fit=crop&q=80"
-      ]
-    },
-    "videos": [
-      "https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4"
-    ],
-    "ratings": {
-      "taste": 5,
-      "aesthetics": 5,
-      "value": 3,
-      "speed": 4
-    },
-    "drinkItems": [
-      {
-        "id": "drink-th-2-1",
-        "photo": "https://images.unsplash.com/photo-1513558161293-cdaf765ed2fd?w=600&auto=format&fit=crop&q=80",
-        "name": "Ceremonial Matcha Sparkling Yuzu Boost",
-        "priceThb": 120,
-        "cupSize": "16 oz",
-        "fitMenuTarget": "เรฟเมนูพรีเมียมประจำร้าน",
-        "gimmickNotes": "ใช้กระป๋องใสซีลฝาอะลูมิเนียม เก็บความซ่าได้นาน ส่งไรเดอร์ไม่หก"
-      }
-    ],
-    "tastingNotes": "แพ็กเกจจิ้งกระป๋องใสซีลฝาอะลูมิเนียมตอบโจทย์เดลิเวอรี่ในไทยมาก ไม่แยกชั้นตอนขนส่ง",
-    "voiceNotes": [],
-    "location": {
-      "lat": 13.7824,
-      "lng": 100.5432,
-      "addressText": "Ari Soi 4, Phaya Thai, Bangkok, Thailand"
-    },
+    "handoffStage": "sample_test",
+    "handoffNotes": "พัฒนาเมนู Healthy Booster สำหรับกลุ่มลูกค้าสายฟิตเนสและรักสุขภาพ",
     "creator": {
-      "id": "user-ice",
-      "name": "SuperiCez",
-      "alias": "SuperiCez",
-      "avatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
-      "timestamp": "2026-10-27T17:50:00Z"
+      "id": "user-05523ee4-203c-4ecb-8a79-abc02a2c533e",
+      "name": "P.ตุ้ย (ผู้บริหาร & หัวหน้างาน)",
+      "alias": "P.ตุ้ย",
+      "avatar": "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&auto=format&fit=crop&q=80",
+      "role": "admin",
+      "timestamp": "2026-10-27T14:00:00Z"
     },
     "reviewerNotes": [
       {
-        "id": "note-thst2-1",
-        "authorId": "user-1793177529069",
-        "author": "MommySomO",
-        "authorAvatar": "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&auto=format&fit=crop&q=80",
+        "id": "note-store3-1",
+        "authorId": "user-05523ee4-203c-4ecb-8a79-abc02a2c533e",
+        "author": "P.ตุ้ย",
+        "authorAvatar": "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&auto=format&fit=crop&q=80",
         "authorRole": "admin",
-        "text": "กระป๋องใสซีลฝาอะลูมิเนียมเวลาถือถ่ายรูปเท่มากค่ะ โลโก้สีขาวบนพื้นหลังสีชามัทฉะคือเด่นสุดๆ",
-        "timestamp": "2026-10-27T18:15:00Z",
+        "text": "ร้านนี้วาง Position เป็น Luxury Healthy Drink ชูเรื่องคอลลาเจน วิตามินซี และอะโวคาโดปั่น ราคาแก้วละ 40-45 หยวน แต่คนต่อคิวแน่นมาก ภาพลักษณ์พรีเมียมสุขภาพตรงกับคอนเซปต์ VITCHA",
+        "timestamp": "2026-10-27T14:30:00Z",
         "replies": [
           {
-            "id": "rep-thst2-1-1",
-            "authorId": "user-ice",
-            "author": "SuperiCez",
-            "authorAvatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
+            "id": "rep-store3-1-1",
+            "authorId": "user-074ec1a3-c143-48ef-bf22-0c6afc11d4f8",
+            "author": "น้องเมย์",
+            "authorAvatar": "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=150&auto=format&fit=crop&q=80",
             "authorRole": "admin",
-            "text": "พี่เตรียมเครื่องซีลฝากระป๋องอัตโนมัติเพิ่มอีก 1 ตัวไว้ที่สาขาหลักแล้วครับ รองรับเดลิเวอรี่เต็มรูปแบบ",
-            "timestamp": "2026-10-27T18:40:00Z"
+            "text": "เมย์ทำสูตร 'VITCHA Glow Vitamin Booster' สกัดเบอร์รี่รวม + คอลลาเจนเปปไทด์ + ชาขาว สีชมพูธรรมชาติสวยมาก ไม่ต้องใส่สีสังเคราะห์เลยค่ะ",
+            "timestamp": "2026-10-27T15:00:00Z"
+          },
+          {
+            "id": "rep-store3-1-2",
+            "authorId": "user-ayai-booth",
+            "author": "ayai",
+            "authorAvatar": "https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?w=150&auto=format&fit=crop&q=80",
+            "authorRole": "admin",
+            "text": "ดีไซน์หน้าร้านเค้าใช้กระจกลอนใสกับไฟ Warm White มินิมอลสะดุดตามาก ผมจะนำมู้ดแอนด์โทนนี้ไปใส่ในแบบ 3D หน้าร้านเราครับ",
+            "timestamp": "2026-10-27T15:15:00Z"
           }
         ]
       }
     ],
-    "viewedBy": [
-      {
-        "userId": "user-ice",
-        "name": "SuperiCez",
-        "alias": "SuperiCez",
-        "avatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
-        "role": "admin",
-        "lastViewedAt": "2026-10-29T11:20:00Z",
-        "viewCount": 18
-      },
-      {
-        "userId": "user-1793177529069",
-        "name": "MommySomO",
-        "alias": "MommySomO",
-        "avatar": "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&auto=format&fit=crop&q=80",
-        "role": "admin",
-        "lastViewedAt": "2026-10-29T12:15:00Z",
-        "viewCount": 14
-      }
-    ],
-    "likes": [
-      {
-        "userId": "user-ice",
-        "alias": "SuperiCez",
-        "avatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
-        "timestamp": "2026-10-27T10:15:00Z"
-      },
-      {
-        "userId": "user-1793177529069",
-        "alias": "MommySomO",
-        "avatar": "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&auto=format&fit=crop&q=80",
-        "timestamp": "2026-10-27T14:30:00Z"
-      }
-    ],
     "history": [
       {
-        "action": "สร้างบันทึกเรฟร้านน้ำอารีย์",
-        "user": "SuperiCez",
-        "userAvatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
-        "timestamp": "2026-10-27T17:50:00Z"
+        "action": "สำรวจร้าน Blueglass ไท่กู่ฮุ่ย",
+        "user": "P.ตุ้ย",
+        "userAvatar": "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&auto=format&fit=crop&q=80",
+        "timestamp": "2026-10-27T14:00:00Z"
       }
     ],
-    "updatedAt": "2026-10-27T18:40:00Z"
+    "updatedAt": "2026-10-27T15:15:00Z"
   },
   {
     "id": "store-4",
     "type": "drink_store",
     "country": "CN",
-    "storeCategory": "แฟรนไชส์สตรีทดริงก์",
-    "storeName": "LINLEE 林里 · 手打柠檬茶 (Tianhe Sports Center)",
-    "chineseName": "林里 · 手打柠檬茶 (广州天河店)",
-    "brandConcept": "Hand-Smashed Perfume Lemon Tea (ชาเลมอนหอมสดชื่น ปั่นทุบสดแก้วต่อแก้ว)",
+    "isMockup": true,
+    "storeCategory": "คาเฟ่ดีไซน์ & แพ็กเกจจิ้ง",
+    "storeName": "Naixue 奈雪的茶 (Kiosk Express Model)",
+    "chineseName": "奈雪的茶 (快饮柜台店)",
+    "brandConcept": "Smart Express Tea Kiosk · คืนทุนไว ใช้พื้นที่กะทัดรัด",
     "city": "กวางโจว (Guangzhou)",
-    "assignedTo": "MommySomO",
-    "targetFollowUpDate": "2026-11-10",
-    "handoffStage": "negotiate",
-    "handoffNotes": "ศึกษาความเร็วในการทำ 25 วินาที/แก้ว และกิมมิกเป็ดเหลืองตัวจิ๋วแถมบนฝาแก้วที่กลายเป็นไวรัลทั่วเมือง",
     "photos": {
       "storefrontAndAtmosphere": [
         "https://images.unsplash.com/photo-1554118811-1e0d58224f24?w=800&auto=format&fit=crop&q=80"
       ],
-      "menuBoard": [],
-      "drinkCups": [
+      "menuBoard": [
         "https://images.unsplash.com/photo-1576092768241-dec231879fc3?w=800&auto=format&fit=crop&q=80"
+      ],
+      "drinkCups": [
+        "https://images.unsplash.com/photo-1544787219-7f47ccb76574?w=800&auto=format&fit=crop&q=80"
       ]
     },
-    "videos": [
-      "https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4"
-    ],
     "ratings": {
-      "taste": 5,
-      "aesthetics": 4,
+      "taste": 4,
+      "aesthetics": 5,
       "value": 5,
       "speed": 5
     },
     "drinkItems": [
       {
         "id": "drink-4-1",
-        "photo": "https://images.unsplash.com/photo-1576092768241-dec231879fc3?w=600&auto=format&fit=crop&q=80",
-        "name": "Signature Hand-Smashed Perfume Lemon Tea (招牌手打柠檬茶)",
-        "priceRmb": 15,
-        "priceThb": 76.2,
-        "cupSize": "700ml",
-        "fitMenuTarget": "สูตรชาไทยเลมอนวิตามิน สดชื่นสะใจ",
-        "gimmickNotes": "ใช้เลมอนน้ำหอมกวางตุ้ง หอมติดจมูก แถมเป็ดเหลืองตัวจิ๋วเสียบหลอด"
+        "name": "Express Jasmine Cheese Green (ชามะลิเอ็กซ์เพรสชีส)",
+        "photo": "https://images.unsplash.com/photo-1544787219-7f47ccb76574?w=600&auto=format&fit=crop&q=80",
+        "priceRmb": 18,
+        "priceThb": 91,
+        "cupSize": "Standard 500ml",
+        "fitMenuTarget": "Express Kiosk",
+        "gimmickNotes": "สกัดชาสดเร็ว จ่ายไซรัปอัตโนมัติ เสิร์ฟได้ใน 60 วินาที"
       }
     ],
-    "tastingNotes": "รสชาติเปรี้ยวหวานกลมกล่อมมาก กลิ่นน้ำมันหอมระเหยจากผิวเลมอนที่ถูกทุบช่วยเพิ่มความสดชื่นคูณสอง",
-    "voiceNotes": [],
     "location": {
-      "lat": 23.1365,
-      "lng": 113.3218,
-      "addressText": "Tianhe Sports Center, Guangzhou, Guangdong, China"
+      "lat": 23.1255,
+      "lng": 113.3155,
+      "addressText": "Tianhe District, Guangzhou, China"
     },
+    "assignedTo": "ayai",
+    "targetFollowUpDate": "2026-11-09",
+    "handoffStage": "negotiate",
+    "handoffNotes": "นำโมเดล Kiosk 15 ตร.ม. ไปปรับใช้กับการขยายสาขาในห้างและคอมมูนิตี้มอลล์ในไทย",
     "creator": {
-      "id": "user-1793177529069",
-      "name": "MommySomO",
-      "alias": "MommySomO",
-      "avatar": "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&auto=format&fit=crop&q=80",
-      "timestamp": "2026-10-28T16:00:00Z"
+      "id": "user-p-ohm",
+      "name": "P.ohm (ผู้บริหาร & หัวหน้างาน)",
+      "alias": "P.ohm",
+      "avatar": "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&auto=format&fit=crop&q=80",
+      "role": "admin",
+      "timestamp": "2026-10-27T16:00:00Z"
     },
     "reviewerNotes": [
       {
-        "id": "note-st4-1",
-        "authorId": "user-1793177529069",
-        "author": "MommySomO",
-        "authorAvatar": "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&auto=format&fit=crop&q=80",
+        "id": "note-store4-1",
+        "authorId": "user-p-ohm",
+        "author": "P.ohm",
+        "authorAvatar": "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&auto=format&fit=crop&q=80",
         "authorRole": "admin",
-        "text": "กิมมิกเป็ดจิ๋วบนฝาแก้วทำให้ลูกค้าถ่ายคลิปลง TikTok เยอะมากค่ะ เราสามารถทำตุ๊กตามาสคอตวิตามินจิ๋วแถมบนฝาแก้ว VITAMINZAAR ได้เลยค่ะ",
-        "timestamp": "2026-10-28T16:30:00Z",
+        "text": "โมเดล Kiosk ไซส์ 12-15 ตร.ม. ใช้พนักงานแค่ 2 คน เครื่องสกัดชาอัตโนมัติช่วยให้งานไวมาก ลูกค้าสั่งผ่าน QR code ชำระเงินล่วงหน้า ทราฟฟิกไหลลื่น",
+        "timestamp": "2026-10-27T16:30:00Z",
         "replies": [
           {
-            "id": "rep-st4-1-1",
-            "authorId": "user-ice",
-            "author": "SuperiCez",
-            "authorAvatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
+            "id": "rep-store4-1-1",
+            "authorId": "user-ayai-booth",
+            "author": "ayai",
+            "authorAvatar": "https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?w=150&auto=format&fit=crop&q=80",
             "authorRole": "admin",
-            "text": "ไอเดียยอดเยี่ยมมากครับส้มโอ ลูกค้าจะสะสมคอลเลกชันครบทุกสีแน่นอน เป็นกิมมิกการตลาดที่ทรงพลังมาก",
-            "timestamp": "2026-10-28T17:00:00Z"
+            "text": "เลย์เอาต์นี้ประหยัดพื้นที่มากครับ เคาน์เตอร์ตัว L จัดโซนรับออเดอร์ โซนปรุง และโซนส่งมอบแก้วไม่ชนกัน บาริสต้าก้าวขาไม่เกิน 3 ก้าว",
+            "timestamp": "2026-10-27T16:45:00Z"
+          },
+          {
+            "id": "rep-store4-1-2",
+            "authorId": "user-d514853d-e30c-4ff2-b5a0-c4949d96588c",
+            "author": "Lek",
+            "authorAvatar": "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=150&auto=format&fit=crop&q=80",
+            "authorRole": "admin",
+            "text": "เครื่องจักรชุดนี้รวมเครื่องซีล FEST + Teaspresso + เครื่องจ่ายไซรัป 16 ช่อง กินไฟรวมแค่ 3,800W เบรกเกอร์ 30A เอาอยู่สบายๆ ครับ",
+            "timestamp": "2026-10-27T17:00:00Z"
           }
         ]
       }
     ],
-    "viewedBy": [
-      {
-        "userId": "user-ice",
-        "name": "SuperiCez",
-        "alias": "SuperiCez",
-        "avatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
-        "role": "admin",
-        "lastViewedAt": "2026-10-29T11:20:00Z",
-        "viewCount": 21
-      },
-      {
-        "userId": "user-1793177529069",
-        "name": "MommySomO",
-        "alias": "MommySomO",
-        "avatar": "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&auto=format&fit=crop&q=80",
-        "role": "admin",
-        "lastViewedAt": "2026-10-29T12:15:00Z",
-        "viewCount": 16
-      }
-    ],
-    "likes": [
-      {
-        "userId": "user-ice",
-        "alias": "SuperiCez",
-        "avatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
-        "timestamp": "2026-10-27T10:15:00Z"
-      },
-      {
-        "userId": "user-1793177529069",
-        "alias": "MommySomO",
-        "avatar": "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&auto=format&fit=crop&q=80",
-        "timestamp": "2026-10-27T14:30:00Z"
-      }
-    ],
     "history": [
       {
-        "action": "สร้างบันทึกร้านน้ำเรฟ LINLEE",
-        "user": "MommySomO",
-        "userAvatar": "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&auto=format&fit=crop&q=80",
-        "timestamp": "2026-10-28T16:00:00Z"
+        "action": "สำรวจโมเดล Kiosk Naixue",
+        "user": "P.ohm",
+        "userAvatar": "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&auto=format&fit=crop&q=80",
+        "timestamp": "2026-10-27T16:00:00Z"
       }
     ],
-    "updatedAt": "2026-10-28T17:00:00Z"
-  },
-  {
-    "id": "store-th-3",
-    "type": "drink_store",
-    "country": "TH",
-    "storeCategory": "วิตามินบาร์ & สุขภาพ",
-    "storeName": "Boost & Glow Vitamin Smoothie Bar (ทองหล่อ 13)",
-    "brandConcept": "Superfood Slush & Glow Shots (สมูทตี้ผลไม้สดผสานสารสกัดผิวโกลว์)",
-    "city": "กรุงเทพฯ (Bangkok)",
-    "phone": "02-712-9900",
-    "lineId": "@boostandglow",
-    "assignedTo": "MommySomO",
-    "targetFollowUpDate": "2026-11-12",
-    "handoffStage": "awaiting",
-    "handoffNotes": "นัดชิมสมูทตี้สูตรคอลลาเจนและอะเซโรล่าเชอร์รี่ เพื่อนำมาเทียบกับตัวเทสต์พรีมิกซ์ของ Zen Biotech",
-    "photos": {
-      "storefrontAndAtmosphere": [
-        "https://images.unsplash.com/photo-1554118811-1e0d58224f24?w=800&auto=format&fit=crop&q=80"
-      ],
-      "menuBoard": [],
-      "drinkCups": [
-        "https://images.unsplash.com/photo-1513558161293-cdaf765ed2fd?w=800&auto=format&fit=crop&q=80"
-      ]
-    },
-    "videos": [
-      "https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4"
-    ],
-    "ratings": {
-      "taste": 5,
-      "aesthetics": 5,
-      "value": 4,
-      "speed": 4
-    },
-    "drinkItems": [
-      {
-        "id": "drink-th-3-1",
-        "photo": "https://images.unsplash.com/photo-1513558161293-cdaf765ed2fd?w=600&auto=format&fit=crop&q=80",
-        "name": "Acai Acerola Cherry Super-C Smoothie (อะไซอิ วิตามินซีสูง)",
-        "priceThb": 145,
-        "cupSize": "16 oz",
-        "fitMenuTarget": "เมนูระดับพรีเมียม สายรักสุขภาพและบิวตี้",
-        "gimmickNotes": "สีม่วงสดใสธรรมชาติจากผลไม้แท้ ปราศจากน้ำตาลทราย"
-      }
-    ],
-    "tastingNotes": "รสชาติเปรี้ยวหวานกลมกล่อม สัมผัสเนียนละเอียด ปั่นได้ดีมาก ดื่มแล้วรู้สึกสดชื่นไม่หนักท้อง",
-    "voiceNotes": [],
-    "location": {
-      "lat": 13.7345,
-      "lng": 100.5812,
-      "addressText": "Thong Lo 13, Sukhumvit 55, Bangkok, Thailand"
-    },
-    "creator": {
-      "id": "user-1793177529069",
-      "name": "MommySomO",
-      "alias": "MommySomO",
-      "avatar": "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&auto=format&fit=crop&q=80",
-      "timestamp": "2026-10-28T17:30:00Z"
-    },
-    "reviewerNotes": [
-      {
-        "id": "note-thst3-1",
-        "authorId": "user-1793177529069",
-        "author": "MommySomO",
-        "authorAvatar": "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&auto=format&fit=crop&q=80",
-        "authorRole": "admin",
-        "text": "ส้มโอชอบโทนสีและการจัดวางไฟของร้านนี้มากค่ะ บาร์เปิดโล่งมองเห็นการทำเครื่องดื่มทุกขั้นตอน ดูสะอาดและน่าเชื่อถือมากค่ะ",
-        "timestamp": "2026-10-28T18:00:00Z",
-        "replies": [
-          {
-            "id": "rep-thst3-1-1",
-            "authorId": "user-ice",
-            "author": "SuperiCez",
-            "authorAvatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
-            "authorRole": "admin",
-            "text": "ความโปร่งใสคือหัวใจของแบรนด์เราเช่นกันครับ ร้านเราจะเน้นบาร์สเตนเลสเปิดโล่งโชว์การสกัดสดเหมือนกันครับ",
-            "timestamp": "2026-10-28T18:20:00Z"
-          }
-        ]
-      }
-    ],
-    "viewedBy": [
-      {
-        "userId": "user-ice",
-        "name": "SuperiCez",
-        "alias": "SuperiCez",
-        "avatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
-        "role": "admin",
-        "lastViewedAt": "2026-10-29T11:20:00Z",
-        "viewCount": 15
-      },
-      {
-        "userId": "user-1793177529069",
-        "name": "MommySomO",
-        "alias": "MommySomO",
-        "avatar": "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&auto=format&fit=crop&q=80",
-        "role": "admin",
-        "lastViewedAt": "2026-10-29T12:15:00Z",
-        "viewCount": 12
-      }
-    ],
-    "likes": [
-      {
-        "userId": "user-ice",
-        "alias": "SuperiCez",
-        "avatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
-        "timestamp": "2026-10-27T10:15:00Z"
-      },
-      {
-        "userId": "user-1793177529069",
-        "alias": "MommySomO",
-        "avatar": "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&auto=format&fit=crop&q=80",
-        "timestamp": "2026-10-27T14:30:00Z"
-      }
-    ],
-    "history": [
-      {
-        "action": "สร้างบันทึกร้านน้ำทองหล่อ",
-        "user": "MommySomO",
-        "userAvatar": "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&auto=format&fit=crop&q=80",
-        "timestamp": "2026-10-28T17:30:00Z"
-      }
-    ],
-    "updatedAt": "2026-10-28T18:20:00Z"
+    "updatedAt": "2026-10-27T17:00:00Z"
   }
 ];
 
@@ -2411,37 +1459,37 @@ export const INITIAL_LOCATIONS: LocationRecord[] = [
     "id": "loc-ctw-beacon",
     "type": "location",
     "country": "TH",
-    "name": "CentralWorld โซน Beacon (หน้าลิฟต์แก้ว)",
-    "foreignName": "CentralWorld 1st Fl Beacon Glass Lift",
-    "locationType": "mall",
-    "zoneOrFloor": "ชั้น 1 โซน Beacon",
-    "unitNumber": "B102",
+    "isMockup": true,
+    "name": "CentralWorld ชั้น 7 โซนหน้าโรงหนัง SF World Cinema",
+    "foreignName": "CentralWorld 7th Fl. Beacon Zone",
+    "locationType": "ห้างสรรพสินค้า / ศูนย์การค้า",
+    "zoneOrFloor": "ชั้น 7 โซน Atrium หน้าโรงหนัง",
+    "unitNumber": "7F-K05",
     "location": {
-      "lat": 13.7466,
+      "lat": 13.7465,
       "lng": 100.5393,
-      "addressText": "CentralWorld ถนนพระราม 1 แขวงปทุมวัน เขตปทุมวัน กทม."
+      "addressText": "999/9 Rama I Rd, Pathum Wan, Bangkok 10330"
     },
     "spaceSpecs": {
-      "usableAreaSqm": 48,
-      "frontageWidthM": 6.8,
-      "ceilingHeightM": 3.8,
-      "layoutFormat": "corner",
-      "electricalPower": "3 เฟส 380V 45 kVA",
+      "usableAreaSqm": 18,
+      "frontageWidthM": 4,
+      "ceilingHeightM": 3.5,
+      "layoutFormat": "island",
+      "electricalPower": "3 เฟส 45 kVA",
       "hasWaterInflow": true,
       "hasDrainage": true,
       "hasGreaseTrap": true,
-      "riderAccessNotes": "ไรเดอร์เดินเข้ารับของผ่านประตูฝั่ง Central Food Hall ด้านข้าง ห่างเพียง 40 เมตร"
+      "riderAccessNotes": "จุดจอดรถจักรยานยนต์ไรเดอร์ฝั่ง Dazzle มีลิฟต์ขนส่งตรงถึงชั้น 7"
     },
     "leaseTerms": {
-      "rentModel": "hybrid",
-      "monthlyRentThb": 160000,
-      "gpPercent": 12,
+      "rentModel": "fixed",
+      "monthlyRentThb": 180000,
       "depositMonths": 3,
       "leasePeriodYears": 3,
-      "fitOutPeriodDays": 60,
-      "contactPerson": "คุณอรัญญา (Leasing Team CPN)",
-      "contactPhone": "081-456-7890",
-      "contactLineWechat": "cpn_retail_b1"
+      "fitOutPeriodDays": 30,
+      "contactPerson": "คุณกิตติศักดิ์ (ฝ่ายพัฒนาธุรกิจ CPN)",
+      "contactPhone": "02-640-7000",
+      "contactLineWechat": "cpn_retail_ctw"
     },
     "ratings": {
       "footTraffic": 5,
@@ -2451,325 +1499,250 @@ export const INITIAL_LOCATIONS: LocationRecord[] = [
     },
     "photos": {
       "storefrontAndAtmosphere": [
-        "https://images.unsplash.com/photo-1519567241046-7f570eee3ce6?w=800&auto=format&fit=crop&q=80",
-        "https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=800&auto=format&fit=crop&q=80"
-      ],
-      "floorPlanAndSpecs": [
-        "https://images.unsplash.com/photo-1503387762-592deb58ef4e?w=800&auto=format&fit=crop&q=80"
-      ],
-      "surroundingNeighbors": [
-        "https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=800&auto=format&fit=crop&q=80"
-      ],
-      "contactCards": [
-        "https://images.unsplash.com/photo-1589829545856-d10d557cf95f?w=800&auto=format&fit=crop&q=80"
+        "https://images.unsplash.com/photo-1567449303078-57ad995bd301?w=800&auto=format&fit=crop&q=80",
+        "https://images.unsplash.com/photo-1519501025264-65ba15a82390?w=800&auto=format&fit=crop&q=80"
       ]
     },
     "quickTags": [
       "คนเดินแน่น",
-      "หัวมุมเด่น",
-      "ติดทางเชื่อมBTS",
-      "ใกล้ลิฟต์แก้ว",
-      "มีท่อดักไขมัน"
+      "ทราฟฟิกวันหยุดสูง",
+      "มีท่อน้ำทิ้งในตัว",
+      "สัญญา 3 ปี",
+      "เจรจาต่อรองได้"
     ],
-    "assignedTo": "SuperiCez",
-    "targetFollowUpDate": "2026-11-05",
-    "handoffNotes": "ทำเลนี้ถือเป็นตัวเต็งอันดับ 1 สำหรับ Flagship Store แรกของ VITCHA ทีมเซ็นทรัลเปิดทางให้ต่อรองค่าตกแต่งฟรี 60 วัน กำลังนัดคุยแบบแปลนหน้างาน",
-    "handoffStage": "negotiate",
+    "assignedTo": "ayai",
+    "targetFollowUpDate": "2026-11-15",
+    "handoffNotes": "ทำเลเปิด Flagship สาขาแรก กลุ่มลูกค้าทั้งวัยรุ่น นักท่องเที่ยว และคนทำงาน ทราฟฟิกเฉลี่ย 3,500 คน/ชม.",
+    "handoffStage": "approved",
     "creator": {
-      "id": "user-ice",
-      "name": "SuperiCez",
-      "alias": "SuperiCez",
-      "avatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
-      "timestamp": "2026-10-27T10:00:00Z"
+      "id": "user-6ed8144d-a03f-438a-b78e-f4df23a6cadd",
+      "name": "Zeen (สำรวจทำเลในไทย)",
+      "alias": "Zeen",
+      "avatar": "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=150&auto=format&fit=crop&q=80",
+      "role": "admin",
+      "timestamp": "2026-10-28T09:00:00Z"
     },
     "reviewerNotes": [
       {
-        "id": "note-loc-1",
-        "authorId": "user-1793177529069",
-        "author": "MommySomO",
-        "authorAvatar": "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&auto=format&fit=crop&q=80",
+        "id": "note-loc1-1",
+        "authorId": "user-6ed8144d-a03f-438a-b78e-f4df23a6cadd",
+        "author": "Zeen",
+        "authorAvatar": "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=150&auto=format&fit=crop&q=80",
         "authorRole": "admin",
-        "text": "พี่ไอซ์คะ ส้มโอเข้าไปยืนนับ Traffic วันเสาร์บ่าย 2-5 โมง คนเดินผ่านจุดนี้เฉลี่ยนาทีละ 80 คนเลยค่ะ ตรงนี้เด่นมากเพราะอยู่ตรงข้ามบันไดเลื่อนขึ้นโซนแฟชั่นพอดี ถ้าจัดเคาน์เตอร์สแตนเลสให้ดูโมเดิร์นคล้าย Chagee จะปังมากค่ะ",
-        "timestamp": "2026-10-27T16:30:00Z",
+        "text": "จีนไปสำรวจทำเล CentralWorld ชั้น 7 ฝั่งหน้าโรงหนังและศูนย์อาหารมาค่ะ ทราฟฟิกคนเดินเฉลี่ย 3,500 คน/ชั่วโมง ทั้งวัยรุ่น วัยทำงาน และนักท่องเที่ยวต่างชาติ พื้นที่ 18 ตร.ม. ท่อน้ำดีและน้ำทิ้งครบถ้วน @SuperiCez @MommySomO พิจารณาทำเลแรกสำหรับ Flagship ได้เลยค่ะ",
+        "timestamp": "2026-10-28T09:20:00Z",
         "replies": [
           {
-            "id": "rep-loc-1-1",
+            "id": "rep-loc1-1-1",
             "authorId": "user-ice",
             "author": "SuperiCez",
             "authorAvatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
             "authorRole": "admin",
-            "text": "เยี่ยมมากเลยส้มโอ! หน้ากว้าง 6.8 เมตรจัดระบบ 2 เครื่องสกัดชา Teapresso คู่กับตู้โชว์แก้วชิมได้สบายเลย สัปดาห์หน้าพี่จะยื่นแบบแปลน 3D ให้ฝ่ายสถาปัตย์ CPN ตรวจครับ",
-            "timestamp": "2026-10-27T17:15:00Z"
+            "text": "ทราฟฟิกดีมาก ทำเลนี้ตอบโจทย์ภาพลักษณ์แบรนด์ VITCHA แน่นอน ค่าเช่า Fixed 180k ถ้าขายได้วันละ 400 แก้ว คืนทุนใน 7 เดือน ผ่านครับ!",
+            "timestamp": "2026-10-28T09:40:00Z"
+          },
+          {
+            "id": "rep-loc1-1-2",
+            "authorId": "user-1793177529069",
+            "author": "MommySomO",
+            "authorAvatar": "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&auto=format&fit=crop&q=80",
+            "authorRole": "admin",
+            "text": "ชอบมากจ้าคนเดินเยอะทั้งวัน @ayai ช่วยวางแบบ Kiosk สวยๆ ให้เข้ากับมุมนี้นะคะ",
+            "timestamp": "2026-10-28T09:55:00Z"
+          },
+          {
+            "id": "rep-loc1-1-3",
+            "authorId": "user-ayai-booth",
+            "author": "ayai",
+            "authorAvatar": "https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?w=150&auto=format&fit=crop&q=80",
+            "authorRole": "admin",
+            "text": "ผมวัดพื้นที่แล้วครับ หน้ากว้าง 4 เมตร ทำ Kiosk สเตนเลสทองแฮร์ไลน์ผสมระแนงไม้และป้ายไฟ VITCHA เรืองแสงรอบทิศ รับรองเด่นสะดุดตาสุดในชั้นนี้ครับ",
+            "timestamp": "2026-10-28T10:15:00Z"
+          },
+          {
+            "id": "rep-loc1-1-4",
+            "authorId": "user-d514853d-e30c-4ff2-b5a0-c4949d96588c",
+            "author": "Lek",
+            "authorAvatar": "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=150&auto=format&fit=crop&q=80",
+            "authorRole": "admin",
+            "text": "สเปกไฟ 3 เฟส 45kVA เหลือเฟือสำหรับเครื่องสกัดชาและตู้ทำน้ำแข็งครับ ท่อระบายน้ำทิ้งอยู่หลังเคาน์เตอร์พอดี",
+            "timestamp": "2026-10-28T10:30:00Z"
           }
         ]
       }
     ],
-    "viewedBy": [
-      {
-        "userId": "user-ice",
-        "name": "SuperiCez",
-        "alias": "SuperiCez",
-        "avatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
-        "role": "admin",
-        "lastViewedAt": "2026-10-29T12:00:00Z",
-        "viewCount": 18
-      },
-      {
-        "userId": "user-1793177529069",
-        "name": "MommySomO",
-        "alias": "MommySomO",
-        "avatar": "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&auto=format&fit=crop&q=80",
-        "role": "admin",
-        "lastViewedAt": "2026-10-29T13:45:00Z",
-        "viewCount": 15
-      }
-    ],
-    "likes": [
-      {
-        "userId": "user-ice",
-        "alias": "SuperiCez",
-        "avatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
-        "timestamp": "2026-10-27T11:00:00Z"
-      },
-      {
-        "userId": "user-1793177529069",
-        "alias": "MommySomO",
-        "avatar": "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&auto=format&fit=crop&q=80",
-        "timestamp": "2026-10-27T16:30:00Z"
-      }
-    ],
     "history": [
       {
-        "action": "สร้างบันทึกทำเล CentralWorld Beacon",
-        "user": "SuperiCez",
-        "userAvatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
-        "timestamp": "2026-10-27T10:00:00Z"
+        "action": "สำรวจพื้นที่ CentralWorld ชั้น 7",
+        "user": "Zeen",
+        "userAvatar": "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=150&auto=format&fit=crop&q=80",
+        "timestamp": "2026-10-28T09:00:00Z"
       }
     ],
-    "updatedAt": "2026-10-27T17:15:00Z"
+    "updatedAt": "2026-10-28T10:30:00Z"
   },
   {
     "revision": 1,
     "id": "loc-emsphere-market",
     "type": "location",
     "country": "TH",
-    "name": "EmSphere ชั้น G โซน Em Market (ใกล้ทางเชื่อม BTS)",
-    "foreignName": "EmSphere G Fl Em Market Sukhumvit",
-    "locationType": "mall",
-    "zoneOrFloor": "ชั้น G โซน Em Market",
-    "unitNumber": "EM-G08",
+    "isMockup": true,
+    "name": "The EmSphere ชั้น G โซน Emsphere Food & Lifestyle Market",
+    "foreignName": "The EmSphere Sukhumvit G Fl. Market",
+    "locationType": "ห้างสรรพสินค้า / ศูนย์การค้า",
+    "zoneOrFloor": "ชั้น G โซน Market ใกล้ทางเชื่อม BTS",
+    "unitNumber": "G-MK12",
     "location": {
-      "lat": 13.7317,
-      "lng": 100.5678,
-      "addressText": "EmSphere ถนนสุขุมวิท คลองตัน คลองเตย กทม."
+      "lat": 13.7315,
+      "lng": 100.5693,
+      "addressText": "628 Sukhumvit Rd, Khlong Tan, Khlong Toei, Bangkok 10110"
     },
     "spaceSpecs": {
-      "usableAreaSqm": 36,
-      "frontageWidthM": 5.4,
-      "ceilingHeightM": 4.2,
-      "layoutFormat": "island",
-      "electricalPower": "3 เฟส 380V 35 kVA",
+      "usableAreaSqm": 15,
+      "frontageWidthM": 3.5,
+      "ceilingHeightM": 3.2,
+      "layoutFormat": "corner",
+      "electricalPower": "3 เฟส 30 kVA",
       "hasWaterInflow": true,
       "hasDrainage": true,
       "hasGreaseTrap": true,
-      "riderAccessNotes": "มีจุด Drop-off ไรเดอร์ชั้นใต้ดิน B1 มีลิฟต์บริการรับของโดยเฉพาะ"
+      "riderAccessNotes": "จุดจอดรถรับส่ง Delivery ด้านข้างห้าง ไรเดอร์เดินเข้าออกสะดวกมาก"
     },
     "leaseTerms": {
-      "rentModel": "gp",
-      "monthlyRentThb": 130000,
-      "gpPercent": 18,
+      "rentModel": "hybrid",
+      "monthlyRentThb": 95000,
+      "gpPercent": 15,
       "depositMonths": 3,
-      "leasePeriodYears": 3,
-      "fitOutPeriodDays": 45,
-      "contactPerson": "คุณกิตติศักดิ์ (The Mall Group Leasing)",
-      "contactPhone": "089-789-0123",
-      "contactLineWechat": "emdistrict_leasing"
+      "leasePeriodYears": 2,
+      "fitOutPeriodDays": 20,
+      "contactPerson": "คุณวราภรณ์ (EM District Leasing)",
+      "contactPhone": "02-269-1000",
+      "contactLineWechat": "em_leasing_market"
     },
     "ratings": {
       "footTraffic": 5,
       "visibility": 5,
-      "accessibility": 4,
+      "accessibility": 5,
       "valueRoi": 5
     },
     "photos": {
       "storefrontAndAtmosphere": [
-        "https://images.unsplash.com/photo-1528698827591-e19ccd7bc23d?w=800&auto=format&fit=crop&q=80",
-        "https://images.unsplash.com/photo-1567449303078-57ad995bd301?w=800&auto=format&fit=crop&q=80"
-      ],
-      "floorPlanAndSpecs": [
-        "https://images.unsplash.com/photo-1503387762-592deb58ef4e?w=800&auto=format&fit=crop&q=80"
+        "https://images.unsplash.com/photo-1519501025264-65ba15a82390?w=800&auto=format&fit=crop&q=80"
       ]
     },
     "quickTags": [
       "คนเดินแน่น",
-      "ติดทางเชื่อมBTS",
-      "Trafficวันหยุดดี",
-      "ไรเดอร์สะดวก"
+      "มีท่อน้ำดีน้ำทิ้ง",
+      "ใกล้ทางเชื่อมBTS",
+      "กำลังซื้อสูง"
     ],
-    "assignedTo": "MommySomO",
-    "targetFollowUpDate": "2026-11-08",
-    "handoffNotes": "แม่ส้มโอนัดคุยเรื่องโครงสร้างเคาน์เตอร์ Island 4 ด้านกับฝ่ายช่างเอ็มสเฟียร์แล้วค่ะ",
-    "handoffStage": "approved",
+    "assignedTo": "ayai",
+    "targetFollowUpDate": "2026-11-12",
+    "handoffNotes": "กลุ่มลูกค้ากำลังซื้อสูงมาก สัญญาแบบ Hybrid 95k + GP 15% รับความเสี่ยงร่วมกับห้าง",
+    "handoffStage": "negotiate",
     "creator": {
-      "id": "user-1793177529069",
-      "name": "MommySomO",
-      "alias": "MommySomO",
-      "avatar": "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&auto=format&fit=crop&q=80",
-      "timestamp": "2026-10-27T14:00:00Z"
+      "id": "user-80e9b44f-085e-4b9b-a341-9d07dab08b5c",
+      "name": "Mild (สำรวจทำเลในไทย)",
+      "alias": "Mild",
+      "avatar": "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&auto=format&fit=crop&q=80",
+      "role": "admin",
+      "timestamp": "2026-10-28T10:00:00Z"
     },
     "reviewerNotes": [
       {
-        "id": "note-loc-2",
-        "authorId": "user-ice",
-        "author": "SuperiCez",
-        "authorAvatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
+        "id": "note-loc2-1",
+        "authorId": "user-80e9b44f-085e-4b9b-a341-9d07dab08b5c",
+        "author": "Mild",
+        "authorAvatar": "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&auto=format&fit=crop&q=80",
         "authorRole": "admin",
-        "text": "ทำเลนี้ตรงใจกลุ่มคนรุ่นใหม่และ expat นักท่องเที่ยวมาก ค่าเช่าคิดเป็น GP 18% ถือว่าปลอดภัยต่อกระแสเงินสดช่วงเปิดตัวแรกๆ ครับ",
-        "timestamp": "2026-10-27T18:00:00Z"
-      }
-    ],
-    "viewedBy": [
-      {
-        "userId": "user-ice",
-        "name": "SuperiCez",
-        "alias": "SuperiCez",
-        "avatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
-        "role": "admin",
-        "lastViewedAt": "2026-10-29T11:00:00Z",
-        "viewCount": 12
-      }
-    ],
-    "likes": [
-      {
-        "userId": "user-ice",
-        "alias": "SuperiCez",
-        "avatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
-        "timestamp": "2026-10-27T15:00:00Z"
+        "text": "มายด์นำเสนอชั้น G ห้าง EmSphere ค่ะ กลุ่มลูกค้ากำลังซื้อสูงมาก ทั้งสายคาเฟ่ คนทำงานสุขุมวิท และชาวต่างชาติ จุดนี้อยู่ใกล้ทางเข้าและจุดรอไรเดอร์ ยอด Delivery น่าจะปังมากค่ะ @P.ohm @P.ตุ้ย ด่วนเลยค่ะห้องนี้คนแย่งเยอะมาก",
+        "timestamp": "2026-10-28T10:20:00Z",
+        "replies": [
+          {
+            "id": "rep-loc2-1-1",
+            "authorId": "user-05523ee4-203c-4ecb-8a79-abc02a2c533e",
+            "author": "P.ตุ้ย",
+            "authorAvatar": "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&auto=format&fit=crop&q=80",
+            "authorRole": "admin",
+            "text": "พิกัดสุขุมวิทตรงใจมาก ลูกค้ากลุ่มนี้ยินดีจ่ายแก้วละ 85-135 บาทสำหรับชาวิตามินเพื่อสุขภาพ พี่ว่าคุ้มค่าน่าเปิดมากครับ",
+            "timestamp": "2026-10-28T10:40:00Z"
+          },
+          {
+            "id": "rep-loc2-1-2",
+            "authorId": "user-p-ohm",
+            "author": "P.ohm",
+            "authorAvatar": "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&auto=format&fit=crop&q=80",
+            "authorRole": "admin",
+            "text": "สัญญา Hybrid 95k + GP 15% ถือว่ารับความเสี่ยงร่วมกับห้างได้ดี @ayai ออกแบบบาร์แบบ Express ให้ไรเดอร์รับของได้ไวๆ ไม่ต้องเดินเบียดลูกค้าหน้าร้านนะ",
+            "timestamp": "2026-10-28T11:00:00Z"
+          },
+          {
+            "id": "rep-loc2-1-3",
+            "authorId": "user-ayai-booth",
+            "author": "ayai",
+            "authorAvatar": "https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?w=150&auto=format&fit=crop&q=80",
+            "authorRole": "admin",
+            "text": "รับทราบครับพี่โอม จะทำช่อง Pick-up Station แยกด้านข้างสำหรับไรเดอร์โดยเฉพาะครับ",
+            "timestamp": "2026-10-28T11:15:00Z"
+          },
+          {
+            "id": "rep-loc2-1-4",
+            "authorId": "user-name-pkg",
+            "author": "เนม",
+            "authorAvatar": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80",
+            "authorRole": "admin",
+            "text": "แถวสุขุมวิทลูกค้าชอบถือแก้วถ่ายรูป เนมเตรียมแก้วลายลิมิเต็ดกับถุงหิ้วผ้าร่ม VITCHA รับรองไวรัลใน IG แน่นอนค่ะ",
+            "timestamp": "2026-10-28T11:30:00Z"
+          }
+        ]
       }
     ],
     "history": [
       {
-        "action": "สร้างบันทึกทำเล EmSphere",
-        "user": "MommySomO",
-        "userAvatar": "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&auto=format&fit=crop&q=80",
-        "timestamp": "2026-10-27T14:00:00Z"
+        "action": "สำรวจพื้นที่ EmSphere ชั้น G",
+        "user": "Mild",
+        "userAvatar": "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&auto=format&fit=crop&q=80",
+        "timestamp": "2026-10-28T10:00:00Z"
       }
     ],
-    "updatedAt": "2026-10-27T18:00:00Z"
+    "updatedAt": "2026-10-28T11:30:00Z"
   },
   {
     "revision": 1,
     "id": "loc-sq1-siam",
     "type": "location",
     "country": "TH",
-    "name": "Siam Square One ชั้น 1 (ลานน้ำพุ ทางเชื่อมพารากอน)",
-    "foreignName": "Siam Square One 1st Fl Siam Paragon Skywalk",
-    "locationType": "mall",
-    "zoneOrFloor": "ชั้น 1 ลานน้ำพุ",
-    "unitNumber": "SQ-101",
+    "isMockup": true,
+    "name": "Siam Square One ชั้น 1 ทางเชื่อม BTS สยาม",
+    "foreignName": "Siam Square One 1st Fl. BTS Skywalk",
+    "locationType": "สแตนด์อโลน / ริมถนน / อาคารพาณิชย์",
+    "zoneOrFloor": "ชั้น 1 ประตูทางออกเชื่อมสะพานลอย BTS สยาม",
+    "unitNumber": "SQ1-102",
     "location": {
       "lat": 13.7454,
       "lng": 100.5342,
-      "addressText": "Siam Square One ถนนพระราม 1 ปทุมวัน กทม."
+      "addressText": "388 Rama I Rd, Pathum Wan, Bangkok 10330"
     },
     "spaceSpecs": {
-      "usableAreaSqm": 52,
-      "frontageWidthM": 7.2,
-      "ceilingHeightM": 3.6,
-      "layoutFormat": "corner",
-      "electricalPower": "3 เฟส 45 kVA",
+      "usableAreaSqm": 14,
+      "frontageWidthM": 3.2,
+      "ceilingHeightM": 3,
+      "layoutFormat": "inline",
+      "electricalPower": "1 เฟส 30(100) A",
       "hasWaterInflow": true,
       "hasDrainage": true,
       "hasGreaseTrap": true,
-      "riderAccessNotes": "จุดจอดมอเตอร์ไซค์รับของด้านหลังสยามสแควร์ ซอย 7 เดินทะลุ 25 เมตร"
+      "riderAccessNotes": "จุดรับสินค้าสยามสแควร์ซอย 7 มีที่จอดมอเตอร์ไซค์รับงาน"
     },
     "leaseTerms": {
       "rentModel": "fixed",
-      "monthlyRentThb": 220000,
+      "monthlyRentThb": 120000,
       "depositMonths": 3,
-      "leasePeriodYears": 3,
-      "fitOutPeriodDays": 45,
+      "leasePeriodYears": 1,
+      "fitOutPeriodDays": 14,
       "contactPerson": "สำนักงานจัดการทรัพย์สินจุฬาฯ (PMCU)",
       "contactPhone": "02-218-3590",
-      "contactLineWechat": "pmcu_retail"
-    },
-    "ratings": {
-      "footTraffic": 5,
-      "visibility": 5,
-      "accessibility": 5,
-      "valueRoi": 4
-    },
-    "photos": {
-      "storefrontAndAtmosphere": [
-        "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=800&auto=format&fit=crop&q=80"
-      ]
-    },
-    "quickTags": [
-      "คนเดินแน่น",
-      "หัวมุมเด่น",
-      "ติดทางเชื่อมBTS",
-      "เพดานสูง"
-    ],
-    "assignedTo": "SuperiCez",
-    "targetFollowUpDate": "2026-11-12",
-    "handoffNotes": "ทำเลกลางสยามวัยรุ่นและนักเรียนเยอะมาก ต้องเตรียมพร้อมระบบ Speed of Service ชงเร็วไม่เกิน 60 วินาที",
-    "handoffStage": "rfq_sent",
-    "creator": {
-      "id": "user-ice",
-      "name": "SuperiCez",
-      "alias": "SuperiCez",
-      "avatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
-      "timestamp": "2026-10-28T09:30:00Z"
-    },
-    "reviewerNotes": [],
-    "viewedBy": [],
-    "likes": [],
-    "history": [
-      {
-        "action": "สร้างบันทึกทำเล Siam Square One",
-        "user": "SuperiCez",
-        "userAvatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
-        "timestamp": "2026-10-28T09:30:00Z"
-      }
-    ],
-    "updatedAt": "2026-10-28T09:30:00Z"
-  },
-  {
-    "revision": 1,
-    "id": "loc-grandview-gz",
-    "type": "location",
-    "country": "CN",
-    "name": "正佳广场 (Grandview Mall) ชั้น 1 ถนนเทียนเหอ กวางโจว",
-    "foreignName": "Grandview Mall Tianhe Rd Guangzhou",
-    "locationType": "mall",
-    "zoneOrFloor": "ชั้น 1 โซน Atrium ตะวันตก",
-    "unitNumber": "1F-W02",
-    "location": {
-      "lat": 23.1322,
-      "lng": 113.3274,
-      "addressText": "No. 228 Tianhe Road, Tianhe District, Guangzhou"
-    },
-    "spaceSpecs": {
-      "usableAreaSqm": 62,
-      "frontageWidthM": 8.5,
-      "ceilingHeightM": 4.5,
-      "layoutFormat": "inline",
-      "electricalPower": "380V 50 kVA",
-      "hasWaterInflow": true,
-      "hasDrainage": true,
-      "hasGreaseTrap": true,
-      "riderAccessNotes": "Meituan & Ele.me delivery hub dedicated lane at West Gate"
-    },
-    "leaseTerms": {
-      "rentModel": "hybrid",
-      "monthlyRentRmb": 42000,
-      "gpPercent": 10,
-      "depositMonths": 3,
-      "leasePeriodYears": 3,
-      "fitOutPeriodDays": 60,
-      "contactPerson": "Mr. Chen (Grandview Retail Dept)",
-      "contactPhone": "+86-20-3833-1234",
-      "contactLineWechat": "grandview_gz_leasing"
+      "contactLineWechat": "pmcu_commercial"
     },
     "ratings": {
       "footTraffic": 5,
@@ -2779,67 +1752,298 @@ export const INITIAL_LOCATIONS: LocationRecord[] = [
     },
     "photos": {
       "storefrontAndAtmosphere": [
-        "https://images.unsplash.com/photo-1513151233558-d860c5398176?w=800&auto=format&fit=crop&q=80"
+        "https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?w=800&auto=format&fit=crop&q=80"
       ]
     },
     "quickTags": [
       "คนเดินแน่น",
-      "เพดานสูง",
-      "Trafficวันหยุดดี",
-      "หน้าร้านกว้าง"
+      "วัยรุ่นนักศึกษา",
+      "ติดสถานีรถไฟฟ้า",
+      "Takeawayคล่องตัว"
     ],
-    "assignedTo": "SuperiCez",
-    "targetFollowUpDate": "2026-11-20",
-    "handoffNotes": "เก็บเป็นโมเดลต้นแบบ Flagship ของจีน ย่านช้อปปิ้งใหญ่ที่สุดของกวางโจว มีเคาน์เตอร์ Grab & Go หน้าร้านคู่กับที่นั่งชิลล์ด้านใน",
-    "handoffStage": "sample_test",
+    "assignedTo": "ayai",
+    "targetFollowUpDate": "2026-11-18",
+    "handoffNotes": "ทำเลคนรุ่นใหม่ ทราฟฟิกหลักหมื่นคนต่อวัน เหมาะมากกับเมนูชานมสดและชาผลไม้สกัดสด",
+    "handoffStage": "negotiate",
     "creator": {
-      "id": "user-ice",
-      "name": "SuperiCez",
-      "alias": "SuperiCez",
-      "avatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
-      "timestamp": "2026-10-28T11:00:00Z"
+      "id": "user-6ed8144d-a03f-438a-b78e-f4df23a6cadd",
+      "name": "Zeen (สำรวจทำเลในไทย)",
+      "alias": "Zeen",
+      "avatar": "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=150&auto=format&fit=crop&q=80",
+      "role": "admin",
+      "timestamp": "2026-10-28T12:00:00Z"
     },
-    "reviewerNotes": [],
-    "viewedBy": [],
-    "likes": [],
-    "history": [
+    "reviewerNotes": [
       {
-        "action": "สร้างบันทึกทำเล Grandview Mall กวางโจว",
-        "user": "SuperiCez",
-        "userAvatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
-        "timestamp": "2026-10-28T11:00:00Z"
+        "id": "note-loc3-1",
+        "authorId": "user-6ed8144d-a03f-438a-b78e-f4df23a6cadd",
+        "author": "Zeen",
+        "authorAvatar": "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=150&auto=format&fit=crop&q=80",
+        "authorRole": "admin",
+        "text": "ทำเลทองสยามสแควร์วัน ชั้น 1 ติดทางเชื่อม BTS สยาม กลุ่มนักเรียน นักศึกษา วัยรุ่นเดินผ่านทั้งวันนับหมื่นคน เหมาะมากกับการเปิดตัวเมนูชานมสดและชาผลไม้ปั่นราคานักเรียน 55-75 บาทค่ะ",
+        "timestamp": "2026-10-28T12:20:00Z",
+        "replies": [
+          {
+            "id": "rep-loc3-1-1",
+            "authorId": "user-ice",
+            "author": "SuperiCez",
+            "authorAvatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
+            "authorRole": "admin",
+            "text": "ตรงนี้ทำเลปราบเซียน ทราฟฟิกมหาศาลมาก ต้องทำระบบสั่งซื้อและสแกนจ่ายหน้าจออัตโนมัติเพื่อระบายคิว @Lek @เนม เตรียมเครื่องซีล FEST ตัวไวสุด 400 แก้ว/ชม. ลงที่นี่เลย",
+            "timestamp": "2026-10-28T12:40:00Z"
+          },
+          {
+            "id": "rep-loc3-1-2",
+            "authorId": "user-d514853d-e30c-4ff2-b5a0-c4949d96588c",
+            "author": "Lek",
+            "authorAvatar": "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=150&auto=format&fit=crop&q=80",
+            "authorRole": "admin",
+            "text": "รับทราบครับพี่ไอซ์ เดี๋ยวผมเซ็ตอัปเครื่องซีล RC-95 พร้อมระบบสำรองมอเตอร์ไว้ให้ทันทีครับ",
+            "timestamp": "2026-10-28T12:55:00Z"
+          },
+          {
+            "id": "rep-loc3-1-3",
+            "authorId": "user-074ec1a3-c143-48ef-bf22-0c6afc11d4f8",
+            "author": "น้องเมย์",
+            "authorAvatar": "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=150&auto=format&fit=crop&q=80",
+            "authorRole": "admin",
+            "text": "สยามชอบเมนูสดชื่นและมีมุกเผือก มุกโมจิหนึบๆ เมย์เตรียมสูตรชานมมุกโมจิสดรอไว้แล้วค่ะ วัยรุ่นกรี๊ดแน่นอน!",
+            "timestamp": "2026-10-28T13:10:00Z"
+          }
+        ]
       }
     ],
-    "updatedAt": "2026-10-28T11:00:00Z"
-  }
-];
-
-export const INITIAL_INVITES: InviteLink[] = [
-  {
-    "id": "inv-rkbqs",
-    "code": "VITCHA-RKBQS",
-    "role": "reviewer",
-    "prefilledAlias": "ทีมงานปฏิบัติการ VITCHA",
-    "isUsed": false,
-    "createdAt": "2026-10-28T00:00:00Z",
-    "createdBy": "SuperiCez"
+    "history": [
+      {
+        "action": "สำรวจพื้นที่ Siam Square One",
+        "user": "Zeen",
+        "userAvatar": "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=150&auto=format&fit=crop&q=80",
+        "timestamp": "2026-10-28T12:00:00Z"
+      }
+    ],
+    "updatedAt": "2026-10-28T13:10:00Z"
   },
   {
-    "id": "inv-1",
-    "code": "VITCHA-TH-REV",
-    "role": "reviewer",
-    "prefilledAlias": "ทีมวิศวกรไทย",
-    "isUsed": false,
-    "createdAt": "2026-10-26T14:00:00Z",
-    "createdBy": "SuperiCez"
+    "revision": 1,
+    "id": "loc-commons-thonglor",
+    "type": "location",
+    "country": "TH",
+    "isMockup": true,
+    "name": "The Commons Thonglor (ทองหล่อ 17 คอมมูนิตี้มอลล์)",
+    "foreignName": "The Commons Thonglor Soi 17",
+    "locationType": "คอมมูนิตี้มอลล์",
+    "zoneOrFloor": "ชั้น 1 โซน Market ใกล้ทางขึ้นบันไดใหญ่",
+    "unitNumber": "TC-M04",
+    "location": {
+      "lat": 13.7342,
+      "lng": 100.5824,
+      "addressText": "335 Akkhara Phat Alley, Khlong Tan Nuea, Watthana, Bangkok 10110"
+    },
+    "spaceSpecs": {
+      "usableAreaSqm": 20,
+      "frontageWidthM": 4.2,
+      "ceilingHeightM": 3.8,
+      "layoutFormat": "island",
+      "electricalPower": "3 เฟส 30 kVA",
+      "hasWaterInflow": true,
+      "hasDrainage": true,
+      "hasGreaseTrap": true,
+      "riderAccessNotes": "มีจุดรับส่งสินค้าหน้าโครงการ บรรยากาศร่มรื่น นั่งดื่มชิลล์ได้"
+    },
+    "leaseTerms": {
+      "rentModel": "fixed",
+      "monthlyRentThb": 110000,
+      "depositMonths": 3,
+      "leasePeriodYears": 2,
+      "fitOutPeriodDays": 25,
+      "contactPerson": "The Commons Leasing Team",
+      "contactPhone": "02-712-7800",
+      "contactLineWechat": "commons_leasing"
+    },
+    "ratings": {
+      "footTraffic": 4,
+      "visibility": 5,
+      "accessibility": 4,
+      "valueRoi": 5
+    },
+    "photos": {
+      "storefrontAndAtmosphere": [
+        "https://images.unsplash.com/photo-1554118811-1e0d58224f24?w=800&auto=format&fit=crop&q=80"
+      ]
+    },
+    "quickTags": [
+      "คอมมูนิตี้มอลล์",
+      "สายสุขภาพเฮลท์ตี้",
+      "PetFriendly",
+      "กำลังซื้อสูง"
+    ],
+    "assignedTo": "ayai",
+    "targetFollowUpDate": "2026-11-20",
+    "handoffNotes": "ทำเลสายไลฟ์สไตล์สุขภาพ เหมาะสำหรับเมนูชากลุ่มวิตามินบาร์และซูเปอร์ฟู้ด",
+    "handoffStage": "negotiate",
+    "creator": {
+      "id": "user-80e9b44f-085e-4b9b-a341-9d07dab08b5c",
+      "name": "Mild (สำรวจทำเลในไทย)",
+      "alias": "Mild",
+      "avatar": "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&auto=format&fit=crop&q=80",
+      "role": "admin",
+      "timestamp": "2026-10-28T14:00:00Z"
+    },
+    "reviewerNotes": [
+      {
+        "id": "note-loc4-1",
+        "authorId": "user-80e9b44f-085e-4b9b-a341-9d07dab08b5c",
+        "author": "Mild",
+        "authorAvatar": "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&auto=format&fit=crop&q=80",
+        "authorRole": "admin",
+        "text": "The Commons ทองหล่อ บรรยากาศชิลล์ คอมมูนิตี้มอลล์อันดับหนึ่งของสายเฮลท์ตี้และคนรักสัตว์ ลูกค้าพาสัตว์เลี้ยงมานั่งดื่มชาได้ มีที่นั่งส่วนกลางกว้างขวาง",
+        "timestamp": "2026-10-28T14:20:00Z",
+        "replies": [
+          {
+            "id": "rep-loc4-1-1",
+            "authorId": "user-1793177529069",
+            "author": "MommySomO",
+            "authorAvatar": "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&auto=format&fit=crop&q=80",
+            "authorRole": "admin",
+            "text": "ที่นี่เหมาะกับเมนู 'วิตามินบาร์ & ซูเปอร์ฟู้ด' ของ VITCHA มากๆ ตกแต่งร้านโทนไม้ธรรมชาติผสมสเตนเลสคลีนๆ จะเข้ากับมอลล์สุดๆ",
+            "timestamp": "2026-10-28T14:40:00Z"
+          },
+          {
+            "id": "rep-loc4-1-2",
+            "authorId": "user-ayai-booth",
+            "author": "ayai",
+            "authorAvatar": "https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?w=150&auto=format&fit=crop&q=80",
+            "authorRole": "admin",
+            "text": "ผมจะดีไซน์เป็น Open-bar 360 องศา ให้ลูกค้ามองเห็นการสกัดชาสดจากเครื่อง Teaspresso ถ่ายรูปสตอรี่สวยแน่นอนครับ",
+            "timestamp": "2026-10-28T15:00:00Z"
+          }
+        ]
+      }
+    ],
+    "history": [
+      {
+        "action": "สำรวจพื้นที่ The Commons ทองหล่อ",
+        "user": "Mild",
+        "userAvatar": "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&auto=format&fit=crop&q=80",
+        "timestamp": "2026-10-28T14:00:00Z"
+      }
+    ],
+    "updatedAt": "2026-10-28T15:00:00Z"
   },
   {
-    "id": "inv-2",
-    "code": "VITCHA-PARTNER-VIEW",
-    "role": "viewer",
-    "prefilledAlias": "ผู้ร่วมทุน/พาร์ทเนอร์",
-    "isUsed": false,
-    "createdAt": "2026-10-26T14:10:00Z",
-    "createdBy": "SuperiCez"
+    "revision": 1,
+    "id": "loc-ptt-rama9-ev",
+    "type": "location",
+    "country": "TH",
+    "isMockup": true,
+    "name": "PTT Station พระราม 9 (Flagship EV Hub)",
+    "foreignName": "PTT Station Rama IX EV Hub",
+    "locationType": "ปั๊มน้ำมัน / จุดชาร์จ EV",
+    "zoneOrFloor": "อาคารคอมเมอร์เชียลติดจุดชาร์จ EV",
+    "unitNumber": "EV-01",
+    "location": {
+      "lat": 13.7542,
+      "lng": 100.5714,
+      "addressText": "Rama IX Rd, Huai Khwang, Bangkok 10310"
+    },
+    "spaceSpecs": {
+      "usableAreaSqm": 25,
+      "frontageWidthM": 5,
+      "ceilingHeightM": 3.2,
+      "layoutFormat": "corner",
+      "electricalPower": "3 เฟส 50 kVA",
+      "hasWaterInflow": true,
+      "hasDrainage": true,
+      "hasGreaseTrap": true,
+      "riderAccessNotes": "ที่จอดรถหน้าร้านกว้างขวาง คนขับรถ EV นั่งรอชาร์จ 30-45 นาที"
+    },
+    "leaseTerms": {
+      "rentModel": "fixed",
+      "monthlyRentThb": 65000,
+      "depositMonths": 3,
+      "leasePeriodYears": 3,
+      "fitOutPeriodDays": 30,
+      "contactPerson": "ฝ่ายพื้นที่พาณิชย์ OR (ปตท.)",
+      "contactPhone": "1365",
+      "contactLineWechat": "or_commercial_space"
+    },
+    "ratings": {
+      "footTraffic": 4,
+      "visibility": 5,
+      "accessibility": 5,
+      "valueRoi": 5
+    },
+    "photos": {
+      "storefrontAndAtmosphere": [
+        "https://images.unsplash.com/photo-1544787219-7f47ccb76574?w=800&auto=format&fit=crop&q=80"
+      ]
+    },
+    "quickTags": [
+      "ปั๊มน้ำมันจุดชาร์จEV",
+      "ที่จอดรถสะดวก",
+      "มีท่อน้ำดีน้ำทิ้ง",
+      "ค่าเช่าสมเหตุสมผล"
+    ],
+    "assignedTo": "Lek",
+    "targetFollowUpDate": "2026-11-25",
+    "handoffNotes": "เปิดรับลูกค้ารถยนต์ไฟฟ้าที่แวะชาร์จไฟ ค่าเช่า 65,000 คืนทุนไวมาก",
+    "handoffStage": "rfq_sent",
+    "creator": {
+      "id": "user-6ed8144d-a03f-438a-b78e-f4df23a6cadd",
+      "name": "Zeen (สำรวจทำเลในไทย)",
+      "alias": "Zeen",
+      "avatar": "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=150&auto=format&fit=crop&q=80",
+      "role": "admin",
+      "timestamp": "2026-10-28T16:00:00Z"
+    },
+    "reviewerNotes": [
+      {
+        "id": "note-loc5-1",
+        "authorId": "user-6ed8144d-a03f-438a-b78e-f4df23a6cadd",
+        "author": "Zeen",
+        "authorAvatar": "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=150&auto=format&fit=crop&q=80",
+        "authorRole": "admin",
+        "text": "ทำเลปั๊มน้ำมันและจุดชาร์จรถยนต์ไฟฟ้า EV Station คนต้องจอดชาร์จแบตเตอรี่อย่างน้อย 30-45 นาที ระหว่างรอก็เดินมาซื้อเครื่องดื่มและนั่งพักผ่อน ยอดจับจ่ายสม่ำเสมอตลอดวันค่ะ",
+        "timestamp": "2026-10-28T16:20:00Z",
+        "replies": [
+          {
+            "id": "rep-loc5-1-1",
+            "authorId": "user-05523ee4-203c-4ecb-8a79-abc02a2c533e",
+            "author": "P.ตุ้ย",
+            "authorAvatar": "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&auto=format&fit=crop&q=80",
+            "authorRole": "admin",
+            "text": "ค่าเช่า 65k สำหรับ 25 ตร.ม. บนถนนพระราม 9 ถือว่าถูกมาก มีที่จอดรถหน้าร้านให้คนแวะซื้อ Take-away ได้สะดวกด้วย",
+            "timestamp": "2026-10-28T16:40:00Z"
+          },
+          {
+            "id": "rep-loc5-1-2",
+            "authorId": "user-d514853d-e30c-4ff2-b5a0-c4949d96588c",
+            "author": "Lek",
+            "authorAvatar": "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=150&auto=format&fit=crop&q=80",
+            "authorRole": "admin",
+            "text": "พื้นที่ 25 ตร.ม. กว้างขวาง วางตู้ทำน้ำแข็ง 150 กก. และบาร์สเตนเลสตัวเต็มได้สบายมากครับ งานระบบไฟ 3 เฟสในปั๊มนิ่งและเสถียรมาก",
+            "timestamp": "2026-10-28T17:00:00Z"
+          },
+          {
+            "id": "rep-loc5-1-3",
+            "authorId": "user-name-pkg",
+            "author": "เนม",
+            "authorAvatar": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80",
+            "authorRole": "admin",
+            "text": "เตรียมแก้ว Double-wall เก็บความเย็น สำหรับคนขับรถเดินทางไกล น้ำแข็งไม่ละลายภายใน 6 ชม. ค่ะ",
+            "timestamp": "2026-10-28T17:15:00Z"
+          }
+        ]
+      }
+    ],
+    "history": [
+      {
+        "action": "สำรวจพื้นที่ PTT Station พระราม 9",
+        "user": "Zeen",
+        "userAvatar": "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=150&auto=format&fit=crop&q=80",
+        "timestamp": "2026-10-28T16:00:00Z"
+      }
+    ],
+    "updatedAt": "2026-10-28T17:15:00Z"
   }
 ];

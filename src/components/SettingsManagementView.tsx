@@ -57,6 +57,7 @@ export const SettingsManagementView: React.FC = () => {
     refreshCentralData,
     loadFullMockupData,
     resetSystemData,
+    clearMockupOnly,
     suppliers,
     drinkStores,
     renderStatus,
@@ -332,33 +333,41 @@ export const SettingsManagementView: React.FC = () => {
           className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-extrabold shadow-xs active:scale-95 transition-all"
         >
           <Database className="w-3.5 h-3.5" />
-          <span>โหลด Mockup (12 รายการ)</span>
-        </button>
-
-        <button
-          type="button"
-          onClick={() => resetSystemData(false)}
-          className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-200 text-xs font-bold active:scale-95 transition-all"
-        >
-          <RotateCcw className="w-3.5 h-3.5" />
-          <span>เพิ่มตัวอย่างอีกชุด</span>
+          <span>โหลด Mockup เต็มระบบ</span>
         </button>
 
         <button
           type="button"
           onClick={() => {
-            if (
-              window.confirm(
-                'ยืนยันการล้างข้อมูลทั้งหมดให้เป็น 0 รายการ เพื่อเริ่มบันทึกหน้างานจริงใช่หรือไม่?'
-              )
-            ) {
-              resetSystemData(true);
+            const pwd = window.prompt('กรุณากรอกรหัสผ่านเพื่อล้างเฉพาะข้อมูล Mockup ออกจากระบบ:');
+            if (pwd === null) return;
+            if (pwd.trim() !== '5999') {
+              alert('รหัสผ่านไม่ถูกต้อง');
+              return;
             }
+            clearMockupOnly();
+          }}
+          className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 text-xs font-bold active:scale-95 transition-all"
+        >
+          <Trash2 className="w-3.5 h-3.5 text-amber-600" />
+          <span>ล้างเฉพาะ Mockup</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => {
+            const pwd = window.prompt('กรุณากรอกรหัสผ่านเพื่อยืนยันการล้างข้อมูลทั้งหมดเป็น 0:');
+            if (pwd === null) return;
+            if (pwd.trim() !== '5888') {
+              alert('รหัสผ่านไม่ถูกต้อง');
+              return;
+            }
+            resetSystemData(true);
           }}
           className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-xs font-bold active:scale-95 transition-all"
         >
-          <Trash2 className="w-3.5 h-3.5" />
-          <span>ล้างข้อมูลว่างเปล่า</span>
+          <RotateCcw className="w-3.5 h-3.5 text-rose-600" />
+          <span>ล้างข้อมูลเป็น 0</span>
         </button>
       </div>
       <div className="bg-white p-4 sm:p-5 rounded-2xl border-2 border-slate-900/10 shadow-sm space-y-4">

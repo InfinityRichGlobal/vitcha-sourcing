@@ -85,7 +85,7 @@ test("private maintenance controls appear only in the actual primary session", a
     page.getByText("เซิร์ฟเวอร์กลางหลัก VITCHA (Render · onrender.com)"),
   ).toBeVisible();
   await expect(
-    page.getByRole("button", { name: "ล้างข้อมูลว่างเปล่า" }),
+    page.getByRole("button", { name: /ล้างข้อมูลเป็น 0|ล้างข้อมูลว่างเปล่า/ }),
   ).toBeVisible();
   await expect(
     page.getByRole("button", { name: "สำรองข้อมูล (.json)" }),

@@ -48,6 +48,7 @@ export const AppDrawerMenu: React.FC<AppDrawerMenuProps> = ({
     logout,
     loadFullMockupData,
     resetSystemData,
+    clearMockupOnly,
   } = useApp();
 
   if (!isOpen) return null;
@@ -377,7 +378,7 @@ export const AppDrawerMenu: React.FC<AppDrawerMenuProps> = ({
                 <span>โหลดข้อมูล Mockup เต็มระบบ</span>
               </div>
               <span className="text-[10px] font-mono bg-emerald-200/70 text-emerald-900 px-1.5 py-0.5 rounded">
-                12 รายการ
+                จัดเต็มทุกฟังก์ชัน
               </span>
             </button>
 
@@ -385,26 +386,36 @@ export const AppDrawerMenu: React.FC<AppDrawerMenuProps> = ({
               <button
                 type="button"
                 onClick={() => {
-                  resetSystemData(false);
+                  const pwd = window.prompt('กรุณากรอกรหัสผ่านเพื่อล้างเฉพาะข้อมูล Mockup ออกจากระบบ:');
+                  if (pwd === null) return;
+                  if (pwd.trim() !== '5999') {
+                    alert('รหัสผ่านไม่ถูกต้อง');
+                    return;
+                  }
+                  clearMockupOnly();
                   onClose();
                 }}
-                className="flex items-center justify-center gap-1.5 px-2.5 py-2 rounded-xl text-[11px] font-bold bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-200 transition-all"
+                className="flex items-center justify-center gap-1.5 px-2 py-2 rounded-xl text-[11px] font-bold bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 transition-all text-center"
               >
-                <RotateCcw className="w-3.5 h-3.5 text-slate-600" />
-                <span>เพิ่มตัวอย่างอีกชุด</span>
+                <Trash2 className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                <span>ล้างเฉพาะ Mockup</span>
               </button>
 
               <button
                 type="button"
                 onClick={() => {
-                  if (window.confirm('ต้องการล้างข้อมูลทั้งหมดเพื่อเริ่มบันทึกหน้างานจริงจาก 0 ใช่หรือไม่?')) {
-                    resetSystemData(true);
-                    onClose();
+                  const pwd = window.prompt('กรุณากรอกรหัสผ่านเพื่อยืนยันการล้างข้อมูลทั้งหมดเป็น 0:');
+                  if (pwd === null) return;
+                  if (pwd.trim() !== '5888') {
+                    alert('รหัสผ่านไม่ถูกต้อง');
+                    return;
                   }
+                  resetSystemData(true);
+                  onClose();
                 }}
-                className="flex items-center justify-center gap-1.5 px-2.5 py-2 rounded-xl text-[11px] font-bold bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 transition-all"
+                className="flex items-center justify-center gap-1.5 px-2 py-2 rounded-xl text-[11px] font-bold bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 transition-all text-center"
               >
-                <RotateCcw className="w-3.5 h-3.5 text-rose-600" />
+                <RotateCcw className="w-3.5 h-3.5 text-rose-600 shrink-0" />
                 <span>ล้างข้อมูลเป็น 0</span>
               </button>
             </div>
