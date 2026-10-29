@@ -652,8 +652,12 @@ export function createApp({ dataDir, defaults = DEFAULT_DATABASE, sessionTtlMs =
       fail(400, 'กรุณากรอก Client ID, Client Secret และ Refresh Token ให้ครบถ้วน');
     }
     if (mediaStorage?.configureDrive) {
-      const status = await mediaStorage.configureDrive({ clientId, clientSecret, refreshToken, folderId });
-      return res.json({ success: true, ...status });
+      try {
+        const status = await mediaStorage.configureDrive({ clientId, clientSecret, refreshToken, folderId });
+        return res.json({ success: true, ...status });
+      } catch (err) {
+        fail(400, err.message || 'เชื่อมต่อ Google Drive ไม่สำเร็จ');
+      }
     }
     fail(503, 'เซิร์ฟเวอร์นี้ไม่ได้เปิดโหมด Cloud Media Storage');
   });

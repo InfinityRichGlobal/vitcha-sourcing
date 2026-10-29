@@ -15,7 +15,10 @@ export function createCloudMedia({ request, url, key, drive = null, fetchImpl = 
     if (tokenPromise) return tokenPromise;
     tokenPromise = (async () => {
       const response = await fetchImpl('https://oauth2.googleapis.com/token', { method: 'POST', body: new URLSearchParams({ client_id: driveConfig.clientId, client_secret: driveConfig.clientSecret || '', refresh_token: driveConfig.refreshToken, grant_type: 'refresh_token' }), signal: AbortSignal.timeout(20000) });
-      if (!response.ok) throw new Error('กรุณาเชื่อม Google Drive ใหม่');
+      if (!response.ok) {
+        const errJson = await response.json().catch(() => null);
+        throw new Error(errJson?.error_description || errJson?.error || 'กรุณาเชื่อม Google Drive ใหม่');
+      }
       const result = await response.json(); accessToken = result.access_token; tokenUntil = Date.now() + (result.expires_in - 120) * 1000; return accessToken;
     })();
     try { return await tokenPromise; } finally { tokenPromise = null; }
