@@ -159,16 +159,21 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
 
   return (
     <div id="dashboard-section" className="max-w-6xl mx-auto px-3 sm:px-5 py-3.5 space-y-4 animate-in fade-in">
-      {/* 1. Minimal Compact Hero Bar: มีกรอบการ์ดสีขาว + LIVE + VITCHA SOURCING + ปุ่มธงคู่ตัวเลข */}
-      <div className="bg-white px-2.5 sm:px-4 py-2.5 sm:py-3 rounded-2xl border border-slate-200/90 shadow-2xs flex items-center justify-between gap-1.5 sm:gap-2 flex-wrap">
-        <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
-          <span className="inline-flex items-center gap-1 text-[9px] sm:text-[10px] font-mono font-bold px-1.5 sm:px-2 py-0.5 rounded-full bg-slate-900 text-white shrink-0">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-            <span>LIVE</span>
-          </span>
-          <h1 className="font-extrabold text-[11px] min-[375px]:text-xs sm:text-base text-slate-950 tracking-tight whitespace-nowrap">
-            VITCHA SOURCING
-          </h1>
+      {/* 1. Minimal Compact Hero Bar: 2 บรรทัด (บนตัวหนา / ล่างตัวบาง) + ปุ่มธงคู่ตัวเลข */}
+      <div className="bg-white px-3 sm:px-4 py-2.5 sm:py-3 rounded-2xl border border-slate-200/90 shadow-2xs flex items-center justify-between gap-2 flex-wrap">
+        <div className="min-w-0">
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <span className="inline-flex items-center gap-1 text-[9px] sm:text-[10px] font-mono font-bold px-1.5 sm:px-2 py-0.5 rounded-full bg-slate-900 text-white shrink-0">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+              <span>LIVE</span>
+            </span>
+            <h1 className="font-extrabold text-xs sm:text-sm text-slate-950 tracking-tight leading-snug">
+              LEAD THE FRONT · ฉันจะเป็นหัวแถว
+            </h1>
+          </div>
+          <p className="font-normal text-[11px] sm:text-xs text-slate-500 leading-snug mt-0.5">
+            กองบัญชาการค้นคว้าคว้าดาว · VITCHA R&amp;D
+          </p>
         </div>
 
         {/* Compact Flag Country Filter Pill on Right */}
