@@ -616,20 +616,30 @@ export function buildExecutiveReportHtml(
     .btn-close { background: #334155; color: #ffffff; }
 
     /* Fixed A4 width sheet so mobile screens never crush table columns during html2canvas capture */
+    .html2pdf__overlay {
+      left: 0 !important;
+      top: 0 !important;
+    }
+    .html2pdf__container {
+      margin: 0 !important;
+      left: 0 !important;
+      right: auto !important;
+      top: 0 !important;
+      width: 748px !important;
+    }
     .sheet-outer {
       width: 100%;
       overflow-x: auto;
-      padding: 16px 0 32px 0;
+      padding: 12px 0 32px 0;
     }
     .page-sheet {
-      width: 760px;
-      min-width: 760px;
-      max-width: 760px;
-      margin: 0 auto;
+      width: 748px;
+      min-width: 748px;
+      max-width: 748px;
+      margin: 0;
       background: #ffffff;
-      padding: 16px 20px;
-      border-radius: 12px;
-      box-shadow: 0 4px 24px rgba(15, 23, 42, 0.1);
+      padding: 16px 22px;
+      border-radius: 0;
     }
 
     /* Header with QR Code */
@@ -1416,6 +1426,7 @@ export function buildExecutiveReportHtml(
       if (statusEl) statusEl.textContent = 'กำลังสร้างไฟล์ PDF...';
       var element = document.getElementById('report-content');
       if (window.html2pdf && element) {
+        window.scrollTo(0, 0);
         var opt = {
           margin: [6, 6, 6, 6],
           filename: ${JSON.stringify(safeFilename)},
@@ -1424,10 +1435,12 @@ export function buildExecutiveReportHtml(
             scale: 2,
             useCORS: true,
             allowTaint: false,
-            windowWidth: 820,
-            width: 760,
+            x: 0,
+            y: 0,
             scrollX: 0,
-            scrollY: 0
+            scrollY: 0,
+            windowWidth: 748,
+            width: 748
           },
           jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
           pagebreak: {
