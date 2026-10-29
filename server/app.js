@@ -62,9 +62,9 @@ function validateRecord(record, collection) {
   if (!record.photos || !Array.isArray(record.photos.storefrontAndAtmosphere)) fail(400, 'รูปภาพไม่ถูกต้อง');
   for (const photos of Object.values(record.photos)) if (!Array.isArray(photos) || photos.length > 200 || photos.some(x => typeof x !== 'string' || x.length > 5 * 1024 * 1024)) fail(400, 'รูปภาพไม่ถูกต้องหรือมีจำนวนมากเกินไป');
   if (record.quickTags && (!Array.isArray(record.quickTags) || record.quickTags.some(x => typeof x !== 'string'))) fail(400, 'ป้ายกำกับไม่ถูกต้อง');
-  if (collection === 'suppliers' && (!Number.isFinite(record.rating) || record.rating < 1 || record.rating > 5 || !clean(record.category))) fail(400, 'กรุณาระบุหมวดหมู่และคะแนน 1–5');
-  if (collection === 'drinkStores' && (!record.ratings || ['taste','aesthetics','value','speed'].some(k => !Number.isFinite(record.ratings[k]) || record.ratings[k] < 1 || record.ratings[k] > 5))) fail(400, 'คะแนนร้านน้ำต้องอยู่ระหว่าง 1–5');
-  if (collection === 'locations' && (!record.ratings || ['footTraffic','visibility','accessibility','valueRoi'].some(k => !Number.isFinite(record.ratings[k]) || record.ratings[k] < 1 || record.ratings[k] > 5))) fail(400, 'คะแนนการประเมินทำเลต้องอยู่ระหว่าง 1–5');
+  if (collection === 'suppliers' && (!Number.isFinite(record.rating) || record.rating < 0 || record.rating > 5 || !clean(record.category))) fail(400, 'กรุณาระบุหมวดหมู่และคะแนน 0–5');
+  if (collection === 'drinkStores' && (!record.ratings || ['taste','aesthetics','value','speed'].some(k => !Number.isFinite(record.ratings[k]) || record.ratings[k] < 0 || record.ratings[k] > 5))) fail(400, 'คะแนนร้านน้ำต้องอยู่ระหว่าง 0–5');
+  if (collection === 'locations' && (!record.ratings || ['footTraffic','visibility','accessibility','valueRoi'].some(k => !Number.isFinite(record.ratings[k]) || record.ratings[k] < 0 || record.ratings[k] > 5))) fail(400, 'คะแนนการประเมินทำเลต้องอยู่ระหว่าง 0–5');
   if (record.videos && !Array.isArray(record.videos)) fail(400, 'รายการวิดีโอไม่ถูกต้อง');
   if (!record.location || !Number.isFinite(record.location.lat) || !Number.isFinite(record.location.lng) || Math.abs(record.location.lat) > 90 || Math.abs(record.location.lng) > 180) fail(400, 'พิกัดไม่ถูกต้อง');
   if (collection !== 'locations') {
@@ -132,6 +132,23 @@ export function createApp({ dataDir, defaults = DEFAULT_DATABASE, sessionTtlMs =
       if (!entry.id || seen.has(entry.id)) { entry.id = randomUUID(); migrated = true; }
       seen.add(entry.id);
     }
+  }
+  const DEFAULT_LOCATION_TYPES = [
+    'ห้างสรรพสินค้า / ศูนย์การค้า',
+    'คอมมูนิตี้มอลล์',
+    'อาคารสำนักงาน',
+    'สแตนด์อโลน / ริมถนน / อาคารพาณิชย์',
+    'สถานีขนส่ง / รถไฟฟ้า',
+    'สถานที่ราชการ',
+    'สถานที่การศึกษา',
+    'ตลาด / ถนนคนเดิน',
+    'ปั๊มน้ำมัน / จุดชาร์จ EV',
+    'สถานบันเทิง',
+    'สวนสาธารณะ',
+  ];
+  if (!initial.locationTypes || !initial.locationTypes.length) {
+    initial.locationTypes = DEFAULT_LOCATION_TYPES;
+    migrated = true;
   }
   if (migrated) save(initial);
 
@@ -274,7 +291,7 @@ export function createApp({ dataDir, defaults = DEFAULT_DATABASE, sessionTtlMs =
           read: isRead,
         };
       });
-    res.json({ version, ...productData(db), ...pick(db, ['suppliers', 'drinkStores', 'locations', 'categories', 'storeCategories', 'quickTagsList', 'quickMessages', 'updatedAt', 'revision']), suppliers: (db.suppliers || []).map(item => currentRecord(db, item)), drinkStores: (db.drinkStores || []).map(item => currentRecord(db, item)), locations: (db.locations || []).map(item => currentRecord(db, item)), users: db.users.filter(u => !MOCK_IDS.has(u.id)).map(publicUser), invites: req.user.role === 'admin' ? db.invites : [], notifications: userNotifications, ...sessionResult(req.session, db) });
+    res.json({ version, ...productData(db), ...pick(db, ['suppliers', 'drinkStores', 'locations', 'categories', 'storeCategories', 'locationTypes', 'quickTagsList', 'quickMessages', 'updatedAt', 'revision']), suppliers: (db.suppliers || []).map(item => currentRecord(db, item)), drinkStores: (db.drinkStores || []).map(item => currentRecord(db, item)), locations: (db.locations || []).map(item => currentRecord(db, item)), users: db.users.filter(u => !MOCK_IDS.has(u.id)).map(publicUser), invites: req.user.role === 'admin' ? db.invites : [], notifications: userNotifications, ...sessionResult(req.session, db) });
   });
   app.get('/api/backup', (req, res) => { requireFounder(req); res.json(read()); });
   for (const [route, collection] of [['suppliers', 'suppliers'], ['drink-stores', 'drinkStores'], ['locations', 'locations']]) {
@@ -563,8 +580,8 @@ export function createApp({ dataDir, defaults = DEFAULT_DATABASE, sessionTtlMs =
   app.post('/api/settings', (req, res) => {
     requireAdmin(req); const db = read();
     // Compare the settings snapshot only; unrelated views/comments do not conflict.
-    if (JSON.stringify(req.body.previous) !== JSON.stringify(pick(db, ['categories', 'storeCategories', 'quickTagsList', 'quickMessages']))) fail(409, 'การตั้งค่าถูกแก้ไขแล้ว กรุณาลองใหม่');
-    const next = pick(req.body.values || {}, ['categories', 'storeCategories', 'quickTagsList', 'quickMessages']);
+    if (JSON.stringify(req.body.previous) !== JSON.stringify(pick(db, ['categories', 'storeCategories', 'locationTypes', 'quickTagsList', 'quickMessages']))) fail(409, 'การตั้งค่าถูกแก้ไขแล้ว กรุณาลองใหม่');
+    const next = pick(req.body.values || {}, ['categories', 'storeCategories', 'locationTypes', 'quickTagsList', 'quickMessages']);
     for (const [key, value] of Object.entries(next)) {
       if (!Array.isArray(value) || value.length > 500) fail(400, 'การตั้งค่าไม่ถูกต้อง');
       if (key !== 'quickMessages' && value.some(x => typeof x !== 'string' || !x.trim() || x.length > 200)) fail(400, 'การตั้งค่าไม่ถูกต้อง');
@@ -574,14 +591,14 @@ export function createApp({ dataDir, defaults = DEFAULT_DATABASE, sessionTtlMs =
   });
   app.post('/api/upload', async (req, res) => {
     requireWriter(req);
-    const { base64, mimeType } = req.body;
+    const { base64, mimeType, recordType, recordId, recordTitle } = req.body;
     const types = { 'video/mp4': '.mp4', 'video/quicktime': '.mov', 'video/webm': '.webm', 'audio/webm': '.webm', 'audio/mp4': '.m4a', 'audio/mpeg': '.mp3', 'audio/wav': '.wav', 'audio/x-wav': '.wav', 'audio/ogg': '.ogg', 'audio/aac': '.aac', 'image/jpeg': '.jpg', 'image/png': '.png', 'image/webp': '.webp' };
     if (!types[mimeType] || typeof base64 !== 'string' || !base64.startsWith(`data:${mimeType};base64,`)) fail(400, 'ชนิดไฟล์ไม่รองรับ');
     const bytes = Buffer.from(base64.split(',')[1], 'base64');
     if (!bytes.length || bytes.length > 50 * 1024 * 1024) fail(413, 'ไฟล์ต้องไม่เกิน 50 MB');
     const filename = `${randomBytes(24).toString('hex')}${types[mimeType]}`;
     if (mediaStorage) {
-      const url = await mediaStorage.upload({ filename, bytes, mimeType });
+      const url = await mediaStorage.upload({ filename, bytes, mimeType, recordType, recordId, recordTitle });
       res.status(201).json({ success: true, url });
     } else {
       fs.writeFileSync(path.join(uploads, filename), bytes, { flag: 'wx' });

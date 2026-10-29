@@ -246,7 +246,7 @@ export interface StoreInspoRecord {
   updatedAt: string;
 }
 
-export type LocationType = 'mall' | 'community' | 'office' | 'street' | 'transit';
+export type LocationType = 'mall' | 'community' | 'office' | 'street' | 'transit' | string;
 export type LayoutFormat = 'inline' | 'corner' | 'island' | 'kiosk';
 export type RentModel = 'fixed' | 'gp' | 'hybrid';
 

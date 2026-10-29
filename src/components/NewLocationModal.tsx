@@ -7,6 +7,7 @@ import { AudioRecorder } from './AudioRecorder';
 import { uploadImageFile as compressImageFile } from '../utils/mediaStorage';
 import { saveVideoFile, deleteVideoFile } from '../utils/mediaStorage';
 import { VideoPlayer } from './VideoPlayer';
+import { UploadablePhotoGrid } from './UploadablePhotoGrid';
 import {
   X,
   Camera,
@@ -29,6 +30,7 @@ import {
   User,
   Calendar,
   Layers,
+  Plus,
 } from 'lucide-react';
 import { LocationPickerModal } from './LocationPickerModal';
 
@@ -48,6 +50,8 @@ export const NewLocationModal: React.FC<NewLocationModalProps> = ({ isOpen, onCl
     currentUser,
     users,
     quickTagsList,
+    locationTypes,
+    addLocationType,
   } = useApp();
 
   const isEditMode = !!editingLocation;
@@ -58,20 +62,22 @@ export const NewLocationModal: React.FC<NewLocationModalProps> = ({ isOpen, onCl
   const [country, setCountry] = useState<'CN' | 'TH'>('TH');
   const [name, setName] = useState('');
   const [foreignName, setForeignName] = useState('');
-  const [locationType, setLocationType] = useState<LocationType>('mall');
+  const [locationType, setLocationType] = useState<LocationType>('ห้างสรรพสินค้า / ศูนย์การค้า');
+  const [isAddingNewType, setIsAddingNewType] = useState(false);
+  const [newTypeInput, setNewTypeInput] = useState('');
   const [zoneOrFloor, setZoneOrFloor] = useState('');
   const [unitNumber, setUnitNumber] = useState('');
 
   // Space Specs
-  const [usableAreaSqm, setUsableAreaSqm] = useState<number | ''>(45);
-  const [frontageWidthM, setFrontageWidthM] = useState<number | ''>(6);
-  const [ceilingHeightM, setCeilingHeightM] = useState<number | ''>(3.5);
+  const [usableAreaSqm, setUsableAreaSqm] = useState<number | ''>('');
+  const [frontageWidthM, setFrontageWidthM] = useState<number | ''>('');
+  const [ceilingHeightM, setCeilingHeightM] = useState<number | ''>('');
   const [layoutFormat, setLayoutFormat] = useState<LayoutFormat>('inline');
-  const [electricalPower, setElectricalPower] = useState('3 เฟส 45 kVA');
-  const [hasWaterInflow, setHasWaterInflow] = useState(true);
-  const [hasDrainage, setHasDrainage] = useState(true);
-  const [hasGreaseTrap, setHasGreaseTrap] = useState(true);
-  const [riderAccessNotes, setRiderAccessNotes] = useState('มีจุดจอดมอเตอร์ไซค์ไรเดอร์ด้านข้าง');
+  const [electricalPower, setElectricalPower] = useState('');
+  const [hasWaterInflow, setHasWaterInflow] = useState(false);
+  const [hasDrainage, setHasDrainage] = useState(false);
+  const [hasGreaseTrap, setHasGreaseTrap] = useState(false);
+  const [riderAccessNotes, setRiderAccessNotes] = useState('');
 
   // Lease Terms
   const [rentModel, setRentModel] = useState<RentModel>('fixed');
@@ -79,18 +85,18 @@ export const NewLocationModal: React.FC<NewLocationModalProps> = ({ isOpen, onCl
   const [monthlyRentRmb, setMonthlyRentRmb] = useState<number | ''>('');
   const [gpPercent, setGpPercent] = useState<number | ''>('');
   const [serviceFeePerSqm, setServiceFeePerSqm] = useState<number | ''>('');
-  const [depositMonths, setDepositMonths] = useState<number | ''>(3);
-  const [leasePeriodYears, setLeasePeriodYears] = useState<number | ''>(3);
-  const [fitOutPeriodDays, setFitOutPeriodDays] = useState<number | ''>(45);
+  const [depositMonths, setDepositMonths] = useState<number | ''>('');
+  const [leasePeriodYears, setLeasePeriodYears] = useState<number | ''>('');
+  const [fitOutPeriodDays, setFitOutPeriodDays] = useState<number | ''>('');
   const [contactPerson, setContactPerson] = useState('');
   const [contactPhone, setContactPhone] = useState('');
   const [contactLineWechat, setContactLineWechat] = useState('');
 
-  // Ratings
-  const [footTraffic, setFootTraffic] = useState(5);
-  const [visibility, setVisibility] = useState(5);
-  const [accessibility, setAccessibility] = useState(5);
-  const [valueRoi, setValueRoi] = useState(4);
+  // Ratings (เริ่มต้น 0 คือยังไม่ได้ให้คะแนน)
+  const [footTraffic, setFootTraffic] = useState(0);
+  const [visibility, setVisibility] = useState(0);
+  const [accessibility, setAccessibility] = useState(0);
+  const [valueRoi, setValueRoi] = useState(0);
 
   // GPS Coordinates & Address (ไม่ใส่ค่า Default เพื่อไม่ให้ปักหมุดมั่ว)
   const [lat, setLat] = useState<number | ''>('');
@@ -147,36 +153,36 @@ export const NewLocationModal: React.FC<NewLocationModalProps> = ({ isOpen, onCl
       setCountry(editingLocation.country || 'TH');
       setName(editingLocation.name || '');
       setForeignName(editingLocation.foreignName || '');
-      setLocationType(editingLocation.locationType || 'mall');
+      setLocationType(editingLocation.locationType || (locationTypes[0] || 'ห้างสรรพสินค้า / ศูนย์การค้า'));
       setZoneOrFloor(editingLocation.zoneOrFloor || '');
       setUnitNumber(editingLocation.unitNumber || '');
 
-      setUsableAreaSqm(editingLocation.spaceSpecs?.usableAreaSqm || '');
-      setFrontageWidthM(editingLocation.spaceSpecs?.frontageWidthM || '');
-      setCeilingHeightM(editingLocation.spaceSpecs?.ceilingHeightM || '');
+      setUsableAreaSqm(editingLocation.spaceSpecs?.usableAreaSqm ?? '');
+      setFrontageWidthM(editingLocation.spaceSpecs?.frontageWidthM ?? '');
+      setCeilingHeightM(editingLocation.spaceSpecs?.ceilingHeightM ?? '');
       setLayoutFormat(editingLocation.spaceSpecs?.layoutFormat || 'inline');
-      setElectricalPower(editingLocation.spaceSpecs?.electricalPower || '3 เฟส 45 kVA');
-      setHasWaterInflow(editingLocation.spaceSpecs?.hasWaterInflow ?? true);
-      setHasDrainage(editingLocation.spaceSpecs?.hasDrainage ?? true);
-      setHasGreaseTrap(editingLocation.spaceSpecs?.hasGreaseTrap ?? true);
+      setElectricalPower(editingLocation.spaceSpecs?.electricalPower || '');
+      setHasWaterInflow(editingLocation.spaceSpecs?.hasWaterInflow ?? false);
+      setHasDrainage(editingLocation.spaceSpecs?.hasDrainage ?? false);
+      setHasGreaseTrap(editingLocation.spaceSpecs?.hasGreaseTrap ?? false);
       setRiderAccessNotes(editingLocation.spaceSpecs?.riderAccessNotes || '');
 
       setRentModel(editingLocation.leaseTerms?.rentModel || 'fixed');
-      setMonthlyRentThb(editingLocation.leaseTerms?.monthlyRentThb || '');
-      setMonthlyRentRmb(editingLocation.leaseTerms?.monthlyRentRmb || '');
-      setGpPercent(editingLocation.leaseTerms?.gpPercent || '');
-      setServiceFeePerSqm(editingLocation.leaseTerms?.serviceFeePerSqm || '');
-      setDepositMonths(editingLocation.leaseTerms?.depositMonths || 3);
-      setLeasePeriodYears(editingLocation.leaseTerms?.leasePeriodYears || 3);
-      setFitOutPeriodDays(editingLocation.leaseTerms?.fitOutPeriodDays || 45);
+      setMonthlyRentThb(editingLocation.leaseTerms?.monthlyRentThb ?? '');
+      setMonthlyRentRmb(editingLocation.leaseTerms?.monthlyRentRmb ?? '');
+      setGpPercent(editingLocation.leaseTerms?.gpPercent ?? '');
+      setServiceFeePerSqm(editingLocation.leaseTerms?.serviceFeePerSqm ?? '');
+      setDepositMonths(editingLocation.leaseTerms?.depositMonths ?? '');
+      setLeasePeriodYears(editingLocation.leaseTerms?.leasePeriodYears ?? '');
+      setFitOutPeriodDays(editingLocation.leaseTerms?.fitOutPeriodDays ?? '');
       setContactPerson(editingLocation.leaseTerms?.contactPerson || '');
       setContactPhone(editingLocation.leaseTerms?.contactPhone || '');
       setContactLineWechat(editingLocation.leaseTerms?.contactLineWechat || '');
 
-      setFootTraffic(editingLocation.ratings?.footTraffic || 5);
-      setVisibility(editingLocation.ratings?.visibility || 5);
-      setAccessibility(editingLocation.ratings?.accessibility || 5);
-      setValueRoi(editingLocation.ratings?.valueRoi || 4);
+      setFootTraffic(editingLocation.ratings?.footTraffic ?? 0);
+      setVisibility(editingLocation.ratings?.visibility ?? 0);
+      setAccessibility(editingLocation.ratings?.accessibility ?? 0);
+      setValueRoi(editingLocation.ratings?.valueRoi ?? 0);
 
       setLat(editingLocation.location?.lat && editingLocation.location.lat !== 0 ? editingLocation.location.lat : '');
       setLng(editingLocation.location?.lng && editingLocation.location.lng !== 0 ? editingLocation.location.lng : '');
@@ -196,37 +202,37 @@ export const NewLocationModal: React.FC<NewLocationModalProps> = ({ isOpen, onCl
       setTargetFollowUpDate(editingLocation.targetFollowUpDate || '');
       setHandoffNotes(editingLocation.handoffNotes || '');
     } else {
-      // Reset form
+      // Reset form to clean unrated empty state
       setCountry('TH');
       setName('');
       setForeignName('');
-      setLocationType('mall');
+      setLocationType(locationTypes[0] || 'ห้างสรรพสินค้า / ศูนย์การค้า');
       setZoneOrFloor('');
       setUnitNumber('');
-      setUsableAreaSqm(45);
-      setFrontageWidthM(6);
-      setCeilingHeightM(3.5);
+      setUsableAreaSqm('');
+      setFrontageWidthM('');
+      setCeilingHeightM('');
       setLayoutFormat('inline');
-      setElectricalPower('3 เฟส 45 kVA');
-      setHasWaterInflow(true);
-      setHasDrainage(true);
-      setHasGreaseTrap(true);
-      setRiderAccessNotes('มีจุดจอดมอเตอร์ไซค์ไรเดอร์ด้านข้าง');
+      setElectricalPower('');
+      setHasWaterInflow(false);
+      setHasDrainage(false);
+      setHasGreaseTrap(false);
+      setRiderAccessNotes('');
       setRentModel('fixed');
       setMonthlyRentThb('');
       setMonthlyRentRmb('');
       setGpPercent('');
       setServiceFeePerSqm('');
-      setDepositMonths(3);
-      setLeasePeriodYears(3);
-      setFitOutPeriodDays(45);
+      setDepositMonths('');
+      setLeasePeriodYears('');
+      setFitOutPeriodDays('');
       setContactPerson('');
       setContactPhone('');
       setContactLineWechat('');
-      setFootTraffic(5);
-      setVisibility(5);
-      setAccessibility(5);
-      setValueRoi(4);
+      setFootTraffic(0);
+      setVisibility(0);
+      setAccessibility(0);
+      setValueRoi(0);
       setLat('');
       setLng('');
       setAddressText('');
@@ -265,27 +271,6 @@ export const NewLocationModal: React.FC<NewLocationModalProps> = ({ isOpen, onCl
     );
   };
 
-  const handlePhotoUpload = async (
-    e: React.ChangeEvent<HTMLInputElement>,
-    setter: React.Dispatch<React.SetStateAction<string[]>>
-  ) => {
-    if (!e.target.files?.length) return;
-    const files = Array.from(e.target.files);
-    beginPhotos();
-    try {
-      const urls: string[] = [];
-      for (const file of files) {
-        const url = await compressImageFile(file);
-        if (url) urls.push(url);
-      }
-      setter((prev) => [...prev, ...urls]);
-    } catch {
-      alert('เกิดข้อผิดพลาดในการประมวลผลรูป');
-    } finally {
-      endPhotos();
-      e.target.value = '';
-    }
-  };
 
   const handleVideoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files?.length) return;
@@ -520,20 +505,91 @@ export const NewLocationModal: React.FC<NewLocationModalProps> = ({ isOpen, onCl
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div>
-                <label className="text-[11px] font-semibold text-slate-600 block mb-1">
-                  ประเภทสถานที่
-                </label>
-                <select
-                  value={locationType}
-                  onChange={(e) => setLocationType(e.target.value as LocationType)}
-                  className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs bg-white focus:outline-sky-500 font-semibold"
-                >
-                  <option value="mall">ห้างสรรพสินค้า (Shopping Mall)</option>
-                  <option value="community">คอมมูนิตี้มอลล์ (Community Mall)</option>
-                  <option value="office">อาคารสำนักงาน (Office Building)</option>
-                  <option value="street">สตรีท / อาคารพาณิชย์ (Street Front)</option>
-                  <option value="transit">สถานี BTS / จุดคมนาคม (Transit Hub)</option>
-                </select>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="text-[11px] font-semibold text-slate-600">
+                    ประเภทสถานที่
+                  </label>
+                  {!isAddingNewType && (
+                    <button
+                      type="button"
+                      onClick={() => setIsAddingNewType(true)}
+                      className="text-[10px] text-sky-600 hover:text-sky-700 font-bold flex items-center gap-0.5"
+                    >
+                      <Plus className="w-2.5 h-2.5" />
+                      <span>เพิ่มประเภทสด</span>
+                    </button>
+                  )}
+                </div>
+
+                {isAddingNewType ? (
+                  <div className="flex items-center gap-1.5">
+                    <input
+                      type="text"
+                      placeholder="เช่น สถานที่ราชการ, สวนสาธารณะ..."
+                      value={newTypeInput}
+                      onChange={(e) => setNewTypeInput(e.target.value)}
+                      onKeyDown={async (e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          if (newTypeInput.trim()) {
+                            await addLocationType(newTypeInput.trim());
+                            setLocationType(newTypeInput.trim());
+                            setNewTypeInput('');
+                            setIsAddingNewType(false);
+                          }
+                        }
+                      }}
+                      className="flex-1 px-2.5 py-1.5 rounded-xl border border-sky-300 text-xs bg-sky-50/50 focus:outline-sky-500 font-semibold"
+                      autoFocus
+                    />
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        if (newTypeInput.trim()) {
+                          await addLocationType(newTypeInput.trim());
+                          setLocationType(newTypeInput.trim());
+                          setNewTypeInput('');
+                          setIsAddingNewType(false);
+                        }
+                      }}
+                      className="px-2.5 py-1.5 bg-sky-600 hover:bg-sky-700 text-white rounded-xl text-xs font-bold"
+                    >
+                      บันทึก
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsAddingNewType(false);
+                        setNewTypeInput('');
+                      }}
+                      className="p-1.5 text-slate-400 hover:text-slate-600"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                ) : (
+                  <select
+                    value={locationType}
+                    onChange={(e) => {
+                      if (e.target.value === '__add_new__') {
+                        setIsAddingNewType(true);
+                      } else {
+                        setLocationType(e.target.value as LocationType);
+                      }
+                    }}
+                    className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs bg-white focus:outline-sky-500 font-semibold"
+                  >
+                    {locationTypes.map((t) => (
+                      <option key={t} value={t}>
+                        {t}
+                      </option>
+                    ))}
+                    {locationType && !locationTypes.includes(locationType) && (
+                      <option value={locationType}>{locationType}</option>
+                    )}
+                    <option value="__add_new__">+ เพิ่มประเภทสถานที่ใหม่...</option>
+                  </select>
+                )}
               </div>
 
               <div>
@@ -580,7 +636,7 @@ export const NewLocationModal: React.FC<NewLocationModalProps> = ({ isOpen, onCl
                 <input
                   type="number"
                   step="0.1"
-                  placeholder="45"
+                  placeholder="เช่น 45"
                   value={usableAreaSqm}
                   onChange={(e) => setUsableAreaSqm(e.target.value ? Number(e.target.value) : '')}
                   className="w-full px-2.5 py-1.5 rounded-xl border border-slate-200 text-xs bg-white font-mono font-bold"
@@ -594,7 +650,7 @@ export const NewLocationModal: React.FC<NewLocationModalProps> = ({ isOpen, onCl
                 <input
                   type="number"
                   step="0.1"
-                  placeholder="6.0"
+                  placeholder="เช่น 6"
                   value={frontageWidthM}
                   onChange={(e) => setFrontageWidthM(e.target.value ? Number(e.target.value) : '')}
                   className="w-full px-2.5 py-1.5 rounded-xl border border-slate-200 text-xs bg-white font-mono font-bold"
@@ -608,7 +664,7 @@ export const NewLocationModal: React.FC<NewLocationModalProps> = ({ isOpen, onCl
                 <input
                   type="number"
                   step="0.1"
-                  placeholder="3.5"
+                  placeholder="เช่น 3.5"
                   value={ceilingHeightM}
                   onChange={(e) => setCeilingHeightM(e.target.value ? Number(e.target.value) : '')}
                   className="w-full px-2.5 py-1.5 rounded-xl border border-slate-200 text-xs bg-white font-mono font-bold"
@@ -787,7 +843,7 @@ export const NewLocationModal: React.FC<NewLocationModalProps> = ({ isOpen, onCl
                 </label>
                 <input
                   type="number"
-                  placeholder="3"
+                  placeholder="เช่น 3"
                   value={leasePeriodYears}
                   onChange={(e) => setLeasePeriodYears(e.target.value ? Number(e.target.value) : '')}
                   className="w-full px-2.5 py-1.5 rounded-xl border border-slate-200 text-xs bg-white font-mono font-bold"
@@ -802,7 +858,7 @@ export const NewLocationModal: React.FC<NewLocationModalProps> = ({ isOpen, onCl
                 </label>
                 <input
                   type="number"
-                  placeholder="3"
+                  placeholder="เช่น 3"
                   value={depositMonths}
                   onChange={(e) => setDepositMonths(e.target.value ? Number(e.target.value) : '')}
                   className="w-full px-2.5 py-1.5 rounded-xl border border-slate-200 text-xs bg-white font-mono"
@@ -815,7 +871,7 @@ export const NewLocationModal: React.FC<NewLocationModalProps> = ({ isOpen, onCl
                 </label>
                 <input
                   type="number"
-                  placeholder="45"
+                  placeholder="เช่น 45"
                   value={fitOutPeriodDays}
                   onChange={(e) => setFitOutPeriodDays(e.target.value ? Number(e.target.value) : '')}
                   className="w-full px-2.5 py-1.5 rounded-xl border border-slate-200 text-xs bg-white font-mono"
@@ -828,7 +884,7 @@ export const NewLocationModal: React.FC<NewLocationModalProps> = ({ isOpen, onCl
                 </label>
                 <input
                   type="text"
-                  placeholder="คุณสมชาย / Leasing Team"
+                  placeholder="เช่น คุณสมชาย ฝ่ายพื้นที่"
                   value={contactPerson}
                   onChange={(e) => setContactPerson(e.target.value)}
                   className="w-full px-2.5 py-1.5 rounded-xl border border-slate-200 text-xs bg-white"
@@ -864,11 +920,13 @@ export const NewLocationModal: React.FC<NewLocationModalProps> = ({ isOpen, onCl
               <div>
                 <div className="flex items-center justify-between text-[11px] font-bold mb-1">
                   <span className="text-slate-600">ปริมาณคนเดิน:</span>
-                  <span className="text-amber-600 font-mono">{footTraffic} ดาว</span>
+                  <span className={footTraffic > 0 ? "text-amber-600 font-mono" : "text-slate-400 font-normal text-[10px]"}>
+                    {footTraffic > 0 ? `${footTraffic} ดาว` : '(ยังไม่ได้ให้คะแนน)'}
+                  </span>
                 </div>
                 <input
                   type="range"
-                  min="1"
+                  min="0"
                   max="5"
                   value={footTraffic}
                   onChange={(e) => setFootTraffic(Number(e.target.value))}
@@ -879,11 +937,13 @@ export const NewLocationModal: React.FC<NewLocationModalProps> = ({ isOpen, onCl
               <div>
                 <div className="flex items-center justify-between text-[11px] font-bold mb-1">
                   <span className="text-slate-600">ความสะดุดตา:</span>
-                  <span className="text-amber-600 font-mono">{visibility} ดาว</span>
+                  <span className={visibility > 0 ? "text-amber-600 font-mono" : "text-slate-400 font-normal text-[10px]"}>
+                    {visibility > 0 ? `${visibility} ดาว` : '(ยังไม่ได้ให้คะแนน)'}
+                  </span>
                 </div>
                 <input
                   type="range"
-                  min="1"
+                  min="0"
                   max="5"
                   value={visibility}
                   onChange={(e) => setVisibility(Number(e.target.value))}
@@ -894,11 +954,13 @@ export const NewLocationModal: React.FC<NewLocationModalProps> = ({ isOpen, onCl
               <div>
                 <div className="flex items-center justify-between text-[11px] font-bold mb-1">
                   <span className="text-slate-600">การเข้าถึง:</span>
-                  <span className="text-amber-600 font-mono">{accessibility} ดาว</span>
+                  <span className={accessibility > 0 ? "text-amber-600 font-mono" : "text-slate-400 font-normal text-[10px]"}>
+                    {accessibility > 0 ? `${accessibility} ดาว` : '(ยังไม่ได้ให้คะแนน)'}
+                  </span>
                 </div>
                 <input
                   type="range"
-                  min="1"
+                  min="0"
                   max="5"
                   value={accessibility}
                   onChange={(e) => setAccessibility(Number(e.target.value))}
@@ -909,11 +971,13 @@ export const NewLocationModal: React.FC<NewLocationModalProps> = ({ isOpen, onCl
               <div>
                 <div className="flex items-center justify-between text-[11px] font-bold mb-1">
                   <span className="text-slate-600">ความคุ้มค่า ROI:</span>
-                  <span className="text-amber-600 font-mono">{valueRoi} ดาว</span>
+                  <span className={valueRoi > 0 ? "text-amber-600 font-mono" : "text-slate-400 font-normal text-[10px]"}>
+                    {valueRoi > 0 ? `${valueRoi} ดาว` : '(ยังไม่ได้ให้คะแนน)'}
+                  </span>
                 </div>
                 <input
                   type="range"
-                  min="1"
+                  min="0"
                   max="5"
                   value={valueRoi}
                   onChange={(e) => setValueRoi(Number(e.target.value))}
@@ -1034,157 +1098,61 @@ export const NewLocationModal: React.FC<NewLocationModalProps> = ({ isOpen, onCl
             </label>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {/* Category A: หน้าร้าน & บรรยากาศทางเดิน */}
-              <div className="p-2.5 bg-white rounded-xl border border-slate-200 space-y-2">
-                <div className="flex items-center justify-between text-[11px] font-bold text-slate-700">
-                  <span>1. หน้าร้าน & บรรยากาศคนเดิน</span>
-                  <label className="cursor-pointer text-sky-600 hover:text-sky-700 font-bold flex items-center gap-1">
-                    <Upload className="w-3 h-3" />
-                    <span>+ เพิ่มรูป</span>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      multiple
-                      className="hidden"
-                      onChange={(e) => handlePhotoUpload(e, setStorefrontAndAtmosphere)}
-                    />
-                  </label>
-                </div>
+              <UploadablePhotoGrid
+                label="1. หน้าร้าน & บรรยากาศคนเดิน"
+                emptyText="ยังไม่มีรูปหน้าร้าน"
+                urls={storefrontAndAtmosphere}
+                onChange={setStorefrontAndAtmosphere}
+                recordType="locations"
+                recordTitle={name || 'ทำเลใหม่'}
+                recordId={editingLocation?.id}
+                onUploadingChange={(uploading) => {
+                  if (uploading) beginPhotos();
+                  else endPhotos();
+                }}
+              />
 
-                <div className="flex flex-wrap gap-1.5">
-                  {storefrontAndAtmosphere.map((url, idx) => (
-                    <div key={idx} className="relative w-14 h-14 rounded-lg overflow-hidden border">
-                      <img src={url} alt="storefront" className="w-full h-full object-cover" />
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setStorefrontAndAtmosphere(storefrontAndAtmosphere.filter((_, i) => i !== idx))
-                        }
-                        className="absolute top-0 right-0 bg-black/60 text-white p-0.5 rounded-bl"
-                      >
-                        <X className="w-2.5 h-2.5" />
-                      </button>
-                    </div>
-                  ))}
-                  {storefrontAndAtmosphere.length === 0 && (
-                    <div className="text-[10px] text-slate-400 py-2">ยังไม่มีรูปหน้าร้าน</div>
-                  )}
-                </div>
-              </div>
+              <UploadablePhotoGrid
+                label="2. ผังห้อง / มิเตอร์ไฟ / ท่อน้ำ"
+                emptyText="ยังไม่มีรูปผัง/งานระบบ"
+                urls={floorPlanAndSpecs}
+                onChange={setFloorPlanAndSpecs}
+                recordType="locations"
+                recordTitle={name || 'ทำเลใหม่'}
+                recordId={editingLocation?.id}
+                onUploadingChange={(uploading) => {
+                  if (uploading) beginPhotos();
+                  else endPhotos();
+                }}
+              />
 
-              {/* Category B: ผังห้อง & จุดงานระบบ (Floor Plan & M&E) */}
-              <div className="p-2.5 bg-white rounded-xl border border-slate-200 space-y-2">
-                <div className="flex items-center justify-between text-[11px] font-bold text-slate-700">
-                  <span>2. ผังห้อง / มิเตอร์ไฟ / ท่อน้ำ</span>
-                  <label className="cursor-pointer text-sky-600 hover:text-sky-700 font-bold flex items-center gap-1">
-                    <Upload className="w-3 h-3" />
-                    <span>+ เพิ่มรูป</span>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      multiple
-                      className="hidden"
-                      onChange={(e) => handlePhotoUpload(e, setFloorPlanAndSpecs)}
-                    />
-                  </label>
-                </div>
+              <UploadablePhotoGrid
+                label="3. ร้านข้างเคียง & แบรนด์เพื่อนบ้าน"
+                emptyText="ยังไม่มีรูปร้านข้างเคียง"
+                urls={surroundingNeighbors}
+                onChange={setSurroundingNeighbors}
+                recordType="locations"
+                recordTitle={name || 'ทำเลใหม่'}
+                recordId={editingLocation?.id}
+                onUploadingChange={(uploading) => {
+                  if (uploading) beginPhotos();
+                  else endPhotos();
+                }}
+              />
 
-                <div className="flex flex-wrap gap-1.5">
-                  {floorPlanAndSpecs.map((url, idx) => (
-                    <div key={idx} className="relative w-14 h-14 rounded-lg overflow-hidden border">
-                      <img src={url} alt="floorplan" className="w-full h-full object-cover" />
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setFloorPlanAndSpecs(floorPlanAndSpecs.filter((_, i) => i !== idx))
-                        }
-                        className="absolute top-0 right-0 bg-black/60 text-white p-0.5 rounded-bl"
-                      >
-                        <X className="w-2.5 h-2.5" />
-                      </button>
-                    </div>
-                  ))}
-                  {floorPlanAndSpecs.length === 0 && (
-                    <div className="text-[10px] text-slate-400 py-2">ยังไม่มีรูปผัง/งานระบบ</div>
-                  )}
-                </div>
-              </div>
-
-              {/* Category C: ร้านข้างเคียง / เพื่อนบ้าน */}
-              <div className="p-2.5 bg-white rounded-xl border border-slate-200 space-y-2">
-                <div className="flex items-center justify-between text-[11px] font-bold text-slate-700">
-                  <span>3. ร้านข้างเคียง & แบรนด์เพื่อนบ้าน</span>
-                  <label className="cursor-pointer text-sky-600 hover:text-sky-700 font-bold flex items-center gap-1">
-                    <Upload className="w-3 h-3" />
-                    <span>+ เพิ่มรูป</span>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      multiple
-                      className="hidden"
-                      onChange={(e) => handlePhotoUpload(e, setSurroundingNeighbors)}
-                    />
-                  </label>
-                </div>
-
-                <div className="flex flex-wrap gap-1.5">
-                  {surroundingNeighbors.map((url, idx) => (
-                    <div key={idx} className="relative w-14 h-14 rounded-lg overflow-hidden border">
-                      <img src={url} alt="neighbor" className="w-full h-full object-cover" />
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setSurroundingNeighbors(surroundingNeighbors.filter((_, i) => i !== idx))
-                        }
-                        className="absolute top-0 right-0 bg-black/60 text-white p-0.5 rounded-bl"
-                      >
-                        <X className="w-2.5 h-2.5" />
-                      </button>
-                    </div>
-                  ))}
-                  {surroundingNeighbors.length === 0 && (
-                    <div className="text-[10px] text-slate-400 py-2">ยังไม่มีรูปร้านข้างเคียง</div>
-                  )}
-                </div>
-              </div>
-
-              {/* Category D: นามบัตรฝ่ายเช่า / เอกสารเงื่อนไข */}
-              <div className="p-2.5 bg-white rounded-xl border border-slate-200 space-y-2">
-                <div className="flex items-center justify-between text-[11px] font-bold text-slate-700">
-                  <span>4. นามบัตรฝ่ายเช่า / เอกสาร</span>
-                  <label className="cursor-pointer text-sky-600 hover:text-sky-700 font-bold flex items-center gap-1">
-                    <Upload className="w-3 h-3" />
-                    <span>+ เพิ่มรูป</span>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      multiple
-                      className="hidden"
-                      onChange={(e) => handlePhotoUpload(e, setContactCards)}
-                    />
-                  </label>
-                </div>
-
-                <div className="flex flex-wrap gap-1.5">
-                  {contactCards.map((url, idx) => (
-                    <div key={idx} className="relative w-14 h-14 rounded-lg overflow-hidden border">
-                      <img src={url} alt="card" className="w-full h-full object-cover" />
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setContactCards(contactCards.filter((_, i) => i !== idx))
-                        }
-                        className="absolute top-0 right-0 bg-black/60 text-white p-0.5 rounded-bl"
-                      >
-                        <X className="w-2.5 h-2.5" />
-                      </button>
-                    </div>
-                  ))}
-                  {contactCards.length === 0 && (
-                    <div className="text-[10px] text-slate-400 py-2">ยังไม่มีรูปนามบัตร/เอกสาร</div>
-                  )}
-                </div>
-              </div>
+              <UploadablePhotoGrid
+                label="4. นามบัตรฝ่ายเช่า / เอกสารสัญญา"
+                emptyText="ยังไม่มีรูปนามบัตร/เอกสาร"
+                urls={contactCards}
+                onChange={setContactCards}
+                recordType="locations"
+                recordTitle={name || 'ทำเลใหม่'}
+                recordId={editingLocation?.id}
+                onUploadingChange={(uploading) => {
+                  if (uploading) beginPhotos();
+                  else endPhotos();
+                }}
+              />
             </div>
           </div>
 

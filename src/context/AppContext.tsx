@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { User, SupplierRecord, StoreInspoRecord, LocationRecord, ExchangeRateConfig, InviteLink, PipelineStatus, UserRole, AppNotification, HandoffStage, AppViewTab, QuickMessageTemplate, CuratedProduct, ProductTaxon, ProductSet, ProductChanges } from '../types';
-import { INITIAL_SUPPLIERS, INITIAL_DRINK_STORES, INITIAL_CATEGORIES, INITIAL_STORE_CATEGORIES, INITIAL_QUICK_TAGS, INITIAL_QUICK_MESSAGES } from '../utils/seedData';
+import { INITIAL_SUPPLIERS, INITIAL_DRINK_STORES, INITIAL_CATEGORIES, INITIAL_STORE_CATEGORIES, INITIAL_LOCATION_TYPES, INITIAL_QUICK_TAGS, INITIAL_QUICK_MESSAGES } from '../utils/seedData';
 import { getRenderServerUrl, saveRenderServerUrl, checkServerHealth, fetchCentralData, sendJson, requestJson, getSessionToken, setSessionToken, loginUserApi, ApiError, markNotificationsReadApi, clearNotificationsApi } from '../services/api';
 
 interface AppContextType {
@@ -23,6 +23,7 @@ interface AppContextType {
   invites: InviteLink[];
   categories: string[];
   storeCategories: string[];
+  locationTypes: string[];
   quickTagsList: string[];
   quickMessages: QuickMessageTemplate[];
   exchangeRate: ExchangeRateConfig;
@@ -73,6 +74,9 @@ interface AppContextType {
   addStoreCategory: (cat: string) => Promise<boolean>;
   editStoreCategory: (oldCat: string, newCat: string) => Promise<boolean>;
   deleteStoreCategory: (cat: string) => Promise<boolean>;
+  addLocationType: (type: string) => Promise<boolean>;
+  editLocationType: (oldType: string, newType: string) => Promise<boolean>;
+  deleteLocationType: (type: string) => Promise<boolean>;
   addQuickTag: (tag: string) => Promise<boolean>;
   editQuickTag: (oldTag: string, newTag: string) => Promise<boolean>;
   deleteQuickTag: (tag: string) => Promise<boolean>;
@@ -175,7 +179,7 @@ const AppContext = createContext<AppContextType | undefined>(undefined);
 const GUEST: User = { id: '', name: '', alias: '', role: 'viewer', avatar: '', emailOrId: '', createdAt: '' };
 type Item = SupplierRecord | StoreInspoRecord | LocationRecord;
 const routeFor = (type: 'supplier' | 'drink_store' | 'location') => type === 'supplier' ? 'suppliers' : type === 'drink_store' ? 'drink-stores' : 'locations';
-const settingsKeys = ['categories', 'storeCategories', 'quickTagsList', 'quickMessages'] as const;
+const settingsKeys = ['categories', 'storeCategories', 'locationTypes', 'quickTagsList', 'quickMessages'] as const;
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [products, setProducts] = useState<CuratedProduct[]>([]);
@@ -194,6 +198,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [invites, setInvites] = useState<InviteLink[]>([]);
   const [categories, setCategories] = useState(INITIAL_CATEGORIES);
   const [storeCategories, setStoreCategories] = useState(INITIAL_STORE_CATEGORIES);
+  const [locationTypes, setLocationTypes] = useState(INITIAL_LOCATION_TYPES);
   const [quickTagsList, setQuickTagsList] = useState(INITIAL_QUICK_TAGS);
   const [quickMessages, setQuickMessages] = useState<QuickMessageTemplate[]>(INITIAL_QUICK_MESSAGES);
   const settingsRef = useRef<Record<string, any>>({});
@@ -263,6 +268,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       databaseRevision.current = data.revision || 0;
       settingsRef.current = Object.fromEntries(settingsKeys.map(k => [k, data[k] || []]));
       setCategories(data.categories || []); setStoreCategories(data.storeCategories || []);
+      setLocationTypes(data.locationTypes && data.locationTypes.length ? data.locationTypes : INITIAL_LOCATION_TYPES);
       setQuickTagsList(data.quickTagsList || []); setQuickMessages(data.quickMessages || []);
       const incoming = (data.notifications || []).filter((n: AppNotification) => n.actorId !== data.user.id);
       const fresh = incoming.find((n: AppNotification) => !seenNotifications.current.has(n.id));
@@ -426,6 +432,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const addStoreCategory = (x: string) => changeSettings('storeCategories', p => [...new Set([...p, x.trim()])].filter(Boolean));
   const editStoreCategory = (a: string, b: string) => changeSettings('storeCategories', p => p.map(x => x === a ? b.trim() : x));
   const deleteStoreCategory = (x: string) => changeSettings('storeCategories', p => p.filter(v => v !== x));
+  const addLocationType = (x: string) => changeSettings('locationTypes', p => [...new Set([...(p || []), x.trim()])].filter(Boolean));
+  const editLocationType = (a: string, b: string) => changeSettings('locationTypes', p => (p || []).map(x => x === a ? b.trim() : x));
+  const deleteLocationType = (x: string) => changeSettings('locationTypes', p => (p || []).filter(v => v !== x));
   const addQuickTag = (x: string) => changeSettings('quickTagsList', p => [...new Set([...p, x.trim()])].filter(Boolean));
   const editQuickTag = (a: string, b: string) => changeSettings('quickTagsList', p => p.map(x => x === a ? b.trim() : x));
   const deleteQuickTag = (x: string) => changeSettings('quickTagsList', p => p.filter(v => v !== x));
@@ -476,11 +485,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const syncAllDataToRender = () => refreshCentralData();
   return <AppContext.Provider value={{
     products, productCategories, productTags, productSets, saveProduct, updateProducts, manageProductTaxonomy, saveProductSet, deleteProductSet,
-    currentUser, users, suppliers, drinkStores, locations, invites, categories, storeCategories, quickTagsList, quickMessages, exchangeRate, syncStatus, pendingSyncCount,
+    currentUser, users, suppliers, drinkStores, locations, invites, categories, storeCategories, locationTypes, quickTagsList, quickMessages, exchangeRate, syncStatus, pendingSyncCount,
     activeTab, filterResetVersion, countryFilter, searchQuery, selectedCategory, selectedStatus, selectedTag, selectedRating, notifications, activeToast,
     actionError, clearActionError: () => setActionError(null), isMutating: mutationCount > 0,
     setActiveTab, setCountryFilter, setSearchQuery, setSelectedCategory, setSelectedStatus, setSelectedTag, setSelectedRating,
     dismissToast, markAllNotificationsRead, markNotificationRead, clearAllNotifications, clearNotification, broadcastNotification, addCategory, editCategory, deleteCategory, addStoreCategory, editStoreCategory, deleteStoreCategory,
+    addLocationType, editLocationType, deleteLocationType,
     addQuickTag, editQuickTag, deleteQuickTag, addQuickMessage, editQuickMessage, deleteQuickMessage, updateUserRole, recordItemView, toggleLikeItem, loadFullMockupData, resetSystemData,
     updateHandoff, addSupplier, updateSupplier, deleteSupplier, addStoreInspo, updateStoreInspo, deleteStoreInspo, addLocation, updateLocation, deleteLocation, canEditItems, canDeleteItems, canComment, canAddItems,
     editingSupplier, editingStore, editingLocation, openEditItem, closeEditItem, addReviewerNote, addReviewReply, updatePipelineStatus, updateExchangeRate, toggleCurrencyMode, convertCnyToThb, convertThbToCny,

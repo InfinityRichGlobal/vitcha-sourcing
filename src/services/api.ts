@@ -173,7 +173,21 @@ export async function uploadMediaToServer(
     reader.onerror = () => reject(new Error('อ่านไฟล์ไม่สำเร็จ'));
     reader.readAsDataURL(normalized);
   });
-  const result = await requestJson('/api/upload', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ mimeType, base64 }) }, 120000);
+  const result = await requestJson(
+    '/api/upload',
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        mimeType,
+        base64,
+        recordType: options?.recordType || 'misc',
+        recordId: options?.recordId || '',
+        recordTitle: options?.recordTitle || '',
+      }),
+    },
+    120000
+  );
   return new URL(result.url, getRenderServerUrl()).href;
 }
 export async function loginUserApi(idOrEmail: string, pin: string) {

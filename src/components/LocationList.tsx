@@ -18,6 +18,7 @@ export const LocationList: React.FC<LocationListProps> = ({
 }) => {
   const {
     locations,
+    locationTypes: customLocationTypes,
     filterResetVersion,
     searchQuery,
     setSearchQuery,
@@ -36,13 +37,32 @@ export const LocationList: React.FC<LocationListProps> = ({
     setSelectedFormat('all');
   }, [filterResetVersion]);
 
+  const baseIcons: Record<string, string> = {
+    mall: 'fa-building',
+    community: 'fa-tree-city',
+    office: 'fa-briefcase',
+    street: 'fa-road',
+    transit: 'fa-train-subway',
+    'ห้างสรรพสินค้า / ศูนย์การค้า': 'fa-building',
+    'คอมมูนิตี้มอลล์': 'fa-tree-city',
+    'อาคารสำนักงาน': 'fa-briefcase',
+    'สแตนด์อโลน / ริมถนน / อาคารพาณิชย์': 'fa-road',
+    'สถานีขนส่ง / รถไฟฟ้า': 'fa-train-subway',
+    'สถานที่ราชการ': 'fa-landmark',
+    'สถานที่การศึกษา': 'fa-graduation-cap',
+    'ตลาด / ถนนคนเดิน': 'fa-store',
+    'ปั๊มน้ำมัน / จุดชาร์จ EV': 'fa-gas-pump',
+    'สถานบันเทิง': 'fa-martini-glass-citrus',
+    'สวนสาธารณะ': 'fa-tree',
+  };
+
   const locationTypes: Array<{ key: string; label: string; icon: string }> = [
     { key: 'all', label: 'ทุกประเภททำเล', icon: 'fa-globe' },
-    { key: 'mall', label: 'ห้างสรรพสินค้า (Mall)', icon: 'fa-building' },
-    { key: 'community', label: 'คอมมูนิตี้มอลล์', icon: 'fa-tree-city' },
-    { key: 'office', label: 'อาคารสำนักงาน (Office)', icon: 'fa-briefcase' },
-    { key: 'street', label: 'สตรีท / อาคารพาณิชย์', icon: 'fa-road' },
-    { key: 'transit', label: 'สถานี BTS / รถไฟ', icon: 'fa-train-subway' },
+    ...customLocationTypes.map((t) => ({
+      key: t,
+      label: t,
+      icon: baseIcons[t] || 'fa-map-pin',
+    })),
   ];
 
   const layoutFormats: Array<{ key: string; label: string }> = [
@@ -71,7 +91,15 @@ export const LocationList: React.FC<LocationListProps> = ({
       (loc.location?.addressText && loc.location.addressText.toLowerCase().includes(searchQuery.toLowerCase())) ||
       (loc.quickTags && loc.quickTags.some((t) => t.toLowerCase().includes(searchQuery.toLowerCase())));
 
-    const matchesType = selectedType === 'all' || loc.locationType === selectedType;
+    const matchesType =
+      selectedType === 'all' ||
+      loc.locationType === selectedType ||
+      (selectedType === 'ห้างสรรพสินค้า / ศูนย์การค้า' && loc.locationType === 'mall') ||
+      (selectedType === 'คอมมูนิตี้มอลล์' && loc.locationType === 'community') ||
+      (selectedType === 'อาคารสำนักงาน' && loc.locationType === 'office') ||
+      (selectedType === 'สแตนด์อโลน / ริมถนน / อาคารพาณิชย์' && loc.locationType === 'street') ||
+      (selectedType === 'สถานีขนส่ง / รถไฟฟ้า' && loc.locationType === 'transit') ||
+      (selectedType === 'mall' && loc.locationType === 'ห้างสรรพสินค้า / ศูนย์การค้า');
     const matchesFormat = selectedFormat === 'all' || loc.spaceSpecs?.layoutFormat === selectedFormat;
 
     const r = loc.ratings || { footTraffic: 5, visibility: 5, accessibility: 5, valueRoi: 4 };

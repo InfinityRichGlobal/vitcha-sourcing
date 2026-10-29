@@ -48,10 +48,18 @@ export function createCloudMedia({ request, url, key, drive = null, fetchImpl = 
     return created.id;
   }
 
-  async function resolveItemFolder({ recordType = 'misc', recordId = 'general', recordTitle = '' }) {
-    const typeFolderId = await getOrCreateFolder(getCenterFolderId(), recordType);
-    const shortTitle = recordTitle ? `-${recordTitle.slice(0, 30).replace(/[/\\?%*:|"<>]/g, '_')}` : '';
-    const folderName = `${recordId}${shortTitle}`;
+  const FOLDER_CATEGORY_MAP = {
+    suppliers: '1. ซัพพลายเออร์ (Suppliers)',
+    drink_stores: '2. ร้านน้ำเรฟ (Drink Stores)',
+    locations: '3. ทำเลและพื้นที่ (Locations)',
+    misc: 'ทั่วไป (General)',
+  };
+
+  async function resolveItemFolder({ recordType = 'misc', recordId = '', recordTitle = '' }) {
+    const categoryName = FOLDER_CATEGORY_MAP[recordType] || (recordType === 'misc' ? 'ทั่วไป (General)' : recordType);
+    const typeFolderId = await getOrCreateFolder(getCenterFolderId(), categoryName);
+    const cleanTitle = (recordTitle || '').trim().replace(/[/\\?%*:|"<>]/g, '_');
+    const folderName = cleanTitle || (recordId && recordId !== 'general' ? `รายการ_${recordId.slice(0, 8)}` : 'ไฟล์ทั่วไป');
     return await getOrCreateFolder(typeFolderId, folderName);
   }
 
@@ -164,12 +172,13 @@ export function createCloudMedia({ request, url, key, drive = null, fetchImpl = 
     }
   }
   const headers = () => ({ apikey: key, ...(key.startsWith('sb_secret_') ? {} : { Authorization: `Bearer ${key}` }) });
-  async function upload({ filename, bytes, mimeType }) {
+  async function upload({ filename, bytes, mimeType, recordType, recordId, recordTitle }) {
     const id = randomBytes(24).toString('hex');
     let fileId, provider;
     if (driveConfig?.folderId && driveConfig?.refreshToken) {
       const token = await googleToken();
-      const session = await fetchImpl('https://www.googleapis.com/upload/drive/v3/files?uploadType=resumable&fields=id,size,md5Checksum', { method: 'POST', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json', 'X-Upload-Content-Type': mimeType, 'X-Upload-Content-Length': String(bytes.length) }, body: JSON.stringify({ name: `${id}-${filename}`, parents: [driveConfig.folderId] }), signal: AbortSignal.timeout(20000) });
+      const folderId = await resolveItemFolder({ recordType, recordId, recordTitle });
+      const session = await fetchImpl('https://www.googleapis.com/upload/drive/v3/files?uploadType=resumable&fields=id,size,md5Checksum', { method: 'POST', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json', 'X-Upload-Content-Type': mimeType, 'X-Upload-Content-Length': String(bytes.length) }, body: JSON.stringify({ name: `${id}-${filename}`, parents: [folderId] }), signal: AbortSignal.timeout(20000) });
       const location = session.headers.get('location');
       if (!session.ok || !location || new URL(location).origin !== 'https://www.googleapis.com') throw new Error('เริ่มอัปโหลดไป Google Drive ไม่สำเร็จ');
       const result = await fetchImpl(location, { method: 'PUT', headers: { 'Content-Type': mimeType, 'Content-Length': String(bytes.length) }, body: bytes, signal: AbortSignal.timeout(120000) });

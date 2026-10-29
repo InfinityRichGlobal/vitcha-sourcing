@@ -8,6 +8,7 @@ import { getItemVoiceNotes } from '../utils/audioHelper';
 import { uploadImageFile as compressImageFile } from '../utils/mediaStorage';
 import { saveVideoFile, deleteVideoFile } from '../utils/mediaStorage';
 import { VideoPlayer } from './VideoPlayer';
+import { UploadablePhotoGrid } from './UploadablePhotoGrid';
 import {
   X,
   Camera,
@@ -19,6 +20,7 @@ import {
   RefreshCw,
   MapPin,
   Map,
+  Loader2,
 } from 'lucide-react';
 import { LocationPickerModal } from './LocationPickerModal';
 
@@ -50,13 +52,11 @@ export const NewSupplierModal: React.FC<NewSupplierModalProps> = ({ isOpen, onCl
   const [country, setCountry] = useState<'CN' | 'TH'>('CN');
   const [name, setName] = useState('');
   const [chineseName, setChineseName] = useState('');
-  const [marketOrCity, setMarketOrCity] = useState('กวางโจว (Guangzhou)');
+  const [marketOrCity, setMarketOrCity] = useState('');
   const [category, setCategory] = useState(categories[0] || 'เคาน์เตอร์ & สเตนเลส');
-  const [rating, setRating] = useState(5);
+  const [rating, setRating] = useState(0);
 
-  const [selectedTags, setSelectedTags] = useState<string[]>([
-    quickTagsList[0] || 'โรงงานผลิตเอง (Manufacturer)',
-  ]);
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [inlineNewTag, setInlineNewTag] = useState('');
   const [showInlineAddTag, setShowInlineAddTag] = useState(false);
 
@@ -101,9 +101,9 @@ export const NewSupplierModal: React.FC<NewSupplierModalProps> = ({ isOpen, onCl
       setCountry(editingSupplier.country || 'CN');
       setName(editingSupplier.name || '');
       setChineseName(editingSupplier.chineseName || '');
-      setMarketOrCity(editingSupplier.marketOrCity || 'กวางโจว (Guangzhou)');
+      setMarketOrCity(editingSupplier.marketOrCity || '');
       setCategory(editingSupplier.category || categories[0] || 'เคาน์เตอร์ & สเตนเลส');
-      setRating(editingSupplier.rating || 5);
+      setRating(editingSupplier.rating ?? 0);
       setSelectedTags(editingSupplier.quickTags || []);
       setPhone(editingSupplier.phone || '');
       setWechatId(editingSupplier.wechatId || '');
@@ -126,8 +126,8 @@ export const NewSupplierModal: React.FC<NewSupplierModalProps> = ({ isOpen, onCl
       setChineseName('');
       setMarketOrCity('');
       setCategory(categories[0] || 'เคาน์เตอร์ & สเตนเลส');
-      setRating(5);
-      setSelectedTags([quickTagsList[0] || 'โรงงานผลิตเอง (Manufacturer)']);
+      setRating(0);
+      setSelectedTags([]);
       setPhone('');
       setWechatId('');
       setLineId('');
@@ -161,69 +161,54 @@ export const NewSupplierModal: React.FC<NewSupplierModalProps> = ({ isOpen, onCl
     );
   };
 
-  // Mass batch photo upload for catalog (with auto-compression)
-  const handleMassCatalogUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Mass batch photo upload for catalog (Instant local previews + background upload)
+  const handleMassCatalogUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
 
-    beginPhotos();
-    try {
-      const fileList = Array.from(files);
-      const newItems: CatalogItem[] = [];
-      for (let idx = 0; idx < fileList.length; idx++) {
-        const file = fileList[idx];
-        const compressed = await compressImageFile(file, 900, 0.72);
-        if (compressed) {
-          newItems.push({
-            id: `item-${Date.now()}-${idx}-${Math.random().toString(36).substring(2, 5)}`,
-            photo: compressed,
-            name: '',
-            dimensions: '',
-            weightKg: '',
-            priceRmb: undefined,
-            memo: '',
-            voiceNotes: [],
-          });
-        }
-      }
-      if (newItems.length > 0) {
-        setCatalogItems((prev) => [...prev, ...newItems]);
-      }
-    } catch (error) {
-      alert(error instanceof Error ? error.message : 'ประมวลผลรูปไม่สำเร็จ');
-    } finally {
-      endPhotos();
-      e.target.value = '';
-    }
+    const fileList = Array.from(files);
+    const newItems: CatalogItem[] = fileList.map((file, idx) => {
+      const localBlob = URL.createObjectURL(file);
+      return {
+        id: `item-${Date.now()}-${idx}-${Math.random().toString(36).substring(2, 5)}`,
+        photo: localBlob,
+        name: '',
+        dimensions: '',
+        weightKg: '',
+        priceRmb: undefined,
+        memo: '',
+        voiceNotes: [],
+      };
+    });
+
+    // Display cards with local thumbnails immediately!
+    setCatalogItems((prev) => [...prev, ...newItems]);
+
+    // Upload files in parallel
+    fileList.forEach((file, idx) => {
+      const targetId = newItems[idx].id;
+      beginPhotos();
+      compressImageFile(file, 900, 0.72, {
+        recordType: 'suppliers',
+        recordTitle: name || 'ซัพพลายเออร์',
+        recordId: editingSupplier?.id,
+      })
+        .then((uploadedUrl) => {
+          setCatalogItems((prev) =>
+            prev.map((it) => (it.id === targetId ? { ...it, photo: uploadedUrl } : it))
+          );
+        })
+        .catch((error) => {
+          console.error('Failed to upload catalog photo:', error);
+        })
+        .finally(() => {
+          endPhotos();
+        });
+    });
+
+    e.target.value = '';
   };
 
-  // Generic photo array upload (with auto-compression)
-  const handleMultiPhotoUpload = async (
-    e: React.ChangeEvent<HTMLInputElement>,
-    setter: React.Dispatch<React.SetStateAction<string[]>>
-  ) => {
-    const files = e.target.files;
-    if (!files || files.length === 0) return;
-    beginPhotos();
-    try {
-      const fileList = Array.from(files);
-      const compressedList: string[] = [];
-      for (const file of fileList) {
-        const compressed = await compressImageFile(file, 960, 0.72);
-        if (compressed) {
-          compressedList.push(compressed);
-        }
-      }
-      if (compressedList.length > 0) {
-        setter((prev) => [...prev, ...compressedList]);
-      }
-    } catch (error) {
-      alert(error instanceof Error ? error.message : 'ประมวลผลรูปไม่สำเร็จ');
-    } finally {
-      endPhotos();
-      e.target.value = '';
-    }
-  };
 
   const handleVideoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
@@ -323,12 +308,20 @@ export const NewSupplierModal: React.FC<NewSupplierModalProps> = ({ isOpen, onCl
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (savingRef.current || photoTaskRef.current || audioJobs.current.size || isVideoLoading || isLocating) return;
+    if (!name.trim()) {
+      alert('กรุณากรอกชื่อร้าน / ซัพพลายเออร์ (ช่องนี้จำเป็น)');
+      return;
+    }
+    if (photoTaskRef.current > 0 || catalogItems.some((it) => it.photo?.startsWith('blob:'))) {
+      alert('กำลังอัปโหลดรูปภาพ กรุณารอสักครู่');
+      return;
+    }
+    if (savingRef.current || audioJobs.current.size || isVideoLoading || isLocating) return;
     savingRef.current = true;
     setIsSaving(true);
 
     try {
-      const finalName = name.trim() || `ซัพพลายเออร์ #${suppliers.length + 1} (${category})`;
+      const finalName = name.trim();
 
       if (isEditMode && editingSupplier) {
         if (!await updateSupplier(editingSupplier.id, {
@@ -499,7 +492,7 @@ export const NewSupplierModal: React.FC<NewSupplierModalProps> = ({ isOpen, onCl
           <div className="bg-slate-50/80 p-4 rounded-2xl border border-slate-100 space-y-3.5">
             <div className="flex items-center justify-between">
               <span className="text-xs font-bold text-slate-800">
-                1. รูปป้ายหน้าร้าน & บรรยากาศ ({storefrontAndAtmosphere.length})
+                1. รูปป้ายหน้าร้าน & บรรยากาศ
               </span>
               {/* Star Rating */}
               <div className="flex items-center gap-1">
@@ -507,64 +500,46 @@ export const NewSupplierModal: React.FC<NewSupplierModalProps> = ({ isOpen, onCl
                   <button
                     type="button"
                     key={star}
-                    onClick={() => setRating(star)}
+                    onClick={() => setRating(rating === star ? 0 : star)}
                     className="p-0.5"
+                    title={`ให้ ${star} ดาว`}
                   >
-                    <i className={`fa-solid fa-star text-xs ${star <= rating ? 'text-amber-400' : 'text-slate-200'}`} />
+                    <i className={`fa-solid fa-star text-sm ${star <= rating ? 'text-amber-400' : 'text-slate-200'}`} />
                   </button>
                 ))}
+                <span className={`text-[10px] ml-1 font-mono ${rating > 0 ? 'text-amber-600 font-bold' : 'text-slate-400 font-normal'}`}>
+                  {rating > 0 ? `${rating}/5` : '(ยังไม่ได้ให้คะแนน)'}
+                </span>
               </div>
             </div>
 
-            {/* Photo preview strip with remove button */}
-            {storefrontAndAtmosphere.length > 0 && (
-              <div className="flex gap-2 overflow-x-auto py-1">
-                {storefrontAndAtmosphere.map((p, i) => (
-                  <div key={i} className="relative shrink-0 group">
-                    <img
-                      src={p}
-                      className="w-16 h-16 object-cover rounded-xl border border-slate-200 shadow-sm"
-                    />
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setStorefrontAndAtmosphere((prev) => prev.filter((_, idx) => idx !== i))
-                      }
-                      className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-rose-500 text-white text-[10px] font-bold flex items-center justify-center shadow"
-                      title="ลบรูปนี้"
-                    >
-                      ×
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {/* Quick Upload Button */}
-            <label className="flex items-center justify-center gap-2 py-2.5 px-4 bg-white border border-slate-200 hover:border-emerald-500 rounded-xl text-xs font-semibold text-slate-700 cursor-pointer shadow-sm active:scale-[0.99] transition-all">
-              <Camera className="w-4 h-4 text-emerald-600" />
-              <span>+ เลือกรูปจากอัลบั้มในเครื่อง / ถ่ายภาพป้ายหน้าร้าน (เลือกได้หลายรูป)</span>
-              <input
-                type="file" disabled={isSaving || isVideoLoading}
-                accept="image/*"
-                multiple
-                onChange={(e) => handleMultiPhotoUpload(e, setStorefrontAndAtmosphere)}
-                className="hidden"
-              />
-            </label>
+            <UploadablePhotoGrid
+              label="รูปป้ายหน้าร้าน / โรงงาน / โชว์รูม"
+              emptyText="ยังไม่มีรูปหน้าร้านหรือโรงงาน"
+              urls={storefrontAndAtmosphere}
+              onChange={setStorefrontAndAtmosphere}
+              recordType="suppliers"
+              recordTitle={name || 'ซัพพลายเออร์'}
+              recordId={editingSupplier?.id}
+              onUploadingChange={(uploading) => {
+                if (uploading) beginPhotos();
+                else endPhotos();
+              }}
+            />
 
             {/* Basic Info */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">
               <div>
-                <label className="text-[11px] font-medium text-slate-500 block mb-1">
-                  ชื่อร้าน / ซัพพลายเออร์ (ไม่บังคับพิมพ์)
+                <label className="text-[11px] font-semibold text-slate-700 block mb-1">
+                  ชื่อร้าน / ซัพพลายเออร์ <span className="text-red-500 font-bold">*</span>
                 </label>
                 <input
                   type="text"
-                  placeholder="เช่น FEST / Rongchuan (เว้นว่างได้)"
+                  placeholder="เช่น FEST / Rongchuan"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 focus:outline-none focus:border-emerald-500 font-medium"
+                  className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 focus:outline-none focus:border-emerald-500 font-semibold"
+                  required
                 />
               </div>
 
@@ -760,44 +735,19 @@ export const NewSupplierModal: React.FC<NewSupplierModalProps> = ({ isOpen, onCl
 
           {/* Section 2: Contact Photos & Info */}
           <div className="bg-slate-50/80 p-4 rounded-2xl border border-slate-100 space-y-3">
-            <span className="text-xs font-bold text-slate-800 block">
-              2. ช่องทางการติดต่อ & นามบัตร/WeChat ({contactCards.length})
-            </span>
-
-            {contactCards.length > 0 && (
-              <div className="flex gap-2 overflow-x-auto py-1">
-                {contactCards.map((p, i) => (
-                  <div key={i} className="relative shrink-0">
-                    <img
-                      src={p}
-                      className="w-16 h-16 object-cover rounded-xl border border-slate-200 shadow-sm"
-                    />
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setContactCards((prev) => prev.filter((_, idx) => idx !== i))
-                      }
-                      className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-rose-500 text-white text-[10px] font-bold flex items-center justify-center shadow"
-                      title="ลบรูปนี้"
-                    >
-                      ×
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            <label className="flex items-center justify-center gap-2 py-2 px-3 bg-white border border-slate-200 hover:border-emerald-500 rounded-xl text-xs font-semibold text-slate-700 cursor-pointer shadow-sm active:scale-[0.99] transition-all">
-              <Camera className="w-4 h-4 text-emerald-600" />
-              <span>+ เลือกรูปจากอัลบั้ม / ถ่ายรูปนามบัตร / QR WeChat (ไม่อั้น)</span>
-              <input
-                type="file" disabled={isSaving || isVideoLoading}
-                accept="image/*"
-                multiple
-                onChange={(e) => handleMultiPhotoUpload(e, setContactCards)}
-                className="hidden"
-              />
-            </label>
+            <UploadablePhotoGrid
+              label="2. ช่องทางการติดต่อ & นามบัตร/WeChat QR"
+              emptyText="ยังไม่มีรูปนามบัตรหรือ QR Code"
+              urls={contactCards}
+              onChange={setContactCards}
+              recordType="suppliers"
+              recordTitle={name || 'ซัพพลายเออร์'}
+              recordId={editingSupplier?.id}
+              onUploadingChange={(uploading) => {
+                if (uploading) beginPhotos();
+                else endPhotos();
+              }}
+            />
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-1">
               <div>
@@ -950,10 +900,19 @@ export const NewSupplierModal: React.FC<NewSupplierModalProps> = ({ isOpen, onCl
                   {/* Item Photo thumbnail (clickable to upload/replace photo) */}
                   <label className="shrink-0 cursor-pointer relative group">
                     {item.photo ? (
-                      <img
-                        src={item.photo}
-                        className="w-20 h-20 object-cover rounded-xl border border-slate-200 shadow-sm group-hover:opacity-80"
-                      />
+                      <div className="relative w-20 h-20 rounded-xl overflow-hidden border border-slate-200 shadow-sm">
+                        <img
+                          src={item.photo}
+                          alt="item"
+                          className="w-full h-full object-cover group-hover:opacity-80"
+                        />
+                        {item.photo.startsWith('blob:') && (
+                          <div className="absolute inset-0 bg-black/60 backdrop-blur-[1px] flex flex-col items-center justify-center text-white p-1">
+                            <Loader2 className="w-4 h-4 animate-spin text-white mb-0.5" />
+                            <span className="text-[8px] font-medium leading-none">กำลังอัป...</span>
+                          </div>
+                        )}
+                      </div>
                     ) : (
                       <div className="w-20 h-20 rounded-xl bg-slate-100 border border-dashed border-slate-300 flex items-center justify-center text-[10px] text-slate-400 text-center p-1">
                         + แตะใส่รูป
@@ -962,16 +921,32 @@ export const NewSupplierModal: React.FC<NewSupplierModalProps> = ({ isOpen, onCl
                     <input
                       type="file" disabled={isSaving || isVideoLoading}
                       accept="image/*"
-                      onChange={async (e) => {
+                      onChange={(e) => {
                         const f = e.target.files?.[0];
                         if (!f) return;
-                        beginPhotos();
                         const itemId = item.id;
-                        try {
-                          const compressed = await compressImageFile(f, 900, 0.72);
-                          setCatalogItems(previous => previous.map(entry => entry.id === itemId ? { ...entry, photo: compressed } : entry));
-                        } catch (error) { alert(error instanceof Error ? error.message : 'ประมวลผลรูปไม่สำเร็จ'); }
-                        finally { endPhotos(); }
+                        const localBlob = URL.createObjectURL(f);
+                        setCatalogItems((previous) =>
+                          previous.map((entry) => (entry.id === itemId ? { ...entry, photo: localBlob } : entry))
+                        );
+                        beginPhotos();
+                        compressImageFile(f, 900, 0.72, {
+                          recordType: 'suppliers',
+                          recordTitle: name || 'ซัพพลายเออร์',
+                          recordId: editingSupplier?.id,
+                        })
+                          .then((compressed) => {
+                            setCatalogItems((previous) =>
+                              previous.map((entry) => (entry.id === itemId ? { ...entry, photo: compressed } : entry))
+                            );
+                          })
+                          .catch((error) => {
+                            alert(error instanceof Error ? error.message : 'ประมวลผลรูปไม่สำเร็จ');
+                          })
+                          .finally(() => {
+                            endPhotos();
+                          });
+                        e.target.value = '';
                       }}
                       className="hidden"
                     />

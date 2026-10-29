@@ -8,6 +8,7 @@ import { getItemVoiceNotes } from '../utils/audioHelper';
 import { uploadImageFile as compressImageFile } from '../utils/mediaStorage';
 import { saveVideoFile, deleteVideoFile } from '../utils/mediaStorage';
 import { VideoPlayer } from './VideoPlayer';
+import { UploadablePhotoGrid } from './UploadablePhotoGrid';
 import {
   X,
   Camera,
@@ -18,6 +19,7 @@ import {
   RefreshCw,
   MapPin,
   Map,
+  Loader2,
 } from 'lucide-react';
 import { LocationPickerModal } from './LocationPickerModal';
 
@@ -50,16 +52,16 @@ export const NewStoreInspoModal: React.FC<NewStoreInspoModalProps> = ({ isOpen, 
   const [storeName, setStoreName] = useState('');
   const [chineseName, setChineseName] = useState('');
   const [brandConcept, setBrandConcept] = useState('');
-  const [city, setCity] = useState('กวางโจว (Guangzhou)');
+  const [city, setCity] = useState('');
   const [lineId, setLineId] = useState('');
   const [wechatId, setWechatId] = useState('');
   const [phone, setPhone] = useState('');
 
-  // 4-Dimension Ratings
-  const [tasteRating, setTasteRating] = useState(5);
-  const [aestheticsRating, setAestheticsRating] = useState(5);
-  const [valueRating, setValueRating] = useState(4);
-  const [speedRating, setSpeedRating] = useState(5);
+  // 4-Dimension Ratings (เริ่มต้น 0 คือยังไม่ได้ให้คะแนน)
+  const [tasteRating, setTasteRating] = useState(0);
+  const [aestheticsRating, setAestheticsRating] = useState(0);
+  const [valueRating, setValueRating] = useState(0);
+  const [speedRating, setSpeedRating] = useState(0);
 
   const [tastingNotes, setTastingNotes] = useState('');
   const [mainVoiceUrl, setMainVoiceUrl] = useState<string | undefined>();
@@ -101,14 +103,14 @@ export const NewStoreInspoModal: React.FC<NewStoreInspoModalProps> = ({ isOpen, 
       setStoreName(editingStore.storeName || '');
       setChineseName(editingStore.chineseName || '');
       setBrandConcept(editingStore.brandConcept || '');
-      setCity(editingStore.city || 'กวางโจว (Guangzhou)');
+      setCity(editingStore.city || '');
       setLineId(editingStore.lineId || '');
       setWechatId(editingStore.wechatId || '');
       setPhone(editingStore.phone || '');
-      setTasteRating(editingStore.ratings?.taste ?? 5);
-      setAestheticsRating(editingStore.ratings?.aesthetics ?? 5);
-      setValueRating(editingStore.ratings?.value ?? 4);
-      setSpeedRating(editingStore.ratings?.speed ?? 5);
+      setTasteRating(editingStore.ratings?.taste ?? 0);
+      setAestheticsRating(editingStore.ratings?.aesthetics ?? 0);
+      setValueRating(editingStore.ratings?.value ?? 0);
+      setSpeedRating(editingStore.ratings?.speed ?? 0);
       setTastingNotes(editingStore.tastingNotes || '');
       setMainVoiceUrl(editingStore.voiceNoteUrl);
       setMainVoiceSec(editingStore.voiceDurationSec || 0);
@@ -131,10 +133,10 @@ export const NewStoreInspoModal: React.FC<NewStoreInspoModalProps> = ({ isOpen, 
       setLineId('');
       setWechatId('');
       setPhone('');
-      setTasteRating(5);
-      setAestheticsRating(5);
-      setValueRating(4);
-      setSpeedRating(5);
+      setTasteRating(0);
+      setAestheticsRating(0);
+      setValueRating(0);
+      setSpeedRating(0);
       setTastingNotes('');
       setMainVoiceUrl(undefined);
       setMainVoiceSec(0);
@@ -158,32 +160,6 @@ export const NewStoreInspoModal: React.FC<NewStoreInspoModalProps> = ({ isOpen, 
     onClose();
   };
 
-  const handleMultiPhotoUpload = async (
-    e: React.ChangeEvent<HTMLInputElement>,
-    setter: React.Dispatch<React.SetStateAction<string[]>>
-  ) => {
-    const files = e.target.files;
-    if (!files || files.length === 0) return;
-    beginPhotos();
-    try {
-      const fileList = Array.from(files);
-      const compressedList: string[] = [];
-      for (const file of fileList) {
-        const compressed = await compressImageFile(file, 960, 0.72);
-        if (compressed) {
-          compressedList.push(compressed);
-        }
-      }
-      if (compressedList.length > 0) {
-        setter((prev) => [...prev, ...compressedList]);
-      }
-    } catch (error) {
-      alert(error instanceof Error ? error.message : 'ประมวลผลรูปไม่สำเร็จ');
-    } finally {
-      endPhotos();
-      e.target.value = '';
-    }
-  };
 
   const handleVideoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
@@ -208,19 +184,46 @@ export const NewStoreInspoModal: React.FC<NewStoreInspoModalProps> = ({ isOpen, 
     setVideos(previous => previous.filter((_, i) => i !== index));
   };
 
-  const handleMassDrinkUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleMassDrinkUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
     if (!files.length) return;
-    beginPhotos();
-    try {
-      const items: DrinkDetailItem[] = [];
-      for (const file of files) {
-        const photo = await compressImageFile(file, 900, 0.72);
-        items.push({ id: crypto.randomUUID(), photo, name: '', cupSize: '500ml', fitMenuTarget: '', gimmickNotes: '', voiceNotes: [] });
-      }
-      setDrinkItems(previous => [...previous, ...items]);
-    } catch (error) { alert(error instanceof Error ? error.message : 'ประมวลผลรูปไม่สำเร็จ'); }
-    finally { endPhotos(); e.target.value = ''; }
+
+    const newItems: DrinkDetailItem[] = files.map((file) => ({
+      id: crypto.randomUUID(),
+      photo: URL.createObjectURL(file),
+      name: '',
+      cupSize: '500ml',
+      fitMenuTarget: '',
+      gimmickNotes: '',
+      voiceNotes: [],
+    }));
+
+    // Instantly display items on screen
+    setDrinkItems((previous) => [...previous, ...newItems]);
+
+    // Upload in parallel
+    files.forEach((file, idx) => {
+      const targetId = newItems[idx].id;
+      beginPhotos();
+      compressImageFile(file, 900, 0.72, {
+        recordType: 'drink_stores',
+        recordTitle: storeName || 'ร้านน้ำเรฟ',
+        recordId: editingStore?.id,
+      })
+        .then((uploadedUrl) => {
+          setDrinkItems((prev) =>
+            prev.map((it) => (it.id === targetId ? { ...it, photo: uploadedUrl } : it))
+          );
+        })
+        .catch((err) => {
+          console.error('Failed to upload drink photo:', err);
+        })
+        .finally(() => {
+          endPhotos();
+        });
+    });
+
+    e.target.value = '';
   };
 
   const addManualDrinkItem = () => {
@@ -294,12 +297,20 @@ export const NewStoreInspoModal: React.FC<NewStoreInspoModalProps> = ({ isOpen, 
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (savingRef.current || photoTaskRef.current || audioJobs.current.size || isVideoLoading || isLocating) return;
+    if (!storeName.trim()) {
+      alert('กรุณากรอกชื่อร้านค้า (ช่องนี้จำเป็น)');
+      return;
+    }
+    if (photoTaskRef.current > 0 || drinkItems.some((it) => it.photo?.startsWith('blob:'))) {
+      alert('กำลังอัปโหลดรูปภาพ กรุณารอสักครู่');
+      return;
+    }
+    if (savingRef.current || audioJobs.current.size || isVideoLoading || isLocating) return;
     savingRef.current = true;
     setIsSaving(true);
 
     try {
-      const finalName = storeName.trim() || `ร้านน้ำ #${drinkStores.length + 1} (${city})`;
+      const finalName = storeName.trim();
 
       if (isEditMode && editingStore) {
         if (!await updateStoreInspo(editingStore.id, {
@@ -481,44 +492,19 @@ export const NewStoreInspoModal: React.FC<NewStoreInspoModalProps> = ({ isOpen, 
 
           {/* Section 1: Photos of Storefront & Atmosphere */}
           <div className="bg-slate-50/80 p-4 rounded-2xl border border-slate-100 space-y-3">
-            <span className="text-xs font-bold text-slate-800 block">
-              1. รูปหน้าร้าน & บรรยากาศ ({storefrontAndAtmosphere.length})
-            </span>
-
-            {storefrontAndAtmosphere.length > 0 && (
-              <div className="flex gap-2 overflow-x-auto py-1">
-                {storefrontAndAtmosphere.map((p, i) => (
-                  <div key={i} className="relative shrink-0">
-                    <img
-                      src={p}
-                      className="w-16 h-16 object-cover rounded-xl border border-slate-200 shadow-sm"
-                    />
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setStorefrontAndAtmosphere((prev) => prev.filter((_, idx) => idx !== i))
-                      }
-                      className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-rose-500 text-white text-[10px] font-bold flex items-center justify-center shadow"
-                      title="ลบรูปนี้"
-                    >
-                      ×
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            <label className="flex items-center justify-center gap-2 py-2.5 px-4 bg-white border border-slate-200 hover:border-amber-500 rounded-xl text-xs font-semibold text-slate-700 cursor-pointer shadow-sm active:scale-[0.99] transition-all">
-              <Camera className="w-4 h-4 text-amber-600" />
-              <span>+ เลือกรูปจากอัลบั้ม / ถ่ายภาพหน้าร้าน (เลือกได้หลายรูปพร้อมกัน)</span>
-              <input
-                type="file" disabled={isSaving || isVideoLoading}
-                accept="image/*"
-                multiple
-                onChange={(e) => handleMultiPhotoUpload(e, setStorefrontAndAtmosphere)}
-                className="hidden"
-              />
-            </label>
+            <UploadablePhotoGrid
+              label="1. รูปหน้าร้าน & บรรยากาศคนเดิน"
+              emptyText="ยังไม่มีรูปหน้าร้าน"
+              urls={storefrontAndAtmosphere}
+              onChange={setStorefrontAndAtmosphere}
+              recordType="drink_stores"
+              recordTitle={storeName || 'ร้านน้ำเรฟ'}
+              recordId={editingStore?.id}
+              onUploadingChange={(uploading) => {
+                if (uploading) beginPhotos();
+                else endPhotos();
+              }}
+            />
 
             {/* หมวดหมู่เฉพาะร้านน้ำ & เรฟ */}
             <div className="pt-1">
@@ -546,15 +532,16 @@ export const NewStoreInspoModal: React.FC<NewStoreInspoModalProps> = ({ isOpen, 
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">
               <div>
-                <label className="text-[11px] font-medium text-slate-500 block mb-1">
-                  ชื่อร้านน้ำ (ไม่บังคับพิมพ์)
+                <label className="text-[11px] font-semibold text-slate-700 block mb-1">
+                  ชื่อร้านค้า / แบรนด์ <span className="text-red-500 font-bold">*</span>
                 </label>
                 <input
                   type="text"
-                  placeholder="เช่น CHAGEE, HEYTEA (เว้นว่างได้)"
+                  placeholder="เช่น CHAGEE, HEYTEA"
                   value={storeName}
                   onChange={(e) => setStoreName(e.target.value)}
-                  className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 focus:outline-none focus:border-amber-500 font-medium"
+                  className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 focus:outline-none focus:border-amber-500 font-semibold"
+                  required
                 />
               </div>
 
@@ -681,7 +668,7 @@ export const NewStoreInspoModal: React.FC<NewStoreInspoModalProps> = ({ isOpen, 
           {/* Section 2: 4-Dimension Rating Dolls */}
           <div className="bg-slate-50/80 p-4 rounded-2xl border border-slate-100 space-y-2.5">
             <span className="text-xs font-bold text-slate-800 block">
-              2. ให้คะแนนประเมิน (Rating Dolls)
+              2. ให้คะแนนประเมิน 4 มิติ
             </span>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
               <div className="p-3 bg-white rounded-xl border border-slate-200 text-center space-y-1">
@@ -691,13 +678,16 @@ export const NewStoreInspoModal: React.FC<NewStoreInspoModalProps> = ({ isOpen, 
                     <button
                       type="button"
                       key={s}
-                      onClick={() => setTasteRating(s)}
+                      onClick={() => setTasteRating(tasteRating === s ? 0 : s)}
                       className={`text-sm ${s <= tasteRating ? 'text-amber-400' : 'text-slate-200'}`}
                     >
                       ★
                     </button>
                   ))}
                 </div>
+                <span className="text-[10px] block text-slate-400 font-mono">
+                  {tasteRating > 0 ? `${tasteRating}/5` : '(ยังไม่ได้ให้คะแนน)'}
+                </span>
               </div>
 
               <div className="p-3 bg-white rounded-xl border border-slate-200 text-center space-y-1">
@@ -707,7 +697,7 @@ export const NewStoreInspoModal: React.FC<NewStoreInspoModalProps> = ({ isOpen, 
                     <button
                       type="button"
                       key={s}
-                      onClick={() => setAestheticsRating(s)}
+                      onClick={() => setAestheticsRating(aestheticsRating === s ? 0 : s)}
                       className={`text-sm ${
                         s <= aestheticsRating ? 'text-amber-400' : 'text-slate-200'
                       }`}
@@ -716,6 +706,9 @@ export const NewStoreInspoModal: React.FC<NewStoreInspoModalProps> = ({ isOpen, 
                     </button>
                   ))}
                 </div>
+                <span className="text-[10px] block text-slate-400 font-mono">
+                  {aestheticsRating > 0 ? `${aestheticsRating}/5` : '(ยังไม่ได้ให้คะแนน)'}
+                </span>
               </div>
 
               <div className="p-3 bg-white rounded-xl border border-slate-200 text-center space-y-1">
@@ -725,13 +718,16 @@ export const NewStoreInspoModal: React.FC<NewStoreInspoModalProps> = ({ isOpen, 
                     <button
                       type="button"
                       key={s}
-                      onClick={() => setValueRating(s)}
+                      onClick={() => setValueRating(valueRating === s ? 0 : s)}
                       className={`text-sm ${s <= valueRating ? 'text-amber-400' : 'text-slate-200'}`}
                     >
                       ★
                     </button>
                   ))}
                 </div>
+                <span className="text-[10px] block text-slate-400 font-mono">
+                  {valueRating > 0 ? `${valueRating}/5` : '(ยังไม่ได้ให้คะแนน)'}
+                </span>
               </div>
 
               <div className="p-3 bg-white rounded-xl border border-slate-200 text-center space-y-1">
@@ -741,13 +737,16 @@ export const NewStoreInspoModal: React.FC<NewStoreInspoModalProps> = ({ isOpen, 
                     <button
                       type="button"
                       key={s}
-                      onClick={() => setSpeedRating(s)}
+                      onClick={() => setSpeedRating(speedRating === s ? 0 : s)}
                       className={`text-sm ${s <= speedRating ? 'text-amber-400' : 'text-slate-200'}`}
                     >
                       ★
                     </button>
                   ))}
                 </div>
+                <span className="text-[10px] block text-slate-400 font-mono">
+                  {speedRating > 0 ? `${speedRating}/5` : '(ยังไม่ได้ให้คะแนน)'}
+                </span>
               </div>
             </div>
           </div>
@@ -758,69 +757,33 @@ export const NewStoreInspoModal: React.FC<NewStoreInspoModalProps> = ({ isOpen, 
               3. รูปป้ายเมนู & แก้วเครื่องดื่ม
             </span>
 
-            {(menuBoardPhotos.length > 0 || drinkCupPhotos.length > 0) && (
-              <div className="flex gap-2 overflow-x-auto py-1">
-                {menuBoardPhotos.map((p, i) => (
-                  <div key={`mb-${i}`} className="relative shrink-0">
-                    <img
-                      src={p}
-                      className="w-14 h-14 object-cover rounded-xl border border-slate-200"
-                    />
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setMenuBoardPhotos((prev) => prev.filter((_, idx) => idx !== i))
-                      }
-                      className="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full bg-rose-500 text-white text-[9px] font-bold flex items-center justify-center"
-                    >
-                      ×
-                    </button>
-                  </div>
-                ))}
-                {drinkCupPhotos.map((p, i) => (
-                  <div key={`dc-${i}`} className="relative shrink-0">
-                    <img
-                      src={p}
-                      className="w-14 h-14 object-cover rounded-xl border border-amber-200"
-                    />
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setDrinkCupPhotos((prev) => prev.filter((_, idx) => idx !== i))
-                      }
-                      className="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full bg-rose-500 text-white text-[9px] font-bold flex items-center justify-center"
-                    >
-                      ×
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-              <label className="flex items-center justify-center gap-2 p-3 bg-white border border-slate-200 hover:border-amber-500 rounded-xl text-xs font-semibold text-slate-700 cursor-pointer shadow-sm">
-                <Camera className="w-4 h-4 text-amber-600" />
-                <span>+ เลือกรูป / ถ่ายป้ายเมนู ({menuBoardPhotos.length})</span>
-                <input
-                  type="file" disabled={isSaving || isVideoLoading}
-                  accept="image/*"
-                  multiple
-                  onChange={(e) => handleMultiPhotoUpload(e, setMenuBoardPhotos)}
-                  className="hidden"
-                />
-              </label>
-
-              <label className="flex items-center justify-center gap-2 p-3 bg-white border border-slate-200 hover:border-amber-500 rounded-xl text-xs font-semibold text-slate-700 cursor-pointer shadow-sm">
-                <Camera className="w-4 h-4 text-amber-600" />
-                <span>+ เลือกรูป / ถ่ายแก้วแพ็กเกจจิ้ง ({drinkCupPhotos.length})</span>
-                <input
-                  type="file" disabled={isSaving || isVideoLoading}
-                  accept="image/*"
-                  multiple
-                  onChange={(e) => handleMultiPhotoUpload(e, setDrinkCupPhotos)}
-                  className="hidden"
-                />
-              </label>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <UploadablePhotoGrid
+                label="ป้ายเมนู / บอร์ดราคา"
+                emptyText="ยังไม่มีรูปป้ายเมนู"
+                urls={menuBoardPhotos}
+                onChange={setMenuBoardPhotos}
+                recordType="drink_stores"
+                recordTitle={storeName || 'ร้านน้ำเรฟ'}
+                recordId={editingStore?.id}
+                onUploadingChange={(uploading) => {
+                  if (uploading) beginPhotos();
+                  else endPhotos();
+                }}
+              />
+              <UploadablePhotoGrid
+                label="แก้ว / บรรจุภัณฑ์ / ดีเทล"
+                emptyText="ยังไม่มีรูปแก้วเครื่องดื่ม"
+                urls={drinkCupPhotos}
+                onChange={setDrinkCupPhotos}
+                recordType="drink_stores"
+                recordTitle={storeName || 'ร้านน้ำเรฟ'}
+                recordId={editingStore?.id}
+                onUploadingChange={(uploading) => {
+                  if (uploading) beginPhotos();
+                  else endPhotos();
+                }}
+              />
             </div>
           </div>
 
@@ -933,10 +896,19 @@ export const NewStoreInspoModal: React.FC<NewStoreInspoModalProps> = ({ isOpen, 
                 <div className="flex gap-3">
                   <label className="shrink-0 cursor-pointer relative group">
                     {item.photo ? (
-                      <img
-                        src={item.photo}
-                        className="w-20 h-20 object-cover rounded-xl border border-slate-200 shadow-sm group-hover:opacity-80"
-                      />
+                      <div className="relative w-20 h-20 rounded-xl overflow-hidden border border-slate-200 shadow-sm">
+                        <img
+                          src={item.photo}
+                          alt="drink"
+                          className="w-full h-full object-cover group-hover:opacity-80"
+                        />
+                        {item.photo.startsWith('blob:') && (
+                          <div className="absolute inset-0 bg-black/60 backdrop-blur-[1px] flex flex-col items-center justify-center text-white p-1">
+                            <Loader2 className="w-4 h-4 animate-spin text-white mb-0.5" />
+                            <span className="text-[8px] font-medium leading-none">กำลังอัป...</span>
+                          </div>
+                        )}
+                      </div>
                     ) : (
                       <div className="w-20 h-20 rounded-xl bg-slate-100 border border-dashed border-slate-300 flex items-center justify-center text-[10px] text-slate-400 text-center p-1">
                         + แตะใส่รูป
@@ -945,16 +917,32 @@ export const NewStoreInspoModal: React.FC<NewStoreInspoModalProps> = ({ isOpen, 
                     <input
                       type="file" disabled={isSaving || isVideoLoading}
                       accept="image/*"
-                      onChange={async (e) => {
+                      onChange={(e) => {
                         const f = e.target.files?.[0];
                         if (!f) return;
-                        beginPhotos();
                         const itemId = item.id;
-                        try {
-                          const compressed = await compressImageFile(f, 900, 0.72);
-                          setDrinkItems(previous => previous.map(entry => entry.id === itemId ? { ...entry, photo: compressed } : entry));
-                        } catch (error) { alert(error instanceof Error ? error.message : 'ประมวลผลรูปไม่สำเร็จ'); }
-                        finally { endPhotos(); }
+                        const localBlob = URL.createObjectURL(f);
+                        setDrinkItems((previous) =>
+                          previous.map((entry) => (entry.id === itemId ? { ...entry, photo: localBlob } : entry))
+                        );
+                        beginPhotos();
+                        compressImageFile(f, 900, 0.72, {
+                          recordType: 'drink_stores',
+                          recordTitle: storeName || 'ร้านน้ำเรฟ',
+                          recordId: editingStore?.id,
+                        })
+                          .then((compressed) => {
+                            setDrinkItems((previous) =>
+                              previous.map((entry) => (entry.id === itemId ? { ...entry, photo: compressed } : entry))
+                            );
+                          })
+                          .catch((error) => {
+                            alert(error instanceof Error ? error.message : 'ประมวลผลรูปไม่สำเร็จ');
+                          })
+                          .finally(() => {
+                            endPhotos();
+                          });
+                        e.target.value = '';
                       }}
                       className="hidden"
                     />
