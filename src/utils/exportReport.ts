@@ -214,13 +214,13 @@ export function buildExecutiveReportHtml(
                 <div class="voice-meta">
                   <div class="voice-title">${segmentThaiHtml(`${idx + 1}. ${vc.label}`)}</div>
                   <div class="voice-sub">${segmentThaiHtml(`${vc.source} · ความยาว ${vc.durationSec} วินาที`)}</div>
-                  <div class="voice-wave">ılıll|ılıl||ılıll|ılı · สแกน QR เพื่อกดฟังเสียงจริง</div>
+                  <div class="voice-wave">${segmentThaiHtml('ılıll|ılıl||ılıll|ılı · สแกน QR เพื่อกดฟังเสียงจริง')}</div>
                 </div>
               </div>`
             )
             .join('')}
         </div>`
-      : `<div class="empty-note">ไม่มีไฟล์เสียงบันทึกในรายการนี้</div>`;
+      : `<div class="empty-note">${segmentThaiHtml('ไม่มีไฟล์เสียงบันทึกในรายการนี้')}</div>`;
 
   const videoCardsHtml =
     rawVideos.length > 0
@@ -246,7 +246,7 @@ export function buildExecutiveReportHtml(
                   </div>
                   <div class="video-play-circle">▶</div>
                   <div class="video-overlay-bottom">
-                    <span>คลิปวิดีโอที่ ${idx + 1} · สแกน QR Code ด้านบนเพื่อเปิดเล่นวิดีโอ</span>
+                    <span>${segmentThaiHtml(`คลิปวิดีโอที่ ${idx + 1} · สแกน QR Code ด้านบนเพื่อเปิดเล่นวิดีโอ`)}</span>
                   </div>
                 </div>
                 <div class="video-caption">
@@ -257,7 +257,7 @@ export function buildExecutiveReportHtml(
             })
             .join('')}
         </div>`
-      : `<div class="empty-note">ไม่มีคลิปวิดีโอในรายการนี้</div>`;
+      : `<div class="empty-note">${segmentThaiHtml('ไม่มีคลิปวิดีโอในรายการนี้')}</div>`;
 
   // Build Catalog or Drink Items Table HTML
   let itemsSectionHtml = '';
@@ -310,7 +310,7 @@ export function buildExecutiveReportHtml(
 
     itemsSectionHtml = `
       <div class="section-box">
-        <div class="section-title">กลุ่มที่ 3: รายการสินค้า / อุปกรณ์ / วัตถุดิบ (${(sup.catalogItems || []).length} รายการ)</div>
+        <div class="section-title">${segmentThaiHtml(`กลุ่มที่ 3: รายการสินค้า / อุปกรณ์ / วัตถุดิบ (${(sup.catalogItems || []).length} รายการ)`)}</div>
         ${
           rows
             ? `<table class="data-table">
@@ -324,15 +324,15 @@ export function buildExecutiveReportHtml(
                 <thead>
                   <tr>
                     <th style="text-align:center;">#</th>
-                    <th>รูปภาพ</th>
-                    <th>ชื่อรายการ & รายละเอียดสเปก</th>
-                    <th>ขนาด / น้ำหนัก</th>
-                    <th>ราคาประเมิน</th>
+                    <th>${segmentThaiHtml('รูปภาพ')}</th>
+                    <th>${segmentThaiHtml('ชื่อรายการ & รายละเอียดสเปก')}</th>
+                    <th>${segmentThaiHtml('ขนาด / น้ำหนัก')}</th>
+                    <th>${segmentThaiHtml('ราคาประเมิน')}</th>
                   </tr>
                 </thead>
                 <tbody>${rows}</tbody>
               </table>`
-            : `<div class="empty-note">ไม่มีรายการย่อย</div>`
+            : `<div class="empty-note">${segmentThaiHtml('ไม่มีรายการย่อย')}</div>`
         }
       </div>
     `;
@@ -391,7 +391,7 @@ export function buildExecutiveReportHtml(
 
     itemsSectionHtml = `
       <div class="section-box">
-        <div class="section-title">กลุ่มที่ 3: เมนูที่ชิม & การถอดรหัสสูตร (${(st.drinkItems || []).length} เมนู)</div>
+        <div class="section-title">${segmentThaiHtml(`กลุ่มที่ 3: เมนูที่ชิม & การถอดรหัสสูตร (${(st.drinkItems || []).length} เมนู)`)}</div>
         ${
           rows
             ? `<table class="data-table">
@@ -406,16 +406,16 @@ export function buildExecutiveReportHtml(
                 <thead>
                   <tr>
                     <th style="text-align:center;">#</th>
-                    <th>รูปแก้ว</th>
-                    <th>ชื่อเมนู & กิมมิก</th>
-                    <th>ขนาดแก้ว</th>
-                    <th>ต่อยอดเมนูของเรา</th>
-                    <th>ราคาขาย</th>
+                    <th>${segmentThaiHtml('รูปแก้ว')}</th>
+                    <th>${segmentThaiHtml('ชื่อเมนู & กิมมิก')}</th>
+                    <th>${segmentThaiHtml('ขนาดแก้ว')}</th>
+                    <th>${segmentThaiHtml('ต่อยอดเมนูของเรา')}</th>
+                    <th>${segmentThaiHtml('ราคาขาย')}</th>
                   </tr>
                 </thead>
                 <tbody>${rows}</tbody>
               </table>`
-            : `<div class="empty-note">ไม่มีเมนูย่อย</div>`
+            : `<div class="empty-note">${segmentThaiHtml('ไม่มีเมนูย่อย')}</div>`
         }
       </div>
     `;
@@ -435,7 +435,7 @@ export function buildExecutiveReportHtml(
             )
             .join('')}
         </div>`
-      : `<div class="empty-note">ไม่มีรูปภาพในรายการนี้</div>`;
+      : `<div class="empty-note">${segmentThaiHtml('ไม่มีรูปภาพในรายการนี้')}</div>`;
 
   // Build Comments & Replies Section
   const commentsHtml =
@@ -456,7 +456,7 @@ export function buildExecutiveReportHtml(
             }
             ${
               n.voiceUrl
-                ? `<div class="cell-voice-badge" style="margin-top:4px;">มีไฟล์เสียงแนบในความคิดเห็นนี้ (สแกน QR เพื่อฟัง)</div>`
+                ? `<div class="cell-voice-badge" style="margin-top:4px;">${segmentThaiHtml('มีไฟล์เสียงแนบในความคิดเห็นนี้ (สแกน QR เพื่อฟัง)')}</div>`
                 : ''
             }
             ${
@@ -480,7 +480,7 @@ export function buildExecutiveReportHtml(
                           }
                           ${
                             r.voiceUrl
-                              ? `<div class="cell-voice-badge" style="margin-top:4px;">มีไฟล์เสียงแนบในคำตอบนี้</div>`
+                              ? `<div class="cell-voice-badge" style="margin-top:4px;">${segmentThaiHtml('มีไฟล์เสียงแนบในคำตอบนี้')}</div>`
                               : ''
                           }
                         </div>`
@@ -492,7 +492,7 @@ export function buildExecutiveReportHtml(
           </div>`
           )
           .join('')
-      : `<div class="empty-note">ยังไม่มีความคิดเห็นในรายการนี้</div>`;
+      : `<div class="empty-note">${segmentThaiHtml('ยังไม่มีความคิดเห็นในรายการนี้')}</div>`;
 
   // Build Activity & Handoff Log + Viewer Log
   const activityRowsHtml = historyEntries
@@ -528,10 +528,10 @@ export function buildExecutiveReportHtml(
           <thead>
             <tr>
               <th style="text-align:center;">#</th>
-              <th>ผู้เปิดอ่าน (นามแฝง)</th>
-              <th>ระดับสิทธิ์</th>
-              <th>เปิดอ่านล่าสุดเมื่อ</th>
-              <th style="text-align:center;">จำนวนครั้ง</th>
+              <th>${segmentThaiHtml('ผู้เปิดอ่าน (นามแฝง)')}</th>
+              <th>${segmentThaiHtml('ระดับสิทธิ์')}</th>
+              <th>${segmentThaiHtml('เปิดอ่านล่าสุดเมื่อ')}</th>
+              <th style="text-align:center;">${segmentThaiHtml('จำนวนครั้ง')}</th>
             </tr>
           </thead>
           <tbody>
@@ -543,13 +543,13 @@ export function buildExecutiveReportHtml(
                 <td><div class="cell-title">${segmentThaiHtml(`${v.alias} (${v.name})`)}</div></td>
                 <td><div class="cell-text">${escapeHtml(v.role.toUpperCase())}</div></td>
                 <td><div class="cell-sub">${escapeHtml(new Date(v.lastViewedAt).toLocaleString('th-TH'))}</div></td>
-                <td style="text-align:center;font-weight:700;">${v.viewCount || 1} ครั้ง</td>
+                <td style="text-align:center;font-weight:700;">${segmentThaiHtml(`${v.viewCount || 1} ครั้ง`)}</td>
               </tr>`
               )
               .join('')}
           </tbody>
         </table>`
-      : `<div class="empty-note" style="margin-top:8px;">ยังไม่มีประวัติผู้เปิดอ่านเพิ่มเติม</div>`;
+      : `<div class="empty-note" style="margin-top:8px;">${segmentThaiHtml('ยังไม่มีประวัติผู้เปิดอ่านเพิ่มเติม')}</div>`;
 
   const ratingSummaryText = isSupplier
     ? `คะแนนประเมิน ${sup?.rating || 5}/5 ดาว (${sup?.isFactory ? 'โรงงานผลิต' : 'หน้าร้าน/โชว์รูม'})`
@@ -566,11 +566,14 @@ export function buildExecutiveReportHtml(
   <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
   <style>
-    * {
+    html, body, * {
       box-sizing: border-box;
       letter-spacing: 0px !important;
       font-kerning: none !important;
       font-variant-ligatures: none !important;
+      -webkit-text-size-adjust: 100% !important;
+      -moz-text-size-adjust: 100% !important;
+      text-size-adjust: 100% !important;
     }
     body {
       font-family: "Sarabun", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
@@ -617,15 +620,21 @@ export function buildExecutiveReportHtml(
 
     /* Fixed A4 width sheet so mobile screens never crush table columns during html2canvas capture */
     .html2pdf__overlay {
+      position: absolute !important;
+      overflow: visible !important;
       left: 0 !important;
       top: 0 !important;
+      right: auto !important;
+      bottom: auto !important;
+      width: 732px !important;
     }
     .html2pdf__container {
+      position: relative !important;
       margin: 0 !important;
       left: 0 !important;
       right: auto !important;
       top: 0 !important;
-      width: 748px !important;
+      width: 732px !important;
     }
     .sheet-outer {
       width: 100%;
@@ -633,12 +642,12 @@ export function buildExecutiveReportHtml(
       padding: 12px 0 32px 0;
     }
     .page-sheet {
-      width: 748px;
-      min-width: 748px;
-      max-width: 748px;
+      width: 732px;
+      min-width: 732px;
+      max-width: 732px;
       margin: 0;
       background: #ffffff;
-      padding: 16px 22px;
+      padding: 18px 26px;
       border-radius: 0;
     }
 
@@ -1180,18 +1189,18 @@ export function buildExecutiveReportHtml(
       <!-- Report Header with QR Code -->
       <div class="report-header">
         <div class="header-left">
-          <div class="badge">${isSupplier ? 'รายงานซัพพลายเออร์ & โรงงาน' : 'รายงานเรฟร้านน้ำ & R&D'} · ${countryLabel}</div>
+          <div class="badge">${segmentThaiHtml(`${isSupplier ? 'รายงานซัพพลายเออร์ & โรงงาน' : 'รายงานเรฟร้านน้ำ & R&D'} · ${countryLabel}`)}</div>
           <h1 class="brand-title">${segmentThaiHtml(title)}</h1>
           <div class="brand-sub">${segmentThaiHtml(`${chineseName ? `${chineseName} · ` : ''}หมวดหมู่: ${category}`)}</div>
 
           <!-- At-a-glance Multimedia & Detail Counter Pills -->
           <div class="summary-pills">
-            <span class="summary-pill">รูปภาพ ${allPhotos.length} รูป</span>
-            <span class="summary-pill">วอยซ์เสียง ${allVoiceClips.length} คลิป</span>
-            <span class="summary-pill">วิดีโอ ${rawVideos.length} คลิป</span>
-            <span class="summary-pill">${isSupplier ? `สินค้า ${(sup?.catalogItems || []).length} รายการ` : `เมนูชิม ${(st?.drinkItems || []).length} เมนู`}</span>
-            <span class="summary-pill">คอมเมนต์ ${notes.length} หัวข้อ</span>
-            <span class="summary-pill">ประวัติ Log ${historyEntries.length} รายการ</span>
+            <span class="summary-pill">${segmentThaiHtml(`รูปภาพ ${allPhotos.length} รูป`)}</span>
+            <span class="summary-pill">${segmentThaiHtml(`วอยซ์เสียง ${allVoiceClips.length} คลิป`)}</span>
+            <span class="summary-pill">${segmentThaiHtml(`วิดีโอ ${rawVideos.length} คลิป`)}</span>
+            <span class="summary-pill">${segmentThaiHtml(isSupplier ? `สินค้า ${(sup?.catalogItems || []).length} รายการ` : `เมนูชิม ${(st?.drinkItems || []).length} เมนู`)}</span>
+            <span class="summary-pill">${segmentThaiHtml(`คอมเมนต์ ${notes.length} หัวข้อ`)}</span>
+            <span class="summary-pill">${segmentThaiHtml(`ประวัติ Log ${historyEntries.length} รายการ`)}</span>
           </div>
 
           <div class="direct-link-bar">
@@ -1202,19 +1211,19 @@ export function buildExecutiveReportHtml(
 
         <div class="header-right">
           <div class="meta-box">
-            <div class="meta-platform">ฉันจะเป็นหัวแถว</div>
+            <div class="meta-platform">${segmentThaiHtml('ฉันจะเป็นหัวแถว')}</div>
             <div>LEAD THE FRONT · VITCHA R&amp;D</div>
-            <div style="margin-top:4px;">รหัส: ${escapeHtml(item.id.slice(0, 18))}</div>
-            <div>สถานะ: <strong>${escapeHtml(handoffStageLabel)}</strong></div>
-            <div>ออกรายงาน: ${escapeHtml(new Date().toLocaleString('th-TH'))}</div>
+            <div style="margin-top:4px;">${segmentThaiHtml(`รหัส: ${item.id.slice(0, 18)}`)}</div>
+            <div>${segmentThaiHtml(`สถานะ: ${handoffStageLabel}`)}</div>
+            <div>${segmentThaiHtml(`ออกรายงาน: ${new Date().toLocaleString('th-TH')}`)}</div>
           </div>
 
           ${
             qrDataUri
               ? `<div class="qr-card">
                   <img id="report-qr-img" src="${qrDataUri}" alt="QR Code" />
-                  <div class="qr-label">สแกนเปิดในแอป</div>
-                  <div class="qr-sub">ฟังเสียง · ดูคลิปจริง</div>
+                  <div class="qr-label">${segmentThaiHtml('สแกนเปิดในแอป')}</div>
+                  <div class="qr-sub">${segmentThaiHtml('ฟังเสียง · ดูคลิปจริง')}</div>
                 </div>`
               : ''
           }
@@ -1223,22 +1232,22 @@ export function buildExecutiveReportHtml(
 
       <!-- Group 1: Overview, Contacts, Location & Handoff -->
       <div class="section-box">
-        <div class="section-title">กลุ่มที่ 1: ข้อมูลหลัก พิกัดสถานที่ ช่องทางติดต่อ และการรับช่วงต่อ</div>
+        <div class="section-title">${segmentThaiHtml('กลุ่มที่ 1: ข้อมูลหลัก พิกัดสถานที่ ช่องทางติดต่อ และการรับช่วงต่อ')}</div>
         <div class="info-grid">
           <div class="info-item">
-            <span class="info-label">ชื่อรายการ / ร้านค้า</span>
+            <span class="info-label">${segmentThaiHtml('ชื่อรายการ / ร้านค้า')}</span>
             <span class="info-value">${segmentThaiHtml(`${title}${chineseName ? ` (${chineseName})` : ''}`)}</span>
           </div>
           <div class="info-item">
-            <span class="info-label">หมวดหมู่ & คะแนนประเมิน</span>
+            <span class="info-label">${segmentThaiHtml('หมวดหมู่ & คะแนนประเมิน')}</span>
             <span class="info-value">${segmentThaiHtml(`${category} · ${ratingSummaryText}`)}</span>
           </div>
           <div class="info-item">
-            <span class="info-label">สถานที่ / ตลาด / เมือง</span>
+            <span class="info-label">${segmentThaiHtml('สถานที่ / ตลาด / เมือง')}</span>
             <span class="info-value">${segmentThaiHtml(city || item.location?.addressText || '-')}</span>
           </div>
           <div class="info-item">
-            <span class="info-label">พิกัด GPS & แผนที่</span>
+            <span class="info-label">${segmentThaiHtml('พิกัด GPS & แผนที่')}</span>
             <span class="info-value">${
               item.location
                 ? `${item.location.lat.toFixed(5)}, ${item.location.lng.toFixed(5)} (${escapeHtml(item.location.addressText || 'พิกัดหน้างาน')})`
@@ -1246,25 +1255,25 @@ export function buildExecutiveReportHtml(
             }</span>
           </div>
           <div class="info-item">
-            <span class="info-label">ช่องทางติดต่อ (WeChat / LINE / โทรศัพท์)</span>
+            <span class="info-label">${segmentThaiHtml('ช่องทางติดต่อ (WeChat / LINE / โทรศัพท์)')}</span>
             <span class="info-value">${segmentThaiHtml(
               `WeChat: ${(isSupplier ? sup?.wechatId : st?.wechatId) || '-'} | LINE: ${(isSupplier ? sup?.lineId : st?.lineId) || '-'} | โทร: ${(isSupplier ? sup?.phone : st?.phone) || '-'}`
             )}</span>
           </div>
           <div class="info-item">
-            <span class="info-label">ผู้ลงพื้นที่สำรวจ & เวลาที่บันทึก</span>
+            <span class="info-label">${segmentThaiHtml('ผู้ลงพื้นที่สำรวจ & เวลาที่บันทึก')}</span>
             <span class="info-value">${segmentThaiHtml(
               `${item.creator.alias}${item.creator.name && item.creator.name !== item.creator.alias ? ` (${item.creator.name})` : ''} · ${new Date(item.creator.timestamp).toLocaleString('th-TH')}`
             )}</span>
           </div>
           <div class="info-item">
-            <span class="info-label">ผู้รับผิดชอบรับช่วงต่อ & กำหนดติดตาม</span>
+            <span class="info-label">${segmentThaiHtml('ผู้รับผิดชอบรับช่วงต่อ & กำหนดติดตาม')}</span>
             <span class="info-value">${segmentThaiHtml(
               `${item.assignedTo || 'ยังไม่ระบุผู้รับผิดชอบ'} · กำหนดติดตาม: ${item.targetFollowUpDate || '-'}`
             )}</span>
           </div>
           <div class="info-item">
-            <span class="info-label">การมีส่วนร่วมของทีม (Likes & Views)</span>
+            <span class="info-label">${segmentThaiHtml('การมีส่วนร่วมของทีม (Likes & Views)')}</span>
             <span class="info-value">${segmentThaiHtml(`กดถูกใจ ${likes.length} คน · เปิดอ่านแล้ว ${viewedBy.length} คน`)}</span>
           </div>
         </div>
@@ -1272,7 +1281,7 @@ export function buildExecutiveReportHtml(
         ${
           (isSupplier ? sup?.memo : st?.tastingNotes)
             ? `<div class="note-banner">
-                <div class="note-banner-title">${isSupplier ? 'บันทึกภาพรวมหน้างาน / รายละเอียดสเปกหลัก:' : 'บันทึกรีวิวรสชาติ & ไอเดียเรฟหน้างาน:'}</div>
+                <div class="note-banner-title">${segmentThaiHtml(isSupplier ? 'บันทึกภาพรวมหน้างาน / รายละเอียดสเปกหลัก:' : 'บันทึกรีวิวรสชาติ & ไอเดียเรฟหน้างาน:')}</div>
                 <div class="note-banner-body">${segmentThaiHtml(isSupplier ? sup?.memo : st?.tastingNotes)}</div>
               </div>`
             : ''
@@ -1281,7 +1290,7 @@ export function buildExecutiveReportHtml(
         ${
           item.handoffNotes
             ? `<div class="handoff-banner">
-                <div class="handoff-banner-title">โน้ตการส่งมอบงาน / ผลเจรจาทีมไทย:</div>
+                <div class="handoff-banner-title">${segmentThaiHtml('โน้ตการส่งมอบงาน / ผลเจรจาทีมไทย:')}</div>
                 <div class="note-banner-body">${segmentThaiHtml(item.handoffNotes)}</div>
               </div>`
             : ''
@@ -1290,10 +1299,10 @@ export function buildExecutiveReportHtml(
 
       <!-- Group 2: Voice Recordings & Video Clips with Thumbnail Previews -->
       <div class="section-box">
-        <div class="section-title">กลุ่มที่ 2: สื่อมัลติมีเดียหน้างาน — วอยซ์เสียงบันทึก (${allVoiceClips.length} คลิป) & วิดีโอ (${rawVideos.length} คลิป)</div>
-        <div class="media-subhead">ไฟล์เสียงบันทึกหน้างานจริง (${allVoiceClips.length} คลิป):</div>
+        <div class="section-title">${segmentThaiHtml(`กลุ่มที่ 2: สื่อมัลติมีเดียหน้างาน — วอยซ์เสียงบันทึก (${allVoiceClips.length} คลิป) & วิดีโอ (${rawVideos.length} คลิป)`)}</div>
+        <div class="media-subhead">${segmentThaiHtml(`ไฟล์เสียงบันทึกหน้างานจริง (${allVoiceClips.length} คลิป):`)}</div>
         ${voiceCardsHtml}
-        <div class="media-subhead" style="margin-top:10px;">คลิปวิดีโอหน้างานพร้อมภาพ Thumbnail พรีวิว (${rawVideos.length} คลิป):</div>
+        <div class="media-subhead" style="margin-top:10px;">${segmentThaiHtml(`คลิปวิดีโอหน้างานพร้อมภาพ Thumbnail พรีวิว (${rawVideos.length} คลิป):`)}</div>
         ${videoCardsHtml}
       </div>
 
@@ -1302,19 +1311,19 @@ export function buildExecutiveReportHtml(
 
       <!-- Group 4: All Photos of This Item -->
       <div class="section-box">
-        <div class="section-title">กลุ่มที่ 4: แกลเลอรีภาพถ่ายทั้งหมดของรายการนี้ (${allPhotos.length} รูป)</div>
+        <div class="section-title">${segmentThaiHtml(`กลุ่มที่ 4: แกลเลอรีภาพถ่ายทั้งหมดของรายการนี้ (${allPhotos.length} รูป)`)}</div>
         ${photosGridHtml}
       </div>
 
       <!-- Group 5: All Threaded Comments & Replies -->
       <div class="section-box">
-        <div class="section-title">กลุ่มที่ 5: บันทึกความคิดเห็นและการตอบกลับทั้งหมด (${notes.length} หัวข้อสนทนา)</div>
+        <div class="section-title">${segmentThaiHtml(`กลุ่มที่ 5: บันทึกความคิดเห็นและการตอบกลับทั้งหมด (${notes.length} หัวข้อสนทนา)`)}</div>
         ${commentsHtml}
       </div>
 
       <!-- Group 6: Activity & Handoff Log + Viewer Log -->
       <div class="section-box">
-        <div class="section-title">กลุ่มที่ 6: ประวัติการดำเนินงาน & ส่งต่องาน (Activity Log ${historyEntries.length} รายการ) และผู้เปิดอ่าน (${viewedBy.length} คน)</div>
+        <div class="section-title">${segmentThaiHtml(`กลุ่มที่ 6: ประวัติการดำเนินงาน (${historyEntries.length} รายการ) & ผู้เปิดอ่าน (${viewedBy.length} คน)`)}</div>
         <table class="data-table">
           <colgroup>
             <col style="width:8%;" />
@@ -1325,9 +1334,9 @@ export function buildExecutiveReportHtml(
           <thead>
             <tr>
               <th style="text-align:center;">#</th>
-              <th>ผู้ปฏิบัติงาน</th>
-              <th>รายการที่ดำเนินการ / ส่งต่องาน</th>
-              <th>วันและเวลา</th>
+              <th>${segmentThaiHtml('ผู้ปฏิบัติงาน')}</th>
+              <th>${segmentThaiHtml('รายการที่ดำเนินการ / ส่งต่องาน')}</th>
+              <th>${segmentThaiHtml('วันและเวลา')}</th>
             </tr>
           </thead>
           <tbody>${activityRowsHtml}</tbody>
@@ -1428,7 +1437,7 @@ export function buildExecutiveReportHtml(
       if (window.html2pdf && element) {
         window.scrollTo(0, 0);
         var opt = {
-          margin: [6, 6, 6, 6],
+          margin: [8, 8, 8, 8],
           filename: ${JSON.stringify(safeFilename)},
           image: { type: 'jpeg', quality: 0.96 },
           html2canvas: {
@@ -1439,8 +1448,8 @@ export function buildExecutiveReportHtml(
             y: 0,
             scrollX: 0,
             scrollY: 0,
-            windowWidth: 748,
-            width: 748
+            windowWidth: 732,
+            width: 732
           },
           jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
           pagebreak: {
@@ -1448,7 +1457,26 @@ export function buildExecutiveReportHtml(
             avoid: ['tr', '.info-item', '.voice-card', '.video-card', '.photo-card', '.comment-box', '.note-banner', '.handoff-banner', '.report-header']
           }
         };
-        window.html2pdf().set(opt).from(element).save().then(function() {
+        var worker = window.html2pdf().set(opt).from(element);
+        worker.toContainer().then(function() {
+          if (this.prop && this.prop.overlay) {
+            this.prop.overlay.style.position = 'absolute';
+            this.prop.overlay.style.overflow = 'visible';
+            this.prop.overlay.style.left = '0px';
+            this.prop.overlay.style.top = '0px';
+            this.prop.overlay.style.right = 'auto';
+            this.prop.overlay.style.bottom = 'auto';
+            this.prop.overlay.style.width = '732px';
+          }
+          if (this.prop && this.prop.container) {
+            this.prop.container.style.position = 'relative';
+            this.prop.container.style.margin = '0px';
+            this.prop.container.style.left = '0px';
+            this.prop.container.style.right = 'auto';
+            this.prop.container.style.top = '0px';
+            this.prop.container.style.width = '732px';
+          }
+        }).toCanvas().toPdf().save().then(function() {
           if (statusEl) statusEl.textContent = 'ดาวน์โหลดไฟล์ PDF สำเร็จแล้ว';
         }).catch(function() {
           window.print();

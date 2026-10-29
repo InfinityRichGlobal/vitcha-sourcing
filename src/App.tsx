@@ -27,7 +27,7 @@ import { SupplierRecord, StoreInspoRecord } from './types';
 const ModalLoading = () => <div className="fixed inset-0 z-[110] grid place-items-center bg-slate-950/30 p-4 backdrop-blur-sm"><div role="status" className="rounded-2xl bg-white px-8 py-6 text-sm font-medium text-slate-600 shadow-xl">กำลังเปิดรายละเอียด…</div></div>;
 
 const MainApp: React.FC = () => {
-  const { activeTab, setActiveTab, suppliers, drinkStores, isAuthenticated, editingSupplier, editingStore } = useApp();
+  const { activeTab, setActiveTab, suppliers, drinkStores, isAuthenticated, isRestoringSession, editingSupplier, editingStore } = useApp();
 
   const [isNewSupplierOpen, setIsNewSupplierOpen] = useState(false);
   const [isNewStoreInspoOpen, setIsNewStoreInspoOpen] = useState(false);
@@ -119,6 +119,20 @@ const MainApp: React.FC = () => {
   // Lockscreen Gate: ทุกคนต้องล็อกอินก่อนเข้าถึงหน้าหลักและข้อมูล
   // หากมีรหัสคำเชิญ (?invite=...) จะพาเข้าสู่หน้าสมัครสมาชิกทันที
   if (!isAuthenticated) {
+    if (isRestoringSession && !(authView === 'invite' && inviteCodeUrl)) {
+      return (
+        <div className="min-h-screen bg-white flex flex-col items-center justify-center font-sans text-slate-600 gap-3">
+          <img
+            src="./logo.jpg"
+            alt="ฉันจะเป็นหัวแถว"
+            className="w-12 h-12 rounded-2xl object-cover border border-slate-200 shadow-xs animate-pulse"
+          />
+          <div role="status" className="text-xs font-semibold text-slate-500">
+            กำลังเข้าสู่ระบบอัตโนมัติ...
+          </div>
+        </div>
+      );
+    }
     return (
       <div className="min-h-screen bg-slate-950 flex flex-col font-sans selection:bg-emerald-500 selection:text-white">
         <ConnectionStatus />

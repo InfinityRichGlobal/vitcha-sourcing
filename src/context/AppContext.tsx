@@ -143,6 +143,7 @@ interface AppContextType {
   deleteInvite: (inviteId: string) => Promise<boolean>;
   refreshCentralData: () => Promise<boolean>;
   isAuthenticated: boolean;
+  isRestoringSession: boolean;
   logout: () => void;
   loginWithCredentials: (usernameOrEmail: string, passOrPin: string) => Promise<boolean>;
   loginWithPin: (idOrEmail: string, pin: string) => Promise<boolean>;
@@ -180,6 +181,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const productTaxonomyRevision = useRef(0);
   const [currentUser, setCurrentUser] = useState<User>(GUEST);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isRestoringSession, setIsRestoringSession] = useState<boolean>(() => Boolean(getSessionToken()));
   const [simulatedFromAdmin, setSimulatedFromAdmin] = useState(false);
   const [users, setUsers] = useState<User[]>([]);
   const [suppliers, setSuppliers] = useState<SupplierRecord[]>([]);
@@ -225,7 +227,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const clearSession = () => {
     refreshController.current?.abort(); refreshController.current = null;
-    setSessionToken(null); setIsAuthenticated(false); setCurrentUser(GUEST); setSimulatedFromAdmin(false);
+    setSessionToken(null); setIsAuthenticated(false); setIsRestoringSession(false); setCurrentUser(GUEST); setSimulatedFromAdmin(false);
     setProducts([]); setProductCategories([]); setProductTags([]); setProductSets([]);
     setUsers([]); setSuppliers([]); setDrinkStores([]); setInvites([]); setNotifications([]); setActiveToast(null);
     setEditingSupplier(null); setEditingStore(null); seenNotifications.current.clear(); notificationsInitialized.current = false;
@@ -240,6 +242,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const controller = new AbortController(); refreshController.current = controller;
     try {
       if (!getSessionToken()) {
+        if (mounted.current) setIsRestoringSession(false);
         const health = await checkServerHealth();
         if (!controller.signal.aborted && mounted.current) setRenderStatus(health.ok ? 'connected' : 'disconnected');
         return health.ok;
@@ -247,7 +250,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const data = await fetchCentralData(controller.signal);
       if (!mounted.current || controller.signal.aborted || refreshController.current !== controller) return false;
       if (!data.user || !Array.isArray(data.suppliers) || !Array.isArray(data.drinkStores)) throw new Error('ข้อมูลเซิร์ฟเวอร์ไม่สมบูรณ์');
-      setRenderStatus('connected'); setCurrentUser(data.user); setSimulatedFromAdmin(data.simulated); setIsAuthenticated(true);
+      setRenderStatus('connected'); setCurrentUser(data.user); setSimulatedFromAdmin(data.simulated); setIsAuthenticated(true); setIsRestoringSession(false);
       setProducts(data.products || []); setProductCategories(data.productCategories || []); setProductTags(data.productTags || []); setProductSets(data.productSets || []); productTaxonomyRevision.current = data.productTaxonomyRevision || 0;
       setUsers(data.users); setInvites(data.invites);
       setSuppliers(data.suppliers); setDrinkStores(data.drinkStores);
@@ -265,7 +268,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     } catch (error) {
       if (!controller.signal.aborted && mounted.current) {
         if (error instanceof ApiError && error.status === 401) clearSession();
-        else setRenderStatus('disconnected');
+        else { setRenderStatus('disconnected'); setIsRestoringSession(false); }
       }
       return false;
     } finally { if (refreshController.current === controller) refreshController.current = null; }
@@ -458,7 +461,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     addQuickTag, editQuickTag, deleteQuickTag, addQuickMessage, editQuickMessage, deleteQuickMessage, updateUserRole, recordItemView, toggleLikeItem, loadFullMockupData, resetSystemData,
     updateHandoff, addSupplier, updateSupplier, deleteSupplier, addStoreInspo, updateStoreInspo, deleteStoreInspo, canEditItems, canDeleteItems, canComment, canAddItems,
     editingSupplier, editingStore, openEditItem, closeEditItem, addReviewerNote, addReviewReply, updatePipelineStatus, updateExchangeRate, toggleCurrencyMode, convertCnyToThb, convertThbToCny,
-    updateCurrentUserProfile, updateCurrentUserAvatar, switchUser, simulatedFromAdmin, restoreAdminUser, deleteUser, deleteInvite, refreshCentralData, isAuthenticated, logout, loginWithCredentials, loginWithPin,
+    updateCurrentUserProfile, updateCurrentUserAvatar, switchUser, simulatedFromAdmin, restoreAdminUser, deleteUser, deleteInvite, refreshCentralData, isAuthenticated, isRestoringSession, logout, loginWithCredentials, loginWithPin,
     createInvite, redeemInvite, registerUserWithInvite, renderStatus, renderServerUrl, setRenderServerUrl, testRenderConnection, syncAllDataToRender,
   }}>{children}</AppContext.Provider>;
 };
