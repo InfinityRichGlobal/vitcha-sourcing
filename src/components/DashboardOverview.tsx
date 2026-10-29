@@ -159,8 +159,8 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
 
   return (
     <div id="dashboard-section" className="max-w-6xl mx-auto px-3 sm:px-5 py-3.5 space-y-4 animate-in fade-in">
-      {/* 1. Minimal Compact Hero Bar: Title Left + Compact Country Switcher Right (ไม่ตัดคำ ไม่มี ... เด็ดขาด) */}
-      <div className="bg-white px-3.5 py-2.5 rounded-2xl border border-slate-200/90 shadow-2xs flex items-center justify-between gap-2 flex-wrap">
+      {/* 1. Minimal Compact Hero Bar: ไร้กรอบชั้นนอก + ปุ่มธงล้วนไร้คำว่า ไทย/จีน */}
+      <div className="flex items-center justify-between gap-2 px-0.5">
         <div className="flex items-center gap-2 shrink-0">
           <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shrink-0" />
           <h1 className="font-extrabold text-xs sm:text-sm text-slate-950 tracking-tight whitespace-nowrap">
@@ -168,40 +168,49 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
           </h1>
         </div>
 
-        {/* Compact Country Filter Pill on Right */}
-        <div className="flex items-center gap-1 bg-slate-100 p-0.5 rounded-xl border border-slate-200/80 text-[11px] shrink-0">
+        {/* Compact Flag-Only Country Filter Pill on Right */}
+        <div className="flex items-center gap-1 bg-white p-0.5 rounded-xl border border-slate-200/80 shadow-2xs text-[11px] shrink-0">
           <button
             type="button"
+            aria-label="ทั้งหมด"
+            title="ทั้งหมด"
             onClick={() => setCountryFilter('all')}
-            className={`px-2 py-1 rounded-lg font-bold transition-all flex items-center gap-1 whitespace-nowrap ${
+            className={`px-2 py-1 rounded-lg font-mono font-bold transition-all flex items-center gap-1 whitespace-nowrap ${
               countryFilter === 'all'
-                ? 'bg-white text-slate-950 shadow-2xs'
+                ? 'bg-slate-900 text-white shadow-2xs'
                 : 'text-slate-600 hover:text-slate-950'
             }`}
           >
-            <span>🌏 ทั้งหมด ({suppliers.length + drinkStores.length})</span>
+            <span>🌏</span>
+            <span>{suppliers.length + drinkStores.length}</span>
           </button>
           <button
             type="button"
+            aria-label="จีน"
+            title="จีน"
             onClick={() => setCountryFilter('CN')}
-            className={`px-2 py-1 rounded-lg font-bold transition-all flex items-center gap-1 whitespace-nowrap ${
+            className={`px-2 py-1 rounded-lg font-mono font-bold transition-all flex items-center gap-1 whitespace-nowrap ${
               countryFilter === 'CN'
-                ? 'bg-white text-slate-950 shadow-2xs'
+                ? 'bg-slate-900 text-white shadow-2xs'
                 : 'text-slate-600 hover:text-slate-950'
             }`}
           >
-            <span>🇨🇳 จีน ({suppliers.filter((s) => s.country !== 'TH').length + drinkStores.filter((d) => d.country !== 'TH').length})</span>
+            <span>🇨🇳</span>
+            <span>{suppliers.filter((s) => s.country !== 'TH').length + drinkStores.filter((d) => d.country !== 'TH').length}</span>
           </button>
           <button
             type="button"
+            aria-label="ไทย"
+            title="ไทย"
             onClick={() => setCountryFilter('TH')}
-            className={`px-2 py-1 rounded-lg font-bold transition-all flex items-center gap-1 whitespace-nowrap ${
+            className={`px-2 py-1 rounded-lg font-mono font-bold transition-all flex items-center gap-1 whitespace-nowrap ${
               countryFilter === 'TH'
-                ? 'bg-white text-slate-950 shadow-2xs'
+                ? 'bg-slate-900 text-white shadow-2xs'
                 : 'text-slate-600 hover:text-slate-950'
             }`}
           >
-            <span>🇹🇭 ไทย ({suppliers.filter((s) => s.country === 'TH').length + drinkStores.filter((d) => d.country === 'TH').length})</span>
+            <span>🇹🇭</span>
+            <span>{suppliers.filter((s) => s.country === 'TH').length + drinkStores.filter((d) => d.country === 'TH').length}</span>
           </button>
         </div>
       </div>

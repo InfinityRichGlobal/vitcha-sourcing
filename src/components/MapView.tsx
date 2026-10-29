@@ -301,7 +301,6 @@ export const MapView: React.FC<MapViewProps> = ({
             }`}
           >
             <span className="text-xs leading-none">🇨🇳</span>
-            <span className="hidden sm:inline">จีน</span>
           </button>
           <button
             type="button"
@@ -315,7 +314,6 @@ export const MapView: React.FC<MapViewProps> = ({
             }`}
           >
             <span className="text-xs leading-none">🇹🇭</span>
-            <span className="hidden sm:inline">ไทย</span>
           </button>
           <button
             type="button"
@@ -329,7 +327,6 @@ export const MapView: React.FC<MapViewProps> = ({
             }`}
           >
             <span className="text-xs leading-none">🌏</span>
-            <span className="hidden sm:inline">รวม</span>
           </button>
         </div>
 
