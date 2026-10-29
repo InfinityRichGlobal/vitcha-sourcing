@@ -330,7 +330,17 @@ export function createApp({ dataDir, defaults = DEFAULT_DATABASE, sessionTtlMs =
       const item = list.find(x => x.id === req.params.id);
       if (!item) fail(404, 'ไม่พบรายการ');
       expectRevision(item, req.body?.revision);
-      db[collection] = list.filter(x => x.id !== item.id); save(db); res.json({ success: true });
+      db[collection] = list.filter(x => x.id !== item.id);
+      db.trash = [
+        {
+          ...item,
+          _trashedFrom: collection,
+          trashedAt: now(),
+          trashedBy: req.user.alias || req.user.name,
+        },
+        ...(db.trash || []),
+      ];
+      save(db); res.json({ success: true });
     });
     app.post(`/api/${route}/:id/actions`, (req, res) => {
       const { action, data = {}, operationId } = req.body;
@@ -473,6 +483,33 @@ export function createApp({ dataDir, defaults = DEFAULT_DATABASE, sessionTtlMs =
   });
   app.delete('/api/invites/:id', (req, res) => {
     requireAdmin(req); const db = read(); db.invites = db.invites.filter(i => i.id !== req.params.id); save(db); res.json({ success: true });
+  });
+  app.get('/api/trash', (req, res) => {
+    requireAdmin(req);
+    const db = read();
+    res.json({ success: true, items: db.trash || [] });
+  });
+  app.post('/api/trash/:id/restore', (req, res) => {
+    requireAdmin(req);
+    const db = read();
+    const trash = db.trash || [];
+    const item = trash.find(x => x.id === req.params.id);
+    if (!item) fail(404, 'ไม่พบรายการในถังขยะ');
+    const targetCollection = item._trashedFrom || (item.type === 'supplier' ? 'suppliers' : item.type === 'drink_store' ? 'drinkStores' : 'locations');
+    delete item._trashedFrom;
+    delete item.trashedAt;
+    delete item.trashedBy;
+    db[targetCollection] = [item, ...(db[targetCollection] || [])];
+    db.trash = trash.filter(x => x.id !== item.id);
+    save(db);
+    res.json({ success: true, item });
+  });
+  app.delete('/api/trash/:id', (req, res) => {
+    requireAdmin(req);
+    const db = read();
+    db.trash = (db.trash || []).filter(x => x.id !== req.params.id);
+    save(db);
+    res.json({ success: true });
   });
   app.post('/api/notifications', (req, res) => {
     requireFounder(req); const db = read();

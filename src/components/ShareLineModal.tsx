@@ -31,7 +31,7 @@ export const ShareLineModal: React.FC<ShareLineModalProps> = ({
     shareText = `🏭 [CHINA SOURCING 2026] สรุปข้อมูลซัพพลายเออร์
 ━━━━━━━━━━━━━━━━━━━━
 📌 ชื่อ: ${supplier.name} ${supplier.chineseName ? `(${supplier.chineseName})` : ''}
-📍 ทำเล: ${supplier.marketOrCity || supplier.location.addressText || 'กวางโจว'}
+📍 ทำเล: ${supplier.marketOrCity || supplier.location.addressText || 'ไม่ระบุสถานที่'}
 🏷️ หมวดหมู่: ${supplier.category}
 ⭐ ระดับความน่าสนใจ: ${'★'.repeat(supplier.rating)}
 👤 ผู้สำรวจบันทึก: ${supplier.creator.alias}
@@ -47,7 +47,7 @@ ${directLink}
     shareText = `🧋 [BEVERAGE INSPO] สรุปเรฟร้านน้ำและไอเดียต่อยอด
 ━━━━━━━━━━━━━━━━━━━━
 📌 ร้าน: ${store.storeName} ${store.chineseName ? `(${store.chineseName})` : ''}
-🏙️ เมือง/สาขา: ${store.city || 'กวางโจว'}
+🏙️ เมือง/สาขา: ${store.city || 'ไม่ระบุสถานที่'}
 ⭐ คะแนนเฉลี่ย: ${((store.ratings.taste + store.ratings.aesthetics + store.ratings.value + store.ratings.speed) / 4).toFixed(1)} / 5
 (รสชาติ: ${store.ratings.taste}★ | ดีไซน์: ${store.ratings.aesthetics}★)
 👤 ผู้สำรวจบันทึก: ${store.creator.alias}

@@ -1,4 +1,4 @@
-import React, { lazy, Suspense, useState } from 'react';
+import React, { lazy, Suspense, useState, useEffect } from 'react';
 import { AvatarImage } from './AvatarImage';
 import { useApp } from '../context/AppContext';
 const MapView = lazy(() => import('./MapView').then((m) => ({ default: m.MapView })));
@@ -23,6 +23,8 @@ interface DashboardOverviewProps {
   onOpenNewStoreInspo: () => void;
   onOpenNewLocation?: () => void;
   onShareToLine?: (item: SupplierRecord | StoreInspoRecord | LocationRecord) => void;
+  initialFeedFilter?: 'all' | 'suppliers' | 'drink_stores' | 'locations';
+  initialMapFilter?: 'all' | 'suppliers' | 'drink_stores' | 'locations';
 }
 
 export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
@@ -33,6 +35,8 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
   onOpenNewStoreInspo,
   onOpenNewLocation,
   onShareToLine,
+  initialFeedFilter,
+  initialMapFilter,
 }) => {
   const {
     suppliers,
@@ -51,7 +55,15 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
     currentUser,
   } = useApp();
 
-  const [feedFilter, setFeedFilter] = useState<'all' | 'suppliers' | 'drink_stores' | 'locations'>('all');
+  const [feedFilter, setFeedFilter] = useState<'all' | 'suppliers' | 'drink_stores' | 'locations'>(
+    initialFeedFilter || 'all'
+  );
+
+  useEffect(() => {
+    if (initialFeedFilter) {
+      setFeedFilter(initialFeedFilter);
+    }
+  }, [initialFeedFilter]);
 
   // Filter based on country if selected
   const activeSuppliers = suppliers.filter(
@@ -216,7 +228,7 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
               <span>LIVE</span>
             </span>
             <h1 className="font-extrabold text-[11px] sm:text-sm text-slate-950 tracking-tight leading-snug truncate">
-              LEAD THE FRONT · VITCHA R&amp;D
+              LEAD THE FRONT · R&amp;D
             </h1>
           </div>
           <p className="font-normal text-[10px] sm:text-xs text-slate-500 leading-snug mt-0.5 truncate">
@@ -413,6 +425,7 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
             onSelectSupplier={onSelectSupplier}
             onSelectStoreInspo={onSelectStore}
             onSelectLocation={onSelectLocation}
+            initialFilterType={initialMapFilter}
           />
         </Suspense>
       </div>
@@ -503,25 +516,25 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
         </div>
 
         {combinedFeed.length > 6 && (
-          <div className="pt-2 flex flex-wrap items-center justify-center gap-2">
+          <div className="pt-2 grid grid-cols-1 sm:grid-cols-3 gap-2 w-full max-w-3xl mx-auto">
             <button
               type="button"
               onClick={() => setActiveTab('suppliers')}
-              className="px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition-all"
+              className="w-full px-3 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition-all text-center shadow-xs"
             >
               ดูซัพพลายเออร์ทั้งหมด ({activeSuppliers.length}) →
             </button>
             <button
               type="button"
               onClick={() => setActiveTab('drink_stores')}
-              className="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 text-xs font-extrabold transition-all"
+              className="w-full px-3 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 text-xs font-extrabold transition-all text-center shadow-xs"
             >
               ดูร้านน้ำ & เรฟทั้งหมด ({activeStores.length}) →
             </button>
             <button
               type="button"
               onClick={() => setActiveTab('locations')}
-              className="px-4 py-2 rounded-xl bg-sky-600 hover:bg-sky-700 text-white text-xs font-extrabold transition-all"
+              className="w-full px-3 py-2.5 rounded-xl bg-sky-600 hover:bg-sky-700 text-white text-xs font-extrabold transition-all text-center shadow-xs"
             >
               ดูสถานที่ทั้งหมด ({activeLocations.length}) →
             </button>

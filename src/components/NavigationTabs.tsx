@@ -4,7 +4,7 @@ import { useApp } from '../context/AppContext';
 import { AppViewTab } from '../types';
 
 export const NavigationTabs: React.FC = () => {
-  const { activeTab, setActiveTab, currentUser, suppliers, drinkStores, locations, products, categories, storeCategories } = useApp();
+  const { activeTab, setActiveTab, currentUser, suppliers, drinkStores, locations, products, categories, storeCategories, trashItems } = useApp();
 
   // ซ่อนแถบนี้บนหน้าแรก (แดชบอร์ด) เพราะอยู่บน TAB เมนูโลโก้และกล่อง 4 กรอบหน้าแดชบอร์ดแล้ว
   if (activeTab === 'dashboard') {
@@ -63,6 +63,12 @@ export const NavigationTabs: React.FC = () => {
             key: 'settings' as AppViewTab,
             label: 'ตั้งค่าเนื้อหา',
             icon: <Settings className="w-3.5 h-3.5 text-slate-600" />,
+          },
+          {
+            key: 'trash' as AppViewTab,
+            label: 'ถังขยะ',
+            icon: <i aria-hidden="true" className="fa-solid fa-trash-can text-xs text-rose-500" />,
+            badge: trashItems && trashItems.length > 0 ? trashItems.length : undefined,
           },
         ]
       : []),

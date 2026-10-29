@@ -13,6 +13,7 @@ import {
   RotateCcw,
   Database,
   LogOut,
+  Trash2,
 } from 'lucide-react';
 
 interface AppDrawerMenuProps {
@@ -39,6 +40,7 @@ export const AppDrawerMenu: React.FC<AppDrawerMenuProps> = ({
     suppliers,
     drinkStores,
     locations,
+    trashItems,
     exchangeRate,
     switchUser,
     simulatedFromAdmin,
@@ -310,6 +312,29 @@ export const AppDrawerMenu: React.FC<AppDrawerMenuProps> = ({
               </div>
               <span className="text-[10px] text-emerald-700 font-bold bg-emerald-50 px-1.5 py-0.5 rounded">
                 Admin
+              </span>
+            </button>
+          )}
+
+          {/* 8.5. ถังขยะและประวัติที่ลบ (Admin only) */}
+          {currentUser.role === 'admin' && (
+            <button
+              onClick={() => {
+                setActiveTab('trash');
+                onClose();
+              }}
+              className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-bold transition-colors ${
+                activeTab === 'trash'
+                  ? 'bg-slate-900 text-white shadow-xs'
+                  : 'text-slate-700 hover:bg-slate-50'
+              }`}
+            >
+              <div className="flex items-center gap-2.5">
+                <Trash2 className="w-4 h-4 text-rose-500" />
+                <span>ถังขยะ & รายการที่ลบ</span>
+              </div>
+              <span className="text-[10px] text-rose-700 font-bold bg-rose-50 px-1.5 py-0.5 rounded">
+                {trashItems?.length || 0}
               </span>
             </button>
           )}

@@ -11,12 +11,14 @@ interface MapViewProps {
   onSelectSupplier: (supplier: SupplierRecord) => void;
   onSelectStoreInspo: (store: StoreInspoRecord) => void;
   onSelectLocation?: (location: LocationRecord) => void;
+  initialFilterType?: 'all' | 'suppliers' | 'drink_stores' | 'locations';
 }
 
 export const MapView: React.FC<MapViewProps> = ({
   onSelectSupplier,
   onSelectStoreInspo,
   onSelectLocation,
+  initialFilterType,
 }) => {
   const { suppliers, drinkStores, locations } = useApp();
   const mapContainerRef = useRef<HTMLDivElement>(null);
@@ -27,8 +29,21 @@ export const MapView: React.FC<MapViewProps> = ({
   const [mapFailure, setMapFailure] = useState('');
   const [mapAttempt, setMapAttempt] = useState(0);
 
-  const [filterType, setFilterType] = useState<'all' | 'suppliers' | 'drink_stores' | 'locations'>('all');
-  const [regionFocus, setRegionFocus] = useState<'CN' | 'TH' | 'ALL'>('CN');
+  const [filterType, setFilterType] = useState<'all' | 'suppliers' | 'drink_stores' | 'locations'>(
+    initialFilterType || 'all'
+  );
+  const [regionFocus, setRegionFocus] = useState<'CN' | 'TH' | 'ALL'>(
+    initialFilterType === 'locations' ? 'ALL' : 'CN'
+  );
+
+  useEffect(() => {
+    if (initialFilterType) {
+      setFilterType(initialFilterType);
+      if (initialFilterType === 'locations') {
+        setRegionFocus('ALL');
+      }
+    }
+  }, [initialFilterType]);
   const [selectedPin, setSelectedPin] = useState<{
     type: 'supplier' | 'drink_store' | 'location';
     data: SupplierRecord | StoreInspoRecord | LocationRecord;

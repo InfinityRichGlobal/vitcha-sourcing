@@ -31,6 +31,7 @@ import {
   Calendar,
   Layers,
   Plus,
+  ChevronDown,
 } from 'lucide-react';
 import { LocationPickerModal } from './LocationPickerModal';
 
@@ -63,7 +64,7 @@ export const NewLocationModal: React.FC<NewLocationModalProps> = ({ isOpen, onCl
   const [country, setCountry] = useState<'CN' | 'TH'>('TH');
   const [name, setName] = useState('');
   const [foreignName, setForeignName] = useState('');
-  const [locationType, setLocationType] = useState<LocationType>('ห้างสรรพสินค้า / ศูนย์การค้า');
+  const [locationType, setLocationType] = useState<LocationType | ''>('');
   const [isAddingNewType, setIsAddingNewType] = useState(false);
   const [newTypeInput, setNewTypeInput] = useState('');
   const [zoneOrFloor, setZoneOrFloor] = useState('');
@@ -73,7 +74,7 @@ export const NewLocationModal: React.FC<NewLocationModalProps> = ({ isOpen, onCl
   const [usableAreaSqm, setUsableAreaSqm] = useState<number | ''>('');
   const [frontageWidthM, setFrontageWidthM] = useState<number | ''>('');
   const [ceilingHeightM, setCeilingHeightM] = useState<number | ''>('');
-  const [layoutFormat, setLayoutFormat] = useState<LayoutFormat>('inline');
+  const [layoutFormat, setLayoutFormat] = useState<LayoutFormat | ''>('');
   const [electricalPower, setElectricalPower] = useState('');
   const [hasWaterInflow, setHasWaterInflow] = useState(false);
   const [hasDrainage, setHasDrainage] = useState(false);
@@ -122,7 +123,8 @@ export const NewLocationModal: React.FC<NewLocationModalProps> = ({ isOpen, onCl
   const [customTagInput, setCustomTagInput] = useState('');
 
   // Handoff
-  const [assignedTo, setAssignedTo] = useState('');
+  const [assignedTo, setAssignedTo] = useState(currentUser?.alias || currentUser?.name || '');
+  const [isAssigneeMenuOpen, setIsAssigneeMenuOpen] = useState(false);
   const [targetFollowUpDate, setTargetFollowUpDate] = useState('');
   const [handoffNotes, setHandoffNotes] = useState('');
 
@@ -154,14 +156,14 @@ export const NewLocationModal: React.FC<NewLocationModalProps> = ({ isOpen, onCl
       setCountry(editingLocation.country || 'TH');
       setName(editingLocation.name || '');
       setForeignName(editingLocation.foreignName || '');
-      setLocationType(editingLocation.locationType || (locationTypes[0] || 'ห้างสรรพสินค้า / ศูนย์การค้า'));
+      setLocationType(editingLocation.locationType || '');
       setZoneOrFloor(editingLocation.zoneOrFloor || '');
       setUnitNumber(editingLocation.unitNumber || '');
 
       setUsableAreaSqm(editingLocation.spaceSpecs?.usableAreaSqm ?? '');
       setFrontageWidthM(editingLocation.spaceSpecs?.frontageWidthM ?? '');
       setCeilingHeightM(editingLocation.spaceSpecs?.ceilingHeightM ?? '');
-      setLayoutFormat(editingLocation.spaceSpecs?.layoutFormat || 'inline');
+      setLayoutFormat(editingLocation.spaceSpecs?.layoutFormat || '');
       setElectricalPower(editingLocation.spaceSpecs?.electricalPower || '');
       setHasWaterInflow(editingLocation.spaceSpecs?.hasWaterInflow ?? false);
       setHasDrainage(editingLocation.spaceSpecs?.hasDrainage ?? false);
@@ -199,7 +201,7 @@ export const NewLocationModal: React.FC<NewLocationModalProps> = ({ isOpen, onCl
       setMainVoiceNotes(editingLocation.voiceNotes || []);
 
       setQuickTags(editingLocation.quickTags || []);
-      setAssignedTo(editingLocation.assignedTo || '');
+      setAssignedTo(editingLocation.assignedTo || currentUser?.alias || currentUser?.name || '');
       setTargetFollowUpDate(editingLocation.targetFollowUpDate || '');
       setHandoffNotes(editingLocation.handoffNotes || '');
     } else {
@@ -207,13 +209,13 @@ export const NewLocationModal: React.FC<NewLocationModalProps> = ({ isOpen, onCl
       setCountry('TH');
       setName('');
       setForeignName('');
-      setLocationType(locationTypes[0] || 'ห้างสรรพสินค้า / ศูนย์การค้า');
+      setLocationType('');
       setZoneOrFloor('');
       setUnitNumber('');
       setUsableAreaSqm('');
       setFrontageWidthM('');
       setCeilingHeightM('');
-      setLayoutFormat('inline');
+      setLayoutFormat('');
       setElectricalPower('');
       setHasWaterInflow(false);
       setHasDrainage(false);
@@ -246,7 +248,7 @@ export const NewLocationModal: React.FC<NewLocationModalProps> = ({ isOpen, onCl
       setMainVoiceSec(0);
       setMainVoiceNotes([]);
       setQuickTags([]);
-      setAssignedTo('');
+      setAssignedTo(currentUser?.alias || currentUser?.name || '');
       setTargetFollowUpDate('');
       setHandoffNotes('');
     }
@@ -314,6 +316,7 @@ export const NewLocationModal: React.FC<NewLocationModalProps> = ({ isOpen, onCl
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    const finalLocationType = locationType || (isEditMode && editingLocation ? editingLocation.locationType : '') || (locationTypes[0] || 'ห้างสรรพสินค้า / ศูนย์การค้า');
     setIsSaving(true);
     try {
       const finalName = name.trim() || (isEditMode && editingLocation ? editingLocation.name : `ทำเล #${locations.length + 1} (${zoneOrFloor || 'ทั่วไป'})`);
@@ -321,7 +324,7 @@ export const NewLocationModal: React.FC<NewLocationModalProps> = ({ isOpen, onCl
         country,
         name: finalName,
         foreignName: foreignName.trim() || undefined,
-        locationType,
+        locationType: finalLocationType,
         zoneOrFloor: zoneOrFloor.trim() || 'ไม่ระบุ',
         unitNumber: unitNumber.trim() || undefined,
         location: {
@@ -333,7 +336,7 @@ export const NewLocationModal: React.FC<NewLocationModalProps> = ({ isOpen, onCl
           usableAreaSqm: Number(usableAreaSqm) || 0,
           frontageWidthM: Number(frontageWidthM) || 0,
           ceilingHeightM: Number(ceilingHeightM) || 0,
-          layoutFormat,
+          layoutFormat: (layoutFormat || 'inline') as LayoutFormat,
           electricalPower: electricalPower.trim() || undefined,
           hasWaterInflow,
           hasDrainage,
@@ -471,40 +474,25 @@ export const NewLocationModal: React.FC<NewLocationModalProps> = ({ isOpen, onCl
               </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div>
-                <label className="text-[11px] font-semibold text-slate-600 block mb-1">
-                  ชื่อห้าง / โครงการ / ตึก *
-                </label>
-                <input
-                  type="text"
-                  placeholder="เช่น CentralWorld, EmSphere, Siam Square One"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs bg-white focus:outline-sky-500 font-semibold"
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="text-[11px] font-semibold text-slate-600 block mb-1">
-                  ชื่อภาษาอังกฤษ หรือ ภาษาจีน
-                </label>
-                <input
-                  type="text"
-                  placeholder="เช่น Central World Ratchaprasong / 正佳广场"
-                  value={foreignName}
-                  onChange={(e) => setForeignName(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs bg-white focus:outline-sky-500"
-                />
-              </div>
+            <div>
+              <label className="text-[11px] font-semibold text-slate-600 block mb-1">
+                ชื่อห้าง / โครงการ / ตึก <span className="text-red-500 font-bold">*</span>
+              </label>
+              <input
+                type="text"
+                placeholder="เช่น CentralWorld, EmSphere, Siam Square One"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs bg-white focus:outline-sky-500 font-semibold"
+                required
+              />
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div>
                 <div className="flex items-center justify-between mb-1">
                   <label className="text-[11px] font-semibold text-slate-600">
-                    ประเภทสถานที่
+                    ประเภทสถานที่ <span className="text-red-500 font-bold">*</span>
                   </label>
                   {!isAddingNewType && (
                     <button
@@ -575,7 +563,9 @@ export const NewLocationModal: React.FC<NewLocationModalProps> = ({ isOpen, onCl
                       }
                     }}
                     className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs bg-white focus:outline-sky-500 font-semibold"
+                    required
                   >
+                    <option value="">-- กรุณาเลือกประเภทสถานที่ (จำเป็น) --</option>
                     {locationTypes.map((t) => (
                       <option key={t} value={t}>
                         {t}
@@ -591,11 +581,11 @@ export const NewLocationModal: React.FC<NewLocationModalProps> = ({ isOpen, onCl
 
               <div>
                 <label className="text-[11px] font-semibold text-slate-600 block mb-1">
-                  ชั้น & โซน *
+                  บอกรายละเอียดเกี่ยวกับสถานที่ให้เข้าใจ <span className="text-red-500 font-bold">*</span>
                 </label>
                 <input
                   type="text"
-                  placeholder="เช่น ชั้น 1 โซน Beacon / หน้าลิฟต์แก้ว"
+                  placeholder="ตัวอย่าง 1: ติดทางเข้าหลัก ฝั่งถนนคนเดิน / ตัวอย่าง 2: ชั้น 1 ข้างบันไดเลื่อน โซนศูนย์อาหาร"
                   value={zoneOrFloor}
                   onChange={(e) => setZoneOrFloor(e.target.value)}
                   className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs bg-white focus:outline-sky-500 font-semibold"
@@ -605,11 +595,11 @@ export const NewLocationModal: React.FC<NewLocationModalProps> = ({ isOpen, onCl
 
               <div>
                 <label className="text-[11px] font-semibold text-slate-600 block mb-1">
-                  เลขที่ห้อง / ยูนิต (Unit No.)
+                  ชั้น / โซน / เลขที่ห้อง (ยูนิต)
                 </label>
                 <input
                   type="text"
-                  placeholder="เช่น B102, K04"
+                  placeholder="เช่น ชั้น G โซน Food Hall ห้อง A-102 (เว้นว่างได้)"
                   value={unitNumber}
                   onChange={(e) => setUnitNumber(e.target.value)}
                   className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs bg-white focus:outline-sky-500 font-mono"
@@ -677,6 +667,7 @@ export const NewLocationModal: React.FC<NewLocationModalProps> = ({ isOpen, onCl
                   onChange={(e) => setLayoutFormat(e.target.value as LayoutFormat)}
                   className="w-full px-2 py-1.5 rounded-xl border border-slate-200 text-xs bg-white font-bold"
                 >
+                  <option value="">-- ยังไม่ระบุรูปแบบผัง --</option>
                   <option value="inline">Inline (แนวต่อ)</option>
                   <option value="corner">Corner (หัวมุม 2 ด้าน)</option>
                   <option value="island">Island (เกาะกลาง)</option>
@@ -1296,18 +1287,73 @@ export const NewLocationModal: React.FC<NewLocationModalProps> = ({ isOpen, onCl
                 <label className="text-[11px] font-semibold text-slate-600 block mb-1">
                   มอบหมายผู้รับผิดชอบ
                 </label>
-                <select
-                  value={assignedTo}
-                  onChange={(e) => setAssignedTo(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs bg-white font-bold"
-                >
-                  <option value="">-- ยังไม่มอบหมาย --</option>
-                  {users.map((u) => (
-                    <option key={u.id} value={u.alias || u.name}>
-                      {u.alias || u.name} ({u.role})
-                    </option>
-                  ))}
-                </select>
+                <div className="relative">
+                  <button
+                    type="button"
+                    onClick={() => setIsAssigneeMenuOpen((prev) => !prev)}
+                    className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs bg-white font-bold flex items-center justify-between gap-2 text-left hover:border-sky-400 transition-colors shadow-2xs"
+                  >
+                    <div className="flex items-center gap-2 min-w-0">
+                      {users.find((u) => (u.alias || u.name) === assignedTo) ? (
+                        (() => {
+                          const u = users.find((usr) => (usr.alias || usr.name) === assignedTo)!;
+                          return (
+                            <>
+                              <AvatarImage
+                                src={u.avatar || './logo.jpg'}
+                                alt={u.name}
+                                className="w-5 h-5 rounded-full object-cover shrink-0 ring-1 ring-sky-300"
+                              />
+                              <span className="truncate text-slate-900">{u.alias || u.name}</span>
+                              <span className="text-[10px] text-slate-400 font-normal shrink-0">({u.role})</span>
+                            </>
+                          );
+                        })()
+                      ) : (
+                        <span className="text-slate-400">-- ยังไม่มอบหมาย --</span>
+                      )}
+                    </div>
+                    <ChevronDown className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                  </button>
+
+                  {isAssigneeMenuOpen && (
+                    <div className="absolute bottom-full mb-1 left-0 right-0 z-30 bg-white rounded-xl border border-slate-200 shadow-xl py-1 max-h-48 overflow-y-auto">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setAssignedTo('');
+                          setIsAssigneeMenuOpen(false);
+                        }}
+                        className="w-full px-3 py-2 text-xs text-left text-slate-500 hover:bg-slate-50 flex items-center gap-2"
+                      >
+                        -- ยังไม่มอบหมาย --
+                      </button>
+                      {users.map((u) => (
+                        <button
+                          key={u.id}
+                          type="button"
+                          onClick={() => {
+                            setAssignedTo(u.alias || u.name);
+                            setIsAssigneeMenuOpen(false);
+                          }}
+                          className={`w-full px-3 py-2 text-xs text-left flex items-center justify-between gap-2 hover:bg-sky-50 transition-colors ${
+                            assignedTo === (u.alias || u.name) ? 'bg-sky-50 font-bold text-sky-900' : 'text-slate-700'
+                          }`}
+                        >
+                          <div className="flex items-center gap-2 min-w-0">
+                            <AvatarImage
+                              src={u.avatar || './logo.jpg'}
+                              alt={u.name}
+                              className="w-5 h-5 rounded-full object-cover shrink-0 ring-1 ring-slate-200"
+                            />
+                            <span className="truncate">{u.alias || u.name}</span>
+                          </div>
+                          <span className="text-[10px] text-slate-400 shrink-0">({u.role})</span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
 
               <div>

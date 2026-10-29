@@ -349,33 +349,41 @@ export const LocationCard: React.FC<LocationCardProps> = ({
             )}
           </div>
 
-          {/* Photo Gallery with Grid / Single Display */}
+          {/* Photo Gallery: Full FIT containment with locked height (2-3 images per row) */}
           <div className="px-3.5 sm:px-4 pb-2">
             {displayPhotos.length > 0 ? (
-              <div className="grid grid-cols-2 gap-1.5 rounded-xl overflow-hidden max-h-56">
-                {displayPhotos.slice(0, 2).map((photo, pIdx) => (
-                  <div
-                    key={pIdx}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setLightboxIdx(pIdx);
-                    }}
-                    className={`relative group cursor-pointer overflow-hidden bg-slate-100 aspect-4/3 ${
-                      displayPhotos.length === 1 ? 'col-span-2 aspect-16/9' : ''
-                    }`}
-                  >
-                    <img
-                      src={photo}
-                      alt={`${location.name} รูปที่ ${pIdx + 1}`}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                    />
-                    {pIdx === 1 && displayPhotos.length > 2 && (
-                      <div className="absolute inset-0 bg-slate-950/60 backdrop-blur-2xs flex items-center justify-center text-white font-extrabold text-sm sm:text-base">
-                        +{displayPhotos.length - 2} รูป
-                      </div>
-                    )}
-                  </div>
-                ))}
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                {displayPhotos.slice(0, 3).map((photo, pIdx) => {
+                  const extraCount = displayPhotos.length - 3;
+                  const isLastWithMore = pIdx === 2 && extraCount > 0;
+                  return (
+                    <div
+                      key={pIdx}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setLightboxIdx(pIdx);
+                      }}
+                      className="relative group cursor-pointer overflow-hidden rounded-xl bg-slate-900/5 border border-slate-200/80 h-44 sm:h-48 flex items-center justify-center p-1"
+                    >
+                      <img
+                        loading="lazy"
+                        decoding="async"
+                        src={photo}
+                        alt={`${location.name} รูปที่ ${pIdx + 1}`}
+                        className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-200"
+                      />
+                      {isLastWithMore ? (
+                        <div className="absolute inset-0 bg-slate-950/60 backdrop-blur-2xs flex items-center justify-center text-white font-extrabold text-xs sm:text-sm">
+                          +{extraCount} รูป
+                        </div>
+                      ) : (
+                        <div className="absolute bottom-1 right-1 px-1.5 py-0.5 rounded bg-black/60 text-white font-mono text-[9px] font-bold">
+                          {pIdx + 1}/{displayPhotos.length}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             ) : (
               <div

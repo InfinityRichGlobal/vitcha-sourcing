@@ -67,10 +67,10 @@ export const LocationList: React.FC<LocationListProps> = ({
 
   const layoutFormats: Array<{ key: string; label: string }> = [
     { key: 'all', label: 'ทุกรูปแบบผัง' },
-    { key: 'inline', label: 'แนวต่อ (Inline)' },
-    { key: 'corner', label: 'หัวมุม (Corner)' },
-    { key: 'island', label: 'เกาะกลาง (Island)' },
-    { key: 'kiosk', label: 'คีออสก์ (Kiosk)' },
+    { key: 'inline', label: 'แนวต่อ' },
+    { key: 'corner', label: 'หัวมุม' },
+    { key: 'island', label: 'เกาะกลาง' },
+    { key: 'kiosk', label: 'คีออสก์' },
   ];
 
   const ratingOptions: Array<{ value: number | null; label: string }> = [
@@ -165,25 +165,25 @@ export const LocationList: React.FC<LocationListProps> = ({
             </button>
             <button
               type="button"
-              aria-pressed={countryFilter === 'TH'}
-              onClick={() => setCountryFilter('TH')}
-              className={`px-2.5 py-1 rounded-md font-bold transition-all flex items-center gap-1 ${
-                countryFilter === 'TH' ? 'bg-white text-sky-800 shadow-xs' : 'text-slate-600'
-              }`}
-            >
-              <i aria-hidden="true" className="fa-solid fa-location-dot text-[10px] text-sky-600" />
-              <span>ไทย (TH)</span>
-            </button>
-            <button
-              type="button"
               aria-pressed={countryFilter === 'CN'}
               onClick={() => setCountryFilter('CN')}
               className={`px-2.5 py-1 rounded-md font-bold transition-all flex items-center gap-1 ${
-                countryFilter === 'CN' ? 'bg-white text-rose-800 shadow-xs' : 'text-slate-600'
+                countryFilter === 'CN' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-600'
               }`}
             >
               <i aria-hidden="true" className="fa-solid fa-location-dot text-[10px] text-rose-500" />
-              <span>จีน (CN)</span>
+              <span>จีน</span>
+            </button>
+            <button
+              type="button"
+              aria-pressed={countryFilter === 'TH'}
+              onClick={() => setCountryFilter('TH')}
+              className={`px-2.5 py-1 rounded-md font-bold transition-all flex items-center gap-1 ${
+                countryFilter === 'TH' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-600'
+              }`}
+            >
+              <i aria-hidden="true" className="fa-solid fa-location-dot text-[10px] text-sky-600" />
+              <span>ไทย</span>
             </button>
           </div>
         </div>

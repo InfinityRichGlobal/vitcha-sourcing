@@ -44,6 +44,7 @@ import {
   DollarSign,
   Phone,
   User,
+  Trash2,
 } from 'lucide-react';
 import { uploadMediaToServer } from '../services/api';
 
@@ -74,6 +75,10 @@ export const DetailModal: React.FC<DetailModalProps> = ({
     quickMessages,
     recordItemView,
     canEditItems,
+    canDeleteItems,
+    deleteSupplier,
+    deleteStoreInspo,
+    deleteLocation,
     canComment,
     openEditItem,
   } = useApp();
@@ -231,6 +236,27 @@ export const DetailModal: React.FC<DetailModalProps> = ({
   const openPhotoByUrl = (url: string) => {
     const idx = allPhotos.findIndex((p) => p.url === url);
     setActiveImageIndex(idx >= 0 ? idx : 0);
+  };
+
+  const handleDeleteItem = async () => {
+    if (!currentItem) return;
+    const name = isSupplier ? supplier?.name : isLocation ? location?.name : store?.storeName;
+    const ok = window.confirm(
+      `ต้องการย้ายรายการ "${name || 'รายการนี้'}" ไปยังถังขยะหรือไม่?\n\n(รายการจะถูกย้ายไปถังขยะทันที และสามารถกู้คืนได้โดยผู้ดูแลระบบ/เจ้าของระบบ)`
+    );
+    if (!ok) return;
+    try {
+      if (currentItem.type === 'supplier') {
+        await deleteSupplier(currentItem.id);
+      } else if (currentItem.type === 'drink_store') {
+        await deleteStoreInspo(currentItem.id);
+      } else if (currentItem.type === 'location') {
+        await deleteLocation(currentItem.id);
+      }
+      onClose();
+    } catch {
+      alert('เกิดข้อผิดพลาดในการลบรายการ');
+    }
   };
 
   const handleUploadAttachment = async (file: File, type: 'photo' | 'audio', noteId?: string) => {
@@ -463,6 +489,19 @@ export const DetailModal: React.FC<DetailModalProps> = ({
               >
                 <Pencil className="w-3 h-3 text-amber-600" />
                 <span>แก้ไข</span>
+              </button>
+            )}
+
+            {/* Delete / Move to Trash Button (Owner / Admin) */}
+            {canDeleteItems && (
+              <button
+                type="button"
+                onClick={handleDeleteItem}
+                className="px-2.5 py-1 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-[11px] font-bold active:scale-95 transition-all inline-flex items-center gap-1"
+                title="ย้ายรายการนี้ไปถังขยะ (Owner / Admin)"
+              >
+                <Trash2 className="w-3 h-3 text-rose-600" />
+                <span>ย้ายไปถังขยะ</span>
               </button>
             )}
 
@@ -1023,16 +1062,17 @@ export const DetailModal: React.FC<DetailModalProps> = ({
               แกลเลอรีรูปภาพทั้งหมด ({allPhotos.length} รูป{allPhotos.length > 0 ? ' — แตะเพื่อขยายและเลื่อนซ้าย-ขวา' : ''}):
             </span>
             {allPhotos.length > 0 ? (
-              <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
                 {allPhotos.map((p, idx) => (
                   <div
                     key={idx}
                     onClick={() => setActiveImageIndex(idx)}
-                    className="group relative aspect-square rounded-xl overflow-hidden border border-slate-200 cursor-pointer bg-slate-100 shadow-xs"
+                    className="group relative h-44 sm:h-48 rounded-xl overflow-hidden border border-slate-200 cursor-pointer bg-slate-900/5 shadow-xs flex items-center justify-center p-1"
                   >
                     <img
                       src={p.url}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
+                      alt={p.label || ''}
+                      className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-200"
                     />
                     <div className="absolute bottom-1 right-1 bg-black/60 text-white text-[9px] font-mono px-1.5 py-0.5 rounded">
                       {idx + 1}/{allPhotos.length}
@@ -1597,6 +1637,17 @@ export const DetailModal: React.FC<DetailModalProps> = ({
             {new Date(currentItem.updatedAt).toLocaleTimeString('th-TH')}
           </div>
           <div className="flex items-center gap-2">
+            {canDeleteItems && (
+              <button
+                type="button"
+                onClick={handleDeleteItem}
+                className="px-3.5 py-1.5 text-xs font-bold rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 flex items-center gap-1.5 transition-colors"
+                title="ย้ายรายการนี้ไปถังขยะ"
+              >
+                <Trash2 className="w-3.5 h-3.5 text-rose-600" />
+                <span>ย้ายไปถังขยะ</span>
+              </button>
+            )}
             {canEditItems && (
               <button
                 type="button"

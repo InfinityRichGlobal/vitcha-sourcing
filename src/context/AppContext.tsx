@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
-import { User, SupplierRecord, StoreInspoRecord, LocationRecord, ExchangeRateConfig, InviteLink, PipelineStatus, UserRole, AppNotification, HandoffStage, AppViewTab, QuickMessageTemplate, CuratedProduct, ProductTaxon, ProductSet, ProductChanges } from '../types';
+import { User, SupplierRecord, StoreInspoRecord, LocationRecord, ExchangeRateConfig, InviteLink, PipelineStatus, UserRole, AppNotification, HandoffStage, AppViewTab, QuickMessageTemplate, CuratedProduct, ProductTaxon, ProductSet, ProductChanges, TrashedItem } from '../types';
 import { INITIAL_SUPPLIERS, INITIAL_DRINK_STORES, INITIAL_CATEGORIES, INITIAL_STORE_CATEGORIES, INITIAL_LOCATION_TYPES, INITIAL_QUICK_TAGS, INITIAL_QUICK_MESSAGES } from '../utils/seedData';
 import { getRenderServerUrl, saveRenderServerUrl, checkServerHealth, fetchCentralData, sendJson, requestJson, getSessionToken, setSessionToken, loginUserApi, ApiError, markNotificationsReadApi, clearNotificationsApi } from '../services/api';
 
@@ -66,6 +66,11 @@ interface AppContextType {
       localOnly?: boolean;
     }
   ) => Promise<boolean>;
+
+  trashItems: TrashedItem[];
+  fetchTrash: () => Promise<void>;
+  restoreTrashItem: (id: string) => Promise<boolean>;
+  permanentDeleteTrashItem: (id: string) => Promise<boolean>;
 
   // Settings & Management (สำหรับ 2 สิทธิ์ระดับบน Admin & Editor)
   addCategory: (cat: string) => Promise<boolean>;
@@ -222,6 +227,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [editingSupplier, setEditingSupplier] = useState<SupplierRecord | null>(null);
   const [editingStore, setEditingStore] = useState<StoreInspoRecord | null>(null);
   const [editingLocation, setEditingLocation] = useState<LocationRecord | null>(null);
+  const [trashItems, setTrashItems] = useState<TrashedItem[]>([]);
   const [renderServerUrl, setRenderServerUrlState] = useState(getRenderServerUrl);
   const [renderStatus, setRenderStatus] = useState<'connected' | 'connecting' | 'disconnected'>('connecting');
   const refreshController = useRef<AbortController | null>(null);
@@ -240,7 +246,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     refreshController.current?.abort(); refreshController.current = null;
     setSessionToken(null); setIsAuthenticated(false); setIsRestoringSession(false); setCurrentUser(GUEST); setSimulatedFromAdmin(false);
     setProducts([]); setProductCategories([]); setProductTags([]); setProductSets([]);
-    setUsers([]); setSuppliers([]); setDrinkStores([]); setLocations([]); setInvites([]); setNotifications([]); setActiveToast(null);
+    setUsers([]); setSuppliers([]); setDrinkStores([]); setLocations([]); setInvites([]); setNotifications([]); setActiveToast(null); setTrashItems([]);
     setEditingSupplier(null); setEditingStore(null); setEditingLocation(null); seenNotifications.current.clear(); notificationsInitialized.current = false;
   };
   function showToast(n: AppNotification) {
@@ -276,6 +282,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       notificationsInitialized.current = true;
       incoming.forEach((n: AppNotification) => seenNotifications.current.add(n.id));
       setNotifications(incoming);
+      if (data.user?.role === 'admin') void fetchTrash();
       return true;
     } catch (error) {
       if (!controller.signal.aborted && mounted.current) {
@@ -371,10 +378,32 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     await sendJson('/api/locations', { ...target, ...updates, id, revision: target.revision || 0 });
     resetFilters('locations');
   });
-  const deleteItem = (id: string, type: 'supplier' | 'drink_store' | 'location') => perform(`${id}:delete`, () => sendJson(`/api/${routeFor(type)}/${encodeURIComponent(id)}`, { revision: itemById(id, type)?.revision || 0 }, 'DELETE'));
+  const deleteItem = (id: string, type: 'supplier' | 'drink_store' | 'location') => perform(`${id}:delete`, async () => {
+    await sendJson(`/api/${routeFor(type)}/${encodeURIComponent(id)}`, { revision: itemById(id, type)?.revision || 0 }, 'DELETE');
+    if (currentUser.role === 'admin') void fetchTrash();
+  });
   const deleteSupplier = (id: string) => deleteItem(id, 'supplier');
   const deleteStoreInspo = (id: string) => deleteItem(id, 'drink_store');
   const deleteLocation = (id: string) => deleteItem(id, 'location');
+  const fetchTrash = async () => {
+    if (!getSessionToken() || currentUser.role !== 'admin') return;
+    try {
+      const res = await requestJson('/api/trash');
+      if (res && Array.isArray(res.items)) {
+        setTrashItems(res.items);
+      }
+    } catch (e) {
+      console.warn('Failed to fetch trash:', e);
+    }
+  };
+  const restoreTrashItem = (id: string) => perform(`trash:restore:${id}`, async () => {
+    await sendJson(`/api/trash/${encodeURIComponent(id)}/restore`, {});
+    await fetchTrash();
+  });
+  const permanentDeleteTrashItem = (id: string) => perform(`trash:delete:${id}`, async () => {
+    await sendJson(`/api/trash/${encodeURIComponent(id)}`, {}, 'DELETE');
+    setTrashItems(prev => prev.filter(x => x.id !== id));
+  });
   const addReviewerNote = (id: string, type: 'supplier' | 'drink_store' | 'location', text: string, extra?: { voiceUrl?: string; photoUrl?: string; duration?: number }) => itemAction(id, type, 'comment', { text, ...extra });
   const addReviewReply = (id: string, type: 'supplier' | 'drink_store' | 'location', noteId: string, text: string, replyToAuthor?: string, extra?: { voiceUrl?: string; photoUrl?: string; duration?: number; replyToId?: string }) => itemAction(id, type, 'reply', { noteId, text, replyToAuthor, ...extra });
   const updateHandoff: AppContextType['updateHandoff'] = (id, type, data) => itemAction(id, type, 'handoff', data);
@@ -493,6 +522,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     addLocationType, editLocationType, deleteLocationType,
     addQuickTag, editQuickTag, deleteQuickTag, addQuickMessage, editQuickMessage, deleteQuickMessage, updateUserRole, recordItemView, toggleLikeItem, loadFullMockupData, resetSystemData,
     updateHandoff, addSupplier, updateSupplier, deleteSupplier, addStoreInspo, updateStoreInspo, deleteStoreInspo, addLocation, updateLocation, deleteLocation, canEditItems, canDeleteItems, canComment, canAddItems,
+    trashItems, fetchTrash, restoreTrashItem, permanentDeleteTrashItem,
     editingSupplier, editingStore, editingLocation, openEditItem, closeEditItem, addReviewerNote, addReviewReply, updatePipelineStatus, updateExchangeRate, toggleCurrencyMode, convertCnyToThb, convertThbToCny,
     updateCurrentUserProfile, updateCurrentUserAvatar, switchUser, simulatedFromAdmin, restoreAdminUser, deleteUser, deleteInvite, refreshCentralData, isAuthenticated, isRestoringSession, logout, loginWithCredentials, loginWithPin,
     createInvite, redeemInvite, registerUserWithInvite, renderStatus, renderServerUrl, setRenderServerUrl, testRenderConnection, syncAllDataToRender,

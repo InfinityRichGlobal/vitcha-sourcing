@@ -12,6 +12,7 @@ const HandoffManagementView = lazy(() => import('./components/HandoffManagementV
 const SettingsManagementView = lazy(() => import('./components/SettingsManagementView').then(m => ({ default: m.SettingsManagementView })));
 const MembersManagementView = lazy(() => import('./components/MembersManagementView').then(m => ({ default: m.MembersManagementView })));
 const ProductWorkspace = lazy(() => import('./components/ProductWorkspace').then(m => ({ default: m.ProductWorkspace })));
+const TrashView = lazy(() => import('./components/TrashView').then(m => ({ default: m.TrashView })));
 const NewSupplierModal = lazy(() => import('./components/NewSupplierModal').then(m => ({ default: m.NewSupplierModal })));
 const NewStoreInspoModal = lazy(() => import('./components/NewStoreInspoModal').then(m => ({ default: m.NewStoreInspoModal })));
 const NewLocationModal = lazy(() => import('./components/NewLocationModal').then(m => ({ default: m.NewLocationModal })));
@@ -85,7 +86,12 @@ const MainApp: React.FC = () => {
     }
   }, [suppliers, drinkStores, isAuthenticated]);
 
+  const [dashboardFeedFilter, setDashboardFeedFilter] = useState<'all' | 'suppliers' | 'drink_stores' | 'locations'>('all');
+  const [dashboardMapFilter, setDashboardMapFilter] = useState<'all' | 'suppliers' | 'drink_stores' | 'locations'>('all');
+
   const handleScrollToMap = () => {
+    setDashboardFeedFilter('locations');
+    setDashboardMapFilter('locations');
     if (activeTab !== 'dashboard') {
       setActiveTab('dashboard');
     }
@@ -209,6 +215,8 @@ const MainApp: React.FC = () => {
             onOpenNewStoreInspo={() => setIsNewStoreInspoOpen(true)}
             onOpenNewLocation={() => setIsNewLocationOpen(true)}
             onShareToLine={(item) => setShareLineItem(item)}
+            initialFeedFilter={dashboardFeedFilter}
+            initialMapFilter={dashboardMapFilter}
           />
         )}
 
@@ -257,6 +265,7 @@ const MainApp: React.FC = () => {
         {activeTab === 'settings' && (
           <SettingsManagementView />
         )}
+        {activeTab === 'trash' && <TrashView />}
       </Suspense>
       </main>
 

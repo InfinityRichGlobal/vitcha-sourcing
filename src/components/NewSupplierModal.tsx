@@ -53,7 +53,7 @@ export const NewSupplierModal: React.FC<NewSupplierModalProps> = ({ isOpen, onCl
   const [name, setName] = useState('');
   const [chineseName, setChineseName] = useState('');
   const [marketOrCity, setMarketOrCity] = useState('');
-  const [category, setCategory] = useState(categories[0] || 'เคาน์เตอร์ & สเตนเลส');
+  const [category, setCategory] = useState('');
   const [rating, setRating] = useState(0);
 
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
@@ -102,7 +102,7 @@ export const NewSupplierModal: React.FC<NewSupplierModalProps> = ({ isOpen, onCl
       setName(editingSupplier.name || '');
       setChineseName(editingSupplier.chineseName || '');
       setMarketOrCity(editingSupplier.marketOrCity || '');
-      setCategory(editingSupplier.category || categories[0] || 'เคาน์เตอร์ & สเตนเลส');
+      setCategory(editingSupplier.category || '');
       setRating(editingSupplier.rating ?? 0);
       setSelectedTags(editingSupplier.quickTags || []);
       setPhone(editingSupplier.phone || '');
@@ -125,7 +125,7 @@ export const NewSupplierModal: React.FC<NewSupplierModalProps> = ({ isOpen, onCl
       setName('');
       setChineseName('');
       setMarketOrCity('');
-      setCategory(categories[0] || 'เคาน์เตอร์ & สเตนเลส');
+      setCategory('');
       setRating(0);
       setSelectedTags([]);
       setPhone('');
@@ -309,6 +309,7 @@ export const NewSupplierModal: React.FC<NewSupplierModalProps> = ({ isOpen, onCl
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (savingRef.current || audioJobs.current.size || isVideoLoading || isLocating) return;
+    const finalCategory = category.trim() || (isEditMode && editingSupplier ? editingSupplier.category : '') || (categories[0] || 'ใบชา & วัตถุดิบชา');
     if (photoTaskRef.current > 0 || catalogItems.some((it) => it.photo?.startsWith('blob:'))) {
       alert('กำลังอัปโหลดรูปภาพ กรุณารอสักครู่');
       return;
@@ -317,14 +318,14 @@ export const NewSupplierModal: React.FC<NewSupplierModalProps> = ({ isOpen, onCl
     setIsSaving(true);
 
     try {
-      const finalName = name.trim() || (isEditMode && editingSupplier ? editingSupplier.name : `ซัพพลายเออร์ #${suppliers.length + 1} (${category})`);
+      const finalName = name.trim() || (isEditMode && editingSupplier ? editingSupplier.name : `ซัพพลายเออร์ #${suppliers.length + 1} (${finalCategory})`);
 
       if (isEditMode && editingSupplier) {
         if (!await updateSupplier(editingSupplier.id, {
           name: finalName,
           chineseName: chineseName.trim() || undefined,
           marketOrCity: marketOrCity.trim() || addressText,
-          category,
+          category: finalCategory,
           country,
           rating,
           quickTags: selectedTags,
@@ -353,7 +354,7 @@ export const NewSupplierModal: React.FC<NewSupplierModalProps> = ({ isOpen, onCl
           name: finalName,
           chineseName: chineseName.trim() || undefined,
           marketOrCity: marketOrCity.trim() || addressText,
-          category,
+          category: finalCategory,
           country,
           rating,
           quickTags: selectedTags,
@@ -450,12 +451,7 @@ export const NewSupplierModal: React.FC<NewSupplierModalProps> = ({ isOpen, onCl
           <div className="bg-slate-100 p-1 rounded-xl flex items-center gap-1 border border-slate-200/80">
             <button
               type="button"
-              onClick={() => {
-                setCountry('CN');
-                if (marketOrCity === 'กรุงเทพฯ (Bangkok)' || marketOrCity === 'กรุงเทพฯ') {
-                  setMarketOrCity('กวางโจว (Guangzhou)');
-                }
-              }}
+              onClick={() => setCountry('CN')}
               className={`flex-1 py-1.5 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition-all ${
                 country === 'CN'
                   ? 'bg-white text-slate-900 shadow-sm border border-slate-200/60'
@@ -467,12 +463,7 @@ export const NewSupplierModal: React.FC<NewSupplierModalProps> = ({ isOpen, onCl
             </button>
             <button
               type="button"
-              onClick={() => {
-                setCountry('TH');
-                if (marketOrCity === 'กวางโจว (Guangzhou)' || !marketOrCity) {
-                  setMarketOrCity('กรุงเทพฯ (Bangkok)');
-                }
-              }}
+              onClick={() => setCountry('TH')}
               className={`flex-1 py-1.5 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition-all ${
                 country === 'TH'
                   ? 'bg-white text-slate-900 shadow-sm border border-slate-200/60'
@@ -639,7 +630,9 @@ export const NewSupplierModal: React.FC<NewSupplierModalProps> = ({ isOpen, onCl
                   value={category}
                   onChange={(e) => setCategory(e.target.value)}
                   className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 focus:outline-none focus:border-emerald-500 font-medium"
+                  required
                 >
+                  <option value="">-- กรุณาเลือกหมวดหมู่สินค้า (จำเป็น) --</option>
                   {categories.map((cat) => (
                     <option key={cat} value={cat}>
                       {cat}

@@ -122,7 +122,7 @@ export const SupplierCard: React.FC<SupplierCardProps> = ({
               <div className="flex items-center gap-1 text-[11px] text-slate-500 mt-0.5 truncate">
                 <MapPin className="w-3 h-3 text-slate-400 shrink-0" />
                 <span className="truncate">
-                  {supplier.marketOrCity || supplier.location?.addressText || 'กวางโจว'}
+                  {supplier.marketOrCity || supplier.location?.addressText || 'ไม่ระบุสถานที่'}
                 </span>
               </div>
             </div>

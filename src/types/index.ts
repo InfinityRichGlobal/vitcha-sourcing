@@ -10,7 +10,23 @@ export type HandoffStage =
   | 'approved'       // 5. ตัวเต็งอนุมัติ
   | 'ordered';       // 6. ออก PO / สั่งซื้อแล้ว
 
-export type AppViewTab = 'dashboard' | 'suppliers' | 'drink_stores' | 'locations' | 'categories' | 'handoff' | 'settings' | 'members' | 'products';
+export type AppViewTab = 'dashboard' | 'suppliers' | 'drink_stores' | 'locations' | 'categories' | 'handoff' | 'settings' | 'members' | 'products' | 'trash';
+
+export interface TrashedItem {
+  id: string;
+  name: string;
+  type: 'supplier' | 'drink_store' | 'location';
+  _trashedFrom: 'suppliers' | 'drinkStores' | 'locations';
+  trashedAt: string;
+  trashedBy: string;
+  category?: string;
+  storeCategory?: string;
+  locationType?: string;
+  photos?: string[];
+  notes?: string;
+  rating?: number;
+  [key: string]: any;
+}
 
 export interface ViewLogEntry {
   userId: string;

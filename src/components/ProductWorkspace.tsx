@@ -11,6 +11,8 @@ import {
   Check,
   ExternalLink,
   SlidersHorizontal,
+  MessageSquare,
+  Send,
 } from "lucide-react";
 import { useApp } from "../context/AppContext";
 import { CuratedProduct, ProductSet, ProductChanges } from "../types";
@@ -625,7 +627,7 @@ function ProductEditor({
   onClose: () => void;
   onOpenSupplier: () => void;
 }) {
-  const { productCategories, productTags, saveProduct, isMutating } = useApp();
+  const { productCategories, productTags, saveProduct, isMutating, currentUser, broadcastNotification } = useApp();
   const [draft, setDraft] = useState<ProductChanges>({
     title: product.title,
     memo: product.memo,
@@ -633,7 +635,51 @@ function ProductEditor({
     categoryId: product.categoryId,
     tagIds: [...product.tagIds],
   });
+  const [newCommentText, setNewCommentText] = useState("");
+  const [isEditingRawMemo, setIsEditingRawMemo] = useState(false);
   const dialog = useDialog(true);
+
+  const memoComments = useMemo(() => {
+    const raw = (draft.memo || "").trim();
+    if (!raw) return [];
+    const regex = /\[([^•]+)•([^\]]+)\]:\s*([\s\S]*?)(?=\n\s*\[[^•]+•[^\]]+\]:|$)/g;
+    const items: Array<{ author: string; time: string; text: string }> = [];
+    let match;
+    while ((match = regex.exec(raw)) !== null) {
+      items.push({
+        author: match[1].trim(),
+        time: match[2].trim(),
+        text: match[3].trim(),
+      });
+    }
+    if (items.length === 0 && raw) {
+      return [{ author: "บันทึกของทีม", time: "บันทึกเริ่มต้น", text: raw }];
+    }
+    return items;
+  }, [draft.memo]);
+
+  const handleSendComment = async () => {
+    if (!newCommentText.trim()) return;
+    const author = currentUser.alias || currentUser.name || "ทีมงาน";
+    const timeStr = new Date().toLocaleString("th-TH", {
+      dateStyle: "short",
+      timeStyle: "short",
+    });
+    const entry = `[${author} • ${timeStr}]: ${newCommentText.trim()}`;
+    const updated = (draft.memo ? `${draft.memo.trim()}\n\n${entry}` : entry).trim();
+    setDraft((prev) => ({ ...prev, memo: updated }));
+    setNewCommentText("");
+    await saveProduct(product, { ...draft, memo: updated });
+    await broadcastNotification(
+      `อัปเดตความเห็นสินค้า: ${product.title || product.sourceName}`,
+      `${author}: ${newCommentText.trim()}`,
+      "supplier",
+      product.supplierId,
+      currentUser.avatar,
+      false,
+      { localOnly: true }
+    );
+  };
   return (
     <div className="fixed inset-0 z-[110] flex items-center justify-center bg-slate-950/45 p-3 backdrop-blur-sm">
       <div
@@ -749,15 +795,101 @@ function ProductEditor({
                 )}
               </div>
             </div>
-            <label className="block space-y-1 text-sm font-semibold">
-              เมมโม / หมายเหตุของทีม
-              <textarea
-                className={`${input} min-h-28`}
-                value={draft.memo}
-                onChange={(e) => setDraft({ ...draft, memo: e.target.value })}
-                placeholder="ผลเทียบสเปก สิ่งที่ใช้ได้ หรือเรื่องที่ต้องถามเพิ่ม…"
-              />
-            </label>
+            {/* เมมโม / การสนทนาถามตอบและหมายเหตุของทีม */}
+            <div className="space-y-2 rounded-2xl border border-slate-200/80 bg-slate-50/70 p-3 sm:p-4">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                  <MessageSquare size={14} className="text-emerald-600" />
+                  <span>ประวัติการติดต่อ & ความเห็นทีมงาน ({memoComments.length})</span>
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setIsEditingRawMemo((prev) => !prev)}
+                  className="text-[11px] font-bold text-emerald-700 hover:text-emerald-800 underline"
+                >
+                  {isEditingRawMemo ? 'ดูมุมมองไทม์ไลน์' : '✏️ แก้ไขข้อความดิบ'}
+                </button>
+              </div>
+
+              {isEditingRawMemo ? (
+                <label className="block space-y-1 text-sm font-semibold">
+                  เมมโม / หมายเหตุของทีม
+                  <textarea
+                    aria-label="เมมโม / หมายเหตุของทีม"
+                    className={`${input} min-h-28`}
+                    value={draft.memo}
+                    onChange={(e) => setDraft({ ...draft, memo: e.target.value })}
+                    placeholder="ผลเทียบสเปก สิ่งที่ใช้ได้ หรือเรื่องที่ต้องถามเพิ่ม…"
+                  />
+                </label>
+              ) : (
+                <div className="space-y-2">
+                  {/* Comments Timeline */}
+                  {memoComments.length > 0 ? (
+                    <div className="space-y-2 max-h-56 overflow-y-auto pr-1">
+                      {memoComments.map((c, idx) => (
+                        <div key={idx} className="p-2.5 rounded-xl bg-white border border-slate-200/70 shadow-2xs space-y-1">
+                          <div className="flex items-center justify-between text-[11px]">
+                            <div className="flex items-center gap-1.5 font-bold text-slate-800">
+                              <span className="w-5 h-5 rounded-full bg-emerald-100 text-emerald-800 text-[10px] flex items-center justify-center font-bold">
+                                {c.author.slice(0, 1)}
+                              </span>
+                              <span>{c.author}</span>
+                            </div>
+                            <span className="text-[10px] text-slate-400 font-mono">{c.time}</span>
+                          </div>
+                          <p className="text-xs text-slate-700 whitespace-pre-wrap pl-6 leading-relaxed">
+                            {c.text}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="p-3 rounded-xl bg-white border border-dashed border-slate-200 text-center text-xs text-slate-400">
+                      ยังไม่มีการพูดคุยหรือบันทึกหมายเหตุในสินค้านี้ เริ่มพิมพ์ถาม-ตอบด้านล่างได้เลย
+                    </div>
+                  )}
+
+                  {/* Add New Comment / Memo Input */}
+                  <div className="space-y-1">
+                    <label className="text-[11px] font-bold text-slate-600 block">
+                      เมมโม / หมายเหตุของทีม
+                    </label>
+                    <div className="flex items-center gap-1.5">
+                      <input
+                        type="text"
+                        aria-label="เมมโม / หมายเหตุของทีม"
+                        placeholder="พิมพ์ความเห็น / อัปเดตสเปกสินค้า..."
+                        value={newCommentText}
+                        onChange={(e) => {
+                          setNewCommentText(e.target.value);
+                          setDraft((prev) => ({
+                            ...prev,
+                            memo: prev.memo ? `${prev.memo}\n${e.target.value}` : e.target.value,
+                          }));
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            handleSendComment();
+                          }
+                        }}
+                        className="flex-1 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs text-slate-900 focus:outline-none focus:border-emerald-500"
+                      />
+                      <button
+                        type="button"
+                        disabled={!newCommentText.trim() || isMutating}
+                        onClick={handleSendComment}
+                        className="inline-flex items-center gap-1 rounded-xl bg-emerald-700 px-3.5 py-2 text-xs font-bold text-white hover:bg-emerald-800 disabled:opacity-40 transition-colors shadow-2xs shrink-0"
+                      >
+                        <Send size={13} />
+                        <span>ส่ง</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
             {canManage && (
               <button
                 disabled={isMutating}

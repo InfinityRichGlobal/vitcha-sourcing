@@ -46,9 +46,7 @@ export const NewStoreInspoModal: React.FC<NewStoreInspoModalProps> = ({ isOpen, 
   const dialogRef = useDialog(modalOpen);
 
   const [country, setCountry] = useState<'CN' | 'TH'>('CN');
-  const [storeCategory, setStoreCategory] = useState<string>(
-    storeCategories[0] || 'ชานมพรีเมียม & ชาสด'
-  );
+  const [storeCategory, setStoreCategory] = useState<string>('');
   const [storeName, setStoreName] = useState('');
   const [chineseName, setChineseName] = useState('');
   const [brandConcept, setBrandConcept] = useState('');
@@ -99,7 +97,7 @@ export const NewStoreInspoModal: React.FC<NewStoreInspoModalProps> = ({ isOpen, 
   useEffect(() => {
     if (editingStore) {
       setCountry(editingStore.country || 'CN');
-      setStoreCategory(editingStore.storeCategory || storeCategories[0] || 'ชานมพรีเมียม & ชาสด');
+      setStoreCategory(editingStore.storeCategory || '');
       setStoreName(editingStore.storeName || '');
       setChineseName(editingStore.chineseName || '');
       setBrandConcept(editingStore.brandConcept || '');
@@ -125,7 +123,7 @@ export const NewStoreInspoModal: React.FC<NewStoreInspoModalProps> = ({ isOpen, 
       setAddressText(editingStore.location?.addressText || editingStore.city || '');
     } else if (isOpen) {
       setCountry('CN');
-      setStoreCategory(storeCategories[0] || 'ชานมพรีเมียม & ชาสด');
+      setStoreCategory('');
       setStoreName('');
       setChineseName('');
       setBrandConcept('');
@@ -298,6 +296,7 @@ export const NewStoreInspoModal: React.FC<NewStoreInspoModalProps> = ({ isOpen, 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (savingRef.current || audioJobs.current.size || isVideoLoading || isLocating) return;
+    const finalCategory = storeCategory.trim() || (isEditMode && editingStore ? editingStore.storeCategory : '') || (storeCategories[0] || 'ชาผลไม้ & ชีสที');
     if (photoTaskRef.current > 0 || drinkItems.some((it) => it.photo?.startsWith('blob:'))) {
       alert('กำลังอัปโหลดรูปภาพ กรุณารอสักครู่');
       return;
@@ -312,7 +311,7 @@ export const NewStoreInspoModal: React.FC<NewStoreInspoModalProps> = ({ isOpen, 
         if (!await updateStoreInspo(editingStore.id, {
           storeName: finalName,
           chineseName: chineseName.trim() || undefined,
-          storeCategory,
+          storeCategory: finalCategory,
           brandConcept: brandConcept.trim() || undefined,
           city: city.trim(),
           country,
@@ -346,7 +345,7 @@ export const NewStoreInspoModal: React.FC<NewStoreInspoModalProps> = ({ isOpen, 
         if (!await addStoreInspo({
           storeName: finalName,
           chineseName: chineseName.trim() || undefined,
-          storeCategory,
+          storeCategory: finalCategory,
           brandConcept: brandConcept.trim() || undefined,
           city: city.trim(),
           country,
@@ -448,16 +447,7 @@ export const NewStoreInspoModal: React.FC<NewStoreInspoModalProps> = ({ isOpen, 
           <div className="bg-slate-100 p-1 rounded-xl flex items-center gap-1 border border-slate-200/80">
             <button
               type="button"
-              onClick={() => {
-                setCountry('CN');
-                if (
-                  city === 'กรุงเทพฯ (Bangkok)' ||
-                  city === 'กรุงเทพฯ' ||
-                  city === 'สยามสแควร์ กรุงเทพฯ'
-                ) {
-                  setCity('กวางโจว (Guangzhou)');
-                }
-              }}
+              onClick={() => setCountry('CN')}
               className={`flex-1 py-1.5 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition-all ${
                 country === 'CN'
                   ? 'bg-white text-slate-900 shadow-sm border border-slate-200/60'
@@ -469,12 +459,7 @@ export const NewStoreInspoModal: React.FC<NewStoreInspoModalProps> = ({ isOpen, 
             </button>
             <button
               type="button"
-              onClick={() => {
-                setCountry('TH');
-                if (city === 'กวางโจว (Guangzhou)' || !city) {
-                  setCity('กรุงเทพฯ (Bangkok)');
-                }
-              }}
+              onClick={() => setCountry('TH')}
               className={`flex-1 py-1.5 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition-all ${
                 country === 'TH'
                   ? 'bg-white text-slate-900 shadow-sm border border-slate-200/60'
@@ -504,7 +489,7 @@ export const NewStoreInspoModal: React.FC<NewStoreInspoModalProps> = ({ isOpen, 
             <div className="pt-1">
               <label className="text-[11px] font-bold text-slate-700 block mb-1.5 flex items-center gap-1.5">
                 <i className="fa-solid fa-mug-hot text-amber-600 text-[10px]" />
-                <span>หมวดหมู่ร้านน้ำ & เรฟ (เลือกประเภท):</span>
+                <span>หมวดหมู่ร้านน้ำ & เรฟ (จำเป็นต้องเลือก) *</span>
               </label>
               <div className="flex flex-wrap gap-1.5">
                 {storeCategories.map((cat) => (

@@ -276,7 +276,7 @@ export const HandoffManagementView: React.FC<HandoffManagementViewProps> = ({ on
 
             <div className="flex items-center gap-1 text-xs text-slate-500 truncate mt-0.5">
               <MapPin className="w-3 h-3 text-slate-400 shrink-0" />
-              <span className="truncate">{city || 'กวางโจว'}</span>
+              <span className="truncate">{city || 'ไม่ระบุเมือง/ทำเล'}</span>
             </div>
           </div>
         </div>

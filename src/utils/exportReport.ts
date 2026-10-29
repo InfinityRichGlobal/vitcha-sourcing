@@ -1093,8 +1093,9 @@ export function buildExecutiveReportHtml(
     }
     .photo-card img {
       width: 100%;
-      height: 145px;
-      object-fit: cover;
+      height: 185px;
+      object-fit: contain;
+      background: #f8fafc;
       display: block;
     }
     .photo-caption {
@@ -1227,7 +1228,7 @@ export function buildExecutiveReportHtml(
         <div class="header-right">
           <div class="meta-box">
             <div class="meta-platform">${segmentThaiHtml('ฉันจะเป็นหัวแถว')}</div>
-            <div>LEAD THE FRONT · VITCHA R&amp;D</div>
+            <div>LEAD THE FRONT · R&amp;D</div>
             <div style="margin-top:4px;">${segmentThaiHtml(`รหัส: ${item.id.slice(0, 18)}`)}</div>
             <div>${segmentThaiHtml(`สถานะ: ${handoffStageLabel}`)}</div>
             <div>${segmentThaiHtml(`ออกรายงาน: ${new Date().toLocaleString('th-TH')}`)}</div>
