@@ -25,6 +25,7 @@ import {
   Building2,
   Maximize2,
   Ruler,
+  Camera,
 } from 'lucide-react';
 
 interface LocationCardProps {
@@ -71,10 +72,7 @@ export const LocationCard: React.FC<LocationCardProps> = ({
     ])
   );
 
-  const displayPhotos =
-    allPhotos.length > 0
-      ? allPhotos
-      : ['https://images.unsplash.com/photo-1519567241046-7f570eee3ce6?w=800&auto=format&fit=crop&q=80'];
+  const displayPhotos = allPhotos;
 
   const notes = Array.isArray(location.reviewerNotes) ? location.reviewerNotes : [];
   const totalCommentsCount = notes.reduce(
@@ -353,31 +351,41 @@ export const LocationCard: React.FC<LocationCardProps> = ({
 
           {/* Photo Gallery with Grid / Single Display */}
           <div className="px-3.5 sm:px-4 pb-2">
-            <div className="grid grid-cols-2 gap-1.5 rounded-xl overflow-hidden max-h-56">
-              {displayPhotos.slice(0, 2).map((photo, pIdx) => (
-                <div
-                  key={pIdx}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setLightboxIdx(pIdx);
-                  }}
-                  className={`relative group cursor-pointer overflow-hidden bg-slate-100 aspect-4/3 ${
-                    displayPhotos.length === 1 ? 'col-span-2 aspect-16/9' : ''
-                  }`}
-                >
-                  <img
-                    src={photo}
-                    alt={`${location.name} รูปที่ ${pIdx + 1}`}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                  />
-                  {pIdx === 1 && displayPhotos.length > 2 && (
-                    <div className="absolute inset-0 bg-slate-950/60 backdrop-blur-2xs flex items-center justify-center text-white font-extrabold text-sm sm:text-base">
-                      +{displayPhotos.length - 2} รูป
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
+            {displayPhotos.length > 0 ? (
+              <div className="grid grid-cols-2 gap-1.5 rounded-xl overflow-hidden max-h-56">
+                {displayPhotos.slice(0, 2).map((photo, pIdx) => (
+                  <div
+                    key={pIdx}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setLightboxIdx(pIdx);
+                    }}
+                    className={`relative group cursor-pointer overflow-hidden bg-slate-100 aspect-4/3 ${
+                      displayPhotos.length === 1 ? 'col-span-2 aspect-16/9' : ''
+                    }`}
+                  >
+                    <img
+                      src={photo}
+                      alt={`${location.name} รูปที่ ${pIdx + 1}`}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                    />
+                    {pIdx === 1 && displayPhotos.length > 2 && (
+                      <div className="absolute inset-0 bg-slate-950/60 backdrop-blur-2xs flex items-center justify-center text-white font-extrabold text-sm sm:text-base">
+                        +{displayPhotos.length - 2} รูป
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div
+                onClick={() => onSelect(location)}
+                className="p-3 rounded-xl bg-slate-50 border border-dashed border-slate-200 text-center flex items-center justify-center gap-1.5 text-slate-400 text-xs cursor-pointer hover:bg-slate-100/70 transition-colors"
+              >
+                <Camera className="w-3.5 h-3.5 text-slate-300" />
+                <span>ยังไม่มีรูปภาพพื้นที่ (แตะเพื่อดูรายละเอียด)</span>
+              </div>
+            )}
           </div>
         </div>
 

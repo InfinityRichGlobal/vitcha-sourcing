@@ -124,13 +124,17 @@ export const MapView: React.FC<MapViewProps> = ({
         const photo =
           s.photos.storefrontAndAtmosphere?.[0] ||
           (s.catalogItems[0] && s.catalogItems[0].photo) ||
-          'https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=150&auto=format&fit=crop&q=80';
+          null;
+
+        const pinInner = photo
+          ? `<img src="${photo.replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;")}" style="width: 100%; height: 100%; object-fit: cover;" />`
+          : `<div style="width: 100%; height: 100%; background: #ecfdf5; display: flex; align-items: center; justify-content: center; color: #059669; font-size: 18px;"><i class="fa-solid fa-industry"></i></div>`;
 
         const customIcon = L.divIcon({
           className: 'custom-map-pin',
           html: `
             <div style="position: relative; width: 46px; height: 46px; border-radius: 50%; border: 3px solid #059669; box-shadow: 0 4px 14px rgba(0,0,0,0.28); overflow: hidden; background: #fff; cursor: pointer;">
-              <img src="${photo.replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;")}" style="width: 100%; height: 100%; object-fit: cover;" />
+              ${pinInner}
               <div style="position: absolute; bottom: 0; right: 0; width: 17px; height: 17px; border-radius: 50%; background: #059669; border: 1.5px solid #fff; display: flex; align-items: center; justify-content: center; font-size: 8px; color: #fff;"><i class="fa-solid fa-industry"></i></div>
             </div>
           `,
@@ -162,13 +166,17 @@ export const MapView: React.FC<MapViewProps> = ({
         const photo =
           d.photos.drinkCups?.[0] ||
           d.photos.storefrontAndAtmosphere?.[0] ||
-          'https://images.unsplash.com/photo-1554118811-1e0d58224f24?w=150&auto=format&fit=crop&q=80';
+          null;
+
+        const pinInner = photo
+          ? `<img src="${photo.replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;")}" style="width: 100%; height: 100%; object-fit: cover;" />`
+          : `<div style="width: 100%; height: 100%; background: #fffbeb; display: flex; align-items: center; justify-content: center; color: #d97706; font-size: 18px;"><i class="fa-solid fa-mug-hot"></i></div>`;
 
         const customIcon = L.divIcon({
           className: 'custom-map-pin',
           html: `
             <div style="position: relative; width: 46px; height: 46px; border-radius: 50%; border: 3px solid #D97706; box-shadow: 0 4px 14px rgba(0,0,0,0.28); overflow: hidden; background: #fff; cursor: pointer;">
-              <img src="${photo.replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;")}" style="width: 100%; height: 100%; object-fit: cover;" />
+              ${pinInner}
               <div style="position: absolute; bottom: 0; right: 0; width: 17px; height: 17px; border-radius: 50%; background: #D97706; border: 1.5px solid #fff; display: flex; align-items: center; justify-content: center; font-size: 8px; color: #fff;"><i class="fa-solid fa-mug-hot"></i></div>
             </div>
           `,
@@ -200,13 +208,17 @@ export const MapView: React.FC<MapViewProps> = ({
         const photo =
           loc.photos.storefrontAndAtmosphere?.[0] ||
           loc.photos.floorPlanAndSpecs?.[0] ||
-          'https://images.unsplash.com/photo-1519567241046-7f570eee3ce6?w=150&auto=format&fit=crop&q=80';
+          null;
+
+        const pinInner = photo
+          ? `<img src="${photo.replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;")}" style="width: 100%; height: 100%; object-fit: cover;" />`
+          : `<div style="width: 100%; height: 100%; background: #f0f9ff; display: flex; align-items: center; justify-content: center; color: #0284c7; font-size: 18px;"><i class="fa-solid fa-map-location-dot"></i></div>`;
 
         const customIcon = L.divIcon({
           className: 'custom-map-pin',
           html: `
             <div style="position: relative; width: 46px; height: 46px; border-radius: 50%; border: 3px solid #0284c7; box-shadow: 0 4px 14px rgba(0,0,0,0.28); overflow: hidden; background: #fff; cursor: pointer;">
-              <img src="${photo.replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;")}" style="width: 100%; height: 100%; object-fit: cover;" />
+              ${pinInner}
               <div style="position: absolute; bottom: 0; right: 0; width: 17px; height: 17px; border-radius: 50%; background: #0284c7; border: 1.5px solid #fff; display: flex; align-items: center; justify-content: center; font-size: 8px; color: #fff;"><i class="fa-solid fa-map-location-dot"></i></div>
             </div>
           `,
@@ -442,44 +454,71 @@ export const MapView: React.FC<MapViewProps> = ({
               </button>
             </div>
 
-            <div className="flex items-center gap-3 mb-3">
-              <img
-                src={
-                  selectedPin.type === 'supplier'
-                    ? (selectedPin.data as SupplierRecord).photos.storefrontAndAtmosphere?.[0]
-                    : selectedPin.type === 'drink_store'
-                    ? (selectedPin.data as StoreInspoRecord).photos.drinkCups?.[0] ||
-                      (selectedPin.data as StoreInspoRecord).photos.storefrontAndAtmosphere?.[0]
-                    : (selectedPin.data as LocationRecord).photos.storefrontAndAtmosphere?.[0] ||
-                      (selectedPin.data as LocationRecord).photos.floorPlanAndSpecs?.[0]
-                }
-                className="w-16 h-16 rounded-2xl object-cover shrink-0 border border-slate-100 shadow-sm"
-              />
-              <div className="min-w-0 flex-1">
-                <h4 className="font-bold text-sm text-slate-900 truncate">
-                  {selectedPin.type === 'supplier'
-                    ? (selectedPin.data as SupplierRecord).name
-                    : selectedPin.type === 'drink_store'
-                    ? (selectedPin.data as StoreInspoRecord).storeName
-                    : (selectedPin.data as LocationRecord).name}
-                </h4>
-                <p className="text-xs text-slate-500 truncate">
-                  {selectedPin.type === 'supplier'
-                    ? (selectedPin.data as SupplierRecord).chineseName ||
-                      (selectedPin.data as SupplierRecord).marketOrCity
-                    : selectedPin.type === 'drink_store'
-                    ? (selectedPin.data as StoreInspoRecord).chineseName ||
-                      (selectedPin.data as StoreInspoRecord).city
-                    : (selectedPin.data as LocationRecord).zoneOrFloor}
-                </p>
-                <div className="flex items-center gap-1 text-[11px] text-emerald-700 mt-1 font-medium">
-                  <MapPin className="w-3 h-3 shrink-0" />
-                  <span className="truncate">
-                    {selectedPin.data.location.addressText || 'พิกัดที่ตั้ง'}
-                  </span>
+            {(() => {
+              const previewThumb =
+                selectedPin.type === 'supplier'
+                  ? (selectedPin.data as SupplierRecord).photos.storefrontAndAtmosphere?.[0] ||
+                    (selectedPin.data as SupplierRecord).catalogItems?.[0]?.photo
+                  : selectedPin.type === 'drink_store'
+                  ? (selectedPin.data as StoreInspoRecord).photos.drinkCups?.[0] ||
+                    (selectedPin.data as StoreInspoRecord).photos.storefrontAndAtmosphere?.[0]
+                  : (selectedPin.data as LocationRecord).photos.storefrontAndAtmosphere?.[0] ||
+                    (selectedPin.data as LocationRecord).photos.floorPlanAndSpecs?.[0];
+
+              return (
+                <div className="flex items-center gap-3 mb-3">
+                  {previewThumb ? (
+                    <img
+                      src={previewThumb}
+                      alt="Thumbnail"
+                      className="w-16 h-16 rounded-2xl object-cover shrink-0 border border-slate-100 shadow-sm"
+                    />
+                  ) : (
+                    <div
+                      className={`w-16 h-16 rounded-2xl shrink-0 flex items-center justify-center text-xl border ${
+                        selectedPin.type === 'supplier'
+                          ? 'bg-emerald-50 text-emerald-600 border-emerald-100'
+                          : selectedPin.type === 'drink_store'
+                          ? 'bg-amber-50 text-amber-600 border-amber-100'
+                          : 'bg-sky-50 text-sky-600 border-sky-100'
+                      }`}
+                    >
+                      {selectedPin.type === 'supplier' ? (
+                        <i className="fa-solid fa-industry" />
+                      ) : selectedPin.type === 'drink_store' ? (
+                        <i className="fa-solid fa-mug-hot" />
+                      ) : (
+                        <i className="fa-solid fa-map-location-dot" />
+                      )}
+                    </div>
+                  )}
+                  <div className="min-w-0 flex-1">
+                    <h4 className="font-bold text-sm text-slate-900 truncate">
+                      {selectedPin.type === 'supplier'
+                        ? (selectedPin.data as SupplierRecord).name
+                        : selectedPin.type === 'drink_store'
+                        ? (selectedPin.data as StoreInspoRecord).storeName
+                        : (selectedPin.data as LocationRecord).name}
+                    </h4>
+                    <p className="text-xs text-slate-500 truncate">
+                      {selectedPin.type === 'supplier'
+                        ? (selectedPin.data as SupplierRecord).chineseName ||
+                          (selectedPin.data as SupplierRecord).marketOrCity
+                        : selectedPin.type === 'drink_store'
+                        ? (selectedPin.data as StoreInspoRecord).chineseName ||
+                          (selectedPin.data as StoreInspoRecord).city
+                        : (selectedPin.data as LocationRecord).zoneOrFloor}
+                    </p>
+                    <div className="flex items-center gap-1 text-[11px] text-emerald-700 mt-1 font-medium">
+                      <MapPin className="w-3 h-3 shrink-0" />
+                      <span className="truncate">
+                        {selectedPin.data.location.addressText || 'พิกัดที่ตั้ง'}
+                      </span>
+                    </div>
+                  </div>
                 </div>
-              </div>
-            </div>
+              );
+            })()}
 
             <div className="flex items-center justify-between pt-2 border-t border-slate-100">
               <div className="text-xs text-slate-500">

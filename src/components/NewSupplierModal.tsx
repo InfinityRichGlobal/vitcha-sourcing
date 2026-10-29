@@ -344,10 +344,7 @@ export const NewSupplierModal: React.FC<NewSupplierModalProps> = ({ isOpen, onCl
           wechatId: wechatId.trim() || undefined,
           lineId: lineId.trim() || undefined,
           photos: {
-            storefrontAndAtmosphere:
-              storefrontAndAtmosphere.length > 0
-                ? storefrontAndAtmosphere
-                : ['https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80'],
+            storefrontAndAtmosphere,
             contactCards,
           },
           videos,
@@ -376,10 +373,7 @@ export const NewSupplierModal: React.FC<NewSupplierModalProps> = ({ isOpen, onCl
           wechatId: wechatId.trim() || undefined,
           lineId: lineId.trim() || undefined,
           photos: {
-            storefrontAndAtmosphere:
-              storefrontAndAtmosphere.length > 0
-                ? storefrontAndAtmosphere
-                : ['https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80'],
+            storefrontAndAtmosphere,
             contactCards,
           },
           videos,

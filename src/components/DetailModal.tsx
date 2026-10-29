@@ -1020,28 +1020,34 @@ export const DetailModal: React.FC<DetailModalProps> = ({
           {/* Photo Gallery */}
           <div className="space-y-2">
             <span className="text-xs font-bold text-slate-800 block">
-              แกลเลอรีรูปภาพทั้งหมด ({allPhotos.length} รูป — แตะเพื่อขยายและเลื่อนซ้าย-ขวา):
+              แกลเลอรีรูปภาพทั้งหมด ({allPhotos.length} รูป{allPhotos.length > 0 ? ' — แตะเพื่อขยายและเลื่อนซ้าย-ขวา' : ''}):
             </span>
-            <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
-              {allPhotos.map((p, idx) => (
-                <div
-                  key={idx}
-                  onClick={() => setActiveImageIndex(idx)}
-                  className="group relative aspect-square rounded-xl overflow-hidden border border-slate-200 cursor-pointer bg-slate-100 shadow-xs"
-                >
-                  <img
-                    src={p.url}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
-                  />
-                  <div className="absolute bottom-1 right-1 bg-black/60 text-white text-[9px] font-mono px-1.5 py-0.5 rounded">
-                    {idx + 1}/{allPhotos.length}
+            {allPhotos.length > 0 ? (
+              <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+                {allPhotos.map((p, idx) => (
+                  <div
+                    key={idx}
+                    onClick={() => setActiveImageIndex(idx)}
+                    className="group relative aspect-square rounded-xl overflow-hidden border border-slate-200 cursor-pointer bg-slate-100 shadow-xs"
+                  >
+                    <img
+                      src={p.url}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
+                    />
+                    <div className="absolute bottom-1 right-1 bg-black/60 text-white text-[9px] font-mono px-1.5 py-0.5 rounded">
+                      {idx + 1}/{allPhotos.length}
+                    </div>
+                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-[10px] text-white p-1 text-center font-medium">
+                      {p.label}
+                    </div>
                   </div>
-                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-[10px] text-white p-1 text-center font-medium">
-                    {p.label}
-                  </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            ) : (
+              <div className="p-4 rounded-xl bg-slate-50 border border-dashed border-slate-200 text-center text-xs text-slate-400">
+                ยังไม่มีรูปภาพที่แนบไว้ในรายการนี้
+              </div>
+            )}
           </div>
 
           {/* Video Gallery Section */}

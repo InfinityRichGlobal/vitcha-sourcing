@@ -17,6 +17,7 @@ import {
   Eye,
   X,
   Pencil,
+  Camera,
 } from 'lucide-react';
 
 interface StoreInspoCardProps {
@@ -63,10 +64,7 @@ export const StoreInspoCard: React.FC<StoreInspoCardProps> = ({
     ])
   );
 
-  const displayPhotos =
-    allPhotos.length > 0
-      ? allPhotos
-      : ['https://images.unsplash.com/photo-1554118811-1e0d58224f24?w=800&auto=format&fit=crop&q=80'];
+  const displayPhotos = allPhotos;
 
   const notes = Array.isArray(store.reviewerNotes) ? store.reviewerNotes : [];
   const totalCommentsCount = notes.reduce(
@@ -222,41 +220,51 @@ export const StoreInspoCard: React.FC<StoreInspoCardProps> = ({
 
         {/* 3. Compact 1:1 Thumbnail Strip in a Single Row (แตะดูรูปขยายและเลื่อนซ้าย-ขวาได้) */}
         <div className="px-4 pb-3">
-          <div className="grid grid-cols-4 gap-1.5">
-            {displayPhotos.slice(0, 4).map((photoUrl, idx) => {
-              const extraCount = displayPhotos.length - 4;
-              const isLastWithMore = idx === 3 && extraCount > 0;
-              return (
-                <button
-                  key={idx}
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setLightboxIdx(idx);
-                  }}
-                  className="relative aspect-square rounded-xl overflow-hidden bg-slate-100 border border-slate-200/80 group cursor-pointer focus:outline-none"
-                  title={`ดูรูปที่ ${idx + 1} / ${displayPhotos.length}`}
-                >
-                  <img
-                    loading="lazy"
-                    decoding="async"
-                    src={photoUrl}
-                    alt={`${store.storeName} ${idx + 1}`}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
-                  />
-                  {isLastWithMore ? (
-                    <div className="absolute inset-0 bg-black/60 flex items-center justify-center text-white font-mono text-xs font-extrabold">
-                      +{extraCount}
-                    </div>
-                  ) : (
-                    <div className="absolute bottom-1 right-1 px-1 py-0.2 rounded bg-black/55 text-white text-[9px] font-mono">
-                      {idx + 1}/{displayPhotos.length}
-                    </div>
-                  )}
-                </button>
-              );
-            })}
-          </div>
+          {displayPhotos.length > 0 ? (
+            <div className="grid grid-cols-4 gap-1.5">
+              {displayPhotos.slice(0, 4).map((photoUrl, idx) => {
+                const extraCount = displayPhotos.length - 4;
+                const isLastWithMore = idx === 3 && extraCount > 0;
+                return (
+                  <button
+                    key={idx}
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setLightboxIdx(idx);
+                    }}
+                    className="relative aspect-square rounded-xl overflow-hidden bg-slate-100 border border-slate-200/80 group cursor-pointer focus:outline-none"
+                    title={`ดูรูปที่ ${idx + 1} / ${displayPhotos.length}`}
+                  >
+                    <img
+                      loading="lazy"
+                      decoding="async"
+                      src={photoUrl}
+                      alt={`${store.storeName} ${idx + 1}`}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
+                    />
+                    {isLastWithMore ? (
+                      <div className="absolute inset-0 bg-black/60 flex items-center justify-center text-white font-mono text-xs font-extrabold">
+                        +{extraCount}
+                      </div>
+                    ) : (
+                      <div className="absolute bottom-1 right-1 px-1 py-0.2 rounded bg-black/55 text-white text-[9px] font-mono">
+                        {idx + 1}/{displayPhotos.length}
+                      </div>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          ) : (
+            <div
+              onClick={() => onSelect(store)}
+              className="p-3 rounded-xl bg-slate-50 border border-dashed border-slate-200 text-center flex items-center justify-center gap-1.5 text-slate-400 text-xs cursor-pointer hover:bg-slate-100/70 transition-colors"
+            >
+              <Camera className="w-3.5 h-3.5 text-slate-300" />
+              <span>ยังไม่มีรูปภาพหน้าร้าน (แตะเพื่อดูรายละเอียด)</span>
+            </div>
+          )}
         </div>
 
         {/* 4. Social Summary Row */}

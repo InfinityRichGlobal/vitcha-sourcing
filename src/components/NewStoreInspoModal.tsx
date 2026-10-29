@@ -313,10 +313,7 @@ export const NewStoreInspoModal: React.FC<NewStoreInspoModalProps> = ({ isOpen, 
           wechatId: wechatId.trim() || undefined,
           phone: phone.trim() || undefined,
           photos: {
-            storefrontAndAtmosphere:
-              storefrontAndAtmosphere.length > 0
-                ? storefrontAndAtmosphere
-                : ['https://images.unsplash.com/photo-1554118811-1e0d58224f24?w=800&auto=format&fit=crop&q=80'],
+            storefrontAndAtmosphere,
             menuBoard: menuBoardPhotos,
             drinkCups: drinkCupPhotos,
           },
@@ -350,10 +347,7 @@ export const NewStoreInspoModal: React.FC<NewStoreInspoModalProps> = ({ isOpen, 
           wechatId: wechatId.trim() || undefined,
           phone: phone.trim() || undefined,
           photos: {
-            storefrontAndAtmosphere:
-              storefrontAndAtmosphere.length > 0
-                ? storefrontAndAtmosphere
-                : ['https://images.unsplash.com/photo-1554118811-1e0d58224f24?w=800&auto=format&fit=crop&q=80'],
+            storefrontAndAtmosphere,
             menuBoard: menuBoardPhotos,
             drinkCups: drinkCupPhotos,
           },

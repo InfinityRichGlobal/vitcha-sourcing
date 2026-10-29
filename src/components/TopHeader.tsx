@@ -78,6 +78,21 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
     (n) => !n.read && n.actorId !== currentUser.id && (!n.forAdminOnly || currentUser.id === 'user-ice')
   ).length;
 
+  // ตั้งค่า Badge ตัวเลขอัปเดตบนไอคอนแอปหน้าจอมือถือ (PWA App Badge) และ Title ของเบราว์เซอร์
+  useEffect(() => {
+    if (typeof navigator !== 'undefined' && 'setAppBadge' in navigator) {
+      if (unreadCount > 0) {
+        navigator.setAppBadge(unreadCount).catch(() => {});
+      } else {
+        navigator.clearAppBadge().catch(() => {});
+      }
+    }
+    if (typeof document !== 'undefined') {
+      const baseTitle = 'ฉันจะเป็นหัวแถว · แพลตฟอร์ม R&D จัดซื้อ & สเปกทำเล VITCHA';
+      document.title = unreadCount > 0 ? `(${unreadCount}) ${baseTitle}` : baseTitle;
+    }
+  }, [unreadCount]);
+
   return (
     <>
       <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-xl border-b border-slate-100 px-2.5 sm:px-5 py-2 transition-all">
@@ -100,6 +115,16 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
                   syncStatus === 'online' && renderStatus === 'connected' ? 'bg-emerald-500' : 'bg-amber-500'
                 }`}
               />
+              {/* จุดไอคอนกลมแดงแจ้งเตือนตัวเลขบนหน้าไอคอนโลโก้ */}
+              {unreadCount > 0 && (
+                <span
+                  data-testid="logo-badge"
+                  className="absolute -top-1 -right-1 min-w-[16px] h-4 rounded-full bg-rose-500 text-white text-[9px] font-bold font-mono px-1 flex items-center justify-center border-2 border-white shadow-xs animate-in zoom-in-75"
+                  title={`มีการแจ้งเตือนใหม่ ${unreadCount} รายการ`}
+                >
+                  {unreadCount > 99 ? '99+' : unreadCount}
+                </span>
+              )}
             </div>
 
             <div className="min-w-0">
@@ -197,8 +222,11 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
             >
               <Bell className="w-4 h-4" />
               {unreadCount > 0 && (
-                <span className="absolute top-0.5 right-0.5 min-w-[14px] h-[14px] rounded-full bg-rose-500 text-white text-[8px] font-bold font-mono px-0.5 flex items-center justify-center border border-white">
-                  {unreadCount}
+                <span
+                  data-testid="bell-badge"
+                  className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 rounded-full bg-rose-500 text-white text-[9px] font-bold font-mono px-1 flex items-center justify-center border border-white shadow-xs animate-in zoom-in-75"
+                >
+                  {unreadCount > 99 ? '99+' : unreadCount}
                 </span>
               )}
             </button>
