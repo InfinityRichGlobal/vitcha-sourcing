@@ -283,8 +283,8 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
         </div>
       </div>
 
-      {/* 2. Bento KPI Grid (5 Clickable Cards with Location Scouting) */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5">
+      {/* 2. Bento KPI Grid (6 Clickable Cards with LEAD LAB R&D) */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5">
         <button
           type="button"
           onClick={() => {
@@ -383,7 +383,7 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
         <button
           type="button"
           onClick={() => setActiveTab('handoff')}
-          className="group p-3 rounded-2xl bg-white border border-slate-200/90 hover:border-blue-400 text-left transition-all shadow-2xs hover:shadow-sm active:scale-[0.99] col-span-2 sm:col-span-1"
+          className="group p-3 rounded-2xl bg-white border border-slate-200/90 hover:border-blue-400 text-left transition-all shadow-2xs hover:shadow-sm active:scale-[0.99]"
         >
           <div className="flex items-center justify-between mb-1">
             <span className="w-7 h-7 rounded-lg bg-blue-50 text-blue-600 border border-blue-200/60 flex items-center justify-center">
@@ -399,6 +399,32 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
           </div>
           <div className="text-xs font-bold text-slate-800 mt-0.5 whitespace-nowrap">
             ส่งต่องานทีมไทย
+          </div>
+        </button>
+
+        {/* 6. LEAD LAB 🧪 (แล็บของคนที่จะเป็นหัวแถว · นวัตกรรมเครื่องดื่ม & ท็อปปิ้ง) */}
+        <button
+          type="button"
+          onClick={() => {
+            // LEAD LAB
+          }}
+          className="group p-3 rounded-2xl bg-gradient-to-br from-white via-white to-violet-50/70 border border-violet-200/90 hover:border-violet-500 text-left transition-all shadow-2xs hover:shadow-sm active:scale-[0.99] relative overflow-hidden ring-1 ring-violet-500/10"
+        >
+          <div className="flex items-center justify-between mb-1">
+            <span className="w-7 h-7 rounded-lg bg-violet-100 text-violet-700 border border-violet-300/80 flex items-center justify-center shadow-2xs">
+              <i aria-hidden="true" className="fa-solid fa-flask-vial text-xs" />
+            </span>
+            <span className="text-[9px] font-extrabold px-1.5 py-0.5 rounded-full bg-violet-600 text-white shadow-2xs tracking-wide whitespace-nowrap">
+              LEAD LAB 🧪
+            </span>
+          </div>
+          <div className="text-xl sm:text-2xl font-extrabold text-slate-950 font-mono tracking-tight flex items-baseline gap-1">
+            <span>12</span>
+            <span className="text-[10px] font-bold text-violet-700 font-sans">สูตร</span>
+          </div>
+          <div className="text-xs font-extrabold text-violet-950 mt-0.5 whitespace-nowrap flex items-center gap-1">
+            <span>แล็บคนหัวแถว</span>
+            <span className="text-[10px] text-violet-600 font-bold">· R&D</span>
           </div>
         </button>
       </div>
