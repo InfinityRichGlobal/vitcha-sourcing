@@ -144,7 +144,11 @@ export function createCloudMedia({ request, url, key, drive = null, fetchImpl = 
         headers: { Authorization: `Bearer ${token}` },
         signal: AbortSignal.timeout(20000),
       });
-      if (!aboutRes.ok) return { configured: true, connected: false, folderId, folderUrl, oauthError: 'About request failed' };
+      if (!aboutRes.ok) {
+        const errJson = await aboutRes.json().catch(() => null);
+        const errMsg = errJson?.error?.message || `Google Drive API error (${aboutRes.status})`;
+        return { configured: true, connected: false, folderId, folderUrl, oauthError: errMsg };
+      }
       const about = await aboutRes.json();
       return {
         configured: true,
