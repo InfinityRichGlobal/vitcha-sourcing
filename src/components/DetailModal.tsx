@@ -1,6 +1,6 @@
 import { AvatarImage } from './AvatarImage';
 import React, { useState, useEffect } from 'react';
-import { SupplierRecord, StoreInspoRecord, PipelineStatus } from '../types';
+import { SupplierRecord, StoreInspoRecord, LocationRecord, PipelineStatus } from '../types';
 import { useApp } from '../context/AppContext';
 import { SeenByBadge } from './SeenByBadge';
 import { openExecutiveReport } from '../utils/exportReport';
@@ -34,14 +34,24 @@ import {
   Loader2,
   PlayCircle,
   Music,
+  Building2,
+  Maximize2,
+  Ruler,
+  Droplets,
+  RotateCcw,
+  Sparkles,
+  Bike,
+  DollarSign,
+  Phone,
+  User,
 } from 'lucide-react';
 import { uploadMediaToServer } from '../services/api';
 
 interface DetailModalProps {
-  item: SupplierRecord | StoreInspoRecord | null;
+  item: SupplierRecord | StoreInspoRecord | LocationRecord | null;
   isOpen: boolean;
   onClose: () => void;
-  onShareToLine: (item: SupplierRecord | StoreInspoRecord) => void;
+  onShareToLine: (item: any) => void;
 }
 
 export const DetailModal: React.FC<DetailModalProps> = ({
@@ -59,6 +69,7 @@ export const DetailModal: React.FC<DetailModalProps> = ({
     toggleLikeItem,
     suppliers,
     drinkStores,
+    locations,
     users,
     quickMessages,
     recordItemView,
@@ -72,7 +83,9 @@ export const DetailModal: React.FC<DetailModalProps> = ({
     item && item.type === 'supplier' ? suppliers.find((s) => s.id === item.id) : null;
   const liveStore =
     item && item.type === 'drink_store' ? drinkStores.find((d) => d.id === item.id) : null;
-  const currentItem = liveSupplier || liveStore || item;
+  const liveLocation =
+    item && item.type === 'location' ? locations.find((l) => l.id === item.id) : null;
+  const currentItem = liveSupplier || liveStore || liveLocation || item;
 
   const [activeImageIndex, setActiveImageIndex] = useState<number | null>(null);
   const [newReviewText, setNewReviewText] = useState('');
@@ -147,7 +160,7 @@ export const DetailModal: React.FC<DetailModalProps> = ({
           });
         }
       });
-    } else {
+    } else if (currentItem.type === 'drink_store') {
       const st = currentItem as StoreInspoRecord;
       st.photos.storefrontAndAtmosphere?.forEach((p, idx) =>
         allPhotos.push({ url: p, label: `หน้าร้าน/บรรยากาศ #${idx + 1}` })
@@ -166,6 +179,20 @@ export const DetailModal: React.FC<DetailModalProps> = ({
           });
         }
       });
+    } else if (currentItem.type === 'location') {
+      const loc = currentItem as LocationRecord;
+      loc.photos.storefrontAndAtmosphere?.forEach((p, idx) =>
+        allPhotos.push({ url: p, label: `หน้าร้าน/ทางเดิน #${idx + 1}` })
+      );
+      loc.photos.floorPlanAndSpecs?.forEach((p, idx) =>
+        allPhotos.push({ url: p, label: `ผังห้อง/งานระบบ #${idx + 1}` })
+      );
+      loc.photos.surroundingNeighbors?.forEach((p, idx) =>
+        allPhotos.push({ url: p, label: `ร้านข้างเคียง #${idx + 1}` })
+      );
+      loc.photos.contactCards?.forEach((p, idx) =>
+        allPhotos.push({ url: p, label: `นามบัตร/เอกสาร #${idx + 1}` })
+      );
     }
   }
 
@@ -192,8 +219,11 @@ export const DetailModal: React.FC<DetailModalProps> = ({
   if (!isOpen || !currentItem) return null;
 
   const isSupplier = currentItem.type === 'supplier';
+  const isDrinkStore = currentItem.type === 'drink_store';
+  const isLocation = currentItem.type === 'location';
   const supplier = isSupplier ? (currentItem as SupplierRecord) : null;
-  const store = !isSupplier ? (currentItem as StoreInspoRecord) : null;
+  const store = isDrinkStore ? (currentItem as StoreInspoRecord) : null;
+  const location = isLocation ? (currentItem as LocationRecord) : null;
 
   const likes = Array.isArray(currentItem.likes) ? currentItem.likes : [];
   const isLikedByMe = likes.some((l) => l.userId === currentUser.id);
@@ -209,7 +239,7 @@ export const DetailModal: React.FC<DetailModalProps> = ({
       const url = await uploadMediaToServer(file, {
         recordId: currentItem.id,
         recordType: currentItem.type,
-        recordTitle: isSupplier ? supplier?.name : store?.storeName,
+        recordTitle: isSupplier ? supplier?.name : isLocation ? location?.name : store?.storeName,
       });
       if (noteId) {
         setReplyAttachments((prev) => ({
@@ -381,22 +411,30 @@ export const DetailModal: React.FC<DetailModalProps> = ({
             <div className="flex items-start gap-2.5 min-w-0 flex-1">
               <span
                 className={`p-2 rounded-xl shrink-0 mt-0.5 ${
-                  isSupplier ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'
+                  isSupplier
+                    ? 'bg-emerald-50 text-emerald-700'
+                    : isLocation
+                    ? 'bg-sky-50 text-sky-700'
+                    : 'bg-amber-50 text-amber-700'
                 }`}
               >
                 {isSupplier ? (
                   <Factory className="w-4 h-4 sm:w-5 sm:h-5 text-emerald-600" />
+                ) : isLocation ? (
+                  <i aria-hidden="true" className="fa-solid fa-map-location-dot text-base text-sky-600" />
                 ) : (
                   <Coffee className="w-4 h-4 sm:w-5 sm:h-5 text-amber-600" />
                 )}
               </span>
               <div className="min-w-0 flex-1">
                 <h2 className="font-extrabold text-slate-900 text-sm sm:text-base leading-snug break-words">
-                  {isSupplier ? supplier?.name : store?.storeName}
+                  {isSupplier ? supplier?.name : isLocation ? location?.name : store?.storeName}
                 </h2>
                 <p className="text-xs text-slate-400 truncate mt-0.5">
                   {isSupplier
                     ? supplier?.chineseName || supplier?.marketOrCity
+                    : isLocation
+                    ? location?.zoneOrFloor || location?.foreignName
                     : store?.chineseName || store?.storeCategory || store?.brandConcept}
                 </p>
               </div>
@@ -632,32 +670,66 @@ export const DetailModal: React.FC<DetailModalProps> = ({
                     </span>
                   )}
                 </>
+              ) : isLocation && location ? (
+                <>
+                  <span className="px-2.5 py-1 rounded-lg bg-sky-600 text-white text-[11px] font-bold inline-flex items-center gap-1">
+                    <i className="fa-solid fa-map-location-dot text-[10px]" />
+                    <span>{location.locationType === 'mall' ? 'ห้างสรรพสินค้า' : location.locationType}</span>
+                  </span>
+                  <span className="px-2 py-1 rounded-lg bg-white border border-slate-200 text-slate-700 text-[11px] font-bold">
+                    ผัง {location.spaceSpecs?.layoutFormat || 'Inline'}
+                  </span>
+                  {location.ratings && (
+                    <span className="px-2 py-1 rounded-lg bg-amber-50 border border-amber-200 text-amber-800 text-[11px] font-mono font-bold inline-flex items-center gap-1">
+                      <i className="fa-solid fa-star text-[10px] text-amber-500" />
+                      <span>
+                        {(
+                          (location.ratings.footTraffic +
+                            location.ratings.visibility +
+                            location.ratings.accessibility +
+                            location.ratings.valueRoi) /
+                          4
+                        ).toFixed(1)}
+                      </span>
+                    </span>
+                  )}
+                  {(location.quickTags || []).map((t, idx) => (
+                    <span
+                      key={idx}
+                      className="px-2 py-1 rounded-lg bg-white border border-slate-200 text-slate-700 text-[11px] font-semibold"
+                    >
+                      #{t}
+                    </span>
+                  ))}
+                </>
               ) : null}
             </div>
 
             <div className="flex flex-wrap items-center justify-between gap-2 pt-1.5 border-t border-slate-200/60 text-[11px] text-slate-600">
               <div className="flex flex-wrap items-center gap-2">
                 <span className="inline-flex items-center gap-1 font-semibold text-slate-800">
-                  <MapPin className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                  <MapPin className="w-3.5 h-3.5 text-sky-600 shrink-0" />
                   <span>
                     {isSupplier
                       ? supplier?.marketOrCity || supplier?.address || supplier?.location?.addressText
+                      : isLocation
+                      ? location?.location?.addressText || location?.zoneOrFloor
                       : store?.location?.addressText || store?.city}
                   </span>
                 </span>
-                {(isSupplier ? supplier?.wechatId : store?.wechatId) && (
+                {(isSupplier ? supplier?.wechatId : isLocation ? location?.leaseTerms?.contactLineWechat : store?.wechatId) && (
                   <span className="px-2 py-0.5 rounded bg-white border border-slate-200 font-mono">
-                    WeChat: {isSupplier ? supplier?.wechatId : store?.wechatId}
+                    LINE/WeChat: {isSupplier ? supplier?.wechatId : isLocation ? location?.leaseTerms?.contactLineWechat : store?.wechatId}
                   </span>
                 )}
-                {(isSupplier ? supplier?.lineId : store?.lineId) && (
+                {(isSupplier ? supplier?.phone : isLocation ? location?.leaseTerms?.contactPhone : store?.phone) && (
                   <span className="px-2 py-0.5 rounded bg-white border border-slate-200 font-mono">
-                    LINE: {isSupplier ? supplier?.lineId : store?.lineId}
+                    โทร: {isSupplier ? supplier?.phone : isLocation ? location?.leaseTerms?.contactPhone : store?.phone}
                   </span>
                 )}
-                {(isSupplier ? supplier?.phone : store?.phone) && (
-                  <span className="px-2 py-0.5 rounded bg-white border border-slate-200 font-mono">
-                    โทร: {isSupplier ? supplier?.phone : store?.phone}
+                {isLocation && location?.leaseTerms?.contactPerson && (
+                  <span className="px-2 py-0.5 rounded bg-white border border-slate-200">
+                    ผู้ติดต่อ: {location.leaseTerms.contactPerson}
                   </span>
                 )}
               </div>
@@ -666,13 +738,95 @@ export const DetailModal: React.FC<DetailModalProps> = ({
                   href={`https://www.google.com/maps?q=${currentItem.location.lat},${currentItem.location.lng}`}
                   target="_blank"
                   rel="noreferrer"
-                  className="text-[11px] font-bold text-emerald-700 hover:underline shrink-0"
+                  className="text-[11px] font-bold text-sky-700 hover:underline shrink-0"
                 >
                   เปิด Google Maps ↗
                 </a>
               )}
             </div>
           </div>
+
+          {/* Full Field Memo / Tasting Notes / Location Specs */}
+          {isLocation && location && (
+            <div className="p-3.5 rounded-xl border border-sky-200 bg-sky-50/50 space-y-3">
+              <div className="text-[11px] font-bold text-sky-900 flex items-center justify-between">
+                <span className="flex items-center gap-1.5">
+                  <Building2 className="w-3.5 h-3.5 text-sky-600" />
+                  <span>สเปกพื้นที่ & เงื่อนไขสัญญาเช่า (Location Scouting Specs)</span>
+                </span>
+                <span className="text-[10px] px-2 py-0.5 rounded-full bg-white text-sky-800 font-mono font-bold border border-sky-200">
+                  {location.zoneOrFloor} {location.unitNumber ? `(${location.unitNumber})` : ''}
+                </span>
+              </div>
+
+              {/* Grid 4 Columns for Specs */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
+                <div className="bg-white p-2 rounded-lg border border-slate-200 text-center">
+                  <div className="text-[10px] text-slate-500 font-bold">ขนาดพื้นที่</div>
+                  <div className="font-extrabold text-sm text-slate-900 font-mono mt-0.5">
+                    {location.spaceSpecs?.usableAreaSqm || '-'} <span className="text-[10px] font-normal text-slate-500">ตร.ม.</span>
+                  </div>
+                </div>
+                <div className="bg-white p-2 rounded-lg border border-slate-200 text-center">
+                  <div className="text-[10px] text-slate-500 font-bold">หน้ากว้าง / เพดาน</div>
+                  <div className="font-extrabold text-sm text-slate-900 font-mono mt-0.5">
+                    {location.spaceSpecs?.frontageWidthM || '-'}ม. / {location.spaceSpecs?.ceilingHeightM || '-'}ม.
+                  </div>
+                </div>
+                <div className="bg-white p-2 rounded-lg border border-slate-200 text-center">
+                  <div className="text-[10px] text-slate-500 font-bold">ค่าเช่ารายเดือน</div>
+                  <div className="font-extrabold text-sm text-amber-950 font-mono mt-0.5 truncate">
+                    {location.leaseTerms?.monthlyRentThb ? (
+                      <>฿{location.leaseTerms.monthlyRentThb.toLocaleString()}</>
+                    ) : location.leaseTerms?.monthlyRentRmb ? (
+                      <>¥{location.leaseTerms.monthlyRentRmb.toLocaleString()}</>
+                    ) : (
+                      <span className="text-slate-400">สอบถาม</span>
+                    )}
+                  </div>
+                </div>
+                <div className="bg-white p-2 rounded-lg border border-slate-200 text-center">
+                  <div className="text-[10px] text-slate-500 font-bold">เงื่อนไขสัญญา</div>
+                  <div className="font-extrabold text-xs text-slate-900 font-mono mt-0.5 truncate">
+                    สัญญา {location.leaseTerms?.leasePeriodYears || 3} ปี · ประกัน {location.leaseTerms?.depositMonths || 3} ด.
+                  </div>
+                </div>
+              </div>
+
+              {/* M&E Badges */}
+              <div className="flex flex-wrap items-center gap-1.5 pt-1 text-xs">
+                <span className="px-2 py-0.5 rounded-md bg-white border border-slate-200 text-slate-700 font-semibold flex items-center gap-1">
+                  <Zap className="w-3 h-3 text-amber-500" />
+                  <span>สเปกไฟ: {location.spaceSpecs?.electricalPower || '3 เฟส 45 kVA'}</span>
+                </span>
+                <span className="px-2 py-0.5 rounded-md bg-white border border-slate-200 text-slate-700 font-semibold flex items-center gap-1">
+                  <Droplets className="w-3 h-3 text-blue-500" />
+                  <span>ท่อน้ำดี: {location.spaceSpecs?.hasWaterInflow ? '✓ มีในห้อง' : '✗ ไม่มี'}</span>
+                </span>
+                <span className="px-2 py-0.5 rounded-md bg-white border border-slate-200 text-slate-700 font-semibold flex items-center gap-1">
+                  <RotateCcw className="w-3 h-3 text-teal-500" />
+                  <span>ท่อน้ำทิ้ง: {location.spaceSpecs?.hasDrainage ? '✓ มีในห้อง' : '✗ ไม่มี'}</span>
+                </span>
+                <span className="px-2 py-0.5 rounded-md bg-white border border-slate-200 text-slate-700 font-semibold flex items-center gap-1">
+                  <Sparkles className="w-3 h-3 text-purple-500" />
+                  <span>ดักไขมัน: {location.spaceSpecs?.hasGreaseTrap ? '✓ มีรองรับ' : '✗ ต้องติดตั้งเอง'}</span>
+                </span>
+                {location.spaceSpecs?.riderAccessNotes && (
+                  <span className="px-2 py-0.5 rounded-md bg-white border border-slate-200 text-slate-700 font-semibold flex items-center gap-1">
+                    <Bike className="w-3 h-3 text-emerald-600" />
+                    <span>ไรเดอร์: {location.spaceSpecs.riderAccessNotes}</span>
+                  </span>
+                )}
+              </div>
+
+              {location.handoffNotes && (
+                <div className="pt-2 border-t border-sky-200/80 text-xs">
+                  <span className="font-bold text-sky-900 block mb-0.5">ประเด็นเจรจา / ส่งมอบงาน:</span>
+                  <p className="text-slate-800 whitespace-pre-wrap">{location.handoffNotes}</p>
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Full Field Memo / Tasting Notes (แสดงข้อความบันทึกหลักครบเต็มรูป ไม่ตัดคำ) */}
           {((isSupplier && supplier?.memo) || (!isSupplier && store?.tastingNotes)) && (

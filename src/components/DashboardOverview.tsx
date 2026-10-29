@@ -5,7 +5,8 @@ const MapView = lazy(() => import('./MapView').then((m) => ({ default: m.MapView
 import { SeenByBadge } from './SeenByBadge';
 import { SupplierCard } from './SupplierCard';
 import { StoreInspoCard } from './StoreInspoCard';
-import { SupplierRecord, StoreInspoRecord } from '../types';
+import { LocationCard } from './LocationCard';
+import { SupplierRecord, StoreInspoRecord, LocationRecord } from '../types';
 import {
   MessageSquare,
   ArrowUpRight,
@@ -17,19 +18,26 @@ import {
 interface DashboardOverviewProps {
   onSelectSupplier: (s: SupplierRecord) => void;
   onSelectStore: (st: StoreInspoRecord) => void;
+  onSelectLocation?: (l: LocationRecord) => void;
   onOpenNewSupplier: () => void;
   onOpenNewStoreInspo: () => void;
-  onShareToLine?: (item: SupplierRecord | StoreInspoRecord) => void;
+  onOpenNewLocation?: () => void;
+  onShareToLine?: (item: SupplierRecord | StoreInspoRecord | LocationRecord) => void;
 }
 
 export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
   onSelectSupplier,
   onSelectStore,
+  onSelectLocation,
+  onOpenNewSupplier,
+  onOpenNewStoreInspo,
+  onOpenNewLocation,
   onShareToLine,
 }) => {
   const {
     suppliers,
     drinkStores,
+    locations,
     categories,
     storeCategories,
     quickTagsList,
@@ -43,7 +51,7 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
     currentUser,
   } = useApp();
 
-  const [feedFilter, setFeedFilter] = useState<'all' | 'suppliers' | 'drink_stores'>('all');
+  const [feedFilter, setFeedFilter] = useState<'all' | 'suppliers' | 'drink_stores' | 'locations'>('all');
 
   // Filter based on country if selected
   const activeSuppliers = suppliers.filter(
@@ -52,19 +60,25 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
   const activeStores = drinkStores.filter(
     (d) => countryFilter === 'all' || d.country === countryFilter
   );
+  const activeLocations = locations.filter(
+    (l) => countryFilter === 'all' || l.country === countryFilter
+  );
 
   // Metrics
   const totalSuppliers = activeSuppliers.length;
   const totalStores = activeStores.length;
+  const totalLocations = activeLocations.length;
   const totalShortlisted = activeSuppliers.filter((s) => s.status === 'shortlisted').length;
   const totalHandoffActive =
     activeSuppliers.filter((s) => s.handoffStage && s.handoffStage !== 'ordered').length +
-    activeStores.filter((d) => d.handoffStage && d.handoffStage !== 'ordered').length;
+    activeStores.filter((d) => d.handoffStage && d.handoffStage !== 'ordered').length +
+    activeLocations.filter((l) => l.handoffStage && l.handoffStage !== 'ordered').length;
 
   // Combined Social Feed sorted by updatedAt descending
-  const combinedFeed: Array<SupplierRecord | StoreInspoRecord> = [
+  const combinedFeed: Array<SupplierRecord | StoreInspoRecord | LocationRecord> = [
     ...(feedFilter === 'all' || feedFilter === 'suppliers' ? activeSuppliers : []),
     ...(feedFilter === 'all' || feedFilter === 'drink_stores' ? activeStores : []),
+    ...(feedFilter === 'all' || feedFilter === 'locations' ? activeLocations : []),
   ].sort(
     (a, b) =>
       new Date(b.updatedAt || b.creator.timestamp).getTime() -
@@ -80,9 +94,9 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
     timestamp: string;
     isReply?: boolean;
     replyToAuthor?: string;
-    targetItem: SupplierRecord | StoreInspoRecord;
+    targetItem: SupplierRecord | StoreInspoRecord | LocationRecord;
     targetName: string;
-    targetType: 'supplier' | 'drink_store';
+    targetType: 'supplier' | 'drink_store' | 'location';
   }
 
   const chatFeed: ChatFeedEntry[] = [];
@@ -147,13 +161,47 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
     });
   });
 
+  activeLocations.forEach((loc) => {
+    (loc.reviewerNotes || []).forEach((note) => {
+      chatFeed.push({
+        id: note.id,
+        author: note.author,
+        authorAvatar: note.authorAvatar,
+        text: note.text,
+        timestamp: note.timestamp,
+        isReply: false,
+        targetItem: loc,
+        targetName: loc.name,
+        targetType: 'location',
+      });
+      (note.replies || []).forEach((rep) => {
+        chatFeed.push({
+          id: rep.id,
+          author: rep.author,
+          authorAvatar: rep.authorAvatar,
+          text: rep.text,
+          timestamp: rep.timestamp,
+          isReply: true,
+          replyToAuthor: rep.replyToAuthor,
+          targetItem: loc,
+          targetName: loc.name,
+          targetType: 'location',
+        });
+      });
+    });
+  });
+
   chatFeed.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
 
   const handleOpenChatTarget = (entry: ChatFeedEntry) => {
     if (entry.targetType === 'supplier') {
       onSelectSupplier(entry.targetItem as SupplierRecord);
-    } else {
+    } else if (entry.targetType === 'drink_store') {
       onSelectStore(entry.targetItem as StoreInspoRecord);
+    } else if (onSelectLocation) {
+      onSelectLocation(entry.targetItem as LocationRecord);
+    } else {
+      onSelectSupplier(entry.targetItem as any);
     }
   };
 
@@ -190,7 +238,7 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
             }`}
           >
             <span>🌏</span>
-            <span>{suppliers.length + drinkStores.length}</span>
+            <span>{suppliers.length + drinkStores.length + locations.length}</span>
           </button>
           <button
             type="button"
@@ -204,7 +252,7 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
             }`}
           >
             <span>🇨🇳</span>
-            <span>{suppliers.filter((s) => s.country !== 'TH').length + drinkStores.filter((d) => d.country !== 'TH').length}</span>
+            <span>{suppliers.filter((s) => s.country !== 'TH').length + drinkStores.filter((d) => d.country !== 'TH').length + locations.filter((l) => l.country === 'CN').length}</span>
           </button>
           <button
             type="button"
@@ -218,13 +266,13 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
             }`}
           >
             <span>🇹🇭</span>
-            <span>{suppliers.filter((s) => s.country === 'TH').length + drinkStores.filter((d) => d.country === 'TH').length}</span>
+            <span>{suppliers.filter((s) => s.country === 'TH').length + drinkStores.filter((d) => d.country === 'TH').length + locations.filter((l) => l.country === 'TH').length}</span>
           </button>
         </div>
       </div>
 
-      {/* 2. Bento KPI Grid (4 Minimalist Clickable Cards - กระชับ ไม่ตกบรรทัด ไม่ตัดคำ) */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5">
+      {/* 2. Bento KPI Grid (5 Clickable Cards with Location Scouting) */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5">
         <button
           type="button"
           onClick={() => {
@@ -273,6 +321,29 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
           </div>
         </button>
 
+        {/* 3. สถานที่ & ทำเล (สีฟ้าตามคำสั่งผู้ใช้) */}
+        <button
+          type="button"
+          onClick={() => setActiveTab('locations')}
+          className="group p-3 rounded-2xl bg-white border border-slate-200/90 hover:border-sky-400 text-left transition-all shadow-2xs hover:shadow-sm active:scale-[0.99]"
+        >
+          <div className="flex items-center justify-between mb-1">
+            <span className="w-7 h-7 rounded-lg bg-sky-50 text-sky-700 border border-sky-200/60 flex items-center justify-center">
+              <i aria-hidden="true" className="fa-solid fa-map-location-dot text-xs" />
+            </span>
+            <span className="text-[10px] font-bold text-slate-400 group-hover:text-sky-600 flex items-center gap-0.5 transition-colors whitespace-nowrap">
+              <span>ทำเล</span>
+              <ArrowUpRight className="w-3 h-3" />
+            </span>
+          </div>
+          <div className="text-xl sm:text-2xl font-extrabold text-slate-950 font-mono tracking-tight">
+            {totalLocations}
+          </div>
+          <div className="text-xs font-bold text-slate-800 mt-0.5 whitespace-nowrap">
+            สถานที่ & ทำเล
+          </div>
+        </button>
+
         <button
           type="button"
           onClick={() => {
@@ -300,7 +371,7 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
         <button
           type="button"
           onClick={() => setActiveTab('handoff')}
-          className="group p-3 rounded-2xl bg-white border border-slate-200/90 hover:border-blue-400 text-left transition-all shadow-2xs hover:shadow-sm active:scale-[0.99]"
+          className="group p-3 rounded-2xl bg-white border border-slate-200/90 hover:border-blue-400 text-left transition-all shadow-2xs hover:shadow-sm active:scale-[0.99] col-span-2 sm:col-span-1"
         >
           <div className="flex items-center justify-between mb-1">
             <span className="w-7 h-7 rounded-lg bg-blue-50 text-blue-600 border border-blue-200/60 flex items-center justify-center">
@@ -333,7 +404,7 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
           </div>
           <span className="text-[11px] font-mono font-bold px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-700 border border-slate-200 flex items-center gap-1 shrink-0 whitespace-nowrap">
             <i aria-hidden="true" className="fa-solid fa-location-crosshairs text-[10px] text-emerald-600" />
-            <span>{suppliers.length + drinkStores.length} พิกัด</span>
+            <span>{suppliers.length + drinkStores.length + locations.length} พิกัด</span>
           </span>
         </div>
 
@@ -341,6 +412,7 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
           <MapView
             onSelectSupplier={onSelectSupplier}
             onSelectStoreInspo={onSelectStore}
+            onSelectLocation={onSelectLocation}
           />
         </Suspense>
       </div>
@@ -368,7 +440,7 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
                 feedFilter === 'all' ? 'bg-white text-slate-900 shadow-2xs' : 'text-slate-600'
               }`}
             >
-              <span>ทั้งหมด ({activeSuppliers.length + activeStores.length})</span>
+              <span>ทั้งหมด ({activeSuppliers.length + activeStores.length + activeLocations.length})</span>
             </button>
             <button
               type="button"
@@ -390,6 +462,16 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
               <i aria-hidden="true" className="fa-solid fa-mug-hot text-[10px] text-amber-600" />
               <span>ร้านน้ำ ({activeStores.length})</span>
             </button>
+            <button
+              type="button"
+              onClick={() => setFeedFilter('locations')}
+              className={`px-2 py-1 rounded-lg font-bold transition-all flex items-center gap-1 whitespace-nowrap ${
+                feedFilter === 'locations' ? 'bg-white text-sky-800 shadow-2xs' : 'text-slate-600'
+              }`}
+            >
+              <i aria-hidden="true" className="fa-solid fa-map-location-dot text-[10px] text-sky-600" />
+              <span>สถานที่ ({activeLocations.length})</span>
+            </button>
           </div>
         </div>
 
@@ -403,11 +485,17 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
                   onSelect={onSelectSupplier}
                   onShareToLine={(s) => onShareToLine && onShareToLine(s)}
                 />
-              ) : (
+              ) : item.type === 'drink_store' ? (
                 <StoreInspoCard
                   store={item as StoreInspoRecord}
                   onSelect={onSelectStore}
                   onShareToLine={(st) => onShareToLine && onShareToLine(st)}
+                />
+              ) : (
+                <LocationCard
+                  location={item as LocationRecord}
+                  onSelect={(loc) => (onSelectLocation ? onSelectLocation(loc) : onSelectSupplier(loc as any))}
+                  onShareToLine={(loc) => onShareToLine && onShareToLine(loc)}
                 />
               )}
             </div>
@@ -429,6 +517,13 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
               className="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 text-xs font-extrabold transition-all"
             >
               ดูร้านน้ำ & เรฟทั้งหมด ({activeStores.length}) →
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveTab('locations')}
+              className="px-4 py-2 rounded-xl bg-sky-600 hover:bg-sky-700 text-white text-xs font-extrabold transition-all"
+            >
+              ดูสถานที่ทั้งหมด ({activeLocations.length}) →
             </button>
           </div>
         )}

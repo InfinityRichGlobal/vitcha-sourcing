@@ -38,6 +38,7 @@ export const AppDrawerMenu: React.FC<AppDrawerMenuProps> = ({
     setActiveTab,
     suppliers,
     drinkStores,
+    locations,
     exchangeRate,
     switchUser,
     simulatedFromAdmin,
@@ -162,6 +163,37 @@ export const AppDrawerMenu: React.FC<AppDrawerMenuProps> = ({
               }`}
             >
               {drinkStores.length}
+            </span>
+          </button>
+
+          {/* 3.5. สถานที่ & ทำเล (สีฟ้า) */}
+          <button
+            onClick={() => {
+              setActiveTab('locations');
+              onClose();
+            }}
+            className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-bold transition-colors ${
+              activeTab === 'locations'
+                ? 'bg-slate-900 text-white shadow-xs'
+                : 'text-slate-700 hover:bg-slate-50'
+            }`}
+          >
+            <div className="flex items-center gap-2.5">
+              <i
+                className={`fa-solid fa-map-location-dot text-xs ${
+                  activeTab === 'locations' ? 'text-sky-400' : 'text-sky-600'
+                }`}
+              />
+              <span>สถานที่ & ทำเล</span>
+            </div>
+            <span
+              className={`text-[11px] font-mono px-2 py-0.5 rounded-full ${
+                activeTab === 'locations'
+                  ? 'bg-slate-800 text-sky-300'
+                  : 'bg-slate-100 text-slate-600'
+              }`}
+            >
+              {locations.length}
             </span>
           </button>
 

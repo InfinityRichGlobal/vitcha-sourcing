@@ -73,6 +73,7 @@ export const DEFAULT_DATABASE = {
   ],
   suppliers: [],
   drinkStores: [],
+  locations: [],
   notifications: [],
   categories: [
     'เคาน์เตอร์ & สเตนเลส',

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
-import { SupplierRecord, StoreInspoRecord, HandoffStage } from '../types';
+import { SupplierRecord, StoreInspoRecord, LocationRecord, HandoffStage } from '../types';
 import { SeenByBadge } from './SeenByBadge';
 import {
   Users,
@@ -23,13 +23,14 @@ import {
 } from 'lucide-react';
 
 interface HandoffManagementViewProps {
-  onSelectItem: (item: SupplierRecord | StoreInspoRecord) => void;
+  onSelectItem: (item: SupplierRecord | StoreInspoRecord | LocationRecord) => void;
 }
 
 export const HandoffManagementView: React.FC<HandoffManagementViewProps> = ({ onSelectItem }) => {
   const {
     suppliers,
     drinkStores,
+    locations,
     updateHandoff,
     users,
     convertCnyToThb,
@@ -43,19 +44,22 @@ export const HandoffManagementView: React.FC<HandoffManagementViewProps> = ({ on
   // Dedicated Sub-Page Stage Selector (แยกหน้าย่อยแต่ละสเตจให้ชัดเจน + โหมดดูภาพรวม)
   const [activeStagePage, setActiveStagePage] = useState<HandoffStage | 'overview'>('awaiting');
 
-  // Filter by Part: 'all' | 'suppliers' | 'drink_stores'
-  const [partTab, setPartTab] = useState<'all' | 'suppliers' | 'drink_stores'>('all');
+  // Filter by Part: 'all' | 'suppliers' | 'drink_stores' | 'locations'
+  const [partTab, setPartTab] = useState<'all' | 'suppliers' | 'drink_stores' | 'locations'>('all');
   const [assigneeFilter, setAssigneeFilter] = useState<string>('all');
   const [countryFilter, setCountryFilter] = useState<'all' | 'CN' | 'TH'>('all');
   const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
   const [noteDraft, setNoteDraft] = useState('');
 
-  // Combine suppliers and drink stores
+  // Combine suppliers, drink stores, and locations
   const allItems: Array<
-    (SupplierRecord | StoreInspoRecord) & { itemType: 'supplier' | 'drink_store' }
+    (SupplierRecord | StoreInspoRecord | LocationRecord) & {
+      itemType: 'supplier' | 'drink_store' | 'location';
+    }
   > = [
     ...suppliers.map((s) => ({ ...s, itemType: 'supplier' as const })),
     ...drinkStores.map((d) => ({ ...d, itemType: 'drink_store' as const })),
+    ...locations.map((l) => ({ ...l, itemType: 'location' as const })),
   ];
 
   // Stage definitions (5+1 Operational Handoff Parts)
@@ -136,7 +140,8 @@ export const HandoffManagementView: React.FC<HandoffManagementViewProps> = ({ on
     const matchesPart =
       partTab === 'all' ||
       (partTab === 'suppliers' && item.itemType === 'supplier') ||
-      (partTab === 'drink_stores' && item.itemType === 'drink_store');
+      (partTab === 'drink_stores' && item.itemType === 'drink_store') ||
+      (partTab === 'locations' && item.itemType === 'location');
     const matchesAssignee = assigneeFilter === 'all' || item.assignedTo === assigneeFilter;
     const matchesCountry = countryFilter === 'all' || item.country === countryFilter;
     return matchesPart && matchesAssignee && matchesCountry;
@@ -147,9 +152,9 @@ export const HandoffManagementView: React.FC<HandoffManagementViewProps> = ({ on
   };
 
   const handleSetStage = (
-    item: SupplierRecord | StoreInspoRecord,
+    item: SupplierRecord | StoreInspoRecord | LocationRecord,
     targetStage: HandoffStage,
-    itemType: 'supplier' | 'drink_store'
+    itemType: 'supplier' | 'drink_store' | 'location'
   ) => {
     updateHandoff(item.id, itemType, {
       handoffStage: targetStage,
@@ -165,9 +170,9 @@ export const HandoffManagementView: React.FC<HandoffManagementViewProps> = ({ on
   };
 
   const handleAdvanceStage = (
-    item: SupplierRecord | StoreInspoRecord,
+    item: SupplierRecord | StoreInspoRecord | LocationRecord,
     currentStage: HandoffStage,
-    itemType: 'supplier' | 'drink_store'
+    itemType: 'supplier' | 'drink_store' | 'location'
   ) => {
     const stageOrder: HandoffStage[] = [
       'awaiting',
@@ -183,8 +188,8 @@ export const HandoffManagementView: React.FC<HandoffManagementViewProps> = ({ on
   };
 
   const handleSaveHandoffNote = async (
-    item: SupplierRecord | StoreInspoRecord,
-    itemType: 'supplier' | 'drink_store'
+    item: SupplierRecord | StoreInspoRecord | LocationRecord,
+    itemType: 'supplier' | 'drink_store' | 'location'
   ) => {
     if (!await updateHandoff(item.id, itemType, {
       handoffNotes: noteDraft.trim(),
@@ -196,19 +201,25 @@ export const HandoffManagementView: React.FC<HandoffManagementViewProps> = ({ on
 
   // Render an individual Handoff Card with full clarity
   const renderHandoffCard = (
-    item: (SupplierRecord | StoreInspoRecord) & { itemType: 'supplier' | 'drink_store' },
+    item: (SupplierRecord | StoreInspoRecord | LocationRecord) & {
+      itemType: 'supplier' | 'drink_store' | 'location';
+    },
     stageKey: HandoffStage
   ) => {
     const isSupplier = item.itemType === 'supplier';
+    const isLocation = item.itemType === 'location';
     const sup = isSupplier ? (item as SupplierRecord) : null;
-    const st = !isSupplier ? (item as StoreInspoRecord) : null;
+    const st = item.itemType === 'drink_store' ? (item as StoreInspoRecord) : null;
+    const loc = isLocation ? (item as LocationRecord) : null;
 
-    const title = isSupplier ? sup!.name : st!.storeName;
-    const subCategory = isSupplier ? sup!.category : st!.storeCategory || 'เรฟร้านน้ำ';
-    const city = isSupplier ? sup!.marketOrCity : st!.city;
+    const title = isSupplier ? sup!.name : isLocation ? loc!.name : st!.storeName;
+    const subCategory = isSupplier ? sup!.category : isLocation ? (loc!.zoneOrFloor || 'ทำเลสาขา') : st!.storeCategory || 'เรฟร้านน้ำ';
+    const city = isSupplier ? sup!.marketOrCity : isLocation ? (loc!.location.addressText || 'พิกัดที่ตั้ง') : st!.city;
 
     const thumb = isSupplier
       ? sup!.photos?.storefrontAndAtmosphere?.[0] || sup!.catalogItems?.[0]?.photo
+      : isLocation
+      ? loc!.photos?.storefrontAndAtmosphere?.[0] || loc!.photos?.floorPlanAndSpecs?.[0]
       : st!.photos?.drinkCups?.[0] || st!.photos?.storefrontAndAtmosphere?.[0];
 
     const notesCount = (item.reviewerNotes || []).reduce(
@@ -243,11 +254,15 @@ export const HandoffManagementView: React.FC<HandoffManagementViewProps> = ({ on
                 className={`text-[10px] font-bold px-2 py-0.5 rounded-md inline-flex items-center gap-1 ${
                   isSupplier
                     ? 'bg-emerald-50 text-emerald-800 border border-emerald-200/70'
+                    : isLocation
+                    ? 'bg-sky-50 text-sky-800 border border-sky-200/70'
                     : 'bg-amber-50 text-amber-800 border border-amber-200/70'
                 }`}
               >
                 {isSupplier ? (
                   <i className="fa-solid fa-industry text-[9px] text-emerald-600" />
+                ) : isLocation ? (
+                  <i className="fa-solid fa-map-location-dot text-[9px] text-sky-600" />
                 ) : (
                   <i className="fa-solid fa-mug-hot text-[9px] text-amber-600" />
                 )}
@@ -255,7 +270,7 @@ export const HandoffManagementView: React.FC<HandoffManagementViewProps> = ({ on
               </span>
             </div>
 
-            <h4 className="font-extrabold text-sm text-slate-900 truncate group-hover:text-emerald-700">
+            <h4 className="font-extrabold text-sm text-slate-900 truncate group-hover:text-sky-700">
               {title}
             </h4>
 
@@ -514,7 +529,7 @@ export const HandoffManagementView: React.FC<HandoffManagementViewProps> = ({ on
                   partTab === 'all' ? 'bg-white text-slate-900 shadow-2xs' : 'text-slate-600'
                 }`}
               >
-                รวม ({suppliers.length + drinkStores.length})
+                รวม ({suppliers.length + drinkStores.length + locations.length})
               </button>
               <button
                 type="button"
@@ -535,6 +550,16 @@ export const HandoffManagementView: React.FC<HandoffManagementViewProps> = ({ on
               >
                 <i className="fa-solid fa-mug-hot text-[10px]" />
                 <span>ร้านน้ำ ({drinkStores.length})</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setPartTab('locations')}
+                className={`px-2.5 py-1 rounded-lg font-bold transition-all flex items-center gap-1 ${
+                  partTab === 'locations' ? 'bg-sky-600 text-white shadow-2xs' : 'text-slate-600'
+                }`}
+              >
+                <i className="fa-solid fa-map-location-dot text-[10px]" />
+                <span>สถานที่ ({locations.length})</span>
               </button>
             </div>
 

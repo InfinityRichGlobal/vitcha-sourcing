@@ -8,6 +8,7 @@ import {
   quickMessages,
   suppliers,
   drinkStores,
+  locations,
   productWorkspace,
   notifications,
   invites,
@@ -16,7 +17,7 @@ import {
 const ROOT = path.resolve(import.meta.dirname, '..');
 
 // 1. Generate src/utils/seedData.ts
-const seedTsContent = `import { User, SupplierRecord, StoreInspoRecord, InviteLink, QuickMessageTemplate } from '../types';
+const seedTsContent = `import { User, SupplierRecord, StoreInspoRecord, LocationRecord, InviteLink, QuickMessageTemplate } from '../types';
 import { getDemoVoiceWavDataUri } from './audioHelper';
 
 export const INITIAL_CATEGORIES: string[] = ${JSON.stringify(categories, null, 2)};
@@ -32,6 +33,8 @@ export const INITIAL_USERS: User[] = ${JSON.stringify(users, null, 2)};
 export const INITIAL_SUPPLIERS: SupplierRecord[] = ${JSON.stringify(suppliers, null, 2)};
 
 export const INITIAL_DRINK_STORES: StoreInspoRecord[] = ${JSON.stringify(drinkStores, null, 2)};
+
+export const INITIAL_LOCATIONS: LocationRecord[] = ${JSON.stringify(locations, null, 2)};
 
 export const INITIAL_INVITES: InviteLink[] = ${JSON.stringify(invites, null, 2)};
 `;
@@ -79,6 +82,7 @@ const newDb = {
   quickMessages,
   suppliers,
   drinkStores,
+  locations,
   productWorkspace,
   notifications,
   sampleOperations: [],
@@ -119,8 +123,8 @@ async function syncToLive() {
     });
     const currentData = await dataRes.json();
 
-    // Import rich suppliers and drinkStores
-    console.log('📦 Importing 10 suppliers and 7 drink stores to live server...');
+    // Import rich suppliers, drinkStores, and locations
+    console.log('📦 Importing suppliers, drink stores, and locations to live server...');
     const importRes = await fetch(`${base}/api/system/import`, {
       method: 'POST',
       headers: {
@@ -132,13 +136,14 @@ async function syncToLive() {
         snapshot: {
           suppliers,
           drinkStores,
+          locations,
         },
       }),
     });
     if (!importRes.ok) {
       console.warn(`⚠️ Import returned ${importRes.status}: ${await importRes.text()}`);
     } else {
-      console.log('✅ Suppliers & Drink Stores imported successfully to live server!');
+      console.log('✅ Suppliers, Drink Stores & Locations imported successfully to live server!');
     }
 
     // Update settings (categories, quick messages, etc.)

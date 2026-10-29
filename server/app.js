@@ -15,6 +15,7 @@ const STATUSES = ['scouted', 'reviewing', 'rfq_sent', 'shortlisted', 'ordered'];
 const HANDOFF = ['assignedTo', 'targetFollowUpDate', 'handoffNotes', 'handoffStage', 'status'];
 const SUPPLIER = ['name', 'chineseName', 'marketOrCity', 'category', 'rating', 'quickTags', 'isFactory', 'phone', 'wechatId', 'lineId', 'address', 'photos', 'videos', 'catalogItems', 'memo', 'voiceNoteUrl', 'voiceDurationSec', 'voiceNotes', 'location', 'country'];
 const STORE = ['storeName', 'chineseName', 'storeCategory', 'brandConcept', 'city', 'phone', 'lineId', 'wechatId', 'photos', 'videos', 'ratings', 'drinkItems', 'tastingNotes', 'voiceNoteUrl', 'voiceDurationSec', 'voiceNotes', 'location', 'country'];
+const LOCATION = ['name', 'foreignName', 'locationType', 'zoneOrFloor', 'unitNumber', 'location', 'spaceSpecs', 'leaseTerms', 'ratings', 'photos', 'videos', 'voiceNoteUrl', 'voiceDurationSec', 'voiceNotes', 'quickTags', 'country'];
 const now = () => new Date().toISOString();
 const pick = (obj, keys) => Object.fromEntries(keys.filter(k => obj[k] !== undefined).map(k => [k, obj[k]]));
 const clean = value => typeof value === 'string' ? value.trim() : '';
@@ -57,23 +58,26 @@ function verifyPin(user, pin) {
   return a.length > 0 && a.length === b.length && timingSafeEqual(a, b);
 }
 function validateRecord(record, collection) {
-  if (!clean(record[collection === 'suppliers' ? 'name' : 'storeName'])) fail(400, 'กรุณาระบุชื่อรายการ');
+  if (!clean(record.name || record.storeName)) fail(400, 'กรุณาระบุชื่อรายการ');
   if (!record.photos || !Array.isArray(record.photos.storefrontAndAtmosphere)) fail(400, 'รูปภาพไม่ถูกต้อง');
   for (const photos of Object.values(record.photos)) if (!Array.isArray(photos) || photos.length > 200 || photos.some(x => typeof x !== 'string' || x.length > 5 * 1024 * 1024)) fail(400, 'รูปภาพไม่ถูกต้องหรือมีจำนวนมากเกินไป');
   if (record.quickTags && (!Array.isArray(record.quickTags) || record.quickTags.some(x => typeof x !== 'string'))) fail(400, 'ป้ายกำกับไม่ถูกต้อง');
   if (collection === 'suppliers' && (!Number.isFinite(record.rating) || record.rating < 1 || record.rating > 5 || !clean(record.category))) fail(400, 'กรุณาระบุหมวดหมู่และคะแนน 1–5');
   if (collection === 'drinkStores' && (!record.ratings || ['taste','aesthetics','value','speed'].some(k => !Number.isFinite(record.ratings[k]) || record.ratings[k] < 1 || record.ratings[k] > 5))) fail(400, 'คะแนนร้านน้ำต้องอยู่ระหว่าง 1–5');
+  if (collection === 'locations' && (!record.ratings || ['footTraffic','visibility','accessibility','valueRoi'].some(k => !Number.isFinite(record.ratings[k]) || record.ratings[k] < 1 || record.ratings[k] > 5))) fail(400, 'คะแนนการประเมินทำเลต้องอยู่ระหว่าง 1–5');
   if (record.videos && !Array.isArray(record.videos)) fail(400, 'รายการวิดีโอไม่ถูกต้อง');
   if (!record.location || !Number.isFinite(record.location.lat) || !Number.isFinite(record.location.lng) || Math.abs(record.location.lat) > 90 || Math.abs(record.location.lng) > 180) fail(400, 'พิกัดไม่ถูกต้อง');
-  if (!Array.isArray(record[collection === 'suppliers' ? 'catalogItems' : 'drinkItems'])) fail(400, 'รายละเอียดสินค้าไม่ถูกต้อง');
-  const entries = record[collection === 'suppliers' ? 'catalogItems' : 'drinkItems'];
-  const itemIds = new Set();
-  for (const entry of entries) {
-    if (!entry || typeof entry !== 'object' || Array.isArray(entry)) fail(400, 'รายละเอียดสินค้าไม่ถูกต้อง');
-    if (entry.name !== undefined && typeof entry.name !== 'string') fail(400, 'ชื่อสินค้าไม่ถูกต้อง');
-    if (entry.id && (typeof entry.id !== 'string' || itemIds.has(entry.id))) fail(400, 'รหัสสินค้าซ้ำหรือไม่ถูกต้อง');
-    entry.id ||= randomUUID(); itemIds.add(entry.id);
-    if (entry.photo !== undefined && (typeof entry.photo !== 'string' || /^(idb:|blob:)/.test(entry.photo))) fail(400, 'กรุณาอัปโหลดรูปสินค้าให้สำเร็จก่อน');
+  if (collection !== 'locations') {
+    if (!Array.isArray(record[collection === 'suppliers' ? 'catalogItems' : 'drinkItems'])) fail(400, 'รายละเอียดสินค้าไม่ถูกต้อง');
+    const entries = record[collection === 'suppliers' ? 'catalogItems' : 'drinkItems'];
+    const itemIds = new Set();
+    for (const entry of entries) {
+      if (!entry || typeof entry !== 'object' || Array.isArray(entry)) fail(400, 'รายละเอียดสินค้าไม่ถูกต้อง');
+      if (entry.name !== undefined && typeof entry.name !== 'string') fail(400, 'ชื่อสินค้าไม่ถูกต้อง');
+      if (entry.id && (typeof entry.id !== 'string' || itemIds.has(entry.id))) fail(400, 'รหัสสินค้าซ้ำหรือไม่ถูกต้อง');
+      entry.id ||= randomUUID(); itemIds.add(entry.id);
+      if (entry.photo !== undefined && (typeof entry.photo !== 'string' || /^(idb:|blob:)/.test(entry.photo))) fail(400, 'กรุณาอัปโหลดรูปสินค้าให้สำเร็จก่อน');
+    }
   }
   if ((record.videos || []).some(url => typeof url !== 'string' || /^(idb:|blob:)/.test(url))) fail(400, 'กรุณาอัปโหลดวิดีโอขึ้นเซิร์ฟเวอร์ให้สำเร็จก่อน');
 }
@@ -270,10 +274,10 @@ export function createApp({ dataDir, defaults = DEFAULT_DATABASE, sessionTtlMs =
           read: isRead,
         };
       });
-    res.json({ version, ...productData(db), ...pick(db, ['suppliers', 'drinkStores', 'categories', 'storeCategories', 'quickTagsList', 'quickMessages', 'updatedAt', 'revision']), suppliers: (db.suppliers || []).map(item => currentRecord(db, item)), drinkStores: (db.drinkStores || []).map(item => currentRecord(db, item)), users: db.users.filter(u => !MOCK_IDS.has(u.id)).map(publicUser), invites: req.user.role === 'admin' ? db.invites : [], notifications: userNotifications, ...sessionResult(req.session, db) });
+    res.json({ version, ...productData(db), ...pick(db, ['suppliers', 'drinkStores', 'locations', 'categories', 'storeCategories', 'quickTagsList', 'quickMessages', 'updatedAt', 'revision']), suppliers: (db.suppliers || []).map(item => currentRecord(db, item)), drinkStores: (db.drinkStores || []).map(item => currentRecord(db, item)), locations: (db.locations || []).map(item => currentRecord(db, item)), users: db.users.filter(u => !MOCK_IDS.has(u.id)).map(publicUser), invites: req.user.role === 'admin' ? db.invites : [], notifications: userNotifications, ...sessionResult(req.session, db) });
   });
   app.get('/api/backup', (req, res) => { requireFounder(req); res.json(read()); });
-  for (const [route, collection] of [['suppliers', 'suppliers'], ['drink-stores', 'drinkStores']]) {
+  for (const [route, collection] of [['suppliers', 'suppliers'], ['drink-stores', 'drinkStores'], ['locations', 'locations']]) {
     app.post(`/api/${route}`, (req, res) => {
       requireWriter(req);
       const input = req.body;
@@ -281,7 +285,7 @@ export function createApp({ dataDir, defaults = DEFAULT_DATABASE, sessionTtlMs =
       const db = read();
       const list = db[collection] ||= [];
       const target = list.find(x => x.id === input.id);
-      const fields = collection === 'suppliers' ? SUPPLIER : STORE;
+      const fields = collection === 'suppliers' ? SUPPLIER : collection === 'drinkStores' ? STORE : LOCATION;
       const creationHash = createHash('sha256').update(JSON.stringify(pick(input, [...fields, ...HANDOFF]))).digest('hex');
       let item;
       if (target && input.revision === undefined) {
@@ -298,7 +302,7 @@ export function createApp({ dataDir, defaults = DEFAULT_DATABASE, sessionTtlMs =
       } else {
         if (input.revision !== undefined) fail(404, 'รายการนี้ถูกลบแล้ว');
         const createdAt = now();
-        item = { ...pick(input, [...fields, ...HANDOFF]), id: input.id, type: collection === 'suppliers' ? 'supplier' : 'drink_store', creator: { ...pick(req.user, ['id', 'name', 'alias', 'avatar']), timestamp: createdAt }, creationHash, reviewerNotes: [], likes: [], viewedBy: [], history: [{ action: 'สร้างบันทึกรายการสำรวจใหม่', user: req.user.alias, userAvatar: req.user.avatar, timestamp: createdAt }], revision: 1, updatedAt: createdAt };
+        item = { ...pick(input, [...fields, ...HANDOFF]), id: input.id, type: collection === 'suppliers' ? 'supplier' : collection === 'drinkStores' ? 'drink_store' : 'location', creator: { ...pick(req.user, ['id', 'name', 'alias', 'avatar']), timestamp: createdAt }, creationHash, reviewerNotes: [], likes: [], viewedBy: [], history: [{ action: 'สร้างบันทึกรายการสำรวจใหม่', user: req.user.alias, userAvatar: req.user.avatar, timestamp: createdAt }], revision: 1, updatedAt: createdAt };
         validateRecord(item, collection); list.unshift(item);
       }
       notify(db, req.user, item.type, target ? 'อัปเดตข้อมูลรายการ' : 'เพิ่มรายการใหม่', item.name || item.storeName, item.id);
@@ -500,16 +504,17 @@ export function createApp({ dataDir, defaults = DEFAULT_DATABASE, sessionTtlMs =
     if ((db.sampleOperations || []).includes(operationId)) return res.json({ success: true });
     expectRevision(db, req.body.revision);
     if (!snapshot || !Array.isArray(snapshot.suppliers) || !Array.isArray(snapshot.drinkStores) || snapshot.suppliers.length + snapshot.drinkStores.length > 100) fail(400, 'ข้อมูลตัวอย่างไม่ถูกต้อง');
-    for (const collection of ['suppliers', 'drinkStores']) {
-      const fields = collection === 'suppliers' ? SUPPLIER : STORE;
+    const collections = ['suppliers', 'drinkStores', ...(Array.isArray(snapshot.locations) ? ['locations'] : [])];
+    for (const collection of collections) {
+      const fields = collection === 'suppliers' ? SUPPLIER : collection === 'drinkStores' ? STORE : LOCATION;
       const existingIds = new Set((db[collection] || []).map(x => x.id));
-      const additions = snapshot[collection].map(source => {
+      const additions = (snapshot[collection] || []).map(source => {
         const nextId = clean(source.id) && !existingIds.has(clean(source.id)) ? clean(source.id) : `demo-${randomUUID()}`;
         existingIds.add(nextId);
         const record = {
           ...pick(source, [...fields, ...HANDOFF]),
           id: nextId,
-          type: collection === 'suppliers' ? 'supplier' : 'drink_store',
+          type: collection === 'suppliers' ? 'supplier' : collection === 'drinkStores' ? 'drink_store' : 'location',
           creator: source.creator?.id ? source.creator : { ...pick(req.user, ['id', 'name', 'alias', 'avatar']), timestamp: now() },
           reviewerNotes: Array.isArray(source.reviewerNotes) ? source.reviewerNotes : [],
           likes: Array.isArray(source.likes) ? source.likes : [],
@@ -534,15 +539,16 @@ export function createApp({ dataDir, defaults = DEFAULT_DATABASE, sessionTtlMs =
   app.post('/api/system/clear', (req, res) => {
     requireFounder(req); const db = read(); expectRevision(db, req.body.revision);
     if (req.body.confirm !== 'CLEAR_RECORDS') fail(400, 'กรุณายืนยันการล้างรายการ');
-    db.suppliers = []; db.drinkStores = []; db.productWorkspace = {}; db.notifications = []; save(db); res.json({ success: true });
+    db.suppliers = []; db.drinkStores = []; db.locations = []; db.productWorkspace = {}; db.notifications = []; save(db); res.json({ success: true });
   });
   app.post('/api/system/import', (req, res) => {
     requireFounder(req); const db = read(); expectRevision(db, req.body.revision);
     const snapshot = req.body.snapshot;
     if (!snapshot || !Array.isArray(snapshot.suppliers) || !Array.isArray(snapshot.drinkStores)) fail(400, 'ไฟล์สำรองไม่ถูกต้อง');
-    for (const collection of ['suppliers', 'drinkStores']) {
+    const importCollections = ['suppliers', 'drinkStores', ...(Array.isArray(snapshot.locations) ? ['locations'] : [])];
+    for (const collection of importCollections) {
       const ids = new Set();
-      for (const record of snapshot[collection]) {
+      for (const record of (snapshot[collection] || [])) {
         if (!clean(record.id) || ids.has(record.id) || !record.creator?.id || !Array.isArray(record.history) || !Array.isArray(record.reviewerNotes)) fail(400, 'ข้อมูลรายการในไฟล์ไม่ครบหรือมีรหัสซ้ำ');
         ids.add(record.id); validateRecord(record, collection);
         const previous = (db[collection] || []).find(x => x.id === record.id);

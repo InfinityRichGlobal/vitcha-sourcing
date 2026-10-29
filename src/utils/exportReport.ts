@@ -1,5 +1,5 @@
 import QRCode from 'qrcode';
-import { SupplierRecord, StoreInspoRecord } from '../types';
+import { SupplierRecord, StoreInspoRecord, LocationRecord } from '../types';
 import { getItemVoiceNotes } from './audioHelper';
 import { FALLBACK_DEMO_VIDEO_URL } from './mediaStorage';
 
@@ -74,18 +74,20 @@ function generateQrSvgDataUri(text: string): string {
 }
 
 export function buildExecutiveReportHtml(
-  item: SupplierRecord | StoreInspoRecord,
+  item: SupplierRecord | StoreInspoRecord | LocationRecord,
   convertCnyToThb: (cny: number) => number,
   mode: 'print' | 'pdf'
 ): string {
   const isSupplier = item.type === 'supplier';
+  const isLocation = item.type === 'location';
   const sup = isSupplier ? (item as SupplierRecord) : null;
-  const st = !isSupplier ? (item as StoreInspoRecord) : null;
+  const loc = isLocation ? (item as LocationRecord) : null;
+  const st = item.type === 'drink_store' ? (item as StoreInspoRecord) : null;
 
-  const title = isSupplier ? sup!.name : st!.storeName;
-  const chineseName = isSupplier ? sup!.chineseName : st!.chineseName;
-  const category = isSupplier ? sup!.category : st!.storeCategory || 'เรฟร้านน้ำ';
-  const city = isSupplier ? sup!.marketOrCity : st!.city;
+  const title = isSupplier ? sup!.name : isLocation ? loc!.name : st!.storeName;
+  const chineseName = isSupplier ? sup!.chineseName : isLocation ? loc!.foreignName : st!.chineseName;
+  const category = isSupplier ? sup!.category : isLocation ? (loc!.locationType === 'mall' ? 'ห้างสรรพสินค้า' : loc!.locationType) : st!.storeCategory || 'เรฟร้านน้ำ';
+  const city = isSupplier ? sup!.marketOrCity : isLocation ? (loc!.location.addressText || loc!.zoneOrFloor) : st!.city;
   const countryLabel = item.country === 'TH' ? 'ประเทศไทย (TH)' : 'ประเทศจีน (CN)';
 
   // Build canonical direct link (same link format as ShareLineModal)
@@ -117,6 +119,19 @@ export function buildExecutiveReportHtml(
         });
       }
     });
+  } else if (loc) {
+    loc.photos.storefrontAndAtmosphere?.forEach((p, idx) =>
+      allPhotos.push({ url: p, label: `หน้าร้าน / ทางเดิน #${idx + 1}` })
+    );
+    loc.photos.floorPlanAndSpecs?.forEach((p, idx) =>
+      allPhotos.push({ url: p, label: `ผังห้อง / งานระบบ #${idx + 1}` })
+    );
+    loc.photos.surroundingNeighbors?.forEach((p, idx) =>
+      allPhotos.push({ url: p, label: `ร้านข้างเคียง #${idx + 1}` })
+    );
+    loc.photos.contactCards?.forEach((p, idx) =>
+      allPhotos.push({ url: p, label: `นามบัตร / เอกสารสัญญา #${idx + 1}` })
+    );
   } else if (st) {
     st.photos.storefrontAndAtmosphere?.forEach((p, idx) =>
       allPhotos.push({ url: p, label: `หน้าร้าน / บรรยากาศ #${idx + 1}` })
@@ -1505,7 +1520,7 @@ export function buildExecutiveReportHtml(
 }
 
 export function openExecutiveReport(
-  item: SupplierRecord | StoreInspoRecord,
+  item: SupplierRecord | StoreInspoRecord | LocationRecord,
   convertCnyToThb: (cny: number) => number,
   mode: 'print' | 'pdf'
 ): void {

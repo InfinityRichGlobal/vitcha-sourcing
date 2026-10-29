@@ -15,6 +15,7 @@ interface TopHeaderProps {
   onOpenProfile: () => void;
   onOpenNewSupplier: () => void;
   onOpenNewStoreInspo: () => void;
+  onOpenNewLocation?: () => void;
   onOpenCalculator: () => void;
   onOpenInstall: () => void;
   onOpenNotifications: () => void;
@@ -26,6 +27,7 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
   onOpenProfile,
   onOpenNewSupplier,
   onOpenNewStoreInspo,
+  onOpenNewLocation,
   onOpenCalculator,
   onOpenInstall,
   onOpenNotifications,
@@ -297,6 +299,31 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
                     </div>
                     <div className="text-[11px] text-orange-100 truncate">
                       เรฟเมนูเครื่องดื่ม · แพ็กเกจจิ้ง · คอนเซปต์ร้าน
+                    </div>
+                  </div>
+                </div>
+                <ChevronRight className="w-4 h-4 text-white/80 group-hover:translate-x-0.5 transition-transform shrink-0" />
+              </button>
+
+              {/* Option 3: เพิ่มสถานที่ & ทำเล (สีฟ้า) */}
+              <button
+                type="button"
+                onClick={() => {
+                  setIsAddPickerOpen(false);
+                  if (onOpenNewLocation) onOpenNewLocation();
+                }}
+                className="w-full p-3.5 rounded-2xl bg-sky-600 hover:bg-sky-700 text-white flex items-center justify-between gap-3 shadow-sm active:scale-[0.99] transition-all text-left group"
+              >
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="w-10 h-10 rounded-xl bg-white/15 flex items-center justify-center shrink-0">
+                    <i aria-hidden="true" className="fa-solid fa-map-location-dot text-base text-white" />
+                  </div>
+                  <div className="min-w-0">
+                    <div className="font-extrabold text-sm text-white flex items-center gap-1.5">
+                      <span>เพิ่มสถานที่ / ทำเล</span>
+                    </div>
+                    <div className="text-[11px] text-sky-100 truncate">
+                      ห้างสรรพสินค้า · คอมมูนิตี้มอลล์ · สเปกพื้นที่ & ค่าเช่า
                     </div>
                   </div>
                 </div>

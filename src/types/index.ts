@@ -10,7 +10,7 @@ export type HandoffStage =
   | 'approved'       // 5. ตัวเต็งอนุมัติ
   | 'ordered';       // 6. ออก PO / สั่งซื้อแล้ว
 
-export type AppViewTab = 'dashboard' | 'suppliers' | 'drink_stores' | 'categories' | 'handoff' | 'settings' | 'members' | 'products';
+export type AppViewTab = 'dashboard' | 'suppliers' | 'drink_stores' | 'locations' | 'categories' | 'handoff' | 'settings' | 'members' | 'products';
 
 export interface ViewLogEntry {
   userId: string;
@@ -227,6 +227,93 @@ export interface StoreInspoRecord {
   assignedTo?: string;           // ผู้รับผิดชอบรับช่วงต่อ
   targetFollowUpDate?: string;   // กำหนดวันติดตามผล
   handoffNotes?: string;         // บันทึกการส่งมอบงาน / R&D ต่อ
+  handoffStage?: HandoffStage;
+
+  creator: {
+    id: string;
+    name: string;
+    alias: string;
+    avatar: string;
+    timestamp: string;
+  };
+  reviewerNotes: ReviewerNote[];
+  viewedBy?: ViewLogEntry[];
+  likes?: LikeEntry[];
+  history: Array<{ action: string; user: string; userAvatar?: string; timestamp: string }>;
+  updatedAt: string;
+}
+
+export type LocationType = 'mall' | 'community' | 'office' | 'street' | 'transit';
+export type LayoutFormat = 'inline' | 'corner' | 'island' | 'kiosk';
+export type RentModel = 'fixed' | 'gp' | 'hybrid';
+
+export interface SpaceSpecs {
+  usableAreaSqm: number;         // ขนาดพื้นที่ ตร.ม.
+  frontageWidthM: number;        // หน้ากว้าง (เมตร)
+  ceilingHeightM: number;        // ความสูงเพดาน (เมตร)
+  layoutFormat: LayoutFormat;    // รูปแบบห้อง
+  electricalPower?: string;      // สเปกไฟ เช่น ไฟ 3 เฟส 45 kVA
+  hasWaterInflow?: boolean;      // มีท่อน้ำดี
+  hasDrainage?: boolean;         // มีท่อน้ำทิ้ง
+  hasGreaseTrap?: boolean;       // มีถังดักไขมัน
+  riderAccessNotes?: string;     // จุดจอดไรเดอร์และการเข้าถึง
+}
+
+export interface LeaseTerms {
+  rentModel: RentModel;          // รูปแบบค่าเช่า (Fixed / GP / Hybrid)
+  monthlyRentThb?: number;       // ค่าเช่าบาท/เดือน
+  monthlyRentRmb?: number;       // ค่าเช่าหยวน/เดือน
+  gpPercent?: number;            // ส่วนแบ่ง GP %
+  serviceFeePerSqm?: number;     // ค่าบริการส่วนกลาง/ตร.ม.
+  depositMonths?: number;        // เงินประกันกี่เดือน
+  leasePeriodYears?: number;     // ระยะเวลาสัญญากี่ปี
+  fitOutPeriodDays?: number;     // ระยะปลอดค่าเช่าตกแต่ง (วัน)
+  contactPerson?: string;        // ชื่อผู้ติดต่อฝ่ายเช่า
+  contactPhone?: string;         // เบอร์โทร
+  contactLineWechat?: string;    // LINE / WeChat
+}
+
+export interface LocationRatings {
+  footTraffic: number;           // 1-5 ดาว คุณภาพคนเดิน
+  visibility: number;            // 1-5 ดาว ความสะดุดตา/ไม่โดนบัง
+  accessibility: number;         // 1-5 ดาว การเข้าถึงของลูกค้า/ไรเดอร์
+  valueRoi: number;              // 1-5 ดาว ความคุ้มค่าค่าเช่า
+}
+
+export interface LocationRecord {
+  revision?: number;
+  id: string;
+  type: 'location';
+  country?: CountryOrigin;       // 'CN' | 'TH'
+  name: string;                  // ชื่อทำเล / โครงการ
+  foreignName?: string;          // ชื่ออังกฤษ / จีน
+  locationType: LocationType;    // ประเภทห้าง / อาคาร
+  zoneOrFloor: string;           // ชั้น และ โซน
+  unitNumber?: string;           // เลขที่ห้อง
+  location: {
+    lat: number;
+    lng: number;
+    addressText?: string;
+  };
+  spaceSpecs: SpaceSpecs;
+  leaseTerms: LeaseTerms;
+  ratings: LocationRatings;
+  photos: {
+    storefrontAndAtmosphere: string[];
+    floorPlanAndSpecs?: string[];
+    surroundingNeighbors?: string[];
+    contactCards?: string[];
+  };
+  videos?: string[];
+  voiceNoteUrl?: string;
+  voiceDurationSec?: number;
+  voiceNotes?: VoiceNoteEntry[];
+  quickTags: string[];
+
+  // Handoff & Operations fields
+  assignedTo?: string;           // ผู้รับผิดชอบรับช่วงต่อ
+  targetFollowUpDate?: string;   // กำหนดวันติดตามผล
+  handoffNotes?: string;         // บันทึกการส่งมอบงาน / เจรจา
   handoffStage?: HandoffStage;
 
   creator: {

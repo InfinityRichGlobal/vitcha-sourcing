@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useApp } from '../context/AppContext';
-import { SupplierRecord, StoreInspoRecord } from '../types';
+import { SupplierRecord, StoreInspoRecord, LocationRecord } from '../types';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 
@@ -10,13 +10,15 @@ import { Factory, Coffee, Layers, MapPin, ChevronRight, X, Navigation } from 'lu
 interface MapViewProps {
   onSelectSupplier: (supplier: SupplierRecord) => void;
   onSelectStoreInspo: (store: StoreInspoRecord) => void;
+  onSelectLocation?: (location: LocationRecord) => void;
 }
 
 export const MapView: React.FC<MapViewProps> = ({
   onSelectSupplier,
   onSelectStoreInspo,
+  onSelectLocation,
 }) => {
-  const { suppliers, drinkStores } = useApp();
+  const { suppliers, drinkStores, locations } = useApp();
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
   const markersLayerRef = useRef<L.LayerGroup | null>(null);
@@ -25,11 +27,11 @@ export const MapView: React.FC<MapViewProps> = ({
   const [mapFailure, setMapFailure] = useState('');
   const [mapAttempt, setMapAttempt] = useState(0);
 
-  const [filterType, setFilterType] = useState<'all' | 'suppliers' | 'drink_stores'>('all');
+  const [filterType, setFilterType] = useState<'all' | 'suppliers' | 'drink_stores' | 'locations'>('all');
   const [regionFocus, setRegionFocus] = useState<'CN' | 'TH' | 'ALL'>('CN');
   const [selectedPin, setSelectedPin] = useState<{
-    type: 'supplier' | 'drink_store';
-    data: SupplierRecord | StoreInspoRecord;
+    type: 'supplier' | 'drink_store' | 'location';
+    data: SupplierRecord | StoreInspoRecord | LocationRecord;
   } | null>(null);
 
   // Initialize Map safely without heavy ResizeObserver loops to prevent freezing
@@ -188,6 +190,44 @@ export const MapView: React.FC<MapViewProps> = ({
       });
     }
 
+    // 3. Locations Pins (สีฟ้า)
+    if (filterType === 'all' || filterType === 'locations') {
+      locations.forEach((loc) => {
+        if (!loc.location?.lat || !loc.location?.lng) return;
+        const itemCountry = loc.country || 'TH';
+        if (regionFocus !== 'ALL' && regionFocus !== itemCountry) return;
+
+        const photo =
+          loc.photos.storefrontAndAtmosphere?.[0] ||
+          loc.photos.floorPlanAndSpecs?.[0] ||
+          'https://images.unsplash.com/photo-1519567241046-7f570eee3ce6?w=150&auto=format&fit=crop&q=80';
+
+        const customIcon = L.divIcon({
+          className: 'custom-map-pin',
+          html: `
+            <div style="position: relative; width: 46px; height: 46px; border-radius: 50%; border: 3px solid #0284c7; box-shadow: 0 4px 14px rgba(0,0,0,0.28); overflow: hidden; background: #fff; cursor: pointer;">
+              <img src="${photo.replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;")}" style="width: 100%; height: 100%; object-fit: cover;" />
+              <div style="position: absolute; bottom: 0; right: 0; width: 17px; height: 17px; border-radius: 50%; background: #0284c7; border: 1.5px solid #fff; display: flex; align-items: center; justify-content: center; font-size: 8px; color: #fff;"><i class="fa-solid fa-map-location-dot"></i></div>
+            </div>
+          `,
+          iconSize: [46, 46],
+          iconAnchor: [23, 23],
+        });
+
+        const marker = L.marker([loc.location.lat, loc.location.lng], { icon: customIcon });
+        marker.bindTooltip(Object.assign(document.createElement('span'), { textContent: loc.name }), { direction: 'top', offset: [0, -20] });
+        marker.on('click', () => {
+          setSelectedPin({ type: 'location', data: loc });
+          map.flyTo([loc.location.lat, loc.location.lng], 14, { duration: 0.6 });
+        });
+
+        markersLayerRef.current?.addLayer(marker);
+        if (regionFocus === 'ALL' || regionFocus === itemCountry) {
+          bounds.extend([loc.location.lat, loc.location.lng]);
+        }
+      });
+    }
+
     const focusKey = `${regionFocus}:${filterType}`;
     if (lastFocusRef.current === focusKey) return;
     lastFocusRef.current = focusKey;
@@ -202,15 +242,16 @@ export const MapView: React.FC<MapViewProps> = ({
     } else if (regionFocus === 'TH') {
       map.setView([13.7563, 100.5018], 11, { animate: false });
     }
-  }, [suppliers, drinkStores, filterType, regionFocus, mapAttempt]);
+  }, [suppliers, drinkStores, locations, filterType, regionFocus, mapAttempt]);
 
   useEffect(() => { setSelectedPin(null); }, [filterType, regionFocus]);
   const regionSuppliers = suppliers.filter(s => regionFocus === 'ALL' || (s.country || 'CN') === regionFocus);
   const regionStores = drinkStores.filter(s => regionFocus === 'ALL' || (s.country || 'CN') === regionFocus);
+  const regionLocations = locations.filter(l => regionFocus === 'ALL' || (l.country || 'TH') === regionFocus);
 
   // Combined list of pinned items for quick-jump bar below map
   const quickPinItems = [
-    ...(filterType !== 'drink_stores'
+    ...(filterType === 'all' || filterType === 'suppliers'
       ? suppliers.map((s) => ({
           id: s.id,
           title: s.name,
@@ -221,7 +262,7 @@ export const MapView: React.FC<MapViewProps> = ({
           raw: s,
         }))
       : []),
-    ...(filterType !== 'suppliers'
+    ...(filterType === 'all' || filterType === 'drink_stores'
       ? drinkStores.map((d) => ({
           id: d.id,
           title: d.storeName,
@@ -230,6 +271,17 @@ export const MapView: React.FC<MapViewProps> = ({
           lng: d.location.lng,
           type: 'drink_store' as const,
           raw: d,
+        }))
+      : []),
+    ...(filterType === 'all' || filterType === 'locations'
+      ? locations.map((loc) => ({
+          id: loc.id,
+          title: loc.name,
+          country: loc.country || 'TH',
+          lat: loc.location.lat,
+          lng: loc.location.lng,
+          type: 'location' as const,
+          raw: loc,
         }))
       : []),
   ].filter(item => regionFocus === 'ALL' || item.country === regionFocus);
@@ -257,7 +309,7 @@ export const MapView: React.FC<MapViewProps> = ({
             }`}
           >
             <Layers className="w-2.5 h-2.5 hidden sm:inline" />
-            <span>ทั้งหมด ({regionSuppliers.length + regionStores.length})</span>
+            <span>ทั้งหมด ({regionSuppliers.length + regionStores.length + regionLocations.length})</span>
           </button>
 
           <button
@@ -284,6 +336,20 @@ export const MapView: React.FC<MapViewProps> = ({
           >
             <Coffee className="w-2.5 h-2.5 hidden sm:inline" />
             <span>ร้านน้ำ ({regionStores.length})</span>
+          </button>
+
+          {/* New Location Filter Pill (สีฟ้าตามคำสั่งผู้ใช้) */}
+          <button
+            type="button"
+            onClick={() => setFilterType('locations')}
+            className={`flex items-center gap-1 px-1.5 sm:px-2 py-0.5 rounded-md text-[10px] sm:text-[11px] font-bold transition-all ${
+              filterType === 'locations'
+                ? 'bg-sky-600 text-white shadow-2xs'
+                : 'text-slate-600 hover:text-sky-700'
+            }`}
+          >
+            <MapPin className="w-2.5 h-2.5 hidden sm:inline" />
+            <span>สถานที่ ({regionLocations.length})</span>
           </button>
         </div>
 
@@ -346,7 +412,9 @@ export const MapView: React.FC<MapViewProps> = ({
                 className={`text-[10px] font-bold px-2 py-0.5 rounded-full inline-flex items-center gap-1 ${
                   selectedPin.type === 'supplier'
                     ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
-                    : 'bg-amber-50 text-amber-800 border border-amber-200'
+                    : selectedPin.type === 'drink_store'
+                    ? 'bg-amber-50 text-amber-800 border border-amber-200'
+                    : 'bg-sky-50 text-sky-800 border border-sky-200'
                 }`}
               >
                 {selectedPin.type === 'supplier' ? (
@@ -354,10 +422,15 @@ export const MapView: React.FC<MapViewProps> = ({
                     <i aria-hidden="true" className="fa-solid fa-industry text-[9px] text-emerald-600" />
                     <span>ซัพพลายเออร์</span>
                   </>
-                ) : (
+                ) : selectedPin.type === 'drink_store' ? (
                   <>
                     <i aria-hidden="true" className="fa-solid fa-mug-hot text-[9px] text-amber-600" />
                     <span>เรฟร้านน้ำ</span>
+                  </>
+                ) : (
+                  <>
+                    <i aria-hidden="true" className="fa-solid fa-map-location-dot text-[9px] text-sky-600" />
+                    <span>ทำเล & พื้นที่</span>
                   </>
                 )}
               </span>
@@ -374,8 +447,11 @@ export const MapView: React.FC<MapViewProps> = ({
                 src={
                   selectedPin.type === 'supplier'
                     ? (selectedPin.data as SupplierRecord).photos.storefrontAndAtmosphere?.[0]
-                    : (selectedPin.data as StoreInspoRecord).photos.drinkCups?.[0] ||
+                    : selectedPin.type === 'drink_store'
+                    ? (selectedPin.data as StoreInspoRecord).photos.drinkCups?.[0] ||
                       (selectedPin.data as StoreInspoRecord).photos.storefrontAndAtmosphere?.[0]
+                    : (selectedPin.data as LocationRecord).photos.storefrontAndAtmosphere?.[0] ||
+                      (selectedPin.data as LocationRecord).photos.floorPlanAndSpecs?.[0]
                 }
                 className="w-16 h-16 rounded-2xl object-cover shrink-0 border border-slate-100 shadow-sm"
               />
@@ -383,19 +459,23 @@ export const MapView: React.FC<MapViewProps> = ({
                 <h4 className="font-bold text-sm text-slate-900 truncate">
                   {selectedPin.type === 'supplier'
                     ? (selectedPin.data as SupplierRecord).name
-                    : (selectedPin.data as StoreInspoRecord).storeName}
+                    : selectedPin.type === 'drink_store'
+                    ? (selectedPin.data as StoreInspoRecord).storeName
+                    : (selectedPin.data as LocationRecord).name}
                 </h4>
                 <p className="text-xs text-slate-500 truncate">
                   {selectedPin.type === 'supplier'
                     ? (selectedPin.data as SupplierRecord).chineseName ||
                       (selectedPin.data as SupplierRecord).marketOrCity
-                    : (selectedPin.data as StoreInspoRecord).chineseName ||
-                      (selectedPin.data as StoreInspoRecord).city}
+                    : selectedPin.type === 'drink_store'
+                    ? (selectedPin.data as StoreInspoRecord).chineseName ||
+                      (selectedPin.data as StoreInspoRecord).city
+                    : (selectedPin.data as LocationRecord).zoneOrFloor}
                 </p>
                 <div className="flex items-center gap-1 text-[11px] text-emerald-700 mt-1 font-medium">
                   <MapPin className="w-3 h-3 shrink-0" />
                   <span className="truncate">
-                    {selectedPin.data.location.addressText || 'กวางโจว'}
+                    {selectedPin.data.location.addressText || 'พิกัดที่ตั้ง'}
                   </span>
                 </div>
               </div>
@@ -410,8 +490,12 @@ export const MapView: React.FC<MapViewProps> = ({
                 onClick={() => {
                   if (selectedPin.type === 'supplier') {
                     onSelectSupplier(selectedPin.data as SupplierRecord);
-                  } else {
+                  } else if (selectedPin.type === 'drink_store') {
                     onSelectStoreInspo(selectedPin.data as StoreInspoRecord);
+                  } else if (onSelectLocation) {
+                    onSelectLocation(selectedPin.data as LocationRecord);
+                  } else {
+                    onSelectSupplier(selectedPin.data as any);
                   }
                 }}
                 className="flex items-center gap-1 px-3 py-1.5 text-xs font-bold rounded-xl bg-slate-900 hover:bg-slate-800 text-white shadow-sm"
@@ -446,8 +530,10 @@ export const MapView: React.FC<MapViewProps> = ({
             </span>
             {p.type === 'supplier' ? (
               <i aria-hidden="true" className="fa-solid fa-industry text-[10px] text-emerald-600" />
-            ) : (
+            ) : p.type === 'drink_store' ? (
               <i aria-hidden="true" className="fa-solid fa-mug-hot text-[10px] text-amber-600" />
+            ) : (
+              <i aria-hidden="true" className="fa-solid fa-map-location-dot text-[10px] text-sky-600" />
             )}
             <span className="max-w-[160px] truncate">{p.title}</span>
           </button>

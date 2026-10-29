@@ -7,12 +7,14 @@ import { DashboardOverview } from './components/DashboardOverview';
 import { SupplierList } from './components/SupplierList';
 import { StoreInspoList } from './components/StoreInspoList';
 import { CategoryExplorerView } from './components/CategoryExplorerView';
+const LocationList = lazy(() => import('./components/LocationList').then(m => ({ default: m.LocationList })));
 const HandoffManagementView = lazy(() => import('./components/HandoffManagementView').then(m => ({ default: m.HandoffManagementView })));
 const SettingsManagementView = lazy(() => import('./components/SettingsManagementView').then(m => ({ default: m.SettingsManagementView })));
 const MembersManagementView = lazy(() => import('./components/MembersManagementView').then(m => ({ default: m.MembersManagementView })));
 const ProductWorkspace = lazy(() => import('./components/ProductWorkspace').then(m => ({ default: m.ProductWorkspace })));
 const NewSupplierModal = lazy(() => import('./components/NewSupplierModal').then(m => ({ default: m.NewSupplierModal })));
 const NewStoreInspoModal = lazy(() => import('./components/NewStoreInspoModal').then(m => ({ default: m.NewStoreInspoModal })));
+const NewLocationModal = lazy(() => import('./components/NewLocationModal').then(m => ({ default: m.NewLocationModal })));
 const DetailModal = lazy(() => import('./components/DetailModal').then(m => ({ default: m.DetailModal })));
 import { UserProfileModal } from './components/UserProfileModal';
 import { ShareLineModal } from './components/ShareLineModal';
@@ -22,21 +24,22 @@ import { InstallPromptModal } from './components/InstallPromptModal';
 import { NotificationSheetModal } from './components/NotificationSheetModal';
 import { NotificationToast } from './components/NotificationToast';
 import { RegisterWithInviteModal } from './components/RegisterWithInviteModal';
-import { SupplierRecord, StoreInspoRecord } from './types';
+import { SupplierRecord, StoreInspoRecord, LocationRecord } from './types';
 
 const ModalLoading = () => <div className="fixed inset-0 z-[110] grid place-items-center bg-slate-950/30 p-4 backdrop-blur-sm"><div role="status" className="rounded-2xl bg-white px-8 py-6 text-sm font-medium text-slate-600 shadow-xl">กำลังเปิดรายละเอียด…</div></div>;
 
 const MainApp: React.FC = () => {
-  const { activeTab, setActiveTab, suppliers, drinkStores, isAuthenticated, isRestoringSession, editingSupplier, editingStore } = useApp();
+  const { activeTab, setActiveTab, suppliers, drinkStores, locations, isAuthenticated, isRestoringSession, editingSupplier, editingStore, editingLocation } = useApp();
 
   const [isNewSupplierOpen, setIsNewSupplierOpen] = useState(false);
   const [isNewStoreInspoOpen, setIsNewStoreInspoOpen] = useState(false);
+  const [isNewLocationOpen, setIsNewLocationOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isCalculatorOpen, setIsCalculatorOpen] = useState(false);
   const [isInstallOpen, setIsInstallOpen] = useState(false);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
-  const [selectedDetailItem, setSelectedDetailItem] = useState<SupplierRecord | StoreInspoRecord | null>(null);
-  const [shareLineItem, setShareLineItem] = useState<SupplierRecord | StoreInspoRecord | null>(null);
+  const [selectedDetailItem, setSelectedDetailItem] = useState<SupplierRecord | StoreInspoRecord | LocationRecord | null>(null);
+  const [shareLineItem, setShareLineItem] = useState<any>(null);
   const [isPinLoginOpen, setIsPinLoginOpen] = useState(false);
 
   // Parse invite param from URL immediately
@@ -74,6 +77,9 @@ const MainApp: React.FC = () => {
         if (found) setSelectedDetailItem(found);
       } else if (typeParam === 'drink_store') {
         const found = drinkStores.find((d) => d.id === viewParam);
+        if (found) setSelectedDetailItem(found);
+      } else if (typeParam === 'location') {
+        const found = locations.find((l) => l.id === viewParam);
         if (found) setSelectedDetailItem(found);
       }
     }
@@ -168,6 +174,7 @@ const MainApp: React.FC = () => {
         onOpenProfile={() => setIsProfileOpen(true)}
         onOpenNewSupplier={() => setIsNewSupplierOpen(true)}
         onOpenNewStoreInspo={() => setIsNewStoreInspoOpen(true)}
+        onOpenNewLocation={() => setIsNewLocationOpen(true)}
         onOpenCalculator={() => setIsCalculatorOpen(true)}
         onOpenInstall={() => setIsInstallOpen(true)}
         onOpenNotifications={() => setIsNotificationsOpen(true)}
@@ -185,8 +192,10 @@ const MainApp: React.FC = () => {
           <DashboardOverview
             onSelectSupplier={(s) => setSelectedDetailItem(s)}
             onSelectStore={(st) => setSelectedDetailItem(st)}
+            onSelectLocation={(l) => setSelectedDetailItem(l)}
             onOpenNewSupplier={() => setIsNewSupplierOpen(true)}
             onOpenNewStoreInspo={() => setIsNewStoreInspoOpen(true)}
+            onOpenNewLocation={() => setIsNewLocationOpen(true)}
             onShareToLine={(item) => setShareLineItem(item)}
           />
         )}
@@ -204,6 +213,14 @@ const MainApp: React.FC = () => {
             onSelectStore={(st) => setSelectedDetailItem(st)}
             onOpenNewStoreInspo={() => setIsNewStoreInspoOpen(true)}
             onShareToLine={(st) => setShareLineItem(st)}
+          />
+        )}
+
+        {activeTab === 'locations' && (
+          <LocationList
+            onSelectLocation={(loc) => setSelectedDetailItem(loc)}
+            onOpenNewLocation={() => setIsNewLocationOpen(true)}
+            onShareToLine={(loc) => setShareLineItem(loc)}
           />
         )}
 
@@ -240,6 +257,11 @@ const MainApp: React.FC = () => {
       {(isNewStoreInspoOpen || editingStore) && <Suspense fallback={<ModalLoading />}><NewStoreInspoModal
         isOpen={isNewStoreInspoOpen}
         onClose={() => setIsNewStoreInspoOpen(false)}
+      /></Suspense>}
+
+      {(isNewLocationOpen || editingLocation) && <Suspense fallback={<ModalLoading />}><NewLocationModal
+        isOpen={isNewLocationOpen}
+        onClose={() => setIsNewLocationOpen(false)}
       /></Suspense>}
 
       {selectedDetailItem && <Suspense fallback={<ModalLoading />}><DetailModal

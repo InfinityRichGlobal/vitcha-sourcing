@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
-import { User, SupplierRecord, StoreInspoRecord, ExchangeRateConfig, InviteLink, PipelineStatus, UserRole, AppNotification, HandoffStage, AppViewTab, QuickMessageTemplate, CuratedProduct, ProductTaxon, ProductSet, ProductChanges } from '../types';
+import { User, SupplierRecord, StoreInspoRecord, LocationRecord, ExchangeRateConfig, InviteLink, PipelineStatus, UserRole, AppNotification, HandoffStage, AppViewTab, QuickMessageTemplate, CuratedProduct, ProductTaxon, ProductSet, ProductChanges } from '../types';
 import { INITIAL_SUPPLIERS, INITIAL_DRINK_STORES, INITIAL_CATEGORIES, INITIAL_STORE_CATEGORIES, INITIAL_QUICK_TAGS, INITIAL_QUICK_MESSAGES } from '../utils/seedData';
 import { getRenderServerUrl, saveRenderServerUrl, checkServerHealth, fetchCentralData, sendJson, requestJson, getSessionToken, setSessionToken, loginUserApi, ApiError, markNotificationsReadApi, clearNotificationsApi } from '../services/api';
 
@@ -80,15 +80,15 @@ interface AppContextType {
   editQuickMessage: (id: string, title: string, text: string) => Promise<boolean>;
   deleteQuickMessage: (id: string) => Promise<boolean>;
   updateUserRole: (userId: string, newRole: UserRole) => Promise<boolean>;
-  recordItemView: (targetId: string, type: 'supplier' | 'drink_store') => void;
-  toggleLikeItem: (targetId: string, type: 'supplier' | 'drink_store') => void;
+  recordItemView: (targetId: string, type: 'supplier' | 'drink_store' | 'location') => void;
+  toggleLikeItem: (targetId: string, type: 'supplier' | 'drink_store' | 'location') => void;
   loadFullMockupData: () => void;
   resetSystemData: (clearEmpty?: boolean) => void;
 
   // Handoff & Operations (บริหารจัดการรับช่วงต่อ)
   updateHandoff: (
     id: string,
-    type: 'supplier' | 'drink_store',
+    type: 'supplier' | 'drink_store' | 'location',
     data: {
       assignedTo?: string;
       targetFollowUpDate?: string;
@@ -107,7 +107,11 @@ interface AppContextType {
   updateStoreInspo: (id: string, updates: Partial<StoreInspoRecord>) => Promise<boolean>;
   deleteStoreInspo: (id: string) => Promise<boolean>;
 
-  // Role Permissions
+  locations: LocationRecord[];
+  addLocation: (location: Omit<LocationRecord, 'id' | 'type' | 'creator' | 'reviewerNotes' | 'history' | 'updatedAt'>) => Promise<LocationRecord | null>;
+  updateLocation: (id: string, updates: Partial<LocationRecord>) => Promise<boolean>;
+  deleteLocation: (id: string) => Promise<boolean>;
+  editingLocation: LocationRecord | null;
   canEditItems: boolean;
   canDeleteItems: boolean;
   canComment: boolean;
@@ -115,11 +119,11 @@ interface AppContextType {
 
   editingSupplier: SupplierRecord | null;
   editingStore: StoreInspoRecord | null;
-  openEditItem: (item: SupplierRecord | StoreInspoRecord) => void;
+  openEditItem: (item: SupplierRecord | StoreInspoRecord | LocationRecord) => void;
   closeEditItem: () => void;
 
-  addReviewerNote: (targetId: string, type: 'supplier' | 'drink_store', noteText: string, extra?: { voiceUrl?: string; photoUrl?: string; duration?: number }) => Promise<boolean>;
-  addReviewReply: (targetId: string, type: 'supplier' | 'drink_store', noteId: string, replyText: string, replyToAuthor?: string, extra?: { voiceUrl?: string; photoUrl?: string; duration?: number; replyToId?: string }) => Promise<boolean>;
+  addReviewerNote: (targetId: string, type: 'supplier' | 'drink_store' | 'location', noteText: string, extra?: { voiceUrl?: string; photoUrl?: string; duration?: number }) => Promise<boolean>;
+  addReviewReply: (targetId: string, type: 'supplier' | 'drink_store' | 'location', noteId: string, replyText: string, replyToAuthor?: string, extra?: { voiceUrl?: string; photoUrl?: string; duration?: number; replyToId?: string }) => Promise<boolean>;
   updatePipelineStatus: (supplierId: string, status: PipelineStatus) => Promise<boolean>;
 
   updateExchangeRate: (rate: number, isAuto?: boolean) => void;
@@ -169,8 +173,8 @@ interface AppContextType {
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 const GUEST: User = { id: '', name: '', alias: '', role: 'viewer', avatar: '', emailOrId: '', createdAt: '' };
-type Item = SupplierRecord | StoreInspoRecord;
-const routeFor = (type: 'supplier' | 'drink_store') => type === 'supplier' ? 'suppliers' : 'drink-stores';
+type Item = SupplierRecord | StoreInspoRecord | LocationRecord;
+const routeFor = (type: 'supplier' | 'drink_store' | 'location') => type === 'supplier' ? 'suppliers' : type === 'drink_store' ? 'drink-stores' : 'locations';
 const settingsKeys = ['categories', 'storeCategories', 'quickTagsList', 'quickMessages'] as const;
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -186,6 +190,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [users, setUsers] = useState<User[]>([]);
   const [suppliers, setSuppliers] = useState<SupplierRecord[]>([]);
   const [drinkStores, setDrinkStores] = useState<StoreInspoRecord[]>([]);
+  const [locations, setLocations] = useState<LocationRecord[]>([]);
   const [invites, setInvites] = useState<InviteLink[]>([]);
   const [categories, setCategories] = useState(INITIAL_CATEGORIES);
   const [storeCategories, setStoreCategories] = useState(INITIAL_STORE_CATEGORIES);
@@ -211,6 +216,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [mutationCount, setMutationCount] = useState(0);
   const [editingSupplier, setEditingSupplier] = useState<SupplierRecord | null>(null);
   const [editingStore, setEditingStore] = useState<StoreInspoRecord | null>(null);
+  const [editingLocation, setEditingLocation] = useState<LocationRecord | null>(null);
   const [renderServerUrl, setRenderServerUrlState] = useState(getRenderServerUrl);
   const [renderStatus, setRenderStatus] = useState<'connected' | 'connecting' | 'disconnected'>('connecting');
   const refreshController = useRef<AbortController | null>(null);
@@ -229,8 +235,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     refreshController.current?.abort(); refreshController.current = null;
     setSessionToken(null); setIsAuthenticated(false); setIsRestoringSession(false); setCurrentUser(GUEST); setSimulatedFromAdmin(false);
     setProducts([]); setProductCategories([]); setProductTags([]); setProductSets([]);
-    setUsers([]); setSuppliers([]); setDrinkStores([]); setInvites([]); setNotifications([]); setActiveToast(null);
-    setEditingSupplier(null); setEditingStore(null); seenNotifications.current.clear(); notificationsInitialized.current = false;
+    setUsers([]); setSuppliers([]); setDrinkStores([]); setLocations([]); setInvites([]); setNotifications([]); setActiveToast(null);
+    setEditingSupplier(null); setEditingStore(null); setEditingLocation(null); seenNotifications.current.clear(); notificationsInitialized.current = false;
   };
   function showToast(n: AppNotification) {
     clearTimeout(toastTimer.current); setActiveToast(n);
@@ -253,7 +259,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       setRenderStatus('connected'); setCurrentUser(data.user); setSimulatedFromAdmin(data.simulated); setIsAuthenticated(true); setIsRestoringSession(false);
       setProducts(data.products || []); setProductCategories(data.productCategories || []); setProductTags(data.productTags || []); setProductSets(data.productSets || []); productTaxonomyRevision.current = data.productTaxonomyRevision || 0;
       setUsers(data.users); setInvites(data.invites);
-      setSuppliers(data.suppliers); setDrinkStores(data.drinkStores);
+      setSuppliers(data.suppliers); setDrinkStores(data.drinkStores); setLocations(data.locations || []);
       databaseRevision.current = data.revision || 0;
       settingsRef.current = Object.fromEntries(settingsKeys.map(k => [k, data[k] || []]));
       setCategories(data.categories || []); setStoreCategories(data.storeCategories || []);
@@ -313,9 +319,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const manageProductTaxonomy: AppContextType['manageProductTaxonomy'] = (kind, action, id, name) => perform('product-taxonomy', () => sendJson('/api/product-taxonomy', { kind, action, id, name, revision: productTaxonomyRevision.current }));
   const saveProductSet = (set: ProductSet) => perform(`product-set:${set.id}`, () => sendJson('/api/product-sets', set));
   const deleteProductSet = (set: ProductSet) => perform(`product-set:${set.id}`, () => sendJson(`/api/product-sets/${encodeURIComponent(set.id)}`, { revision: set.revision }, 'DELETE'));
-  const itemById = (id: string, type: 'supplier' | 'drink_store') => (type === 'supplier' ? suppliers : drinkStores).find(x => x.id === id);
+  const itemById = (id: string, type: 'supplier' | 'drink_store' | 'location') => (type === 'supplier' ? suppliers : type === 'drink_store' ? drinkStores : locations).find(x => x.id === id);
   const commandId = (key: string) => { if (!commandIds.current.has(key)) commandIds.current.set(key, crypto.randomUUID()); return commandIds.current.get(key)!; };
-  const itemAction = (id: string, type: 'supplier' | 'drink_store', action: string, data: unknown) => {
+  const itemAction = (id: string, type: 'supplier' | 'drink_store' | 'location', action: string, data: unknown) => {
     const key = `${id}:${action}:${JSON.stringify(data)}`;
     return perform(`${id}:${action}`, async () => {
       await sendJson(`/api/${routeFor(type)}/${encodeURIComponent(id)}/actions`, { action, data, operationId: commandId(key), revision: itemById(id, type)?.revision || 0 });
@@ -336,6 +342,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const ok = await perform('create-store', async () => { const result = await sendJson('/api/drink-stores', { ...input, id: `store-${commandId('create-store:' + JSON.stringify(input))}` }); item = result.item; });
     if (ok) { commandIds.current.delete('create-store:' + JSON.stringify(input)); resetFilters('drink_stores'); } return ok ? item : null;
   };
+  const addLocation: AppContextType['addLocation'] = async input => {
+    let item: LocationRecord | null = null;
+    const ok = await perform('create-location', async () => { const result = await sendJson('/api/locations', { ...input, id: `loc-${commandId('create-location:' + JSON.stringify(input))}` }); item = result.item; });
+    if (ok) { commandIds.current.delete('create-location:' + JSON.stringify(input)); resetFilters('locations'); } return ok ? item : null;
+  };
   const updateSupplier = (id: string, updates: Partial<SupplierRecord>) => perform(`${id}:edit`, async () => {
     const target = editingSupplier?.id === id ? editingSupplier : suppliers.find(s => s.id === id);
     if (!target) throw new Error('ไม่พบรายการ');
@@ -348,24 +359,36 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     await sendJson('/api/drink-stores', { ...target, ...updates, id, revision: target.revision || 0 });
     resetFilters('drink_stores');
   });
-  const deleteItem = (id: string, type: 'supplier' | 'drink_store') => perform(`${id}:delete`, () => sendJson(`/api/${routeFor(type)}/${encodeURIComponent(id)}`, { revision: itemById(id, type)?.revision || 0 }, 'DELETE'));
+  const updateLocation = (id: string, updates: Partial<LocationRecord>) => perform(`${id}:edit`, async () => {
+    const target = editingLocation?.id === id ? editingLocation : locations.find(l => l.id === id);
+    if (!target) throw new Error('ไม่พบรายการ');
+    await sendJson('/api/locations', { ...target, ...updates, id, revision: target.revision || 0 });
+    resetFilters('locations');
+  });
+  const deleteItem = (id: string, type: 'supplier' | 'drink_store' | 'location') => perform(`${id}:delete`, () => sendJson(`/api/${routeFor(type)}/${encodeURIComponent(id)}`, { revision: itemById(id, type)?.revision || 0 }, 'DELETE'));
   const deleteSupplier = (id: string) => deleteItem(id, 'supplier');
   const deleteStoreInspo = (id: string) => deleteItem(id, 'drink_store');
-  const addReviewerNote = (id: string, type: 'supplier' | 'drink_store', text: string, extra?: { voiceUrl?: string; photoUrl?: string; duration?: number }) => itemAction(id, type, 'comment', { text, ...extra });
-  const addReviewReply = (id: string, type: 'supplier' | 'drink_store', noteId: string, text: string, replyToAuthor?: string, extra?: { voiceUrl?: string; photoUrl?: string; duration?: number; replyToId?: string }) => itemAction(id, type, 'reply', { noteId, text, replyToAuthor, ...extra });
+  const deleteLocation = (id: string) => deleteItem(id, 'location');
+  const addReviewerNote = (id: string, type: 'supplier' | 'drink_store' | 'location', text: string, extra?: { voiceUrl?: string; photoUrl?: string; duration?: number }) => itemAction(id, type, 'comment', { text, ...extra });
+  const addReviewReply = (id: string, type: 'supplier' | 'drink_store' | 'location', noteId: string, text: string, replyToAuthor?: string, extra?: { voiceUrl?: string; photoUrl?: string; duration?: number; replyToId?: string }) => itemAction(id, type, 'reply', { noteId, text, replyToAuthor, ...extra });
   const updateHandoff: AppContextType['updateHandoff'] = (id, type, data) => itemAction(id, type, 'handoff', data);
   const updatePipelineStatus = (id: string, status: PipelineStatus) => itemAction(id, 'supplier', 'handoff', { status });
   // View logging is telemetry; failure must not prevent opening a record.
-  const recordItemView = (id: string, type: 'supplier' | 'drink_store') => {
+  const recordItemView = (id: string, type: 'supplier' | 'drink_store' | 'location') => {
     if (!getSessionToken()) return;
     void sendJson(`/api/${routeFor(type)}/${encodeURIComponent(id)}/actions`, { action: 'view', operationId: crypto.randomUUID() }).catch(() => {});
   };
-  const toggleLikeItem = (id: string, type: 'supplier' | 'drink_store') => {
+  const toggleLikeItem = (id: string, type: 'supplier' | 'drink_store' | 'location') => {
     if (!canComment) return;
     void itemAction(id, type, 'like', { liked: !(itemById(id, type)?.likes || []).some(l => l.userId === currentUser.id) });
   };
-  const openEditItem = (item: Item) => { if (!canEditItems) return; if (item.type === 'supplier') setEditingSupplier(item); else setEditingStore(item); };
-  const closeEditItem = () => { setEditingSupplier(null); setEditingStore(null); };
+  const openEditItem = (item: Item) => {
+    if (!canEditItems) return;
+    if (item.type === 'supplier') setEditingSupplier(item as SupplierRecord);
+    else if (item.type === 'drink_store') setEditingStore(item as StoreInspoRecord);
+    else if (item.type === 'location') setEditingLocation(item as LocationRecord);
+  };
+  const closeEditItem = () => { setEditingSupplier(null); setEditingStore(null); setEditingLocation(null); };
   const updateUserRole = (id: string, role: UserRole) => perform(`${id}:role`, () => sendJson('/api/users', { id, role, revision: users.find(u => u.id === id)?.revision || 0 }));
   const deleteUser = (id: string) => perform(`${id}:delete-user`, () => sendJson(`/api/users/${encodeURIComponent(id)}`, { revision: users.find(u => u.id === id)?.revision || 0 }, 'DELETE'));
   const deleteInvite = (id: string) => perform(`${id}:delete-invite`, () => sendJson(`/api/invites/${encodeURIComponent(id)}`, {}, 'DELETE'));
@@ -453,14 +476,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const syncAllDataToRender = () => refreshCentralData();
   return <AppContext.Provider value={{
     products, productCategories, productTags, productSets, saveProduct, updateProducts, manageProductTaxonomy, saveProductSet, deleteProductSet,
-    currentUser, users, suppliers, drinkStores, invites, categories, storeCategories, quickTagsList, quickMessages, exchangeRate, syncStatus, pendingSyncCount,
+    currentUser, users, suppliers, drinkStores, locations, invites, categories, storeCategories, quickTagsList, quickMessages, exchangeRate, syncStatus, pendingSyncCount,
     activeTab, filterResetVersion, countryFilter, searchQuery, selectedCategory, selectedStatus, selectedTag, selectedRating, notifications, activeToast,
     actionError, clearActionError: () => setActionError(null), isMutating: mutationCount > 0,
     setActiveTab, setCountryFilter, setSearchQuery, setSelectedCategory, setSelectedStatus, setSelectedTag, setSelectedRating,
     dismissToast, markAllNotificationsRead, markNotificationRead, clearAllNotifications, clearNotification, broadcastNotification, addCategory, editCategory, deleteCategory, addStoreCategory, editStoreCategory, deleteStoreCategory,
     addQuickTag, editQuickTag, deleteQuickTag, addQuickMessage, editQuickMessage, deleteQuickMessage, updateUserRole, recordItemView, toggleLikeItem, loadFullMockupData, resetSystemData,
-    updateHandoff, addSupplier, updateSupplier, deleteSupplier, addStoreInspo, updateStoreInspo, deleteStoreInspo, canEditItems, canDeleteItems, canComment, canAddItems,
-    editingSupplier, editingStore, openEditItem, closeEditItem, addReviewerNote, addReviewReply, updatePipelineStatus, updateExchangeRate, toggleCurrencyMode, convertCnyToThb, convertThbToCny,
+    updateHandoff, addSupplier, updateSupplier, deleteSupplier, addStoreInspo, updateStoreInspo, deleteStoreInspo, addLocation, updateLocation, deleteLocation, canEditItems, canDeleteItems, canComment, canAddItems,
+    editingSupplier, editingStore, editingLocation, openEditItem, closeEditItem, addReviewerNote, addReviewReply, updatePipelineStatus, updateExchangeRate, toggleCurrencyMode, convertCnyToThb, convertThbToCny,
     updateCurrentUserProfile, updateCurrentUserAvatar, switchUser, simulatedFromAdmin, restoreAdminUser, deleteUser, deleteInvite, refreshCentralData, isAuthenticated, isRestoringSession, logout, loginWithCredentials, loginWithPin,
     createInvite, redeemInvite, registerUserWithInvite, renderStatus, renderServerUrl, setRenderServerUrl, testRenderConnection, syncAllDataToRender,
   }}>{children}</AppContext.Provider>;
