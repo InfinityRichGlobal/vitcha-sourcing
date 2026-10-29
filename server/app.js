@@ -30,8 +30,12 @@ function currentNote(db, note) {
   const user = candidates.length === 1 ? publicUser(candidates[0]) : null;
   return { ...note, ...(user ? { authorId: user.id, author: user.alias, authorAvatar: user.avatar, authorRole: user.role } : {}), ...(note.replies ? { replies: note.replies.map(reply => currentNote(db, reply)) } : {}) };
 }
+function currentHistory(db, h) {
+  const user = db.users.find(u => (h.userId && u.id === h.userId) || [u.alias, u.name].includes(h.user));
+  return user ? { ...h, user: user.alias || user.name, userAvatar: user.avatar } : h;
+}
 function currentRecord(db, record) {
-  return { ...record, creator: currentIdentity(db, record.creator), reviewerNotes: (record.reviewerNotes || []).map(note => currentNote(db, note)), likes: (record.likes || []).map(like => currentIdentity(db, like, 'userId')), viewedBy: (record.viewedBy || []).map(view => currentIdentity(db, view, 'userId')) };
+  return { ...record, creator: currentIdentity(db, record.creator), reviewerNotes: (record.reviewerNotes || []).map(note => currentNote(db, note)), likes: (record.likes || []).map(like => currentIdentity(db, like, 'userId')), viewedBy: (record.viewedBy || []).map(view => currentIdentity(db, view, 'userId')), history: (record.history || []).map(h => currentHistory(db, h)) };
 }
 const revision = record => record.revision || 0;
 function expectRevision(record, value) {
@@ -498,11 +502,31 @@ export function createApp({ dataDir, defaults = DEFAULT_DATABASE, sessionTtlMs =
     if (!snapshot || !Array.isArray(snapshot.suppliers) || !Array.isArray(snapshot.drinkStores) || snapshot.suppliers.length + snapshot.drinkStores.length > 100) fail(400, 'ข้อมูลตัวอย่างไม่ถูกต้อง');
     for (const collection of ['suppliers', 'drinkStores']) {
       const fields = collection === 'suppliers' ? SUPPLIER : STORE;
+      const existingIds = new Set((db[collection] || []).map(x => x.id));
       const additions = snapshot[collection].map(source => {
-        const record = { ...pick(source, [...fields, ...HANDOFF]), id: `demo-${randomUUID()}`, type: collection === 'suppliers' ? 'supplier' : 'drink_store', creator: { ...pick(req.user, ['id', 'name', 'alias', 'avatar']), timestamp: now() }, reviewerNotes: [], likes: [], viewedBy: [], history: [], revision: 1, updatedAt: now() };
+        const nextId = clean(source.id) && !existingIds.has(clean(source.id)) ? clean(source.id) : `demo-${randomUUID()}`;
+        existingIds.add(nextId);
+        const record = {
+          ...pick(source, [...fields, ...HANDOFF]),
+          id: nextId,
+          type: collection === 'suppliers' ? 'supplier' : 'drink_store',
+          creator: source.creator?.id ? source.creator : { ...pick(req.user, ['id', 'name', 'alias', 'avatar']), timestamp: now() },
+          reviewerNotes: Array.isArray(source.reviewerNotes) ? source.reviewerNotes : [],
+          likes: Array.isArray(source.likes) ? source.likes : [],
+          viewedBy: Array.isArray(source.viewedBy) ? source.viewedBy : [],
+          history: Array.isArray(source.history) ? source.history : [],
+          revision: 1,
+          updatedAt: source.updatedAt || now(),
+        };
         validateRecord(record, collection); return record;
       });
       db[collection] = [...additions, ...(db[collection] || [])];
+    }
+    if (snapshot.productWorkspace && typeof snapshot.productWorkspace === 'object') {
+      db.productWorkspace = snapshot.productWorkspace;
+    }
+    if (Array.isArray(snapshot.notifications)) {
+      db.notifications = [...snapshot.notifications, ...(db.notifications || [])].slice(0, 80);
     }
     db.sampleOperations = [...(db.sampleOperations || []), operationId].slice(-100);
     save(db); res.json({ success: true });
