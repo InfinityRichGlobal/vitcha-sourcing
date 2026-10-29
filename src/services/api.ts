@@ -32,12 +32,25 @@ export function saveRenderServerUrl(url: string): void {
 const SESSION_KEY = 'vitcha_session_token';
 let centralSnapshot: { key: string; data: any } | null = null;
 export function getSessionToken(): string | null {
-  try { return sessionStorage.getItem(SESSION_KEY); } catch { return null; }
+  try {
+    return sessionStorage.getItem(SESSION_KEY) || localStorage.getItem(SESSION_KEY);
+  } catch {
+    return null;
+  }
 }
 export function setSessionToken(token: string | null) {
   centralSnapshot = null;
-  if (token) sessionStorage.setItem(SESSION_KEY, token);
-  else sessionStorage.removeItem(SESSION_KEY);
+  try {
+    if (token) {
+      sessionStorage.setItem(SESSION_KEY, token);
+      localStorage.setItem(SESSION_KEY, token);
+    } else {
+      sessionStorage.removeItem(SESSION_KEY);
+      localStorage.removeItem(SESSION_KEY);
+    }
+  } catch {
+    // Ignore storage quota / private mode errors
+  }
 }
 export class ApiError extends Error {
   constructor(public status: number, message: string) { super(message); }

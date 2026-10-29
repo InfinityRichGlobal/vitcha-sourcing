@@ -1,5 +1,5 @@
 // Cache the application shell only. Team data and uploads stay on the server.
-const CACHE_NAME = 'vitcha-sourcing-v4';
+const CACHE_NAME = 'vitcha-sourcing-v6';
 const STATIC_ASSETS = ['./', './index.html', './manifest.json', './logo.jpg'];
 self.addEventListener('install', event => {
   event.waitUntil(caches.open(CACHE_NAME).then(cache => cache.addAll(STATIC_ASSETS)).catch(() => {}));
@@ -18,7 +18,7 @@ self.addEventListener('fetch', event => {
   if (!staticAsset && event.request.mode !== 'navigate') return;
   event.respondWith((async () => {
     try {
-      const response = await fetch(event.request);
+      const response = await fetch(event.request, { cache: 'no-store' });
       if (response.ok) {
         const copy = response.clone();
         event.waitUntil(caches.open(CACHE_NAME).then(cache => cache.put(event.request, copy)).catch(() => {}));
