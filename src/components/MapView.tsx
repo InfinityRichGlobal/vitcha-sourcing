@@ -294,11 +294,11 @@ export const MapView: React.FC<MapViewProps> = ({
   };
 
   return (
-    <div className="space-y-2" data-testid="english-map" data-map-status={mapStatus} data-map-error={mapFailure}>
+    <div className="space-y-2 min-w-0 max-w-full overflow-hidden" data-testid="english-map" data-map-status={mapStatus} data-map-error={mapFailure}>
       <span className="sr-only">Map language: English</span>
       <div className="relative isolate w-full h-[380px] sm:h-[430px] overflow-hidden rounded-2xl border border-slate-200/90 shadow-2xs bg-slate-100">
         {/* Top Left Corner: Ultra-Compact Type Filter Bar */}
-        <div className="absolute top-1.5 left-1.5 z-[400] flex items-center gap-0.5 bg-white/90 backdrop-blur-md p-0.5 rounded-lg border border-slate-200/80 shadow-2xs">
+        <div className="absolute top-1.5 left-1.5 z-[400] flex items-center gap-0.5 bg-white/90 backdrop-blur-md p-0.5 rounded-lg border border-slate-200/80 shadow-2xs max-w-[calc(100%-80px)] overflow-x-auto no-scrollbar">
           <button
             type="button"
             onClick={() => setFilterType('all')}
@@ -509,7 +509,7 @@ export const MapView: React.FC<MapViewProps> = ({
       </div>
 
       {/* Quick Jump Pin Strip below Map (แตะชื่อร้านเพื่อซูมไปหาหมุดบนแผนที่ทันที) */}
-      <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-1">
+      <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-1 min-w-0 max-w-full">
         <span className="text-[11px] font-bold text-slate-500 shrink-0 flex items-center gap-1 pr-1">
           <Navigation className="w-3 h-3 text-emerald-600" />
           <span>แตะเพื่อซูมไปที่หมุด:</span>

@@ -392,7 +392,7 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
       </div>
 
       {/* 3. แผนที่มอนิเตอร์พิกัดสำรวจจริง (Live Map Monitor) */}
-      <div id="map-section" role="region" aria-label="แผนที่ของทีม" className="bg-white rounded-2xl border border-slate-200/90 p-3.5 sm:p-4 shadow-2xs space-y-2.5">
+      <div id="map-section" role="region" aria-label="แผนที่ของทีม" className="bg-white rounded-2xl border border-slate-200/90 p-3.5 sm:p-4 shadow-2xs space-y-2.5 overflow-hidden">
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-2 shrink-0">
             <span className="w-7 h-7 rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-200/60 flex items-center justify-center shrink-0">
@@ -418,7 +418,7 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
       </div>
 
       {/* 4. รายการสำรวจล่าสุด (วางไว้ใต้แผนที่ รูปแบบ Social Feed) */}
-      <div data-testid="team-feed" className="bg-white rounded-2xl border border-slate-200/90 p-3.5 sm:p-4 shadow-2xs space-y-3.5">
+      <div data-testid="team-feed" className="bg-white rounded-2xl border border-slate-200/90 p-3.5 sm:p-4 shadow-2xs space-y-3.5 overflow-hidden">
         <div className="flex items-center justify-between gap-2 pb-2 border-b border-slate-100 flex-wrap">
           <div className="flex items-center gap-2 min-w-0">
             <span className="w-7 h-7 rounded-lg bg-slate-100 text-slate-700 border border-slate-200/80 flex items-center justify-center shrink-0">
@@ -432,7 +432,7 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
             </h2>
           </div>
 
-          <div className="flex items-center gap-1 bg-slate-100 p-0.5 rounded-xl border border-slate-200/80 text-[11px] shrink-0">
+          <div className="flex items-center gap-1 bg-slate-100 p-0.5 rounded-xl border border-slate-200/80 text-[11px] overflow-x-auto max-w-full no-scrollbar shrink-0">
             <button
               type="button"
               onClick={() => setFeedFilter('all')}
