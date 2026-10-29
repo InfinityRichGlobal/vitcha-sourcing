@@ -733,7 +733,7 @@ export const DetailModal: React.FC<DetailModalProps> = ({
                   </span>
                 )}
               </div>
-              {currentItem.location && (
+              {Boolean(currentItem.location?.lat && currentItem.location?.lng && (currentItem.location.lat !== 0 || currentItem.location.lng !== 0)) ? (
                 <a
                   href={`https://www.google.com/maps?q=${currentItem.location.lat},${currentItem.location.lng}`}
                   target="_blank"
@@ -742,6 +742,10 @@ export const DetailModal: React.FC<DetailModalProps> = ({
                 >
                   เปิด Google Maps ↗
                 </a>
+              ) : (
+                <span className="text-[10px] text-slate-400 font-medium shrink-0">
+                  📍 ยังไม่ได้ระบุพิกัด GPS
+                </span>
               )}
             </div>
           </div>

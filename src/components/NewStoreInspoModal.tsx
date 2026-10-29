@@ -16,7 +16,10 @@ import {
   Upload,
   Pencil,
   RefreshCw,
+  MapPin,
+  Map,
 } from 'lucide-react';
+import { LocationPickerModal } from './LocationPickerModal';
 
 interface NewStoreInspoModalProps {
   isOpen: boolean;
@@ -73,11 +76,12 @@ export const NewStoreInspoModal: React.FC<NewStoreInspoModalProps> = ({ isOpen, 
   // Drink Items
   const [drinkItems, setDrinkItems] = useState<DrinkDetailItem[]>([]);
 
-  // GPS Location
-  const [lat, setLat] = useState<number>(23.1322);
-  const [lng, setLng] = useState<number>(113.3274);
-  const [addressText, setAddressText] = useState('Tianhe District, Guangzhou');
+  // GPS Location (ไม่ใส่ค่า Default เพื่อไม่ให้ปักหมุดมั่ว)
+  const [lat, setLat] = useState<number | ''>('');
+  const [lng, setLng] = useState<number | ''>('');
+  const [addressText, setAddressText] = useState('');
   const [isLocating, setIsLocating] = useState(false);
+  const [isPickerMapOpen, setIsPickerMapOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [photoTaskCount, setPhotoTaskCount] = useState(0);
   const photoTaskRef = useRef(0);
@@ -114,8 +118,8 @@ export const NewStoreInspoModal: React.FC<NewStoreInspoModalProps> = ({ isOpen, 
       setDrinkCupPhotos(editingStore.photos?.drinkCups || []);
       setVideos(editingStore.videos || []);
       setDrinkItems(editingStore.drinkItems || []);
-      setLat(editingStore.location?.lat || 23.1322);
-      setLng(editingStore.location?.lng || 113.3274);
+      setLat(editingStore.location?.lat && editingStore.location.lat !== 0 ? editingStore.location.lat : '');
+      setLng(editingStore.location?.lng && editingStore.location.lng !== 0 ? editingStore.location.lng : '');
       setAddressText(editingStore.location?.addressText || editingStore.city || '');
     } else if (isOpen) {
       setCountry('CN');
@@ -123,7 +127,7 @@ export const NewStoreInspoModal: React.FC<NewStoreInspoModalProps> = ({ isOpen, 
       setStoreName('');
       setChineseName('');
       setBrandConcept('');
-      setCity('กวางโจว (Guangzhou)');
+      setCity('');
       setLineId('');
       setWechatId('');
       setPhone('');
@@ -140,9 +144,9 @@ export const NewStoreInspoModal: React.FC<NewStoreInspoModalProps> = ({ isOpen, 
       setDrinkCupPhotos([]);
       setVideos([]);
       setDrinkItems([]);
-      setLat(23.1322);
-      setLng(113.3274);
-      setAddressText('Tianhe District, Guangzhou');
+      setLat('');
+      setLng('');
+      setAddressText('');
     }
   }, [editingStore, isOpen]);
 
@@ -329,9 +333,9 @@ export const NewStoreInspoModal: React.FC<NewStoreInspoModalProps> = ({ isOpen, 
           voiceDurationSec: mainVoiceNotes[0]?.durationSec || mainVoiceSec,
           voiceNotes: mainVoiceNotes,
           location: {
-            lat,
-            lng,
-            addressText,
+            lat: typeof lat === 'number' && lat !== 0 ? Number(lat) : 0,
+            lng: typeof lng === 'number' && lng !== 0 ? Number(lng) : 0,
+            addressText: city.trim() || addressText,
           },
         })) return;
       } else {
@@ -366,9 +370,9 @@ export const NewStoreInspoModal: React.FC<NewStoreInspoModalProps> = ({ isOpen, 
           voiceDurationSec: mainVoiceNotes[0]?.durationSec || mainVoiceSec,
           voiceNotes: mainVoiceNotes,
           location: {
-            lat,
-            lng,
-            addressText,
+            lat: typeof lat === 'number' && lat !== 0 ? Number(lat) : 0,
+            lng: typeof lng === 'number' && lng !== 0 ? Number(lng) : 0,
+            addressText: city.trim() || addressText,
           },
           handoffStage: 'awaiting',
           assignedTo: country === 'TH' ? 'แอน (จัดซื้อ)' : 'SuperiCez',
@@ -574,33 +578,65 @@ export const NewStoreInspoModal: React.FC<NewStoreInspoModalProps> = ({ isOpen, 
               </div>
 
               <div>
-                <div className="flex items-center justify-between mb-1">
-                  <label className="text-[11px] font-medium text-slate-500">📍 เมือง / สาขา</label>
-                  <a
-                    href={`https://www.google.com/maps?q=${lat},${lng}`}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="text-[10px] font-bold text-amber-700 hover:underline"
-                  >
-                    ดูพิกัดบน Maps ↗
-                  </a>
+                <div className="flex items-center justify-between mb-1 flex-wrap gap-1">
+                  <label className="text-[11px] font-medium text-slate-500">📍 เมือง / สาขา / ที่ตั้ง</label>
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      type="button"
+                      onClick={handleGetLocation}
+                      disabled={isLocating}
+                      className="px-2 py-0.5 rounded-lg bg-slate-900 text-white text-[10px] font-bold hover:bg-amber-600 transition-colors inline-flex items-center gap-1"
+                      title="ดึงพิกัด GPS จากตำแหน่งปัจจุบันของคุณ"
+                    >
+                      <RefreshCw className={`w-2.5 h-2.5 ${isLocating ? 'animate-spin' : ''}`} />
+                      <span>{isLocating ? 'กำลังดึง...' : '📍 ดึง GPS จริง'}</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setIsPickerMapOpen(true)}
+                      className="px-2 py-0.5 rounded-lg bg-amber-600 text-white text-[10px] font-bold hover:bg-amber-700 transition-colors inline-flex items-center gap-1"
+                      title="เปิดแผนที่เพื่อเลื่อนหาพิกัดหรือจิ้มปักหมุด"
+                    >
+                      <Map className="w-2.5 h-2.5" />
+                      <span>🗺️ เลือกบนแผนที่</span>
+                    </button>
+                    {Boolean(lat || lng) && (
+                      <button
+                        type="button"
+                        onClick={() => { setLat(''); setLng(''); }}
+                        className="text-[10px] text-slate-400 hover:text-rose-600 underline font-medium ml-1"
+                      >
+                        ล้างพิกัด
+                      </button>
+                    )}
+                  </div>
                 </div>
                 <div className="relative">
                   <input
                     type="text"
-                    placeholder="เช่น กวางโจว (Grandview Mall)"
+                    placeholder="เช่น กวางโจว (Grandview Mall), สยามสแควร์วัน"
                     value={city}
                     onChange={(e) => setCity(e.target.value)}
-                    className="w-full bg-white border border-slate-200 rounded-xl pl-3 pr-20 py-2 text-xs text-slate-900 focus:outline-none focus:border-amber-500"
+                    className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 focus:outline-none focus:border-amber-500"
                   />
-                  <button
-                    type="button"
-                    onClick={handleGetLocation}
-                    className="absolute right-1.5 top-1.5 px-2.5 py-1 rounded-lg bg-slate-900 text-white text-[10px] font-bold hover:bg-amber-600 transition-colors"
-                  >
-                    {isLocating ? 'กำลังดึง...' : '📍 ดึง GPS จริง'}
-                  </button>
                 </div>
+                {Boolean(lat && lng) ? (
+                  <div className="flex items-center justify-between text-[10px] text-amber-800 bg-amber-50 px-2 py-1 rounded-lg border border-amber-200/60 mt-1">
+                    <span className="font-mono font-bold">📍 ปักหมุด: {Number(lat).toFixed(4)}, {Number(lng).toFixed(4)}</span>
+                    <a
+                      href={`https://www.google.com/maps?q=${lat},${lng}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-amber-700 font-bold hover:underline"
+                    >
+                      ดูพิกัดบน Maps ↗
+                    </a>
+                  </div>
+                ) : (
+                  <p className="text-[10px] text-slate-400 font-medium mt-1">
+                    ยังไม่ได้ระบุพิกัด GPS (สามารถแตะ <strong>เลือกบนแผนที่</strong> หรือข้ามได้)
+                  </p>
+                )}
               </div>
 
               <div>
@@ -1110,6 +1146,31 @@ export const NewStoreInspoModal: React.FC<NewStoreInspoModalProps> = ({ isOpen, 
           </div>
         </div>
       </div>
+
+      {isPickerMapOpen && (
+        <LocationPickerModal
+          isOpen={isPickerMapOpen}
+          onClose={() => setIsPickerMapOpen(false)}
+          onConfirm={(res) => {
+            if (res.lat && res.lng) {
+              setLat(res.lat);
+              setLng(res.lng);
+            } else {
+              setLat('');
+              setLng('');
+            }
+            if (res.addressText) {
+              setCity(res.addressText);
+              setAddressText(res.addressText);
+            }
+          }}
+          initialLat={typeof lat === 'number' ? lat : undefined}
+          initialLng={typeof lng === 'number' ? lng : undefined}
+          initialAddress={city || addressText}
+          themeColor="amber"
+          title="ปักหมุดที่ตั้งร้านน้ำ & เรฟ"
+        />
+      )}
     </div>
   );
 };

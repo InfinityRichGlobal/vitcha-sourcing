@@ -16,6 +16,7 @@ import {
   Pencil,
   RefreshCw,
   MapPin,
+  Map,
   Maximize2,
   Ruler,
   Zap,
@@ -29,6 +30,7 @@ import {
   Calendar,
   Layers,
 } from 'lucide-react';
+import { LocationPickerModal } from './LocationPickerModal';
 
 interface NewLocationModalProps {
   isOpen: boolean;
@@ -90,11 +92,12 @@ export const NewLocationModal: React.FC<NewLocationModalProps> = ({ isOpen, onCl
   const [accessibility, setAccessibility] = useState(5);
   const [valueRoi, setValueRoi] = useState(4);
 
-  // GPS Coordinates & Address
-  const [lat, setLat] = useState<number>(13.7466);
-  const [lng, setLng] = useState<number>(100.5393);
-  const [addressText, setAddressText] = useState('CentralWorld, Pathum Wan, Bangkok');
+  // GPS Coordinates & Address (ไม่ใส่ค่า Default เพื่อไม่ให้ปักหมุดมั่ว)
+  const [lat, setLat] = useState<number | ''>('');
+  const [lng, setLng] = useState<number | ''>('');
+  const [addressText, setAddressText] = useState('');
   const [isLocating, setIsLocating] = useState(false);
+  const [isPickerMapOpen, setIsPickerMapOpen] = useState(false);
 
   // Photos & Media
   const [storefrontAndAtmosphere, setStorefrontAndAtmosphere] = useState<string[]>([]);
@@ -175,8 +178,8 @@ export const NewLocationModal: React.FC<NewLocationModalProps> = ({ isOpen, onCl
       setAccessibility(editingLocation.ratings?.accessibility || 5);
       setValueRoi(editingLocation.ratings?.valueRoi || 4);
 
-      setLat(editingLocation.location?.lat || 13.7466);
-      setLng(editingLocation.location?.lng || 100.5393);
+      setLat(editingLocation.location?.lat && editingLocation.location.lat !== 0 ? editingLocation.location.lat : '');
+      setLng(editingLocation.location?.lng && editingLocation.location.lng !== 0 ? editingLocation.location.lng : '');
       setAddressText(editingLocation.location?.addressText || '');
 
       setStorefrontAndAtmosphere(editingLocation.photos?.storefrontAndAtmosphere || []);
@@ -224,9 +227,9 @@ export const NewLocationModal: React.FC<NewLocationModalProps> = ({ isOpen, onCl
       setVisibility(5);
       setAccessibility(5);
       setValueRoi(4);
-      setLat(13.7466);
-      setLng(100.5393);
-      setAddressText('CentralWorld, Pathum Wan, Bangkok');
+      setLat('');
+      setLng('');
+      setAddressText('');
       setStorefrontAndAtmosphere([]);
       setFloorPlanAndSpecs([]);
       setSurroundingNeighbors([]);
@@ -340,8 +343,8 @@ export const NewLocationModal: React.FC<NewLocationModalProps> = ({ isOpen, onCl
         zoneOrFloor: zoneOrFloor.trim() || 'ไม่ระบุ',
         unitNumber: unitNumber.trim() || undefined,
         location: {
-          lat: Number(lat) || 13.7466,
-          lng: Number(lng) || 100.5393,
+          lat: typeof lat === 'number' && lat !== 0 ? Number(lat) : 0,
+          lng: typeof lng === 'number' && lng !== 0 ? Number(lng) : 0,
           addressText: addressText.trim() || undefined,
         },
         spaceSpecs: {
@@ -920,48 +923,89 @@ export const NewLocationModal: React.FC<NewLocationModalProps> = ({ isOpen, onCl
             </div>
           </div>
 
-          {/* Section 5: GPS Location */}
-          <div className="space-y-2 p-3.5 bg-slate-50/70 rounded-2xl border border-slate-200/70">
-            <div className="flex items-center justify-between">
+          {/* Section 5: GPS & Location Picker */}
+          <div className="space-y-2.5 p-3.5 bg-slate-50/70 rounded-2xl border border-slate-200/70">
+            <div className="flex items-center justify-between flex-wrap gap-2">
               <label className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
                 <MapPin className="w-3.5 h-3.5 text-sky-600" />
-                <span>พิกัด GPS แผนที่ (Latitude / Longitude)</span>
+                <span>ตำแหน่งพิกัดบนแผนที่</span>
               </label>
 
-              <button
-                type="button"
-                onClick={handleGetCurrentLocation}
-                disabled={isLocating}
-                className="px-2.5 py-1 rounded-lg bg-sky-50 text-sky-700 hover:bg-sky-100 border border-sky-200 text-xs font-bold flex items-center gap-1 transition-colors"
-              >
-                <RefreshCw className={`w-3 h-3 ${isLocating ? 'animate-spin' : ''}`} />
-                <span>{isLocating ? 'กำลังดึงพิกัด...' : 'ดึงพิกัดปัจจุบัน'}</span>
-              </button>
+              <div className="flex items-center gap-1.5 flex-wrap">
+                {/* ปุ่มของเดิม: ดึงพิกัด GPS หน้าง่าย สะดวก */}
+                <button
+                  type="button"
+                  onClick={handleGetCurrentLocation}
+                  disabled={isLocating}
+                  className="px-2.5 py-1 rounded-lg bg-white text-slate-700 hover:bg-slate-50 border border-slate-200 text-xs font-bold flex items-center gap-1 transition-colors shadow-2xs"
+                  title="ดึงพิกัด GPS จากตำแหน่งปัจจุบันของคุณ"
+                >
+                  <RefreshCw className={`w-3 h-3 ${isLocating ? 'animate-spin text-sky-600' : 'text-slate-500'}`} />
+                  <span>{isLocating ? 'กำลังดึง...' : 'ดึงพิกัดปัจจุบัน (GPS)'}</span>
+                </button>
+
+                {/* ปุ่มใหม่: เปิดแผนที่เพื่อเลื่อนหา / จิ้มปักหมุดเอง (Option A) */}
+                <button
+                  type="button"
+                  onClick={() => setIsPickerMapOpen(true)}
+                  className="px-2.5 py-1 rounded-lg bg-sky-600 text-white hover:bg-sky-700 text-xs font-bold flex items-center gap-1 transition-colors shadow-2xs active:scale-95"
+                  title="เปิดแผนที่เพื่อเลื่อนหาพิกัดหรือจิ้มปักหมุด"
+                >
+                  <Map className="w-3 h-3" />
+                  <span>เลือกบนแผนที่</span>
+                </button>
+
+                {/* ปุ่มล้างพิกัดถ้าไม่ต้องการระบุ */}
+                {Boolean(lat || lng) && (
+                  <button
+                    type="button"
+                    onClick={() => { setLat(''); setLng(''); }}
+                    className="p-1 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 text-xs transition-colors"
+                    title="ล้างพิกัดออก (ไม่ระบุพิกัด)"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                )}
+              </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-2.5">
-              <div>
-                <label className="text-[10px] font-bold text-slate-500 block mb-0.5">Latitude</label>
-                <input
-                  type="number"
-                  step="any"
-                  value={lat}
-                  onChange={(e) => setLat(Number(e.target.value))}
-                  className="w-full px-2.5 py-1.5 rounded-xl border border-slate-200 text-xs bg-white font-mono"
-                />
+            {/* แสดงสถานะการปักหมุด */}
+            {!lat && !lng ? (
+              <div className="p-2.5 rounded-xl bg-white border border-dashed border-slate-200 text-center">
+                <p className="text-[11px] text-slate-500 font-medium">
+                  📍 ยังไม่ได้ระบุพิกัด (แตะ <strong>"เลือกบนแผนที่"</strong> เพื่อจิ้มหมุด หรือแตะ <strong>"ดึงพิกัดปัจจุบัน"</strong> หรือข้ามไปก่อนได้)
+                </p>
               </div>
-
-              <div>
-                <label className="text-[10px] font-bold text-slate-500 block mb-0.5">Longitude</label>
-                <input
-                  type="number"
-                  step="any"
-                  value={lng}
-                  onChange={(e) => setLng(Number(e.target.value))}
-                  className="w-full px-2.5 py-1.5 rounded-xl border border-slate-200 text-xs bg-white font-mono"
-                />
+            ) : (
+              <div className="space-y-2">
+                <div className="flex items-center gap-2 p-2 rounded-xl bg-sky-50 border border-sky-200/80 text-[11px] text-sky-900 font-bold">
+                  <span className="w-2 h-2 rounded-full bg-sky-500 animate-pulse" />
+                  <span>ปักหมุดแล้ว: {Number(lat).toFixed(5)}, {Number(lng).toFixed(5)}</span>
+                </div>
+                <div className="grid grid-cols-2 gap-2.5">
+                  <div>
+                    <label className="text-[10px] font-bold text-slate-500 block mb-0.5">Latitude</label>
+                    <input
+                      type="number"
+                      step="any"
+                      value={lat}
+                      onChange={(e) => setLat(e.target.value ? Number(e.target.value) : '')}
+                      className="w-full px-2.5 py-1.5 rounded-xl border border-slate-200 text-xs bg-white font-mono"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-bold text-slate-500 block mb-0.5">Longitude</label>
+                    <input
+                      type="number"
+                      step="any"
+                      value={lng}
+                      onChange={(e) => setLng(e.target.value ? Number(e.target.value) : '')}
+                      className="w-full px-2.5 py-1.5 rounded-xl border border-slate-200 text-xs bg-white font-mono"
+                    />
+                  </div>
+                </div>
               </div>
-            </div>
+            )}
 
             <div>
               <label className="text-[10px] font-bold text-slate-500 block mb-0.5">
@@ -1374,6 +1418,30 @@ export const NewLocationModal: React.FC<NewLocationModalProps> = ({ isOpen, onCl
           </div>
         </form>
       </div>
+
+      {isPickerMapOpen && (
+        <LocationPickerModal
+          isOpen={isPickerMapOpen}
+          onClose={() => setIsPickerMapOpen(false)}
+          onConfirm={(res) => {
+            if (res.lat && res.lng) {
+              setLat(res.lat);
+              setLng(res.lng);
+            } else {
+              setLat('');
+              setLng('');
+            }
+            if (res.addressText) {
+              setAddressText(res.addressText);
+            }
+          }}
+          initialLat={typeof lat === 'number' ? lat : undefined}
+          initialLng={typeof lng === 'number' ? lng : undefined}
+          initialAddress={addressText}
+          themeColor="sky"
+          title="ปักหมุดทำเล & พื้นที่สาขา"
+        />
+      )}
     </div>
   );
 };
