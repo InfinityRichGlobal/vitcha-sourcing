@@ -159,15 +159,12 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
 
   return (
     <div id="dashboard-section" className="max-w-6xl mx-auto px-3 sm:px-5 py-3.5 space-y-4 animate-in fade-in">
-      {/* 1. Minimal Compact Hero Bar: Title Left + Compact Country Switcher Right (บรรทัดเดียว ไม่ตัดคำ) */}
-      <div className="bg-white px-3.5 py-2.5 rounded-2xl border border-slate-200/90 shadow-2xs flex items-center justify-between gap-2">
-        <div className="flex items-center gap-2 min-w-0">
-          <span className="inline-flex items-center gap-1.5 text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-slate-900 text-white shrink-0">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-            <span>LIVE</span>
-          </span>
-          <h1 className="font-extrabold text-xs sm:text-sm text-slate-950 tracking-tight truncate whitespace-nowrap">
-            VITCHA SOURCING HUB
+      {/* 1. Minimal Compact Hero Bar: Title Left + Compact Country Switcher Right (ไม่ตัดคำ ไม่มี ... เด็ดขาด) */}
+      <div className="bg-white px-3.5 py-2.5 rounded-2xl border border-slate-200/90 shadow-2xs flex items-center justify-between gap-2 flex-wrap">
+        <div className="flex items-center gap-2 shrink-0">
+          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shrink-0" />
+          <h1 className="font-extrabold text-xs sm:text-sm text-slate-950 tracking-tight whitespace-nowrap">
+            VITCHA HUB
           </h1>
         </div>
 
@@ -209,7 +206,7 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
         </div>
       </div>
 
-      {/* 2. Bento KPI Grid (4 Minimalist Clickable Cards - กระชับ ไม่ตกบรรทัด) */}
+      {/* 2. Bento KPI Grid (4 Minimalist Clickable Cards - กระชับ ไม่ตกบรรทัด ไม่ตัดคำ) */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5">
         <button
           type="button"
@@ -232,7 +229,7 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
           <div className="text-xl sm:text-2xl font-extrabold text-slate-950 font-mono tracking-tight">
             {totalSuppliers}
           </div>
-          <div className="text-xs font-bold text-slate-800 mt-0.5 truncate whitespace-nowrap">
+          <div className="text-xs font-bold text-slate-800 mt-0.5 whitespace-nowrap">
             ซัพพลายเออร์
           </div>
         </button>
@@ -254,7 +251,7 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
           <div className="text-xl sm:text-2xl font-extrabold text-slate-950 font-mono tracking-tight">
             {totalStores}
           </div>
-          <div className="text-xs font-bold text-slate-800 mt-0.5 truncate whitespace-nowrap">
+          <div className="text-xs font-bold text-slate-800 mt-0.5 whitespace-nowrap">
             ร้านน้ำ & เรฟ
           </div>
         </button>
@@ -278,7 +275,7 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
           <div className="text-xl sm:text-2xl font-extrabold text-slate-950 font-mono tracking-tight">
             {totalShortlisted}
           </div>
-          <div className="text-xs font-bold text-slate-800 mt-0.5 truncate whitespace-nowrap">
+          <div className="text-xs font-bold text-slate-800 mt-0.5 whitespace-nowrap">
             ตัวเต็งพร้อมดีล
           </div>
         </button>
@@ -300,7 +297,7 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
           <div className="text-xl sm:text-2xl font-extrabold text-slate-950 font-mono tracking-tight">
             {totalHandoffActive}
           </div>
-          <div className="text-xs font-bold text-slate-800 mt-0.5 truncate whitespace-nowrap">
+          <div className="text-xs font-bold text-slate-800 mt-0.5 whitespace-nowrap">
             ส่งต่องานทีมไทย
           </div>
         </button>
@@ -309,12 +306,12 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
       {/* 3. แผนที่มอนิเตอร์พิกัดสำรวจจริง (Live Map Monitor) */}
       <div id="map-section" role="region" aria-label="แผนที่ของทีม" className="bg-white rounded-2xl border border-slate-200/90 p-3.5 sm:p-4 shadow-2xs space-y-2.5">
         <div className="flex items-center justify-between gap-2">
-          <div className="flex items-center gap-2 min-w-0">
+          <div className="flex items-center gap-2 shrink-0">
             <span className="w-7 h-7 rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-200/60 flex items-center justify-center shrink-0">
               <i aria-hidden="true" className="fa-solid fa-map-location-dot text-xs" />
             </span>
-            <h3 className="font-extrabold text-xs sm:text-sm text-slate-900 truncate whitespace-nowrap">
-              แผนที่พิกัดสำรวจ (Live Map)
+            <h3 className="font-extrabold text-xs sm:text-sm text-slate-900 whitespace-nowrap">
+              แผนที่พิกัดสำรวจ
             </h3>
           </div>
           <span className="text-[11px] font-mono font-bold px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-700 border border-slate-200 flex items-center gap-1 shrink-0 whitespace-nowrap">

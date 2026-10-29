@@ -494,19 +494,14 @@ export const HandoffManagementView: React.FC<HandoffManagementViewProps> = ({ on
     <div className="max-w-6xl mx-auto px-3 sm:px-4 py-4 space-y-4 animate-in fade-in">
       {/* Top Header & Sub-Page Stage Selector */}
       <div className="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/80 shadow-2xs space-y-4">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
-          <div>
-            <div className="flex items-center gap-2 mb-1">
-              <span className="p-1.5 rounded-lg bg-emerald-50 text-emerald-700 font-bold text-sm">
-                <Users className="w-4 h-4" />
-              </span>
-              <h2 className="font-extrabold text-base sm:text-lg text-slate-900">
-                บริหารจัดการรับช่วงต่อ (แยกหน้าย่อยตามพาร์ทชัดเจน)
-              </h2>
-            </div>
-            <p className="text-xs text-slate-500">
-              กดเลือกแต่ละพาร์ทด้านล่างเพื่อเปิดหน้าย่อยของสเตจนั้นแบบเต็มจอ ไม่เบียดกัน
-            </p>
+        <div className="flex items-center justify-between gap-2 flex-wrap">
+          <div className="flex items-center gap-2 shrink-0">
+            <span className="p-1.5 rounded-lg bg-emerald-50 text-emerald-700 font-bold text-sm">
+              <Users className="w-4 h-4" />
+            </span>
+            <h2 className="font-extrabold text-sm sm:text-base text-slate-900 whitespace-nowrap">
+              ส่งต่องาน (Handoff)
+            </h2>
           </div>
 
           {/* Filters: Part Type, Country & Assignee */}

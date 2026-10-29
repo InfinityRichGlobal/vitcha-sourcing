@@ -90,12 +90,12 @@ export const CategoryExplorerView: React.FC<CategoryExplorerViewProps> = ({
       {/* Header Bar with Separate Mode Switcher: ซัพพลายเออร์ vs ร้านน้ำ & เรฟ */}
       <div className="bg-white p-3.5 sm:p-4 rounded-2xl border border-slate-200/90 shadow-2xs space-y-2.5">
         <div className="flex items-center justify-between gap-2 flex-wrap">
-          <div className="flex items-center gap-2 min-w-0">
+          <div className="flex items-center gap-2 shrink-0">
             <div className="w-8 h-8 rounded-xl bg-slate-900 text-white flex items-center justify-center shrink-0">
               <Layers className="w-4 h-4" />
             </div>
-            <h2 className="font-extrabold text-sm sm:text-base text-slate-900 truncate whitespace-nowrap">
-              หมวดหมู่ (Categories)
+            <h2 className="font-extrabold text-sm sm:text-base text-slate-900 whitespace-nowrap">
+              หมวดหมู่
             </h2>
           </div>
 
