@@ -21,6 +21,8 @@ interface UploadablePhotoGridProps {
   maxDimension?: number;
   quality?: number;
   onUploadingChange?: (uploading: boolean) => void;
+  onBeginUpload?: () => void;
+  onEndUpload?: () => void;
   disabled?: boolean;
 }
 
@@ -35,6 +37,8 @@ export const UploadablePhotoGrid: React.FC<UploadablePhotoGridProps> = ({
   maxDimension = 1600,
   quality = 0.82,
   onUploadingChange,
+  onBeginUpload,
+  onEndUpload,
   disabled = false,
 }) => {
   const [items, setItems] = useState<PhotoItem[]>(() =>
@@ -79,6 +83,16 @@ export const UploadablePhotoGrid: React.FC<UploadablePhotoGridProps> = ({
   const handleFiles = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files?.length) return;
     const fileList = Array.from(e.target.files);
+
+    // Notify parent immediately and synchronously
+    onBeginUpload?.();
+    let remaining = fileList.length;
+    const checkDone = () => {
+      remaining--;
+      if (remaining <= 0) {
+        onEndUpload?.();
+      }
+    };
 
     const newPhotoItems: PhotoItem[] = fileList.map((file) => {
       const tempId = `temp-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
@@ -133,6 +147,9 @@ export const UploadablePhotoGrid: React.FC<UploadablePhotoGridProps> = ({
                 : i
             )
           );
+        })
+        .finally(() => {
+          checkDone();
         });
     });
 

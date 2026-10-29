@@ -308,20 +308,16 @@ export const NewSupplierModal: React.FC<NewSupplierModalProps> = ({ isOpen, onCl
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name.trim()) {
-      alert('กรุณากรอกชื่อร้าน / ซัพพลายเออร์ (ช่องนี้จำเป็น)');
-      return;
-    }
+    if (savingRef.current || audioJobs.current.size || isVideoLoading || isLocating) return;
     if (photoTaskRef.current > 0 || catalogItems.some((it) => it.photo?.startsWith('blob:'))) {
       alert('กำลังอัปโหลดรูปภาพ กรุณารอสักครู่');
       return;
     }
-    if (savingRef.current || audioJobs.current.size || isVideoLoading || isLocating) return;
     savingRef.current = true;
     setIsSaving(true);
 
     try {
-      const finalName = name.trim();
+      const finalName = name.trim() || (isEditMode && editingSupplier ? editingSupplier.name : `ซัพพลายเออร์ #${suppliers.length + 1} (${category})`);
 
       if (isEditMode && editingSupplier) {
         if (!await updateSupplier(editingSupplier.id, {
@@ -521,10 +517,8 @@ export const NewSupplierModal: React.FC<NewSupplierModalProps> = ({ isOpen, onCl
               recordType="suppliers"
               recordTitle={name || 'ซัพพลายเออร์'}
               recordId={editingSupplier?.id}
-              onUploadingChange={(uploading) => {
-                if (uploading) beginPhotos();
-                else endPhotos();
-              }}
+              onBeginUpload={beginPhotos}
+              onEndUpload={endPhotos}
             />
 
             {/* Basic Info */}
@@ -743,10 +737,8 @@ export const NewSupplierModal: React.FC<NewSupplierModalProps> = ({ isOpen, onCl
               recordType="suppliers"
               recordTitle={name || 'ซัพพลายเออร์'}
               recordId={editingSupplier?.id}
-              onUploadingChange={(uploading) => {
-                if (uploading) beginPhotos();
-                else endPhotos();
-              }}
+              onBeginUpload={beginPhotos}
+              onEndUpload={endPhotos}
             />
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-1">

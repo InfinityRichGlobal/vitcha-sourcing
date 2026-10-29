@@ -297,20 +297,16 @@ export const NewStoreInspoModal: React.FC<NewStoreInspoModalProps> = ({ isOpen, 
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!storeName.trim()) {
-      alert('กรุณากรอกชื่อร้านค้า (ช่องนี้จำเป็น)');
-      return;
-    }
+    if (savingRef.current || audioJobs.current.size || isVideoLoading || isLocating) return;
     if (photoTaskRef.current > 0 || drinkItems.some((it) => it.photo?.startsWith('blob:'))) {
       alert('กำลังอัปโหลดรูปภาพ กรุณารอสักครู่');
       return;
     }
-    if (savingRef.current || audioJobs.current.size || isVideoLoading || isLocating) return;
     savingRef.current = true;
     setIsSaving(true);
 
     try {
-      const finalName = storeName.trim();
+      const finalName = storeName.trim() || (isEditMode && editingStore ? editingStore.storeName : `ร้านน้ำ #${drinkStores.length + 1} (${city || 'ทั่วไป'})`);
 
       if (isEditMode && editingStore) {
         if (!await updateStoreInspo(editingStore.id, {
@@ -500,10 +496,8 @@ export const NewStoreInspoModal: React.FC<NewStoreInspoModalProps> = ({ isOpen, 
               recordType="drink_stores"
               recordTitle={storeName || 'ร้านน้ำเรฟ'}
               recordId={editingStore?.id}
-              onUploadingChange={(uploading) => {
-                if (uploading) beginPhotos();
-                else endPhotos();
-              }}
+              onBeginUpload={beginPhotos}
+              onEndUpload={endPhotos}
             />
 
             {/* หมวดหมู่เฉพาะร้านน้ำ & เรฟ */}
@@ -766,10 +760,8 @@ export const NewStoreInspoModal: React.FC<NewStoreInspoModalProps> = ({ isOpen, 
                 recordType="drink_stores"
                 recordTitle={storeName || 'ร้านน้ำเรฟ'}
                 recordId={editingStore?.id}
-                onUploadingChange={(uploading) => {
-                  if (uploading) beginPhotos();
-                  else endPhotos();
-                }}
+                onBeginUpload={beginPhotos}
+                onEndUpload={endPhotos}
               />
               <UploadablePhotoGrid
                 label="แก้ว / บรรจุภัณฑ์ / ดีเทล"
@@ -779,10 +771,8 @@ export const NewStoreInspoModal: React.FC<NewStoreInspoModalProps> = ({ isOpen, 
                 recordType="drink_stores"
                 recordTitle={storeName || 'ร้านน้ำเรฟ'}
                 recordId={editingStore?.id}
-                onUploadingChange={(uploading) => {
-                  if (uploading) beginPhotos();
-                  else endPhotos();
-                }}
+                onBeginUpload={beginPhotos}
+                onEndUpload={endPhotos}
               />
             </div>
           </div>

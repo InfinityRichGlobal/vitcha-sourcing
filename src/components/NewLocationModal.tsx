@@ -52,6 +52,7 @@ export const NewLocationModal: React.FC<NewLocationModalProps> = ({ isOpen, onCl
     quickTagsList,
     locationTypes,
     addLocationType,
+    locations,
   } = useApp();
 
   const isEditMode = !!editingLocation;
@@ -313,16 +314,12 @@ export const NewLocationModal: React.FC<NewLocationModalProps> = ({ isOpen, onCl
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name.trim()) {
-      alert('กรุณากรอกชื่อทำเล / โครงการ');
-      return;
-    }
-
     setIsSaving(true);
     try {
+      const finalName = name.trim() || (isEditMode && editingLocation ? editingLocation.name : `ทำเล #${locations.length + 1} (${zoneOrFloor || 'ทั่วไป'})`);
       const locationPayload = {
         country,
-        name: name.trim(),
+        name: finalName,
         foreignName: foreignName.trim() || undefined,
         locationType,
         zoneOrFloor: zoneOrFloor.trim() || 'ไม่ระบุ',
@@ -1106,10 +1103,8 @@ export const NewLocationModal: React.FC<NewLocationModalProps> = ({ isOpen, onCl
                 recordType="locations"
                 recordTitle={name || 'ทำเลใหม่'}
                 recordId={editingLocation?.id}
-                onUploadingChange={(uploading) => {
-                  if (uploading) beginPhotos();
-                  else endPhotos();
-                }}
+                onBeginUpload={beginPhotos}
+                onEndUpload={endPhotos}
               />
 
               <UploadablePhotoGrid
@@ -1120,10 +1115,8 @@ export const NewLocationModal: React.FC<NewLocationModalProps> = ({ isOpen, onCl
                 recordType="locations"
                 recordTitle={name || 'ทำเลใหม่'}
                 recordId={editingLocation?.id}
-                onUploadingChange={(uploading) => {
-                  if (uploading) beginPhotos();
-                  else endPhotos();
-                }}
+                onBeginUpload={beginPhotos}
+                onEndUpload={endPhotos}
               />
 
               <UploadablePhotoGrid
@@ -1134,10 +1127,8 @@ export const NewLocationModal: React.FC<NewLocationModalProps> = ({ isOpen, onCl
                 recordType="locations"
                 recordTitle={name || 'ทำเลใหม่'}
                 recordId={editingLocation?.id}
-                onUploadingChange={(uploading) => {
-                  if (uploading) beginPhotos();
-                  else endPhotos();
-                }}
+                onBeginUpload={beginPhotos}
+                onEndUpload={endPhotos}
               />
 
               <UploadablePhotoGrid
@@ -1148,10 +1139,8 @@ export const NewLocationModal: React.FC<NewLocationModalProps> = ({ isOpen, onCl
                 recordType="locations"
                 recordTitle={name || 'ทำเลใหม่'}
                 recordId={editingLocation?.id}
-                onUploadingChange={(uploading) => {
-                  if (uploading) beginPhotos();
-                  else endPhotos();
-                }}
+                onBeginUpload={beginPhotos}
+                onEndUpload={endPhotos}
               />
             </div>
           </div>
