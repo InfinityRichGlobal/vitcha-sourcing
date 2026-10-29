@@ -34,6 +34,36 @@
           });
         });
       }
+      // Auto-detect new UI deployments on iPhone Home Screen (PWA) & Safari without manual refresh
+      (function () {
+        const getLoadedBundle = () => {
+          const el = document.querySelector('script[src*="assets/index-"]');
+          return el ? (el.getAttribute('src') || '').split('/').pop() : null;
+        };
+        const checkLatestBuild = async () => {
+          if (document.hidden || document.querySelector('[role="dialog"]')) return;
+          const current = getLoadedBundle();
+          if (!current) return;
+          try {
+            const res = await fetch('./index.html?_t=' + Date.now(), { cache: 'no-store' });
+            if (!res.ok) return;
+            const html = await res.text();
+            const match = html.match(/assets\/(index-[A-Za-z0-9_-]+\.js)/);
+            if (match && match[1] && match[1] !== current) {
+              if ('caches' in window) {
+                const keys = await caches.keys();
+                await Promise.all(keys.map((k) => caches.delete(k)));
+              }
+              window.location.reload();
+            }
+          } catch {}
+        };
+        document.addEventListener('visibilitychange', () => {
+          if (!document.hidden) checkLatestBuild();
+        });
+        window.addEventListener('focus', checkLatestBuild);
+        setInterval(checkLatestBuild, 25000);
+      })();
     </script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
