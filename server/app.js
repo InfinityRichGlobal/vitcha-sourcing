@@ -2,7 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import fs from 'node:fs';
 import path from 'node:path';
-import { randomBytes, randomUUID, createHash, scryptSync, timingSafeEqual } from 'node:crypto';
+import { randomBytes, randomUUID, createHash, createHmac, scryptSync, timingSafeEqual } from 'node:crypto';
 import { createPersistence } from './persistence.js';
 import { DEFAULT_DATABASE } from './defaults.js';
 import { productData, registerProductRoutes } from './products.js';
@@ -74,12 +74,14 @@ function validateRecord(record, collection) {
   if ((record.videos || []).some(url => typeof url !== 'string' || /^(idb:|blob:)/.test(url))) fail(400, 'กรุณาอัปโหลดวิดีโอขึ้นเซิร์ฟเวอร์ให้สำเร็จก่อน');
 }
 
-export function createApp({ dataDir, defaults = DEFAULT_DATABASE, sessionTtlMs = 12 * 60 * 60 * 1000, recoveryPasswordHash = null, persistence = null, mediaStorage = null } = {}) {
+export function createApp({ dataDir, defaults = DEFAULT_DATABASE, sessionTtlMs = 30 * 24 * 60 * 60 * 1000, recoveryPasswordHash = null, persistence = null, mediaStorage = null } = {}) {
   const app = express();
   const storage = persistence || createPersistence(path.join(dataDir, 'database.json'), defaults);
   const uploads = path.join(dataDir, 'uploads');
   fs.mkdirSync(uploads, { recursive: true });
   const sessions = new Map();
+  const revokedTokens = new Set();
+  const sessionSecret = recoveryPasswordHash || process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY || 'vitcha-persistent-session-secret-v1';
   const attempts = new Map();
   const read = () => storage.read();
   const afterCommit = callback => storage.afterCommit ? storage.afterCommit(callback) : callback();
@@ -129,9 +131,49 @@ export function createApp({ dataDir, defaults = DEFAULT_DATABASE, sessionTtlMs =
   const requireWriter = req => { if (!['admin', 'reviewer'].includes(req.user.role)) fail(403, 'บัญชีนี้ดูข้อมูลได้เท่านั้น'); };
   const requireFounder = req => { if (req.user.id !== 'user-ice' || req.session.simulatedId) fail(403, 'ไม่สามารถดำเนินการนี้ได้'); };
   const sessionResult = (s, db) => ({ user: publicUser(db.users.find(u => u.id === (s.simulatedId || s.userId))), simulated: !!s.simulatedId });
+  function signSessionToken(userId, expires, credential) {
+    const payload = Buffer.from(JSON.stringify({ u: userId, e: expires, n: randomBytes(12).toString('hex') })).toString('base64url');
+    const sig = createHmac('sha256', `${sessionSecret}:${credential}`).update(payload).digest('base64url');
+    return `${payload}.${sig}`;
+  }
+  function resolveSession(token, db) {
+    if (!token || typeof token !== 'string' || revokedTokens.has(token)) return null;
+    const existing = sessions.get(token);
+    if (existing) {
+      const actor = db.users.find(u => u.id === existing.userId);
+      if (!actor || existing.expires <= Date.now() || (actor.pinHash || actor.pin) !== existing.credential) {
+        sessions.delete(token);
+        return null;
+      }
+      return existing;
+    }
+    const parts = token.split('.');
+    if (parts.length !== 2) return null;
+    const [payload, sig] = parts;
+    let parsed;
+    try {
+      parsed = JSON.parse(Buffer.from(payload, 'base64url').toString('utf8'));
+    } catch {
+      return null;
+    }
+    if (!parsed || typeof parsed.u !== 'string' || !Number.isFinite(parsed.e) || parsed.e <= Date.now()) return null;
+    const actor = db.users.find(u => u.id === parsed.u);
+    if (!actor) return null;
+    const credential = actor.pinHash || actor.pin;
+    if (!credential) return null;
+    const expectedSig = createHmac('sha256', `${sessionSecret}:${credential}`).update(payload).digest('base64url');
+    const a = Buffer.from(sig);
+    const b = Buffer.from(expectedSig);
+    if (a.length !== b.length || !timingSafeEqual(a, b)) return null;
+    const restored = { userId: actor.id, expires: parsed.e, credential };
+    sessions.set(token, restored);
+    return restored;
+  }
   function issueSession(user, db) {
-    const token = randomBytes(32).toString('hex');
-    const s = { userId: user.id, expires: Date.now() + sessionTtlMs, credential: user.pinHash || user.pin };
+    const expires = Date.now() + sessionTtlMs;
+    const credential = user.pinHash || user.pin;
+    const token = signSessionToken(user.id, expires, credential);
+    const s = { userId: user.id, expires, credential };
     afterCommit(() => sessions.set(token, s));
     return { token, ...sessionResult(s, db) };
   }
@@ -170,10 +212,10 @@ export function createApp({ dataDir, defaults = DEFAULT_DATABASE, sessionTtlMs =
   });
   app.post('/api/register', (req, res) => {
     rateLimit(req);
-    if (sessions.has(req.headers.authorization?.replace(/^Bearer /, ''))) fail(409, 'มีบัญชีเข้าสู่ระบบอยู่แล้ว กรุณาออกจากระบบก่อนสมัครบัญชีใหม่');
+    const db = read();
+    if (resolveSession(req.headers.authorization?.replace(/^Bearer /, ''), db)) fail(409, 'มีบัญชีเข้าสู่ระบบอยู่แล้ว กรุณาออกจากระบบก่อนสมัครบัญชีใหม่');
     const { code, name, alias, emailOrId, pin, avatar } = req.body || {};
     if (!clean(name) || !clean(emailOrId) || !/^[\p{L}\p{N}_.@+\-]{3,120}$/u.test(clean(emailOrId)) || typeof pin !== 'string' || pin.length < 1 || pin.length > 4096) fail(400, 'กรุณาระบุชื่อ ไอดี และรหัสผ่าน');
-    const db = read();
     const invite = db.invites.find(i => i.code === clean(code).toUpperCase());
     if (!invite || invite.isUsed || !ROLES.includes(invite.role)) fail(400, 'รหัสคำเชิญไม่ถูกต้องหรือถูกใช้แล้ว');
     const key = clean(emailOrId).toLowerCase();
@@ -187,10 +229,10 @@ export function createApp({ dataDir, defaults = DEFAULT_DATABASE, sessionTtlMs =
   });
   app.use('/api', (req, res, next) => {
     const token = req.headers.authorization?.replace(/^Bearer /, '');
-    const s = sessions.get(token);
     const db = read();
+    const s = resolveSession(token, db);
     const actor = s && db.users.find(u => u.id === s.userId);
-    if (!s || s.expires <= Date.now() || !actor || (actor.pinHash || actor.pin) !== s.credential) { sessions.delete(token); return res.status(401).json({ error: 'เซสชันหมดอายุ กรุณาเข้าสู่ระบบใหม่' }); }
+    if (!s || !actor) { sessions.delete(token); return res.status(401).json({ error: 'เซสชันหมดอายุ กรุณาเข้าสู่ระบบใหม่' }); }
     if (s.simulatedId && actor.id !== 'user-ice') return res.status(403).json({ error: 'ไม่มีสิทธิ์จำลองบัญชี' });
     const user = db.users.find(u => u.id === (s.simulatedId || s.userId));
     if (!user) return res.status(401).json({ error: 'ไม่พบบัญชีผู้ใช้' });
@@ -200,7 +242,7 @@ export function createApp({ dataDir, defaults = DEFAULT_DATABASE, sessionTtlMs =
   app.use('/api', express.json({ limit: '75mb' }));
   registerProductRoutes(app, { read, save, requireWriter });
   app.get('/api/session', (req, res) => res.json(sessionResult(req.session, read())));
-  app.post('/api/logout', (req, res) => { sessions.delete(req.token); res.json({ success: true }); });
+  app.post('/api/logout', (req, res) => { sessions.delete(req.token); if (req.token) revokedTokens.add(req.token); res.json({ success: true }); });
   app.post('/api/simulate', (req, res) => {
     if (req.session.userId !== 'user-ice') fail(403, 'ไม่สามารถดำเนินการนี้ได้');
     const id = req.body.userId;
