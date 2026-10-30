@@ -69,7 +69,13 @@ export async function requestJson(path: string, init: RequestInit = {}, timeoutM
   if (sessionRequest) headers.set('Authorization', `Bearer ${token}`);
   try {
     const response = await fetch(`${baseUrl}${path}`, { ...init, headers, cache: 'no-store', signal: controller.signal });
-    const data = await response.json();
+    let data: any;
+    try {
+      data = await response.json();
+    } catch (e: any) {
+      if (controller.signal.aborted || init.signal?.aborted) throw e;
+      data = { error: `HTTP ${response.status}` };
+    }
     if (!response.ok) {
       if (response.status === 401 && sessionRequest && token === getSessionToken() && baseUrl === getRenderServerUrl() && !['/api/login', '/api/register'].includes(path)) {
         setSessionToken(null);

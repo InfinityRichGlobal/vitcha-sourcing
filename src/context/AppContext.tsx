@@ -283,7 +283,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     toastTimer.current = setTimeout(() => setActiveToast(null), 4500);
   }
   const refreshCentralData = async (background = false): Promise<boolean> => {
-    if (background && refreshController.current) return false;
+    if (background && refreshController.current && renderStatus === 'connected') return false;
     refreshController.current?.abort();
     const controller = new AbortController(); refreshController.current = controller;
     try {
