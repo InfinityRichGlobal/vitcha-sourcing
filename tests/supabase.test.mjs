@@ -149,7 +149,7 @@ test('simulation stays read-only across servers and failed exit cannot restore o
 
 test('sample pack cannot report success or leave partial records when database commit fails', async t => {
   const f = await fixture(t); const { call, token } = await f.start();
-  const command = { packId: 'vitcha-demo-v1', operationId: 'pack-db-retry' };
+  const command = { packId: 'vitcha-demo-v2', operationId: 'pack-db-retry' };
   f.failWrites(true);
   assert.equal((await call('/api/system/sample-pack', command, token)).status, 503);
   assert.equal((await f.read()).suppliers.length, 0);
@@ -159,6 +159,15 @@ test('sample pack cannot report success or leave partial records when database c
   assert.equal(retry.status, 200);
   assert.equal(Object.values(retry.data.added).reduce((a,b)=>a+b,0), 42);
   const persisted = await f.read();
-  assert.equal(persisted.leadLabItems.length, 8);
-  assert.equal(persisted.franchiseStores.length, 4);
+  assert.equal(persisted.leadLabItems.length, 10);
+  assert.equal(persisted.franchiseStores.length, 2);
+});
+
+test('brand refresh rolls back fully when PostgreSQL fails and retry preserves membership', async t => {
+  const f=await fixture(t);const {call,token}=await f.start();
+  await call('/api/system/samples',{operationId:'legacy-brand-fixture',snapshot:{suppliers:[],drinkStores:[],franchiseStores:['store-ctw','store-sq1','store-one','store-silom'].map(id=>({id,name:id,isMock:true}))}},token);
+  const before=await f.read();const command={confirm:'REPLACE_DEMO_BRANCHES_WITH_TWO_BRANDS',revision:before.revision};
+  f.failWrites(true);assert.equal((await call('/api/system/brand-concept',command,token)).status,503);assert.deepEqual(await f.read(),before);
+  f.failWrites(false);assert.equal((await call('/api/system/brand-concept',command,token)).status,200);
+  const after=await f.read();assert.deepEqual(after.users,before.users);assert.equal(after.franchiseStores.length,2);assert.equal(after.leadLabItems.filter(x=>x.type==='topping').length,2);
 });

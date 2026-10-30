@@ -67,12 +67,12 @@ test.describe('Mobile Balanced Frame & 2-Column Product Cards', () => {
     // Navigate to Franchise Store Simulator
     const storeNavBtn = page
       .getByRole('navigation')
-      .getByRole('button', { name: /ร้านแฟรนไชส์/ })
+      .getByRole('button', { name: /แบรนด์และหน้าร้าน/ })
       .first();
     await storeNavBtn.click();
 
     // Verify Franchise Directory Hub
-    const directoryHeading = page.locator('h1:has-text("เครือข่ายร้านแฟรนไชส์")').first();
+    const directoryHeading = page.locator('h1:has-text("แบรนด์และหน้าร้าน")').first();
     await expect(directoryHeading).toBeVisible({ timeout: 10000 });
 
     if (canSaveArtifacts) {

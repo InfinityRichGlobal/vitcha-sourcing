@@ -584,10 +584,10 @@ test('attachedFiles are preserved on create and edit of suppliers, drink stores,
 
 test('server sample pack persists 42 records, recovers receipts and never duplicates or overwrites', async t => {
   const { call, login } = await setup(t); const token = await login('ice');
-  const command = { packId: 'vitcha-demo-v1', operationId: 'pack-first' };
+  const command = { packId: 'vitcha-demo-v2', operationId: 'pack-first' };
   const first = await call('/api/system/sample-pack', token, command);
   assert.equal(first.status, 200);
-  assert.deepEqual(first.data.added, { suppliers: 10, drinkStores: 10, locations: 10, leadLabItems: 8, franchiseStores: 4 });
+  assert.deepEqual(first.data.added, { suppliers: 10, drinkStores: 10, locations: 10, leadLabItems: 10, franchiseStores: 2 });
   const saved = (await call('/api/data', token, undefined, 'GET')).data;
   for (const [key, ids] of Object.entries(first.data.recordIds)) assert.deepEqual(new Set(saved[key].map(x => x.id)), new Set(ids));
   assert.ok(JSON.stringify(saved).length < 600000, 'photos must not inflate the snapshot into megabytes');
@@ -614,8 +614,8 @@ test('sample pack preserves real lab and franchise records even when IDs collide
   const store = { ...pack.franchiseStores[0], isMockup: false, name: 'Real branch', revision: 9 };
   const defaults = { users: [{ id: 'user-ice', emailOrId: 'ice', name: 'ice', alias: 'ice', role: 'admin', pin: '876543' }], invites: [], suppliers: [], drinkStores: [], notifications: [], leadLabItems: [lab], franchiseStores: [store] };
   const { call, login } = await setup(t, { defaults }); const token = await login('ice');
-  const result = await call('/api/system/sample-pack', token, { packId: 'vitcha-demo-v1', operationId: 'preserve-real' });
-  assert.equal(result.status, 200); assert.equal(result.data.added.leadLabItems, 7); assert.equal(result.data.added.franchiseStores, 3);
+  const result = await call('/api/system/sample-pack', token, { packId: 'vitcha-demo-v2', operationId: 'preserve-real' });
+  assert.equal(result.status, 200); assert.equal(result.data.added.leadLabItems, 9); assert.equal(result.data.added.franchiseStores, 1);
   const data = (await call('/api/data', token, undefined, 'GET')).data;
   assert.deepEqual(data.leadLabItems.find(x=>x.id===lab.id), lab);
   assert.deepEqual(data.franchiseStores.find(x=>x.id===store.id), store);
@@ -625,7 +625,7 @@ test('data endpoint deduplicates repeated profile photos for new clients while r
   const avatar = 'data:image/jpeg;base64,' + 'A'.repeat(70000);
   const defaults = { users: [{id:'user-ice',emailOrId:'ice',name:'ice',alias:'ice',role:'admin',pin:'876543',avatar}], invites:[], suppliers:[],drinkStores:[],notifications:[] };
   const {call,login}=await setup(t,{defaults}); const token=await login('ice');
-  await call('/api/system/sample-pack',token,{packId:'vitcha-demo-v1',operationId:'avatar-pack'});
+  await call('/api/system/sample-pack',token,{packId:'vitcha-demo-v2',operationId:'avatar-pack'});
   const legacy=(await call('/api/data',token,undefined,'GET')).data;
   const wire=(await call('/api/data?media=images-v1',token,undefined,'GET')).data;
   assert.equal(wire.wireFormat,'images-v1');
@@ -633,4 +633,45 @@ test('data endpoint deduplicates repeated profile photos for new clients while r
   assert.ok(JSON.stringify(wire).length < JSON.stringify(legacy).length / 2);
   assert.equal(wire.snapshot.suppliers.length,10);
   assert.equal((await call(`/api/data?media=images-v1&since=${encodeURIComponent(wire.snapshot.version)}`,token,undefined,'GET')).data.unchanged,true);
+});
+
+test('brand migration replaces only four mock branches atomically and preserves all members and unrelated records', async t => {
+  const users=[{id:'user-ice',emailOrId:'ice',name:'ice',alias:'ice',role:'admin',pin:'876543'},{id:'user-view',emailOrId:'view',name:'view',alias:'view',role:'viewer',pin:'876543'}];
+  const retired=['store-ctw','store-sq1','store-one','store-silom'];
+  const defaults={users,invites:[],suppliers:[],drinkStores:[],notifications:[],leadLabItems:[{id:'real-formula',name:'Keep this formula'}],franchiseStores:[...retired.map(id=>({id,name:id,isMock:true})),{id:'real-store',name:'Keep this store'}]};
+  const {call,login}=await setup(t,{defaults});const token=await login('ice');const viewer=await login('view');
+  const before=(await call('/api/backup',token,undefined,'GET')).data;
+  const command={confirm:'REPLACE_DEMO_BRANCHES_WITH_TWO_BRANDS',revision:before.revision||0};
+  assert.equal((await call('/api/system/brand-concept',viewer,command)).status,403);
+  const result=await call('/api/system/brand-concept',token,command);assert.equal(result.status,200);assert.deepEqual(result.data.removed,retired);
+  const after=(await call('/api/backup',token,undefined,'GET')).data;
+  assert.deepEqual(after.users,before.users);assert.deepEqual(after.suppliers,before.suppliers);
+  assert.equal(after.franchiseStores.length,3);assert.equal(after.leadLabItems.length,3);
+  assert.deepEqual(after.franchiseStores.find(x=>x.id==='real-store'),defaults.franchiseStores[4]);
+  assert.equal(after.franchiseStores.filter(x=>x.recordKind==='brand').every(x=>x.branch===''),true);
+  assert.deepEqual((await call('/api/system/brand-concept',token,command)).data,result.data);
+  const pack=await call('/api/system/sample-pack',token,{packId:'vitcha-demo-v1',operationId:'legacy-after-migration'});assert.equal(pack.status,200);
+  assert.equal((await call('/api/system/samples',token,{operationId:'old-client-snapshot',snapshot:{suppliers:[],drinkStores:[],franchiseStores:retired.map(id=>({id,name:id}))}})).status,200);
+  const final=(await call('/api/data',token,undefined,'GET')).data;
+  assert.equal(final.franchiseStores.some(x=>retired.includes(x.id)),false);
+  assert.equal(final.leadLabItems.filter(x=>x.type==='topping').length,2);
+});
+
+test('brand catalog has two test toppings, two branchless brands and valid menu references', async () => {
+  const {sampleCatalog}=await import('../server/sample-pack.js');const data=sampleCatalog();
+  const toppings=data.leadLabItems.filter(x=>x.type==='topping');assert.equal(toppings.length,2);assert.ok(toppings.every(x=>x.status==='testing'));
+  assert.deepEqual(data.franchiseStores.map(x=>x.name),['VITCHA','VITZA']);
+  const ids=new Set(data.leadLabItems.map(x=>x.id));
+  for(const brand of data.franchiseStores){assert.equal(brand.branch,'');assert.equal(brand.recordKind,'brand');assert.ok(fs.existsSync(path.join('public',brand.logoUrl)));assert.ok(brand.menuItems.every(x=>ids.has(x.labItemId)));assert.equal(brand.menuItems.filter(x=>toppings.some(t=>t.id===x.labItemId)).length,2);}
+});
+
+test('brand refresh also works if a user loaded the new pack before migration', async t => {
+  const {call,login}=await setup(t);const token=await login('ice');
+  await call('/api/system/sample-pack',token,{packId:'vitcha-demo-v2',operationId:'new-pack-before-migration'});
+  await call('/api/system/samples',token,{operationId:'legacy-fixture',snapshot:{suppliers:[],drinkStores:[],franchiseStores:['store-ctw','store-sq1','store-one','store-silom'].map(id=>({id,name:id}))}});
+  const before=(await call('/api/backup',token,undefined,'GET')).data;
+  const result=await call('/api/system/brand-concept',token,{confirm:'REPLACE_DEMO_BRANCHES_WITH_TWO_BRANDS',revision:before.revision});
+  assert.equal(result.status,200);assert.equal(result.data.removed.length,4);assert.equal(result.data.addedToppings.length,0);
+  const after=(await call('/api/backup',token,undefined,'GET')).data;
+  assert.equal(after.franchiseStores.length,2);assert.deepEqual(after.leadLabItems,before.leadLabItems);assert.deepEqual(after.users,before.users);
 });

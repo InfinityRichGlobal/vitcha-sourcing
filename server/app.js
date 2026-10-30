@@ -8,7 +8,6 @@ import { randomBytes, randomUUID, createHash, createHmac, scryptSync, timingSafe
 import { createPersistence } from './persistence.js';
 import { DEFAULT_DATABASE } from './defaults.js';
 import { productData, registerProductRoutes } from './products.js';
-import { DEFAULT_LEAD_LAB_ITEMS, DEFAULT_FRANCHISE_STORES } from './seeds.js';
 
 const MOCK_ROLES = { 'user-beam': 'reviewer', 'user-ann': 'viewer', 'user-mook': 'admin' };
 const MOCK_IDS = new Set(Object.keys(MOCK_ROLES));
@@ -859,7 +858,7 @@ export function createApp({ dataDir, defaults = DEFAULT_DATABASE, sessionTtlMs =
       };
       list.push(saved);
     }
-    notify(db, req.user, 'franchise_store', idx >= 0 ? 'อัปเดตร้านแฟรนไชส์' : 'เปิดร้านแฟรนไชส์ใหม่', saved.name, saved.id);
+    notify(db, req.user, 'franchise_store', idx >= 0 ? 'อัปเดตแบรนด์และหน้าร้าน' : 'เพิ่มแบรนด์และหน้าร้าน', saved.name, saved.id);
     save(db);
     res.json({ success: true, store: saved });
   });
@@ -921,12 +920,15 @@ export function createApp({ dataDir, defaults = DEFAULT_DATABASE, sessionTtlMs =
     requireFounder(req); const db = read();
     const operationId = clean(req.body.operationId);
     if (!operationId || operationId.length > 150) fail(400, 'Missing or invalid operation ID');
-    if (serverPack && req.body.packId !== SAMPLE_PACK_ID) fail(400, 'ไม่พบชุดข้อมูลตัวอย่างนี้');
+    if (serverPack && ![SAMPLE_PACK_ID, 'vitcha-demo-v1'].includes(req.body.packId)) fail(400, 'ไม่พบชุดข้อมูลตัวอย่างนี้');
     const previous = (db.sampleReceipts || []).find(entry => entry.operationId === operationId);
     if (previous) return res.json(previous.result);
     if (!serverPack && (db.sampleOperations || []).includes(operationId)) return res.json({ success: true });
     const snapshot = serverPack ? sampleCatalog() : req.body.snapshot;
     if (!snapshot || typeof snapshot !== 'object') fail(400, 'ข้อมูลตัวอย่างไม่ถูกต้อง');
+    if (!serverPack && db.brandConceptMigration?.version === 'two-brands-v1' && Array.isArray(snapshot.franchiseStores)) {
+      snapshot.franchiseStores = snapshot.franchiseStores.filter(item => !['store-ctw', 'store-sq1', 'store-one', 'store-silom'].includes(item?.id));
+    }
     if (req.body.revision !== undefined && req.body.revision !== null && !Number.isInteger(req.body.revision)) fail(400, 'Invalid revision');
     const result = mergeSamples(db, snapshot, { validateRecord, actor: req.user, packId: serverPack ? SAMPLE_PACK_ID : null });
     // Ignore client membership, workspace and notifications: samples only add records.
@@ -934,6 +936,30 @@ export function createApp({ dataDir, defaults = DEFAULT_DATABASE, sessionTtlMs =
     db.sampleReceipts = [...(db.sampleReceipts || []), { operationId, result }].slice(-100);
     save(db); res.json(result);
   };
+  app.post('/api/system/brand-concept', (req, res) => {
+    requireFounder(req);
+    if (req.body.confirm !== 'REPLACE_DEMO_BRANCHES_WITH_TWO_BRANDS') fail(400, 'กรุณายืนยันการเปลี่ยนชุดแบรนด์');
+    const db = read();
+    if (db.brandConceptMigration?.version === 'two-brands-v1') return res.json(db.brandConceptMigration.result);
+    expectRevision(db, req.body.revision);
+    const retired = new Set(['store-ctw', 'store-sq1', 'store-one', 'store-silom']);
+    const old = (db.franchiseStores || []).filter(item => retired.has(item.id));
+    if (old.some(item => !item.isMock && !item.isMockup)) fail(409, 'พบรายการจริงที่ใช้รหัสเดิม กรุณาตรวจสอบก่อนเปลี่ยน');
+    const catalog = sampleCatalog();
+    const toppings = catalog.leadLabItems.filter(item => ['lab-topping-yuzu', 'lab-topping-konjac'].includes(item.id));
+    const brands = catalog.franchiseStores;
+    for (const [key, additions] of [['leadLabItems', toppings], ['franchiseStores', brands]]) {
+      if (additions.some(item => (db[key] || []).some(existing => existing.id === item.id && !existing.isMock && !existing.isMockup))) fail(409, 'มีรายการจริงใช้รหัสรายการใหม่ กรุณาตรวจสอบก่อนเปลี่ยน');
+    }
+    const prepare = item => ({ ...item, isMockup: true, samplePackId: SAMPLE_PACK_ID, revision: 1, updatedAt: now() });
+    const missingToppings = toppings.filter(item => !(db.leadLabItems || []).some(existing => existing.id === item.id));
+    const missingBrands = brands.filter(item => !(db.franchiseStores || []).some(existing => existing.id === item.id));
+    db.leadLabItems = [...(db.leadLabItems || []), ...missingToppings.map(prepare)];
+    db.franchiseStores = [...(db.franchiseStores || []).filter(item => !retired.has(item.id)), ...missingBrands.map(prepare)];
+    const result = { success: true, removed: old.map(item => item.id), addedToppings: missingToppings.map(item => item.id), addedBrands: missingBrands.map(item => item.id) };
+    db.brandConceptMigration = { version: 'two-brands-v1', appliedAt: now(), result };
+    save(db); res.json(result);
+  });
   app.post('/api/system/sample-pack', (req, res) => loadSamples(req, res, true));
   app.post('/api/system/samples', (req, res) => loadSamples(req, res, false));
   app.post('/api/system/clear', (req, res) => {

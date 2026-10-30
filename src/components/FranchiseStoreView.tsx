@@ -384,30 +384,34 @@ export function FranchiseStoreView({
   if (!selectedStoreId || !activeStore) {
     return (
       <div className="max-w-6xl mx-auto px-3 sm:px-5 py-3.5 space-y-4 sm:space-y-6 pb-24 animate-in fade-in">
+        {franchiseStores.some(store => store.sharedConcept === 'VITCHA × VITZA') && <figure className="overflow-hidden rounded-3xl border border-orange-100 bg-white">
+          <img src="./brand-mockups/shared-storefront.jpg" alt="หน้าร้านร่วม VITCHA และ VITZA หนึ่งเคาน์เตอร์สองแบรนด์ — ภาพจำลอง" className="w-full aspect-[3/2] sm:aspect-[2.4/1] object-cover" />
+          <figcaption className="px-4 py-3 text-xs text-slate-600">ภาพคอนเซ็ปต์จำลอง · เคาน์เตอร์เดียว สองแบรนด์ · ไม่มีสาขา</figcaption>
+        </figure>}
         {/* Top Hero Banner */}
         <div className="relative overflow-hidden rounded-2xl sm:rounded-3xl bg-gradient-to-br from-slate-950 via-slate-900 to-emerald-950 text-white p-5 sm:p-7 md:p-8 shadow-xl border border-slate-800">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div className="space-y-2">
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-emerald-500/20 text-emerald-300 border border-emerald-400/30">
                 <Store className="w-3.5 h-3.5" />
-                <span>FRANCHISE DIRECTORY & MANAGEMENT HUB</span>
+                <span>TWO BRANDS · ONE CONCEPT</span>
               </div>
-              <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight flex items-center gap-3">
-                <span>เครือข่ายร้านแฟรนไชส์</span>
+              <h1 className="text-xl sm:text-3xl font-black text-white tracking-tight flex flex-col sm:flex-row items-start sm:items-center gap-2">
+                <span>แบรนด์และหน้าร้าน</span>
                 <span className="text-emerald-400 font-bold text-base sm:text-lg">"แล๊ปของคนหัวแถว"</span>
               </h1>
               <p className="text-slate-300 text-xs sm:text-sm max-w-2xl leading-relaxed">
-                ศูนย์กลางบริหารจัดการสาขา ตรวจสอบป้ายเมนูดิจิทัล (Digital Menu Board) 
-                และควบคุมมาตรฐานสูตรชงด่วน Quick SOP สำหรับบาริสต้าหน้าร้าน
+                VITCHA × VITZA — หนึ่งคอนเซ็ปต์ สองแบรนด์ ไม่มีสาขา · ออกแบบเมนูบอร์ด
+                และทดลองสูตรร่วมกัน ภาพหน้าร้านและรายละเอียดเป็น Mockup
               </p>
               <div className="flex flex-wrap items-center gap-4 text-xs text-slate-400 pt-2">
                 <span className="flex items-center gap-1.5 font-bold text-slate-200">
                   <Store className="w-4 h-4 text-emerald-400" />
-                  <span>{totalStores} สาขาในเครือ</span>
+                  <span>{totalStores} แบรนด์</span>
                 </span>
                 <span className="flex items-center gap-1.5 font-bold text-slate-200">
                   <Coffee className="w-4 h-4 text-indigo-400" />
-                  <span>{totalActiveMenus} เมนูพร้อมจำหน่ายรวม</span>
+                  <span>{totalActiveMenus} เมนูบนบอร์ด</span>
                 </span>
               </div>
             </div>
@@ -422,7 +426,7 @@ export function FranchiseStoreView({
                 className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs sm:text-sm shadow-lg shadow-emerald-900/40 transition-all scale-100 hover:scale-105 active:scale-95"
               >
                 <Plus className="w-4 h-4" />
-                <span>เพิ่มร้านแฟรนไชส์ใหม่</span>
+                <span>เพิ่มแบรนด์ / หน้าร้าน</span>
               </button>
             </div>
           </div>
@@ -433,7 +437,7 @@ export function FranchiseStoreView({
           <div className="flex items-center justify-between pb-3">
             <h2 className="text-sm sm:text-base font-extrabold text-slate-800 dark:text-white flex items-center gap-2">
               <Layers className="w-4 h-4 text-emerald-600" />
-              <span>รายชื่อร้านค้าและสาขาทั้งหมด ({franchiseStores.length} ร้าน)</span>
+              <span>แบรนด์ทั้งหมด ({franchiseStores.length} แบรนด์)</span>
             </h2>
           </div>
 
@@ -471,16 +475,16 @@ export function FranchiseStoreView({
                         className="w-full h-auto object-contain block group-hover:scale-102 transition-transform duration-300"
                         loading="lazy"
                       />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent pointer-events-none" />
+                      {store.recordKind !== 'brand' && <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent pointer-events-none" />}
 
                       {/* Top Badges */}
                       <div className="absolute top-2 left-2 flex items-center gap-1 z-10 flex-wrap max-w-[75%]">
                         <span className="px-1.5 py-0.5 rounded-md text-[9px] font-bold bg-emerald-500/90 text-white shadow-xs backdrop-blur-sm flex items-center gap-0.5">
                           <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
-                          <span className="hidden xs:inline">เปิดบริการ</span>
+                          <span>{store.isMock ? 'Mockup' : 'หน้าร้าน'}</span>
                         </span>
                         <span className={`px-1.5 py-0.5 rounded-md text-[9px] font-bold backdrop-blur-sm shadow-xs ${theme.badge} truncate max-w-[85px]`}>
-                          {store.branch.includes('Flagship') ? '⭐ Flagship' : '📍 ' + store.branch.split('(')[0].trim()}
+                          {store.recordKind === 'brand' ? 'ไม่มีสาขา' : store.branch || 'หน้าร้านจำลอง'}
                         </span>
                       </div>
 
@@ -502,12 +506,12 @@ export function FranchiseStoreView({
                       </button>
 
                       {/* Brand Title Overlay */}
-                      <div className="absolute bottom-2 left-2 right-2 text-white z-10">
+                      <div className={`absolute bottom-2 left-2 right-2 z-10 ${store.recordKind === 'brand' ? 'text-slate-900' : 'text-white'}`}>
                         <h3 className="text-sm sm:text-base font-black tracking-tight leading-tight flex items-center gap-1.5 drop-shadow-md truncate">
                           <span>{store.name}</span>
                         </h3>
                         {store.brandTagline && (
-                          <p className="text-[10px] sm:text-xs text-slate-200 truncate mt-0.5 italic drop-shadow-sm">
+                          <p className={`text-[10px] sm:text-xs truncate mt-0.5 italic ${store.recordKind === 'brand' ? 'text-slate-600' : 'text-slate-200 drop-shadow-sm'}`}>
                             "{store.brandTagline}"
                           </p>
                         )}
@@ -520,7 +524,7 @@ export function FranchiseStoreView({
                       <div className="space-y-0.5">
                         <div className="font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1 text-[11px] sm:text-xs truncate">
                           <MapPin className="w-3 h-3 text-rose-500 shrink-0" />
-                          <span className="truncate">{store.branch}</span>
+                          <span className="truncate">{store.recordKind === 'brand' ? store.sharedConcept : store.branch}</span>
                         </div>
                         {store.openingHours && (
                           <div className="flex items-center gap-1 text-[10px] text-slate-400 truncate">
@@ -665,7 +669,7 @@ export function FranchiseStoreView({
           className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-800 dark:text-white font-extrabold text-xs transition-colors shadow-xs"
         >
           <ArrowLeft className="w-4 h-4" />
-          <span>หน้ารวมร้านแฟรนไชส์</span>
+          <span>หน้ารวมแบรนด์</span>
         </button>
 
         {/* Store Switcher Pills */}
@@ -724,13 +728,14 @@ export function FranchiseStoreView({
       <div className={`relative overflow-hidden rounded-2xl sm:rounded-3xl bg-gradient-to-br ${theme.bg} text-white p-4 sm:p-6 md:p-8 shadow-xl border print:hidden`}>
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="space-y-2 max-w-2xl">
+            {activeStore.logoUrl && <img src={activeStore.logoUrl} alt={activeStore.name} className="h-24 w-24 rounded-2xl bg-white object-contain" />}
             <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wider border ${theme.pill}`}>
               <Store className="w-3.5 h-3.5" />
-              <span>สาขาแฟรนไชส์จำลอง · เมนูบอร์ดพร้อมจำหน่าย</span>
+              <span>แบรนด์จำลอง · เมนูบอร์ดสำหรับทดลอง</span>
             </div>
             <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight flex items-center gap-3">
               <span>{activeStore.name}</span>
-              <span className={`text-base font-normal ${theme.accent}`}>({activeStore.branch})</span>
+              {activeStore.branch && <span className={`text-base font-normal ${theme.accent}`}>({activeStore.branch})</span>}
             </h1>
             <p className="text-slate-300 text-sm italic">
               "{activeStore.brandTagline}"
@@ -868,6 +873,15 @@ export function FranchiseStoreView({
         )}
       </div>
 
+      {activeStore.conceptDescription && <section className="rounded-2xl border border-slate-200 bg-white p-4 text-sm leading-relaxed text-slate-700">
+        <h2 className="mb-2 font-bold text-slate-950">{activeStore.sharedConcept} · หนึ่งคอนเซ็ปต์ สองแบรนด์</h2>
+        <p>{activeStore.conceptDescription}</p>
+      </section>}
+      {!!activeStore.conceptMenu?.length && <section className="rounded-2xl border border-emerald-200 bg-emerald-50/50 p-4">
+        <h2 className="font-bold text-emerald-950">เมนูโซดาคอนเซ็ปต์ · รอทดลองสูตร</h2>
+        <p className="mt-1 text-xs text-emerald-800">ราคาและรายละเอียดเป็น Mockup ยังไม่มีสูตรอนุมัติหรือ SOP</p>
+        <div className="mt-3 grid gap-3 sm:grid-cols-3">{activeStore.conceptMenu.map(menu => <article key={menu.name} className="rounded-xl border border-emerald-100 bg-white p-3"><h3 className="font-bold">{menu.name}</h3><p className="my-2 text-xs text-slate-600">{menu.description}</p><span className="font-bold text-emerald-700">฿{menu.priceThb} · ราคาจำลอง</span></article>)}</div>
+      </section>}
       {/* 📸 STORE MULTIMEDIA (แกลเลอรีภาพสาขา · เสียงบรรยาย · วิดีโอ) */}
       {((activeStore.galleryPhotos && activeStore.galleryPhotos.length > 0) ||
         (activeStore.audioNotes && activeStore.audioNotes.length > 0) ||
@@ -876,13 +890,13 @@ export function FranchiseStoreView({
           <div className="flex items-center gap-2">
             <ImageIcon className="w-4 h-4 text-emerald-600" />
             <span className="text-xs sm:text-sm font-extrabold text-slate-800 dark:text-white">
-              มัลติมีเดียและบรรยากาศสาขา (Store Atmosphere & Media)
+              มัลติมีเดียและบรรยากาศหน้าร้าน (Store Atmosphere & Media)
             </span>
           </div>
 
           {activeStore.galleryPhotos && activeStore.galleryPhotos.length > 0 && (
             <div className="space-y-1.5">
-              <span className="text-[11px] font-bold text-slate-400">รูปภาพสาขา ({activeStore.galleryPhotos.length})</span>
+              <span className="text-[11px] font-bold text-slate-400">ภาพหน้าร้านจำลอง ({activeStore.galleryPhotos.length})</span>
               <div className="flex gap-2.5 overflow-x-auto pb-1">
                 {activeStore.galleryPhotos.map((photo, pIdx) => (
                   <a
@@ -901,13 +915,13 @@ export function FranchiseStoreView({
 
           {activeStore.audioNotes && activeStore.audioNotes.length > 0 && (
             <div className="space-y-1.5">
-              <span className="text-[11px] font-bold text-slate-400">เสียงบรรยายสาขา ({activeStore.audioNotes.length})</span>
+              <span className="text-[11px] font-bold text-slate-400">เสียงบรรยายหน้าร้าน ({activeStore.audioNotes.length})</span>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 {activeStore.audioNotes.map((note) => (
                   <div key={note.id} className="p-2.5 rounded-xl bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-100 dark:border-emerald-900/40 flex items-center gap-2.5">
                     <Volume2 className="w-4 h-4 text-emerald-600 shrink-0" />
                     <div className="flex-1 min-w-0">
-                      <div className="text-xs font-bold text-emerald-900 dark:text-emerald-300 truncate">{note.title || 'เสียงบรรยายสาขา'}</div>
+                      <div className="text-xs font-bold text-emerald-900 dark:text-emerald-300 truncate">{note.title || 'เสียงบรรยายหน้าร้าน'}</div>
                       {note.url && <audio controls src={note.url} className="w-full h-7 mt-1" />}
                     </div>
                   </div>
@@ -925,7 +939,7 @@ export function FranchiseStoreView({
                     key={vIdx}
                     src={vid}
                     className="rounded-xl border border-slate-200 dark:border-slate-700 shadow-xs h-40"
-                    badgeLabel={`คลิปสาขา #${vIdx + 1}`}
+                    badgeLabel={`คลิปหน้าร้าน #${vIdx + 1}`}
                   />
                 ))}
               </div>
@@ -954,13 +968,13 @@ export function FranchiseStoreView({
               <Droplet className="w-3.5 h-3.5 text-indigo-500" /> หวาน 0% / 50% / 100%
             </span>
             <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-700">
-              <CheckCircle2 className="w-3.5 h-3.5" /> ผ่านการเคาะสูตร R&D
+              <CheckCircle2 className="w-3.5 h-3.5" /> {enrichedMenuItems.length > 0 && enrichedMenuItems.every(({ labItem }) => labItem.status === 'approved') ? 'สูตรที่อนุมัติแล้ว' : 'มีสูตรกำลังทดลอง · Mockup'}
             </span>
           </div>
         </div>
 
         {/* 🥤 DRINKS SECTION */}
-        <div className="space-y-3.5">
+        {drinksList.length > 0 && <div className="space-y-3.5">
           <div className="flex items-center gap-2 text-xs sm:text-sm font-extrabold text-slate-800 dark:text-white uppercase tracking-wider">
             <Coffee className="w-4 h-4 text-indigo-600" />
             <span>รายการเครื่องดื่ม (Handcrafted Beverages)</span>
@@ -1032,7 +1046,7 @@ export function FranchiseStoreView({
               );
             })}
           </div>
-        </div>
+        </div>}
 
         {/* 🍮 TOPPINGS SECTION */}
         {toppingsList.length > 0 && (
@@ -1057,7 +1071,7 @@ export function FranchiseStoreView({
                       className="w-10 h-10 rounded-xl object-cover shrink-0 border border-amber-300 dark:border-amber-700"
                     />
                     <div className="min-w-0">
-                      <h4 className="font-extrabold text-xs text-slate-900 dark:text-white truncate">
+                      <h4 className="font-extrabold text-xs text-slate-900 dark:text-white line-clamp-2">
                         {menuItem.customName || labItem.name}
                       </h4>
                       <div className="font-mono font-bold text-xs text-amber-600 dark:text-amber-400">
@@ -1078,7 +1092,7 @@ export function FranchiseStoreView({
           <div>
             <h3 className="text-sm sm:text-base font-extrabold text-slate-800 dark:text-white flex items-center gap-2">
               <MessageSquare className="w-4 h-4 text-emerald-600" />
-              <span>สมุดโต้ตอบ & ข้อเสนอแนะประจำสาขา {activeStore.name}</span>
+              <span>สมุดโต้ตอบ & ข้อเสนอแนะของแบรนด์ {activeStore.name}</span>
             </h3>
             <p className="text-xs text-slate-400 mt-0.5">
               แลกเปลี่ยนความคิดเห็นเรื่องยอดขายหน้าร้าน ผลตอบรับจากลูกค้า และความเห็นเรื่องรสชาติ
@@ -1495,7 +1509,9 @@ function StoreFormModal({
     await onSave({
       id: store?.id || `store-${crypto.randomUUID()}`,
       name: name.trim(),
-      branch: branch.trim() || 'สาขาหลัก',
+      branch: store?.recordKind === 'brand' ? '' : branch.trim(),
+      recordKind: store?.recordKind, sharedConcept: store?.sharedConcept,
+      conceptDescription: store?.conceptDescription, conceptMenu: store?.conceptMenu,
       brandTagline: brandTagline.trim(),
       logoUrl: logoUrl.trim(),
       galleryPhotos,
@@ -1533,7 +1549,7 @@ function StoreFormModal({
           <div className="flex items-center gap-2">
             <Store className="w-5 h-5 text-emerald-600" />
             <h3 className="font-extrabold text-base sm:text-lg text-slate-800 dark:text-white">
-              {store ? `แก้ไขข้อมูลร้าน ${store.name}` : 'เพิ่มร้านแฟรนไชส์ใหม่ 🏪'}
+              {store ? `แก้ไขข้อมูลร้าน ${store.name}` : 'เพิ่มแบรนด์ / หน้าร้าน 🏪'}
             </h3>
           </div>
           <button type="button" onClick={onClose} className="text-slate-400 hover:text-slate-600">
@@ -1717,12 +1733,12 @@ function StoreFormModal({
           {/* 5. Additional Optional Fields (Branch, Tagline, Hours, Phone) */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1">สาขา</label>
+              <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1">ชื่อพื้นที่ (เว้นว่างเมื่อไม่มีสาขา)</label>
               <input
                 type="text"
                 value={branch}
                 onChange={(e) => setBranch(e.target.value)}
-                placeholder="เช่น สาขา Siam Square One"
+                placeholder="ไม่ระบุ หากเป็นแบรนด์ที่ไม่มีสาขา"
                 className="w-full p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800"
               />
             </div>
@@ -1750,7 +1766,7 @@ function StoreFormModal({
               />
             </div>
             <div>
-              <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1">เบอร์ติดต่อสาขา</label>
+              <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1">เบอร์ติดต่อ</label>
               <input
                 type="text"
                 value={contactNumber}
@@ -1784,7 +1800,7 @@ function StoreFormModal({
             {/* Gallery Thumbnails */}
             {galleryPhotos.length > 0 && (
               <div className="space-y-1">
-                <span className="text-[10px] font-bold text-slate-400">รูปภาพสาขา ({galleryPhotos.length} รูป)</span>
+                <span className="text-[10px] font-bold text-slate-400">ภาพหน้าร้านจำลอง ({galleryPhotos.length} รูป)</span>
                 <div className="flex gap-2 overflow-x-auto pb-1">
                   {galleryPhotos.map((photo, pIdx) => (
                     <div key={pIdx} className="relative w-14 h-14 rounded-lg overflow-hidden shrink-0 border border-slate-200 dark:border-slate-700 shadow-xs group">
@@ -1807,7 +1823,7 @@ function StoreFormModal({
             <div className="pt-2 border-t border-emerald-100 dark:border-emerald-900/50 space-y-1.5">
               <span className="font-bold text-slate-700 dark:text-slate-300 block flex items-center gap-1.5 text-[11px]">
                 <Mic className="w-3.5 h-3.5 text-emerald-600" />
-                <span>วอยซ์เสียงบรรยายสาขา (อัดเสียงสด / บันทึกได้หลายคลิป)</span>
+                <span>วอยซ์เสียงบรรยายหน้าร้าน (อัดเสียงสด / บันทึกได้หลายคลิป)</span>
               </span>
               <AudioRecorder
                 voiceNotes={voiceNotes}
@@ -1852,7 +1868,7 @@ function StoreFormModal({
                       <VideoPlayer
                         src={vid}
                         className="rounded-xl border border-slate-200 dark:border-slate-700 shadow-xs h-36"
-                        badgeLabel={`คลิปสาขา #${vIdx + 1}`}
+                        badgeLabel={`คลิปหน้าร้าน #${vIdx + 1}`}
                       />
                       <button
                         type="button"
@@ -1882,7 +1898,7 @@ function StoreFormModal({
               disabled={isSubmitting}
               className="px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold shadow-md shadow-emerald-600/20"
             >
-              {isSubmitting ? 'กำลังบันทึก...' : store ? 'บันทึกการแก้ไข' : 'สร้างร้านแฟรนไชส์'}
+              {isSubmitting ? 'กำลังบันทึก...' : store ? 'บันทึกการแก้ไข' : 'สร้างแบรนด์ / หน้าร้าน'}
             </button>
           </div>
         </form>
@@ -2672,7 +2688,7 @@ function QuickSopModal({
         {/* Sticky Action Footer */}
         <div className="shrink-0 pt-3 pb-[calc(env(safe-area-inset-bottom,0px)+0.75rem)] px-3.5 sm:px-4 sm:pb-4 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/90 flex items-center justify-between gap-2">
           <div className="text-[11px] text-slate-500 dark:text-slate-400 font-medium truncate">
-            🥤 เมนูประจำสาขา: <span className="font-bold text-slate-700 dark:text-slate-200">{menuItem.category}</span>
+            🥤 หมวดเมนู: <span className="font-bold text-slate-700 dark:text-slate-200">{menuItem.category}</span>
           </div>
 
           <button

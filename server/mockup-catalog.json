@@ -1,5 +1,5 @@
 {
-  "id": "vitcha-demo-v1",
+  "id": "vitcha-demo-v2",
   "collections": {
     "suppliers": [
       {
@@ -6131,456 +6131,369 @@
         "createdAt": "2026-10-27T19:00:00Z",
         "updatedAt": "2026-10-28T11:00:00Z",
         "isMock": true
+      },
+      {
+        "id": "lab-topping-yuzu",
+        "type": "topping",
+        "code": "TOP-YUZU-01",
+        "name": "วุ้นยูซุใส",
+        "nameEn": "Yuzu Crystal Jelly",
+        "category": "ท็อปปิ้งร่วม VITCHA × VITZA",
+        "status": "testing",
+        "photoUrl": "./brand-mockups/yuzu-jelly.jpg",
+        "description": "วุ้นใสหอมยูซุ เนื้อสัมผัสนุ่มเด้ง เหมาะกับชาผลไม้และโซดาของทั้งสองแบรนด์ ข้อมูลสูตร ต้นทุน และโภชนาการเป็นค่าจำลองสำหรับออกแบบเมนู ยังไม่ใช่ผลทดสอบหรือ SOP ที่อนุมัติ",
+        "sweetnessLevels": {
+          "zero": {
+            "level": "0",
+            "label": "ตัวอย่างระดับหวาน 0%",
+            "syrupMl": 0,
+            "sweetenerType": "ไซรัปสำหรับทดสอบ (ค่าจำลอง)",
+            "baseLiquidMl": 0,
+            "milkOrMixerMl": 0,
+            "brix": 0,
+            "caloriesKcal": 20,
+            "tasteNotes": "เสิร์ฟตัวอย่าง 30 กรัม; ต้องวัด Brix และโภชนาการจริงก่อนใช้งาน"
+          },
+          "half": {
+            "level": "50",
+            "label": "ตัวอย่างระดับหวาน 50%",
+            "syrupMl": 3,
+            "sweetenerType": "ไซรัปสำหรับทดสอบ (ค่าจำลอง)",
+            "baseLiquidMl": 0,
+            "milkOrMixerMl": 0,
+            "brix": 0,
+            "caloriesKcal": 28,
+            "tasteNotes": "เสิร์ฟตัวอย่าง 30 กรัม; ต้องวัด Brix และโภชนาการจริงก่อนใช้งาน"
+          },
+          "full": {
+            "level": "100",
+            "label": "ตัวอย่างระดับหวาน 100%",
+            "syrupMl": 6,
+            "sweetenerType": "ไซรัปสำหรับทดสอบ (ค่าจำลอง)",
+            "baseLiquidMl": 0,
+            "milkOrMixerMl": 0,
+            "brix": 0,
+            "caloriesKcal": 36,
+            "tasteNotes": "เสิร์ฟตัวอย่าง 30 กรัม; ต้องวัด Brix และโภชนาการจริงก่อนใช้งาน"
+          }
+        },
+        "technicalSpecs": {},
+        "ingredients": [
+          {
+            "name": "วุ้นใสหั่นเต๋า (วัตถุดิบทดลอง)",
+            "quantity": 27,
+            "unit": "g",
+            "costThb": 3
+          },
+          {
+            "name": "ซอสยูซุ (วัตถุดิบทดลอง)",
+            "quantity": 3,
+            "unit": "g",
+            "costThb": 1.5
+          }
+        ],
+        "costIngredientThb": 4.5,
+        "costPackagingThb": 0,
+        "costTotalThb": 4.5,
+        "suggestedPriceThb": 15,
+        "likedBy": [],
+        "revisionCycles": [
+          {
+            "cycleNumber": 1,
+            "title": "Mockup: ทดลองเนื้อสัมผัสและจับคู่เมนูสองแบรนด์",
+            "status": "active",
+            "createdAt": "2026-10-30T14:00:00.000Z",
+            "createdBy": "ทีมออกแบบ Mockup",
+            "comments": []
+          }
+        ],
+        "galleryPhotos": [],
+        "videos": [],
+        "viewLogs": [],
+        "createdById": "user-ice",
+        "createdByName": "ทีมออกแบบ Mockup",
+        "createdAt": "2026-10-30T14:00:00.000Z",
+        "updatedAt": "2026-10-30T14:00:00.000Z",
+        "isMock": true,
+        "isMockup": true
+      },
+      {
+        "id": "lab-topping-konjac",
+        "type": "topping",
+        "code": "TOP-KONJAC-01",
+        "name": "บุกไข่มุกน้ำตาลทรายแดง",
+        "nameEn": "Brown Sugar Konjac Pearls",
+        "category": "ท็อปปิ้งร่วม VITCHA × VITZA",
+        "status": "testing",
+        "photoUrl": "./brand-mockups/konjac-pearls.jpg",
+        "description": "บุกไข่มุกสีคาราเมล เคี้ยวหนึบ หอมน้ำตาลทรายแดง จับคู่ชาไทย ชานม และเมนูทดลอง VITZA ข้อมูลสูตร ต้นทุน และโภชนาการเป็นค่าจำลองสำหรับออกแบบเมนู ยังไม่ใช่ผลทดสอบหรือ SOP ที่อนุมัติ",
+        "sweetnessLevels": {
+          "zero": {
+            "level": "0",
+            "label": "ตัวอย่างระดับหวาน 0%",
+            "syrupMl": 0,
+            "sweetenerType": "ไซรัปสำหรับทดสอบ (ค่าจำลอง)",
+            "baseLiquidMl": 0,
+            "milkOrMixerMl": 0,
+            "brix": 0,
+            "caloriesKcal": 20,
+            "tasteNotes": "เสิร์ฟตัวอย่าง 30 กรัม; ต้องวัด Brix และโภชนาการจริงก่อนใช้งาน"
+          },
+          "half": {
+            "level": "50",
+            "label": "ตัวอย่างระดับหวาน 50%",
+            "syrupMl": 3,
+            "sweetenerType": "ไซรัปสำหรับทดสอบ (ค่าจำลอง)",
+            "baseLiquidMl": 0,
+            "milkOrMixerMl": 0,
+            "brix": 0,
+            "caloriesKcal": 28,
+            "tasteNotes": "เสิร์ฟตัวอย่าง 30 กรัม; ต้องวัด Brix และโภชนาการจริงก่อนใช้งาน"
+          },
+          "full": {
+            "level": "100",
+            "label": "ตัวอย่างระดับหวาน 100%",
+            "syrupMl": 6,
+            "sweetenerType": "ไซรัปสำหรับทดสอบ (ค่าจำลอง)",
+            "baseLiquidMl": 0,
+            "milkOrMixerMl": 0,
+            "brix": 0,
+            "caloriesKcal": 36,
+            "tasteNotes": "เสิร์ฟตัวอย่าง 30 กรัม; ต้องวัด Brix และโภชนาการจริงก่อนใช้งาน"
+          }
+        },
+        "technicalSpecs": {},
+        "ingredients": [
+          {
+            "name": "บุกไข่มุกพร้อมทดลอง",
+            "quantity": 27,
+            "unit": "g",
+            "costThb": 3.5
+          },
+          {
+            "name": "ไซรัปน้ำตาลทรายแดง",
+            "quantity": 3,
+            "unit": "g",
+            "costThb": 1
+          }
+        ],
+        "costIngredientThb": 4.5,
+        "costPackagingThb": 0,
+        "costTotalThb": 4.5,
+        "suggestedPriceThb": 15,
+        "likedBy": [],
+        "revisionCycles": [
+          {
+            "cycleNumber": 1,
+            "title": "Mockup: ทดลองเนื้อสัมผัสและจับคู่เมนูสองแบรนด์",
+            "status": "active",
+            "createdAt": "2026-10-30T14:00:00.000Z",
+            "createdBy": "ทีมออกแบบ Mockup",
+            "comments": []
+          }
+        ],
+        "galleryPhotos": [],
+        "videos": [],
+        "viewLogs": [],
+        "createdById": "user-ice",
+        "createdByName": "ทีมออกแบบ Mockup",
+        "createdAt": "2026-10-30T14:00:00.000Z",
+        "updatedAt": "2026-10-30T14:00:00.000Z",
+        "isMock": true,
+        "isMockup": true
       }
     ],
     "franchiseStores": [
       {
-        "id": "store-ctw",
-        "name": "VITCHA Flagship Store - CentralWorld",
-        "brandTagline": "The Art of Modern Tea & Vitamin Craft (ชานมสดและชาพรีเมียมของคนจะเป็นหัวแถว)",
-        "branch": "สาขา 001 - เซ็นทรัลเวิลด์ (ชั้น 1 โซน Beacon ติดทางเชื่อม BTS)",
-        "themeColor": "#059669",
-        "logoUrl": "https://images.unsplash.com/photo-1544787219-7f47ccb76574?w=400&auto=format&fit=crop&q=80",
-        "contactNumber": "02-646-1234",
-        "openingHours": "10:00 - 22:00 น. (เปิดทุกวัน)",
-        "menuCategories": [
-          "ชานมพรีเมียม & ชาสด",
-          "ชาผลไม้สด & คลาวด์ชีส",
-          "วิตามินบาร์ & สุขภาพ",
-          "มัทฉะ & สเปเชียลตี้"
-        ],
-        "likedBy": [
-          "user-ice",
-          "user-1793177529069",
-          "user-074ec1a3-c143-48ef-bf22-0c6afc11d4f8",
-          "user-6ed8144d-a03f-438a-b78e-f4df23a6cadd"
-        ],
-        "viewLogs": [
-          {
-            "userId": "user-ice",
-            "name": "SuperiCez (คุณไอซ์ - ผู้บริหาร & หัวหน้างาน)",
-            "alias": "SuperiCez",
-            "avatar": "./mockup-media/3087d503286d8d2556ee4a80.jpg",
-            "role": "admin",
-            "lastViewedAt": "2026-10-30T09:45:00Z",
-            "viewCount": 32
-          },
-          {
-            "userId": "user-074ec1a3-c143-48ef-bf22-0c6afc11d4f8",
-            "name": "May (R&D สูตรเครื่องดื่ม & ชิมชา)",
-            "alias": "May (R&D)",
-            "avatar": "./mockup-media/14b558d2131392b5d15178cc.jpg",
-            "role": "admin",
-            "lastViewedAt": "2026-10-30T10:12:00Z",
-            "viewCount": 28
-          }
-        ],
+        "recordKind": "brand",
+        "sharedConcept": "VITCHA × VITZA",
+        "branch": "",
+        "contactNumber": "",
+        "openingHours": "คอนเซ็ปต์จำลอง · ยังไม่กำหนดเวลาเปิดบริการ",
+        "likedBy": [],
+        "viewLogs": [],
         "revisionCycles": [
           {
             "cycleNumber": 1,
-            "title": "รอบเปิดตัว Flagship CentralWorld Beacon & ปรับบอร์ดเมนู",
+            "title": "หนึ่งคอนเซ็ปต์ สองแบรนด์ · ออกแบบหน้าร้านร่วม",
             "status": "active",
-            "createdAt": "2026-10-28T10:00:00Z",
-            "createdBy": "May (R&D สูตรเครื่องดื่ม & ชิมชา)",
-            "comments": [
-              {
-                "id": "comm-store-ctw-1",
-                "authorId": "user-074ec1a3-c143-48ef-bf22-0c6afc11d4f8",
-                "authorName": "May (R&D สูตรเครื่องดื่ม & ชิมชา)",
-                "authorAvatar": "./mockup-media/14b558d2131392b5d15178cc.jpg",
-                "createdAt": "2026-10-28T10:30:00Z",
-                "content": "เมย์ผูกหมวดหมู่เมนูหน้าร้าน CentralWorld เข้ากับสูตรที่ผ่านการอนุมัติใน LEAD LAB 4 รายการหลักเรียบร้อยค่ะ ชาไทยพรีเมียม ชาอูหลงพีชขาว ชายูซุวิตามินซี และมัทฉะอุจิ",
-                "sweetnessTarget": "50",
-                "likes": [
-                  "user-ice",
-                  "user-1793177529069"
-                ],
-                "replies": [
-                  {
-                    "id": "rep-store-ctw-1-1",
-                    "authorId": "user-182f08eb-c9a2-447a-b283-053fb05df1e2",
-                    "authorName": "ayai (บูธ คีออส & ร่วมดูแลอุปกรณ์)",
-                    "authorAvatar": "./mockup-media/d87274af5816ade452056ecf.jpg",
-                    "createdAt": "2026-10-28T11:15:00Z",
-                    "content": "บอร์ดเมนูดิจิทัล 3 จอหน้าเคาน์เตอร์ ผมจัดช่องแสดงผลตรงตามหมวดหมู่ที่คุณเมย์ตั้งไว้เลยครับ แสดงค่า Brix และแคลอรีชัดเจน ลูกค้าสั่งง่ายแน่นอนครับ"
-                  },
-                  {
-                    "id": "rep-store-ctw-1-2",
-                    "authorId": "user-d514853d-e30c-4ff2-b5a0-c4949d96588c",
-                    "authorName": "Lek (ผู้จัดการอุปกรณ์เครื่องจักรในร้านทั้งหมด)",
-                    "authorAvatar": "./mockup-media/382ca839f1de185f8be7fd72.jpg",
-                    "createdAt": "2026-10-28T11:45:00Z",
-                    "content": "เครื่องสกัดชา Kingbrew และเครื่องซีลแก้ว Weishida ติดตั้งเทสต์ระบบน้ำและไฟที่บูธเสร็จสมบูรณ์ พร้อมเปิดบริการวันแรกครับ"
-                  }
-                ]
-              },
-              {
-                "id": "comm-store-ctw-2",
-                "authorId": "user-ice",
-                "authorName": "SuperiCez (คุณไอซ์ - ผู้บริหาร & หัวหน้างาน)",
-                "authorAvatar": "./mockup-media/3087d503286d8d2556ee4a80.jpg",
-                "createdAt": "2026-10-28T12:00:00Z",
-                "content": "พร้อมเปิดตัวอย่างเป็นทางการครับ ให้ทีมหน้าร้านเตรียมความพร้อมเต็มอัตรา 10:00 น. วันเปิดห้าง",
-                "sweetnessTarget": "all",
-                "likes": [
-                  "user-074ec1a3-c143-48ef-bf22-0c6afc11d4f8",
-                  "user-1793177529069"
-                ]
-              }
-            ]
+            "createdAt": "2026-10-30T14:00:00.000Z",
+            "createdBy": "ทีมออกแบบ Mockup",
+            "comments": []
           }
+        ],
+        "galleryPhotos": [
+          "./brand-mockups/shared-storefront.jpg"
+        ],
+        "videos": [],
+        "createdById": "user-ice",
+        "createdByName": "ทีมออกแบบ Mockup",
+        "createdAt": "2026-10-30T14:00:00.000Z",
+        "updatedAt": "2026-10-30T14:00:00.000Z",
+        "isMock": true,
+        "isMockup": true,
+        "id": "brand-vitcha",
+        "name": "VITCHA",
+        "brandTagline": "VITAMIN TEA",
+        "themeColor": "amber",
+        "logoUrl": "./brand-mockups/vitcha-logo.png",
+        "conceptDescription": "ชาในโทนส้มอบอุ่น เคาน์เตอร์ผิวงาช้างและไม้โอ๊ก แชร์พื้นที่เตรียมและจุดรับเครื่องดื่มกับ VITZA เป็นหนึ่งคอนเซ็ปต์ภายใต้สองแบรนด์ ไม่มีสาขา ภาพหน้าร้านและราคาเป็น Mockup",
+        "menuCategories": [
+          "ชาซิกเนเจอร์",
+          "ชาผลไม้",
+          "ท็อปปิ้งร่วม"
         ],
         "menuItems": [
           {
-            "id": "smi-ctw-1",
+            "id": "vitcha-menu-0",
             "labItemId": "lab-1",
-            "category": "ชานมพรีเมียม & ชาสด",
+            "category": "ชาซิกเนเจอร์",
             "customName": "ชาไทยพรีเมียมการันตี",
             "retailPriceThb": 55,
-            "badge": "Best Seller",
+            "badge": "Signature",
             "displayOrder": 1,
-            "isAvailable": true
+            "isAvailable": true,
+            "recommendedToppingIds": [
+              "lab-topping-konjac"
+            ]
           },
           {
-            "id": "smi-ctw-2",
+            "id": "vitcha-menu-1",
             "labItemId": "lab-2",
-            "category": "ชานมพรีเมียม & ชาสด",
+            "category": "ชาซิกเนเจอร์",
             "customName": "ชาอูหลงพีชขาวนมสด",
             "retailPriceThb": 65,
             "badge": "Signature",
             "displayOrder": 2,
-            "isAvailable": true
+            "isAvailable": true,
+            "recommendedToppingIds": [
+              "lab-topping-konjac"
+            ]
           },
           {
-            "id": "smi-ctw-3",
+            "id": "vitcha-menu-2",
             "labItemId": "lab-3",
-            "category": "วิตามินบาร์ & สุขภาพ",
+            "category": "ชาผลไม้",
             "customName": "ชาสกัดเย็นส้มยูซุบูสต์วิตามินซี",
             "retailPriceThb": 75,
-            "badge": "Must Try",
+            "badge": "Signature",
             "displayOrder": 3,
-            "isAvailable": true
+            "isAvailable": true,
+            "recommendedToppingIds": [
+              "lab-topping-yuzu"
+            ]
           },
           {
-            "id": "smi-ctw-4",
+            "id": "vitcha-menu-3",
             "labItemId": "lab-4",
-            "category": "มัทฉะ & สเปเชียลตี้",
+            "category": "ชาซิกเนเจอร์",
             "customName": "มัทฉะอุจิเกรดพิธีการชงสด",
             "retailPriceThb": 85,
             "badge": "Signature",
             "displayOrder": 4,
-            "isAvailable": true
-          }
-        ],
-        "videos": [
-          "https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4"
-        ],
-        "createdById": "user-074ec1a3-c143-48ef-bf22-0c6afc11d4f8",
-        "createdByName": "May (R&D สูตรเครื่องดื่ม & ชิมชา)",
-        "createdByAvatar": "./mockup-media/14b558d2131392b5d15178cc.jpg",
-        "createdAt": "2026-10-28T10:00:00Z",
-        "updatedAt": "2026-10-29T16:00:00Z",
-        "isMock": true
-      },
-      {
-        "id": "store-sq1",
-        "name": "VITZA Express Grab & Go - Siam Square One",
-        "brandTagline": "Fast, Fresh & Healthy Street Drink (เครื่องดื่มสตรีทวิตามิน สดชื่น รวดเร็ว ใน 45 วินาที)",
-        "branch": "สาขา 002 - สยามสแควร์วัน (ชั้น 2 ทางเชื่อม BTS สยาม)",
-        "themeColor": "#D97706",
-        "logoUrl": "https://images.unsplash.com/photo-1513558161293-cdaf765ed2fd?w=400&auto=format&fit=crop&q=80",
-        "contactNumber": "02-252-8899",
-        "openingHours": "08:30 - 21:30 น. (เปิดทุกวัน)",
-        "menuCategories": [
-          "ชาสตรีทสดชื่น",
-          "ผลไม้ทุบสด",
-          "วิตามินเร่งด่วน",
-          "ชานมไข่มุก"
-        ],
-        "likedBy": [
-          "user-ice",
-          "user-074ec1a3-c143-48ef-bf22-0c6afc11d4f8",
-          "user-6ed8144d-a03f-438a-b78e-f4df23a6cadd"
-        ],
-        "viewLogs": [
-          {
-            "userId": "user-074ec1a3-c143-48ef-bf22-0c6afc11d4f8",
-            "name": "May (R&D สูตรเครื่องดื่ม & ชิมชา)",
-            "alias": "May (R&D)",
-            "avatar": "./mockup-media/14b558d2131392b5d15178cc.jpg",
-            "role": "admin",
-            "lastViewedAt": "2026-10-30T10:00:00Z",
-            "viewCount": 24
-          }
-        ],
-        "revisionCycles": [
-          {
-            "cycleNumber": 1,
-            "title": "รอบเตรียมเปิดร้าน VITZA Siam Square One บาร์สปีด 45 วินาที",
-            "status": "active",
-            "createdAt": "2026-10-28T11:00:00Z",
-            "createdBy": "May (R&D สูตรเครื่องดื่ม & ชิมชา)",
-            "comments": [
-              {
-                "id": "comm-store-sq1-1",
-                "authorId": "user-074ec1a3-c143-48ef-bf22-0c6afc11d4f8",
-                "authorName": "May (R&D สูตรเครื่องดื่ม & ชิมชา)",
-                "authorAvatar": "./mockup-media/14b558d2131392b5d15178cc.jpg",
-                "createdAt": "2026-10-28T11:20:00Z",
-                "content": "สาขานี้เน้น Speed of Service สตรีทดริงก์แก้วละ 50 บาท ชาไทย และชามะนาวทุบสด ทำเสร็จใน 45 วินาทีค่ะ",
-                "sweetnessTarget": "50",
-                "likes": [
-                  "user-ice"
-                ],
-                "replies": [
-                  {
-                    "id": "rep-store-sq1-1-1",
-                    "authorId": "user-6ed8144d-a03f-438a-b78e-f4df23a6cadd",
-                    "authorName": "Zeen (สำรวจทำเลในไทย)",
-                    "authorAvatar": "./mockup-media/4e9be940e40afd9b79c94aa4.jpg",
-                    "createdAt": "2026-10-28T12:00:00Z",
-                    "content": "จุดทางเชื่อม BTS สยาม คนเร่งรีบช่วงเช้ากับเย็นมาก คอนเซปต์ 45 วินาทีนี้ตอบโจทย์คนเดิน BTS สุดๆ ครับ"
-                  }
-                ]
-              }
+            "isAvailable": true,
+            "recommendedToppingIds": [
+              "lab-topping-konjac"
             ]
-          }
-        ],
-        "menuItems": [
-          {
-            "id": "smi-sq1-1",
-            "labItemId": "lab-1",
-            "category": "ชาสตรีทสดชื่น",
-            "customName": "ชาไทยพรีเมียมการันตี",
-            "retailPriceThb": 50,
-            "badge": "Best Seller",
-            "displayOrder": 1,
-            "isAvailable": true
           },
           {
-            "id": "smi-sq1-2",
-            "labItemId": "lab-5",
-            "category": "ผลไม้ทุบสด",
-            "customName": "ชาดำซีลอนมะนาวหอมกวางตุ้ง",
-            "retailPriceThb": 50,
-            "badge": "Signature",
-            "displayOrder": 2,
-            "isAvailable": true
-          },
-          {
-            "id": "smi-sq1-3",
-            "labItemId": "lab-3",
-            "category": "วิตามินเร่งด่วน",
-            "customName": "ชาส้มยูซุบูสต์วิตามินซี",
-            "retailPriceThb": 69,
-            "badge": "Must Try",
-            "displayOrder": 3,
-            "isAvailable": true
-          }
-        ],
-        "videos": [
-          "https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4"
-        ],
-        "createdById": "user-074ec1a3-c143-48ef-bf22-0c6afc11d4f8",
-        "createdByName": "May (R&D สูตรเครื่องดื่ม & ชิมชา)",
-        "createdByAvatar": "./mockup-media/14b558d2131392b5d15178cc.jpg",
-        "createdAt": "2026-10-28T11:00:00Z",
-        "updatedAt": "2026-10-29T16:00:00Z",
-        "isMock": true
-      },
-      {
-        "id": "store-one",
-        "name": "VITCHA Tea Bar & Wellness - One Bangkok",
-        "brandTagline": "Sophisticated Tea Lounge & Vitamin Infusion (ทีเลานจ์และวิตามินบาร์เพื่อสุขภาพระดับพรีเมียม)",
-        "branch": "สาขา 003 - วัน แบงค็อก (Parade Zone ชั้น B1 Hub รถไฟใต้ดิน MRT ลุมพินี)",
-        "themeColor": "#047857",
-        "logoUrl": "https://images.unsplash.com/photo-1544787219-7f47ccb76574?w=400&auto=format&fit=crop&q=80",
-        "contactNumber": "02-789-5555",
-        "openingHours": "07:30 - 21:00 น. (เปิดทุกวัน)",
-        "menuCategories": [
-          "ซิกเนเจอร์ทีบาร์",
-          "วิตามินอินฟิวชัน",
-          "มัทฉะ & ชาเขียวญี่ปุ่น",
-          "สมูทตี้คอลลาเจน"
-        ],
-        "likedBy": [
-          "user-ice",
-          "user-1793177529069",
-          "user-074ec1a3-c143-48ef-bf22-0c6afc11d4f8",
-          "user-80e9b44f-085e-4b9b-a341-9d07dab08b5c"
-        ],
-        "viewLogs": [
-          {
-            "userId": "user-074ec1a3-c143-48ef-bf22-0c6afc11d4f8",
-            "name": "May (R&D สูตรเครื่องดื่ม & ชิมชา)",
-            "alias": "May (R&D)",
-            "avatar": "./mockup-media/14b558d2131392b5d15178cc.jpg",
-            "role": "admin",
-            "lastViewedAt": "2026-10-30T10:15:00Z",
-            "viewCount": 20
-          }
-        ],
-        "revisionCycles": [
-          {
-            "cycleNumber": 1,
-            "title": "รอบจัดเตรียมเมนูเพื่อสุขภาพสำหรับกลุ่มผู้บริหาร One Bangkok",
-            "status": "active",
-            "createdAt": "2026-10-28T14:00:00Z",
-            "createdBy": "May (R&D สูตรเครื่องดื่ม & ชิมชา)",
-            "comments": [
-              {
-                "id": "comm-store-one-1",
-                "authorId": "user-074ec1a3-c143-48ef-bf22-0c6afc11d4f8",
-                "authorName": "May (R&D สูตรเครื่องดื่ม & ชิมชา)",
-                "authorAvatar": "./mockup-media/14b558d2131392b5d15178cc.jpg",
-                "createdAt": "2026-10-28T14:30:00Z",
-                "content": "สาขา One Bangkok เพิ่มเมนู Mixed Berry Collagen Smoothie 95 บาท และมัทฉะเกรดพิธีการ 90 บาท เจาะกลุ่มคนทำงานออฟฟิศระดับบนค่ะ",
-                "sweetnessTarget": "50",
-                "likes": [
-                  "user-1793177529069"
-                ]
-              }
-            ]
-          }
-        ],
-        "menuItems": [
-          {
-            "id": "smi-one-1",
-            "labItemId": "lab-2",
-            "category": "ซิกเนเจอร์ทีบาร์",
-            "customName": "ชาอูหลงพีชขาวนมสดพรีเมียม",
-            "retailPriceThb": 70,
-            "badge": "Signature",
-            "displayOrder": 1,
-            "isAvailable": true
-          },
-          {
-            "id": "smi-one-2",
-            "labItemId": "lab-4",
-            "category": "มัทฉะ & ชาเขียวญี่ปุ่น",
-            "customName": "มัทฉะอุจิเกรดพิธีการชงสด",
-            "retailPriceThb": 90,
-            "badge": "Must Try",
-            "displayOrder": 2,
-            "isAvailable": true
-          },
-          {
-            "id": "smi-one-3",
-            "labItemId": "lab-6",
-            "category": "สมูทตี้คอลลาเจน",
-            "customName": "สมูทตี้มิกซ์เบอร์รี่บูสต์คอลลาเจน",
-            "retailPriceThb": 95,
+            "id": "vitcha-topping-0",
+            "labItemId": "lab-topping-yuzu",
+            "category": "ท็อปปิ้งร่วม",
+            "customName": "วุ้นยูซุใส",
+            "retailPriceThb": 15,
             "badge": "New",
-            "displayOrder": 3,
+            "displayOrder": 10,
+            "isAvailable": true
+          },
+          {
+            "id": "vitcha-topping-1",
+            "labItemId": "lab-topping-konjac",
+            "category": "ท็อปปิ้งร่วม",
+            "customName": "บุกไข่มุกน้ำตาลทรายแดง",
+            "retailPriceThb": 15,
+            "badge": "New",
+            "displayOrder": 11,
             "isAvailable": true
           }
-        ],
-        "videos": [
-          "https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4"
-        ],
-        "createdById": "user-074ec1a3-c143-48ef-bf22-0c6afc11d4f8",
-        "createdByName": "May (R&D สูตรเครื่องดื่ม & ชิมชา)",
-        "createdByAvatar": "./mockup-media/14b558d2131392b5d15178cc.jpg",
-        "createdAt": "2026-10-28T14:00:00Z",
-        "updatedAt": "2026-10-29T16:00:00Z",
-        "isMock": true
+        ]
       },
       {
-        "id": "store-silom",
-        "name": "VITZA Street Kiosk - Silom Edge",
-        "brandTagline": "24-Hour Energy & Tea Fix (พลังงานและชาสดชื่นตลอด 24 ชั่วโมง)",
-        "branch": "สาขา 004 - สีลมเอจ (ชั้น B1 ประตูทางเชื่อม 24 ชม.)",
-        "themeColor": "#EA580C",
-        "logoUrl": "https://images.unsplash.com/photo-1513558161293-cdaf765ed2fd?w=400&auto=format&fit=crop&q=80",
-        "contactNumber": "02-123-9988",
-        "openingHours": "เปิดบริการ 24 ชั่วโมง (24 Hours Everyday)",
-        "menuCategories": [
-          "ชาสตรีท 24 ชม.",
-          "เอนเนอร์จีบูสเตอร์",
-          "ชาผลไม้ตาสว่าง",
-          "ชานมไข่มุกบราวน์ชูการ์"
-        ],
-        "likedBy": [
-          "user-ice",
-          "user-6ed8144d-a03f-438a-b78e-f4df23a6cadd",
-          "user-074ec1a3-c143-48ef-bf22-0c6afc11d4f8"
-        ],
-        "viewLogs": [
-          {
-            "userId": "user-6ed8144d-a03f-438a-b78e-f4df23a6cadd",
-            "name": "Zeen (สำรวจทำเลในไทย)",
-            "alias": "Zeen",
-            "avatar": "./mockup-media/4e9be940e40afd9b79c94aa4.jpg",
-            "role": "admin",
-            "lastViewedAt": "2026-10-30T10:30:00Z",
-            "viewCount": 18
-          }
-        ],
+        "recordKind": "brand",
+        "sharedConcept": "VITCHA × VITZA",
+        "branch": "",
+        "contactNumber": "",
+        "openingHours": "คอนเซ็ปต์จำลอง · ยังไม่กำหนดเวลาเปิดบริการ",
+        "likedBy": [],
+        "viewLogs": [],
         "revisionCycles": [
           {
             "cycleNumber": 1,
-            "title": "รอบจัดการสต็อกและกะทำงานสำหรับสาขา 24 ชั่วโมง",
+            "title": "หนึ่งคอนเซ็ปต์ สองแบรนด์ · ออกแบบหน้าร้านร่วม",
             "status": "active",
-            "createdAt": "2026-10-28T16:00:00Z",
-            "createdBy": "May (R&D สูตรเครื่องดื่ม & ชิมชา)",
-            "comments": [
-              {
-                "id": "comm-store-silom-1",
-                "authorId": "user-6ed8144d-a03f-438a-b78e-f4df23a6cadd",
-                "authorName": "Zeen (สำรวจทำเลในไทย)",
-                "authorAvatar": "./mockup-media/4e9be940e40afd9b79c94aa4.jpg",
-                "createdAt": "2026-10-28T16:30:00Z",
-                "content": "สาขานี้เตรียมพร้อมรองรับออเดอร์ Grab และ Lineman กะดึกด้วยครับ ยอดสั่งช่วง 22:00 - 03:00 น. สูงมาก",
-                "sweetnessTarget": "all",
-                "likes": [
-                  "user-074ec1a3-c143-48ef-bf22-0c6afc11d4f8",
-                  "user-ice"
-                ]
-              }
-            ]
+            "createdAt": "2026-10-30T14:00:00.000Z",
+            "createdBy": "ทีมออกแบบ Mockup",
+            "comments": []
           }
+        ],
+        "galleryPhotos": [
+          "./brand-mockups/shared-storefront.jpg"
+        ],
+        "videos": [],
+        "createdById": "user-ice",
+        "createdByName": "ทีมออกแบบ Mockup",
+        "createdAt": "2026-10-30T14:00:00.000Z",
+        "updatedAt": "2026-10-30T14:00:00.000Z",
+        "isMock": true,
+        "isMockup": true,
+        "id": "brand-vitza",
+        "name": "VITZA",
+        "brandTagline": "VITAMIN SODA",
+        "themeColor": "emerald",
+        "logoUrl": "./brand-mockups/vitza-logo.png",
+        "conceptDescription": "โซดาในโทนเขียวสด บาร์สเตนเลสและกระเบื้องเขียว แชร์เคาน์เตอร์เดียวกับ VITCHA ไม่ใช่อีกสาขา เมนูโซดาด้านล่างเป็นแนวคิดเพื่อทดลอง ยังไม่ผูกกับสูตรชาที่มีอยู่",
+        "menuCategories": [
+          "ท็อปปิ้งร่วม"
         ],
         "menuItems": [
           {
-            "id": "smi-silom-1",
-            "labItemId": "lab-1",
-            "category": "ชาสตรีท 24 ชม.",
-            "customName": "ชาไทยพรีเมียมการันตี",
-            "retailPriceThb": 50,
-            "badge": "Best Seller",
-            "displayOrder": 1,
+            "id": "vitza-topping-0",
+            "labItemId": "lab-topping-yuzu",
+            "category": "ท็อปปิ้งร่วม",
+            "customName": "วุ้นยูซุใส",
+            "retailPriceThb": 15,
+            "badge": "New",
+            "displayOrder": 10,
             "isAvailable": true
           },
           {
-            "id": "smi-silom-2",
-            "labItemId": "lab-5",
-            "category": "ชาผลไม้ตาสว่าง",
-            "customName": "ชาดำซีลอนมะนาวหอมกวางตุ้ง",
-            "retailPriceThb": 50,
-            "badge": "Signature",
-            "displayOrder": 2,
-            "isAvailable": true
-          },
-          {
-            "id": "smi-silom-3",
-            "labItemId": "lab-3",
-            "category": "เอนเนอร์จีบูสเตอร์",
-            "customName": "ชาส้มยูซุบูสต์วิตามินซี",
-            "retailPriceThb": 69,
-            "badge": "Must Try",
-            "displayOrder": 3,
+            "id": "vitza-topping-1",
+            "labItemId": "lab-topping-konjac",
+            "category": "ท็อปปิ้งร่วม",
+            "customName": "บุกไข่มุกน้ำตาลทรายแดง",
+            "retailPriceThb": 15,
+            "badge": "New",
+            "displayOrder": 11,
             "isAvailable": true
           }
         ],
-        "videos": [
-          "https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4"
-        ],
-        "createdById": "user-074ec1a3-c143-48ef-bf22-0c6afc11d4f8",
-        "createdByName": "May (R&D สูตรเครื่องดื่ม & ชิมชา)",
-        "createdByAvatar": "./mockup-media/14b558d2131392b5d15178cc.jpg",
-        "createdAt": "2026-10-28T16:00:00Z",
-        "updatedAt": "2026-10-29T16:00:00Z",
-        "isMock": true
+        "conceptMenu": [
+          {
+            "name": "Yuzu Citrus Soda",
+            "priceThb": 65,
+            "description": "ยูซุและโซดา เสนอจับคู่กับวุ้นยูซุใส"
+          },
+          {
+            "name": "Green Apple Lime Soda",
+            "priceThb": 59,
+            "description": "แอปเปิลเขียวและไลม์ สดชื่นในคอนเซ็ปต์สีเขียว"
+          },
+          {
+            "name": "Berry Spark Soda",
+            "priceThb": 69,
+            "description": "เบอร์รี่และโซดา สำหรับทดลองความหวาน 3 ระดับ"
+          }
+        ]
       }
     ]
   }

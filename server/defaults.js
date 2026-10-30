@@ -1,4 +1,5 @@
-import { DEFAULT_LEAD_LAB_ITEMS, DEFAULT_FRANCHISE_STORES } from './seeds.js';
+import { sampleCatalog } from './sample-pack.js';
+const { leadLabItems: DEFAULT_LEAD_LAB_ITEMS, franchiseStores: DEFAULT_FRANCHISE_STORES } = sampleCatalog();
 
 export const DEFAULT_DATABASE = {
   users: [

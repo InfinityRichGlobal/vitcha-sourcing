@@ -46,7 +46,7 @@ test('empty dashboard shows zero; loading reads back 42 records and repeat click
   await expect(page.getByTestId('mockup-result')).toContainText('กำลัง');
   await expect(page.getByTestId('mockup-result')).toContainText('เพิ่ม 42 รายการ');
   expect(bytes).toBeLessThan(500);
-  await expect(page.getByTestId('mockup-result')).toContainText('สูตร R&D 8');
+  await expect(page.getByTestId('mockup-result')).toContainText('สูตร R&D 10');
   await page.reload();
   await load(page);
   await expect(page.getByTestId('mockup-result')).toContainText('เพิ่ม 0 รายการ');
@@ -92,4 +92,29 @@ test('another client write appears through polling without reload or signing out
   expect(response.ok()).toBeTruthy();
   await expect(page.getByRole('button').filter({ hasText: 'ซัพพลายเออร์' }).first()).toContainText('1', { timeout: 10000 });
   await expect(page.getByRole('banner')).toBeVisible();
+});
+
+test('two brands share one concept, preserve supplied logos, and both show the two toppings', async ({page}) => {
+  const seeded=await page.request.post(base+'/api/system/sample-pack',{headers:{Authorization:`Bearer ${token}`},data:{packId:'vitcha-demo-v2',operationId:'brand-ui'}});expect(seeded.ok()).toBeTruthy();
+  await page.reload();
+  await page.getByRole('button',{name:/แพลตฟอร์ม/}).click();
+  await page.locator('[data-no-pull-refresh]').getByRole('button',{name:/แบรนด์และหน้าร้าน/}).click();
+  await expect(page.getByRole('heading',{name:/แบรนด์และหน้าร้าน/})).toBeVisible();
+  await expect(page.locator('main')).toContainText('2 แบรนด์');
+  await expect(page.locator('main')).not.toContainText(/CentralWorld|Siam Square|Silom|One Bangkok/);
+  await expect(page.locator('img[src="./brand-mockups/vitcha-logo.png"]')).toBeVisible();
+  await expect(page.locator('img[src="./brand-mockups/vitza-logo.png"]')).toBeVisible();
+  await page.screenshot({path:'test-results/brand-directory-mobile.png',fullPage:true});
+  await page.getByRole('button',{name:/เข้าร้าน/}).first().click();
+  await expect(page.getByRole('heading',{name:'VITCHA',exact:true})).toBeVisible();
+  await expect(page.locator('main')).toContainText('วุ้นยูซุใส');
+  await expect(page.locator('main')).toContainText('บุกไข่มุกน้ำตาลทรายแดง');
+  await page.getByRole('button',{name:/หน้ารวมแบรนด์/}).click();
+  await page.getByRole('button',{name:/เข้าร้าน/}).nth(1).click();
+  await expect(page.getByRole('heading',{name:'VITZA',exact:true})).toBeVisible();
+  await expect(page.locator('main')).toContainText('เมนูโซดาคอนเซ็ปต์ · รอทดลองสูตร');
+  await expect(page.locator('main')).toContainText('วุ้นยูซุใส');
+  await expect(page.locator('main')).toContainText('บุกไข่มุกน้ำตาลทรายแดง');
+  await page.evaluate(() => window.scrollTo(0,0));
+  await page.screenshot({path:'test-results/vitza-storefront-mobile.png',fullPage:true});
 });

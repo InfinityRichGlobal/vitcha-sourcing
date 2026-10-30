@@ -470,17 +470,17 @@ export async function shareFranchiseStore(store: FranchiseStore, menuCount: numb
     ? `${window.location.origin}${window.location.pathname}?tab=franchise_stores&view=${encodeURIComponent(store.id)}`
     : '';
 
-  const text = `🏪 [FRANCHISE STORE] ข้อมูลสาขาและเมนูบอร์ด
+  const text = `🏪 [BRAND STOREFRONT] ข้อมูลแบรนด์และเมนูบอร์ด
 ━━━━━━━━━━━━━━━━━━━━
 📌 แบรนด์: ${store.name}
-📍 สาขา: ${store.branch}
+🏷️ รูปแบบ: ${store.recordKind === 'brand' ? 'หนึ่งคอนเซ็ปต์ สองแบรนด์ · ไม่มีสาขา' : store.branch}
 💬 สโลแกน: "${store.brandTagline}"
 ⏰ เวลาทำการ: ${store.openingHours || '10:00 - 21:30 น.'}
 📞 โทร: ${store.contactNumber || '-'}
 ━━━━━━━━━━━━━━━━━━━━
-🥤 จำนวนเมนูพร้อมจำหน่าย: ${menuCount} รายการ
+🥤 จำนวนเมนูบนบอร์ด: ${menuCount} รายการ
 ❤️ ทีมงานไลก์: ${(store.likedBy || []).length} คน
-🔗 กดดูข้อมูลสาขาทันที: ${deepLink}`;
+🔗 กดดูข้อมูลแบรนด์: ${deepLink}`;
 
   try {
     if (navigator.clipboard) {

@@ -546,7 +546,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       try {
         result = await requestJson('/api/system/sample-pack', {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ packId: 'vitcha-demo-v1', operationId }),
+          body: JSON.stringify({ packId: 'vitcha-demo-v2', operationId }),
         }, 60000);
       } catch (error) {
         if (error instanceof ApiError && error.status < 500) throw error;
@@ -558,7 +558,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       if (!result?.success || !result.recordIds || !result.added || !result.skipped) throw new Error('ผลการโหลดจากเซิร์ฟเวอร์ไม่สมบูรณ์');
       setMockLoadMessage('บันทึกแล้ว กำลังอ่านข้อมูลกลับเพื่อตรวจจำนวนรายการ…');
       if (!await latestRefresh.current()) throw new Error('เซิร์ฟเวอร์บันทึกแล้ว แต่ยังอ่านข้อมูลกลับไม่ได้ กดรีเฟรชหรือโหลดอีกครั้งเพื่อตรวจผล');
-      const labels: Record<string, string> = { suppliers: 'ซัพพลายเออร์', drinkStores: 'ร้านน้ำ', locations: 'ทำเล', leadLabItems: 'สูตร R&D', franchiseStores: 'สาขา' };
+      const labels: Record<string, string> = { suppliers: 'ซัพพลายเออร์', drinkStores: 'ร้านน้ำ', locations: 'ทำเล', leadLabItems: 'สูตร R&D', franchiseStores: 'แบรนด์' };
       for (const key of Object.keys(labels)) {
         const expected = result.recordIds[key];
         const ids = new Set((latestSnapshot.current?.[key] || []).map((item: any) => item.id));

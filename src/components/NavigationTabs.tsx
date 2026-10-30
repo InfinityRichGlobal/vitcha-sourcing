@@ -37,7 +37,7 @@ export const NavigationTabs: React.FC = () => {
     },
     {
       key: 'franchise_stores',
-      label: 'ร้านแฟรนไชส์',
+      label: 'แบรนด์และหน้าร้าน',
       icon: <i aria-hidden="true" className="fa-solid fa-store text-xs text-emerald-600" />,
       badge: franchiseStores.length,
     },

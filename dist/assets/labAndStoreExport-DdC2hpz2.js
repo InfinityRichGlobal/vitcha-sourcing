@@ -1,4 +1,4 @@
-import{c as b}from"./index-CMBpfcKd.js";/**
+import{c as b}from"./index-BhPjHip-.js";/**
  * @license lucide-react v1.62.0 - ISC
  *
  * This source code is licensed under the ISC license.
@@ -323,7 +323,7 @@ import{c as b}from"./index-CMBpfcKd.js";/**
             100%: ไซรัป ${((T=(L=d.sweetnessLevels)==null?void 0:L.full)==null?void 0:T.syrupMl)||30}ml (${((S=(z=d.sweetnessLevels)==null?void 0:z.full)==null?void 0:S.brix)||13.5}°Bx)
           </td>
           <td>
-            ${(c.recommendedToppingIds||[]).map(I=>{const g=s.find(F=>F.menuItem.labItemId===I);return g?`<span class="badge" style="margin-right: 3px;">+ ${t(g.menuItem.customName||g.labItem.name)}</span>`:""}).join("")||"-"}
+            ${(c.recommendedToppingIds||[]).map(F=>{const g=s.find(I=>I.menuItem.labItemId===F);return g?`<span class="badge" style="margin-right: 3px;">+ ${t(g.menuItem.customName||g.labItem.name)}</span>`:""}).join("")||"-"}
           </td>
         </tr>`}).join("")}
     </tbody>
@@ -362,7 +362,7 @@ import{c as b}from"./index-CMBpfcKd.js";/**
     <span>📋 รหัสสาขา: <strong>${t(e.id)}</strong></span>
   </div>
 </body>
-</html>`;l.document.write(o),l.document.close()}async function E(e){const s=e.suggestedPriceThb>0?((e.suggestedPriceThb-e.costTotalThb)/e.suggestedPriceThb*100).toFixed(1):"0.0",l=typeof window<"u"?`${window.location.origin}${window.location.pathname}?tab=lead_lab&view=${encodeURIComponent(e.id)}`:"",i=`🧪 [LEAD LAB R&D] สรุปสูตรเครื่องดื่มมาตรฐาน
+</html>`;l.document.write(o),l.document.close()}async function _(e){const s=e.suggestedPriceThb>0?((e.suggestedPriceThb-e.costTotalThb)/e.suggestedPriceThb*100).toFixed(1):"0.0",l=typeof window<"u"?`${window.location.origin}${window.location.pathname}?tab=lead_lab&view=${encodeURIComponent(e.id)}`:"",i=`🧪 [LEAD LAB R&D] สรุปสูตรเครื่องดื่มมาตรฐาน
 ━━━━━━━━━━━━━━━━━━━━
 📌 รหัสสูตร: ${e.code}
 🥤 ชื่อสูตร: ${e.name} (${e.nameEn})
@@ -375,14 +375,14 @@ import{c as b}from"./index-CMBpfcKd.js";/**
 • หวาน 100%: ไซรัป ${e.sweetnessLevels.full.syrupMl}ml (Brix ${e.sweetnessLevels.full.brix}°Bx)
 ━━━━━━━━━━━━━━━━━━━━
 ❤️ ไลก์: ${(e.likedBy||[]).length} คน | 💬 รอบพัฒนา: ${(e.revisionCycles||[]).length} รอบ
-🔗 กดดูสูตรทันที: ${l}`;try{navigator.clipboard&&await navigator.clipboard.writeText(i)}catch(p){console.warn("Failed to copy text",p)}const r=`https://line.me/R/msg/text/?${encodeURIComponent(i)}`;return window.open(r,"_blank"),!0}async function H(e,s){const l=typeof window<"u"?`${window.location.origin}${window.location.pathname}?tab=franchise_stores&view=${encodeURIComponent(e.id)}`:"",i=`🏪 [FRANCHISE STORE] ข้อมูลสาขาและเมนูบอร์ด
+🔗 กดดูสูตรทันที: ${l}`;try{navigator.clipboard&&await navigator.clipboard.writeText(i)}catch(p){console.warn("Failed to copy text",p)}const r=`https://line.me/R/msg/text/?${encodeURIComponent(i)}`;return window.open(r,"_blank"),!0}async function E(e,s){const l=typeof window<"u"?`${window.location.origin}${window.location.pathname}?tab=franchise_stores&view=${encodeURIComponent(e.id)}`:"",i=`🏪 [BRAND STOREFRONT] ข้อมูลแบรนด์และเมนูบอร์ด
 ━━━━━━━━━━━━━━━━━━━━
 📌 แบรนด์: ${e.name}
-📍 สาขา: ${e.branch}
+🏷️ รูปแบบ: ${e.recordKind==="brand"?"หนึ่งคอนเซ็ปต์ สองแบรนด์ · ไม่มีสาขา":e.branch}
 💬 สโลแกน: "${e.brandTagline}"
 ⏰ เวลาทำการ: ${e.openingHours||"10:00 - 21:30 น."}
 📞 โทร: ${e.contactNumber||"-"}
 ━━━━━━━━━━━━━━━━━━━━
-🥤 จำนวนเมนูพร้อมจำหน่าย: ${s} รายการ
+🥤 จำนวนเมนูบนบอร์ด: ${s} รายการ
 ❤️ ทีมงานไลก์: ${(e.likedBy||[]).length} คน
-🔗 กดดูข้อมูลสาขาทันที: ${l}`;try{navigator.clipboard&&await navigator.clipboard.writeText(i)}catch(p){console.warn("Failed to copy text",p)}const r=`https://line.me/R/msg/text/?${encodeURIComponent(i)}`;return window.open(r,"_blank"),!0}export{M as D,R as H,A as V,H as a,j as b,C as p,E as s};
+🔗 กดดูข้อมูลแบรนด์: ${l}`;try{navigator.clipboard&&await navigator.clipboard.writeText(i)}catch(p){console.warn("Failed to copy text",p)}const r=`https://line.me/R/msg/text/?${encodeURIComponent(i)}`;return window.open(r,"_blank"),!0}export{M as D,R as H,A as V,E as a,j as b,C as p,_ as s};

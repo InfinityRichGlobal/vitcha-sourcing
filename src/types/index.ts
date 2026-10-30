@@ -519,6 +519,10 @@ export interface StoreMenuItem {
 }
 
 export interface FranchiseStore {
+  recordKind?: 'brand';
+  sharedConcept?: string;
+  conceptDescription?: string;
+  conceptMenu?: { name: string; priceThb: number; description: string }[];
   id: string;
   name: string;
   brandTagline: string;

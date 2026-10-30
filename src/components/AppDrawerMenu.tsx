@@ -223,7 +223,7 @@ export const AppDrawerMenu: React.FC<AppDrawerMenuProps> = ({
                   activeTab === 'franchise_stores' ? 'text-emerald-400' : 'text-emerald-600'
                 }`}
               />
-              <span>ร้านแฟรนไชส์จำลอง (Simulator)</span>
+              <span>แบรนด์และหน้าร้าน (Mockup)</span>
             </div>
             <span
               className={`text-[11px] font-mono px-2 py-0.5 rounded-full ${
