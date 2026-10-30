@@ -1,5 +1,6 @@
 import { test, expect, Page } from '@playwright/test';
 import path from 'node:path';
+import fs from 'node:fs';
 
 const password = 'qa-only-876543';
 
@@ -30,6 +31,7 @@ test.describe('Mobile Balanced Frame & 2-Column Product Cards', () => {
   }) => {
     const brainDir =
       '/Users/ice/.gemini/antigravity/brain/2fa1908b-c27c-457d-aa65-7b9b383757fc';
+    const canSaveArtifacts = fs.existsSync(brainDir);
 
     await signIn(page, 'admin');
 
@@ -46,18 +48,21 @@ test.describe('Mobile Balanced Frame & 2-Column Product Cards', () => {
     const columnsGrid = page.locator('.columns-2').first();
     await expect(columnsGrid).toBeVisible();
 
-    // Take mobile screenshot of LEAD LAB top hero & cards
-    await page.screenshot({
-      path: path.join(brainDir, 'mobile_lead_lab_hero.png'),
-    });
+    if (canSaveArtifacts) {
+      await page.screenshot({
+        path: path.join(brainDir, 'mobile_lead_lab_hero.png'),
+      });
+    }
 
     // Scroll down to view the 2-column card products with fit images
     await page.evaluate(() => window.scrollBy(0, 360));
     await page.waitForTimeout(500);
 
-    await page.screenshot({
-      path: path.join(brainDir, 'mobile_lead_lab_cards.png'),
-    });
+    if (canSaveArtifacts) {
+      await page.screenshot({
+        path: path.join(brainDir, 'mobile_lead_lab_cards.png'),
+      });
+    }
 
     // Navigate to Franchise Store Simulator
     const storeNavBtn = page
@@ -70,16 +75,20 @@ test.describe('Mobile Balanced Frame & 2-Column Product Cards', () => {
     const storeHero = page.locator('h1:has-text("VITCHA")').first();
     await expect(storeHero).toBeVisible({ timeout: 10000 });
 
-    await page.screenshot({
-      path: path.join(brainDir, 'mobile_franchise_store_hero.png'),
-    });
+    if (canSaveArtifacts) {
+      await page.screenshot({
+        path: path.join(brainDir, 'mobile_franchise_store_hero.png'),
+      });
+    }
 
     // Scroll down to view Digital Menu Board 2-column items
     await page.evaluate(() => window.scrollBy(0, 380));
     await page.waitForTimeout(500);
 
-    await page.screenshot({
-      path: path.join(brainDir, 'mobile_franchise_store_cards.png'),
-    });
+    if (canSaveArtifacts) {
+      await page.screenshot({
+        path: path.join(brainDir, 'mobile_franchise_store_cards.png'),
+      });
+    }
   });
 });
