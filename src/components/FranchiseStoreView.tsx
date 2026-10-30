@@ -462,7 +462,7 @@ export function FranchiseStoreView({
                   <div>
                     {/* Brand Cover Photo (Natural Size Fit - full proportion like R&D Lead Lab) */}
                     <div
-                      className="relative w-full bg-slate-100 dark:bg-slate-950 overflow-hidden cursor-pointer flex items-center justify-center"
+                      className="relative w-full bg-slate-100 dark:bg-slate-950 overflow-hidden cursor-pointer flex items-center justify-center min-h-[110px]"
                       onClick={() => setSelectedStoreId(store.id)}
                     >
                       <img
