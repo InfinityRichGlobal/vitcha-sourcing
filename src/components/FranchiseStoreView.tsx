@@ -437,7 +437,7 @@ export function FranchiseStoreView({
             </h2>
           </div>
 
-          <div className="columns-2 sm:columns-2 md:columns-3 lg:columns-4 gap-3 sm:gap-4 [column-fill:_balance]">
+          <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4 items-start">
             {franchiseStores.map((store) => {
               const theme = getThemeClasses(store.themeColor);
               const isLiked = (store.likedBy || []).includes(currentUser.id);
@@ -457,7 +457,7 @@ export function FranchiseStoreView({
               return (
                 <div
                   key={store.id}
-                  className="break-inside-avoid inline-block w-full rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 shadow-2xs hover:shadow-md transition-all duration-200 overflow-hidden group mb-3 sm:mb-4"
+                  className="w-full rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 shadow-2xs hover:shadow-md transition-all duration-200 overflow-hidden group flex flex-col"
                 >
                   <div>
                     {/* Brand Cover Photo (Natural Size Fit - full proportion like R&D Lead Lab) */}

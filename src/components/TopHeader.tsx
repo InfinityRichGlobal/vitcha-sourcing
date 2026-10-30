@@ -1,5 +1,6 @@
 import { AvatarImage } from './AvatarImage';
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { useApp } from '../context/AppContext';
 import {
   Calculator,
@@ -253,114 +254,117 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
       </header>
 
       {/* Minimal Quick-Add Selector Modal (กดปุ่ม + แล้วเลือกเพิ่มซัพพลายเออร์ หรือ เพิ่มร้านน้ำ) */}
-      {isAddPickerOpen && (
-        <div
-          onClick={() => setIsAddPickerOpen(false)}
-          className="fixed inset-0 z-[105] bg-slate-950/45 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in"
-        >
+      {isAddPickerOpen &&
+        typeof document !== 'undefined' &&
+        createPortal(
           <div
-            onClick={(e) => e.stopPropagation()}
-            className="bg-white border border-slate-200/90 w-full max-w-sm rounded-3xl shadow-2xl p-5 space-y-3.5 animate-in zoom-in-95 text-slate-900"
+            onClick={() => setIsAddPickerOpen(false)}
+            className="fixed inset-0 z-[1000] bg-slate-950/45 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in"
           >
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="font-extrabold text-sm sm:text-base text-slate-950 flex items-center gap-1.5">
-                  <i aria-hidden="true" className="fa-solid fa-circle-plus text-emerald-600" />
-                  <span>เลือกประเภทข้อมูลที่ต้องการบันทึก</span>
-                </h3>
-                <p className="text-[11px] text-slate-500 flex items-center gap-1 mt-0.5">
-                  <i aria-hidden="true" className="fa-solid fa-earth-asia text-slate-400" />
-                  <span>รองรับการสำรวจทั้งใน จีน (CN) และ ไทย (TH)</span>
-                </p>
+            <div
+              onClick={(e) => e.stopPropagation()}
+              className="bg-white border border-slate-200/90 w-full max-w-sm rounded-3xl shadow-2xl p-5 space-y-3.5 animate-in zoom-in-95 text-slate-900"
+            >
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="font-extrabold text-sm sm:text-base text-slate-950 flex items-center gap-1.5">
+                    <i aria-hidden="true" className="fa-solid fa-circle-plus text-emerald-600" />
+                    <span>เลือกประเภทข้อมูลที่ต้องการบันทึก</span>
+                  </h3>
+                  <p className="text-[11px] text-slate-500 flex items-center gap-1 mt-0.5">
+                    <i aria-hidden="true" className="fa-solid fa-earth-asia text-slate-400" />
+                    <span>รองรับการสำรวจทั้งใน จีน (CN) และ ไทย (TH)</span>
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsAddPickerOpen(false)}
+                  className="w-7 h-7 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center transition-colors"
+                >
+                  <X className="w-4 h-4" />
+                </button>
               </div>
-              <button
-                type="button"
-                onClick={() => setIsAddPickerOpen(false)}
-                className="w-7 h-7 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center transition-colors"
-              >
-                <X className="w-4 h-4" />
-              </button>
+
+              <div className="space-y-2.5 pt-1">
+                {/* Option 1: เพิ่มซัพพลายเออร์ */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsAddPickerOpen(false);
+                    onOpenNewSupplier();
+                  }}
+                  className="w-full p-3.5 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white flex items-center justify-between gap-3 shadow-sm active:scale-[0.99] transition-all text-left group"
+                >
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="w-10 h-10 rounded-xl bg-white/15 flex items-center justify-center shrink-0">
+                      <i aria-hidden="true" className="fa-solid fa-industry text-base text-white" />
+                    </div>
+                    <div className="min-w-0">
+                      <div className="font-extrabold text-sm text-white flex items-center gap-1.5">
+                        <span>เพิ่มซัพพลายเออร์</span>
+                      </div>
+                      <div className="text-[11px] text-emerald-100 truncate">
+                        โรงงาน · อุปกรณ์ · วัตถุดิบชา & บรรจุภัณฑ์
+                      </div>
+                    </div>
+                  </div>
+                  <ChevronRight className="w-4 h-4 text-white/80 group-hover:translate-x-0.5 transition-transform shrink-0" />
+                </button>
+
+                {/* Option 2: เพิ่มร้านน้ำ & เรฟ */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsAddPickerOpen(false);
+                    onOpenNewStoreInspo();
+                  }}
+                  className="w-full p-3.5 rounded-2xl bg-orange-500 hover:bg-orange-600 text-white flex items-center justify-between gap-3 shadow-sm active:scale-[0.99] transition-all text-left group"
+                >
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="w-10 h-10 rounded-xl bg-white/15 flex items-center justify-center shrink-0">
+                      <i aria-hidden="true" className="fa-solid fa-mug-hot text-base text-white" />
+                    </div>
+                    <div className="min-w-0">
+                      <div className="font-extrabold text-sm text-white flex items-center gap-1.5">
+                        <span>เพิ่มร้านน้ำ & เรฟ</span>
+                      </div>
+                      <div className="text-[11px] text-orange-100 truncate">
+                        เรฟเมนูเครื่องดื่ม · แพ็กเกจจิ้ง · คอนเซปต์ร้าน
+                      </div>
+                    </div>
+                  </div>
+                  <ChevronRight className="w-4 h-4 text-white/80 group-hover:translate-x-0.5 transition-transform shrink-0" />
+                </button>
+
+                {/* Option 3: เพิ่มสถานที่ & ทำเล (สีฟ้า) */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsAddPickerOpen(false);
+                    if (onOpenNewLocation) onOpenNewLocation();
+                  }}
+                  className="w-full p-3.5 rounded-2xl bg-sky-600 hover:bg-sky-700 text-white flex items-center justify-between gap-3 shadow-sm active:scale-[0.99] transition-all text-left group"
+                >
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="w-10 h-10 rounded-xl bg-white/15 flex items-center justify-center shrink-0">
+                      <i aria-hidden="true" className="fa-solid fa-map-location-dot text-base text-white" />
+                    </div>
+                    <div className="min-w-0">
+                      <div className="font-extrabold text-sm text-white flex items-center gap-1.5">
+                        <span>เพิ่มสถานที่ / ทำเล</span>
+                      </div>
+                      <div className="text-[11px] text-sky-100 truncate">
+                        ห้างสรรพสินค้า · คอมมูนิตี้มอลล์ · สเปกพื้นที่ & ค่าเช่า
+                      </div>
+                    </div>
+                  </div>
+                  <ChevronRight className="w-4 h-4 text-white/80 group-hover:translate-x-0.5 transition-transform shrink-0" />
+                </button>
+              </div>
             </div>
-
-            <div className="space-y-2.5 pt-1">
-              {/* Option 1: เพิ่มซัพพลายเออร์ */}
-              <button
-                type="button"
-                onClick={() => {
-                  setIsAddPickerOpen(false);
-                  onOpenNewSupplier();
-                }}
-                className="w-full p-3.5 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white flex items-center justify-between gap-3 shadow-sm active:scale-[0.99] transition-all text-left group"
-              >
-                <div className="flex items-center gap-3 min-w-0">
-                  <div className="w-10 h-10 rounded-xl bg-white/15 flex items-center justify-center shrink-0">
-                    <i aria-hidden="true" className="fa-solid fa-industry text-base text-white" />
-                  </div>
-                  <div className="min-w-0">
-                    <div className="font-extrabold text-sm text-white flex items-center gap-1.5">
-                      <span>เพิ่มซัพพลายเออร์</span>
-                    </div>
-                    <div className="text-[11px] text-emerald-100 truncate">
-                      โรงงาน · อุปกรณ์ · วัตถุดิบชา & บรรจุภัณฑ์
-                    </div>
-                  </div>
-                </div>
-                <ChevronRight className="w-4 h-4 text-white/80 group-hover:translate-x-0.5 transition-transform shrink-0" />
-              </button>
-
-              {/* Option 2: เพิ่มร้านน้ำ & เรฟ */}
-              <button
-                type="button"
-                onClick={() => {
-                  setIsAddPickerOpen(false);
-                  onOpenNewStoreInspo();
-                }}
-                className="w-full p-3.5 rounded-2xl bg-orange-500 hover:bg-orange-600 text-white flex items-center justify-between gap-3 shadow-sm active:scale-[0.99] transition-all text-left group"
-              >
-                <div className="flex items-center gap-3 min-w-0">
-                  <div className="w-10 h-10 rounded-xl bg-white/15 flex items-center justify-center shrink-0">
-                    <i aria-hidden="true" className="fa-solid fa-mug-hot text-base text-white" />
-                  </div>
-                  <div className="min-w-0">
-                    <div className="font-extrabold text-sm text-white flex items-center gap-1.5">
-                      <span>เพิ่มร้านน้ำ & เรฟ</span>
-                    </div>
-                    <div className="text-[11px] text-orange-100 truncate">
-                      เรฟเมนูเครื่องดื่ม · แพ็กเกจจิ้ง · คอนเซปต์ร้าน
-                    </div>
-                  </div>
-                </div>
-                <ChevronRight className="w-4 h-4 text-white/80 group-hover:translate-x-0.5 transition-transform shrink-0" />
-              </button>
-
-              {/* Option 3: เพิ่มสถานที่ & ทำเล (สีฟ้า) */}
-              <button
-                type="button"
-                onClick={() => {
-                  setIsAddPickerOpen(false);
-                  if (onOpenNewLocation) onOpenNewLocation();
-                }}
-                className="w-full p-3.5 rounded-2xl bg-sky-600 hover:bg-sky-700 text-white flex items-center justify-between gap-3 shadow-sm active:scale-[0.99] transition-all text-left group"
-              >
-                <div className="flex items-center gap-3 min-w-0">
-                  <div className="w-10 h-10 rounded-xl bg-white/15 flex items-center justify-center shrink-0">
-                    <i aria-hidden="true" className="fa-solid fa-map-location-dot text-base text-white" />
-                  </div>
-                  <div className="min-w-0">
-                    <div className="font-extrabold text-sm text-white flex items-center gap-1.5">
-                      <span>เพิ่มสถานที่ / ทำเล</span>
-                    </div>
-                    <div className="text-[11px] text-sky-100 truncate">
-                      ห้างสรรพสินค้า · คอมมูนิตี้มอลล์ · สเปกพื้นที่ & ค่าเช่า
-                    </div>
-                  </div>
-                </div>
-                <ChevronRight className="w-4 h-4 text-white/80 group-hover:translate-x-0.5 transition-transform shrink-0" />
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+          </div>,
+          document.body
+        )}
 
       <AppDrawerMenu
         isOpen={isDrawerOpen}

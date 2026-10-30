@@ -480,7 +480,7 @@ export const MapView: React.FC<MapViewProps> = ({
       <span className="sr-only">Map language: English</span>
 
       {/* 🔍 Prominent Search & GPS Jump Bar for MapView */}
-      <div className="relative z-[410] flex items-center gap-1.5 bg-white p-2 rounded-2xl border border-slate-200/90 shadow-2xs">
+      <div className="relative z-20 flex items-center gap-1.5 bg-white p-2 rounded-2xl border border-slate-200/90 shadow-2xs">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
           <input
@@ -526,7 +526,7 @@ export const MapView: React.FC<MapViewProps> = ({
         {showDropdown && (
           <div
             ref={searchDropdownRef}
-            className="absolute top-full left-0 right-0 mt-1.5 bg-white rounded-2xl shadow-xl border border-slate-200 overflow-hidden z-[500] max-h-60 overflow-y-auto animate-in fade-in"
+            className="absolute top-full left-0 right-0 mt-1.5 bg-white rounded-2xl shadow-xl border border-slate-200 overflow-hidden z-30 max-h-60 overflow-y-auto animate-in fade-in"
           >
             <div className="px-3 py-1.5 bg-slate-50 border-b border-slate-100 flex items-center justify-between text-[10px] text-slate-500 font-bold">
               <span>ผลการค้นหา (แตะเพื่อบินไปจุดนั้น)</span>
