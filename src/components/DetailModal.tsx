@@ -496,7 +496,7 @@ export const DetailModal: React.FC<DetailModalProps> = ({
             {/* Download PDF File Button */}
             <button
               type="button"
-              onClick={() => openExecutiveReport(currentItem, convertCnyToThb, 'pdf')}
+              onClick={() => openExecutiveReport(currentItem, convertCnyToThb, 'pdf', users)}
               className="h-7 sm:h-8 px-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition-all active:scale-95 inline-flex items-center gap-1 whitespace-nowrap shrink-0"
               title="ดาวน์โหลดรายงานเป็นไฟล์ PDF"
             >
@@ -507,7 +507,7 @@ export const DetailModal: React.FC<DetailModalProps> = ({
             {/* Executive Print Button */}
             <button
               type="button"
-              onClick={() => openExecutiveReport(currentItem, convertCnyToThb, 'print')}
+              onClick={() => openExecutiveReport(currentItem, convertCnyToThb, 'print', users)}
               className="h-7 sm:h-8 px-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-all border border-slate-200/80 active:scale-95 inline-flex items-center gap-1 whitespace-nowrap shrink-0"
               title="พิมพ์รายงานฉบับจัดหน้าสวยงาม (Print)"
             >

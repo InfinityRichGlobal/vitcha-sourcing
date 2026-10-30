@@ -156,3 +156,11 @@ The server appends version-2 audit events with actor ID, timestamp, stage before
 Timeline media opens in a dismissible in-page dialog. Full notes wrap on mobile; filters and incremental loading keep long histories usable. Older shortened text and missing transitions cannot be reconstructed. Retaining historical attachment URLs does not guarantee a file remains available if removed from its external storage.
 
 Validation includes full text/cleared-field preservation, backward and skipped stages, retry deduplication, stale-write rejection, immutable comments after replies, attachment removal, membership preservation, delete/restore continuity, mobile history/media/filter/reload behavior and legacy-stage honesty.
+
+### 2026-10-31: compact activity history in exported reports
+
+- Detail view and PDF export share history collection and field labels. Reports include all recorded events regardless of the detail filter, grouped by the stage at the time; legacy events without a recorded stage remain separate.
+- Only stages through the furthest current/recorded stage appear. A skipped stage gets one short “ไม่พบการบันทึกในพาร์ทนี้” line. Returning to an earlier stage does not erase later historical events.
+- Activity entries show the actor's profile photo/name/time, changes, full comments and media references. Empty before-values and duplicate comment sections are omitted; initial record details remain in the report's main sections.
+- Report popups use a Blob document with an explicit asset base instead of document.write with a blocking CDN script. Long reports fall back to native print pagination to avoid canvas truncation.
+- Regression coverage: complete histories over 20 events, backward/repeated/skipped stages, account-name resolution, legacy comments, safe HTML/media links, and PDF popup export while the detail screen is filtered.

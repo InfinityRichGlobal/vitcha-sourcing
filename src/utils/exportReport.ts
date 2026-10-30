@@ -1,7 +1,9 @@
 import QRCode from 'qrcode';
-import { SupplierRecord, StoreInspoRecord, LocationRecord, AttachedFile } from '../types';
+import { SupplierRecord, StoreInspoRecord, LocationRecord, AttachedFile, User } from '../types';
+import { activityStages, activityStageName, activityFieldLabels, getActivityEntries } from './activityHistory';
 import { getItemVoiceNotes } from './audioHelper';
 import { FALLBACK_DEMO_VIDEO_URL } from './mediaStorage';
+import { getRenderServerUrl } from '../services/api';
 
 function escapeHtml(str?: string | number | null): string {
   if (str === undefined || str === null) return '';
@@ -76,7 +78,8 @@ function generateQrSvgDataUri(text: string): string {
 export function buildExecutiveReportHtml(
   item: SupplierRecord | StoreInspoRecord | LocationRecord,
   convertCnyToThb: (cny: number) => number,
-  mode: 'print' | 'pdf'
+  mode: 'print' | 'pdf',
+  users: User[] = []
 ): string {
   const isSupplier = item.type === 'supplier';
   const isLocation = item.type === 'location';
@@ -191,18 +194,9 @@ export function buildExecutiveReportHtml(
   const viewedBy = Array.isArray(item.viewedBy) ? item.viewedBy : [];
   const likes = Array.isArray(item.likes) ? item.likes : [];
   const notes = Array.isArray(item.reviewerNotes) ? item.reviewerNotes : [];
-  const rawHistory = Array.isArray(item.history) ? item.history : [];
-  const historyEntries =
-    rawHistory.length > 0
-      ? rawHistory
-      : [
-          {
-            action: 'สร้างบันทึกรายการสำรวจ',
-            user: item.creator.alias,
-            userAvatar: item.creator.avatar,
-            timestamp: item.creator.timestamp,
-          },
-        ];
+  const historyEntries = getActivityEntries(item).sort((a, b) =>
+    (Date.parse(a.timestamp) || 0) - (Date.parse(b.timestamp) || 0));
+  const userName = (value: string) => users.find(u => u.id === value || u.alias === value || u.name === value)?.alias || value;
 
   const safeFilename = `ฉันจะเป็นหัวแถว-${title.replace(/[^a-zA-Z0-9ก-๙_-]/g, '_')}.pdf`;
 
@@ -495,82 +489,65 @@ export function buildExecutiveReportHtml(
       : `<div class="empty-note">${segmentThaiHtml('ไม่มีรูปภาพในรายการนี้')}</div>`;
 
   // Build Comments & Replies Section
-  const commentsHtml =
-    notes.length > 0
-      ? notes
-          .map(
-            (n, idx) => `
-          <div class="comment-box">
-            <div class="comment-header">
-              <span class="comment-author">${segmentThaiHtml(`ความคิดเห็นที่ #${idx + 1} โดย: ${n.author}`)}</span>
-              <span class="comment-time">${escapeHtml(new Date(n.timestamp).toLocaleString('th-TH'))}</span>
-            </div>
-            <div class="comment-body">${segmentThaiHtml(n.text)}</div>
-            ${
-              n.photoUrl
-                ? `<div style="margin-top:6px;"><img src="${escapeHtml(n.photoUrl)}" crossorigin="anonymous" style="width:96px;height:96px;object-fit:cover;border-radius:6px;border:1px solid #cbd5e1;" /></div>`
-                : ''
-            }
-            ${
-              n.voiceUrl
-                ? `<div class="cell-voice-badge" style="margin-top:4px;">${segmentThaiHtml('มีไฟล์เสียงแนบในความคิดเห็นนี้ (สแกน QR เพื่อฟัง)')}</div>`
-                : ''
-            }
-            ${
-              n.replies && n.replies.length > 0
-                ? `<div class="reply-list">
-                    ${n.replies
-                      .map(
-                        (r) => `
-                        <div class="reply-item">
-                          <div class="comment-header">
-                            <span class="comment-author">${segmentThaiHtml(
-                              `ตอบกลับโดย: ${r.author}${r.replyToAuthor ? ` (ถึง @${r.replyToAuthor})` : ''}`
-                            )}</span>
-                            <span class="comment-time">${escapeHtml(new Date(r.timestamp).toLocaleString('th-TH'))}</span>
-                          </div>
-                          <div class="comment-body">${segmentThaiHtml(r.text)}</div>
-                          ${
-                            r.photoUrl
-                              ? `<div style="margin-top:6px;"><img src="${escapeHtml(r.photoUrl)}" crossorigin="anonymous" style="width:80px;height:80px;object-fit:cover;border-radius:6px;border:1px solid #cbd5e1;" /></div>`
-                              : ''
-                          }
-                          ${
-                            r.voiceUrl
-                              ? `<div class="cell-voice-badge" style="margin-top:4px;">${segmentThaiHtml('มีไฟล์เสียงแนบในคำตอบนี้')}</div>`
-                              : ''
-                          }
-                        </div>`
-                      )
-                      .join('')}
-                  </div>`
-                : ''
-            }
-          </div>`
-          )
-          .join('')
-      : `<div class="empty-note">${segmentThaiHtml('ยังไม่มีความคิดเห็นในรายการนี้')}</div>`;
+  // Render the same complete history as the detail page, independent of UI filters.
+  // Blocks can flow across printed pages; a long event must never be clipped in a table row.
+  const historyValueHtml = (value: unknown, field: string): string => {
+    if (value == null || value === '' || Array.isArray(value) && !value.length) return '<span class="audit-empty">ยังไม่ระบุ / ไม่มีข้อมูล</span>';
+    if (Array.isArray(value)) return value.map((v, i) => `<div class="audit-value-item"><b>${i + 1}.</b> ${historyValueHtml(v, field)}</div>`).join('');
+    if (typeof value === 'object') return Object.entries(value).filter(([key]) => !['id', 'driveFileId'].includes(key)).map(([key, v]) => `<div class="audit-value-item"><strong>${segmentThaiHtml(activityFieldLabels[key] || key)}:</strong> ${historyValueHtml(v, `${field}.${key}`)}</div>`).join('');
+    if (typeof value === 'boolean') return value ? 'ใช่' : 'ไม่ใช่';
+    const text = String(value);
+    if (field === 'handoffStage') return segmentThaiHtml(activityStageName(text));
+    if (field === 'assignedTo') return segmentThaiHtml(userName(text));
+    if (field === 'status') return segmentThaiHtml(({ scouted: 'สำรวจแล้ว', reviewing: 'เทียบสเปก', rfq_sent: 'ส่ง RFQ', shortlisted: 'ตัวเต็ง', ordered: 'สั่งซื้อแล้ว' } as Record<string, string>)[text] || text);
+    const isMediaField = /url$|photos|photo|videos|voice|audio|storefrontAndAtmosphere|contactCards|menuBoard|drinkCups|floorPlanAndSpecs|surroundingNeighbors/i.test(field);
+    if (isMediaField && /^(https?:\/\/|\.\/|\/(?!\/)|data:(image|audio|video)\/)/i.test(text)) {
+      let url: string;
+      try { url = new URL(text, /^\/(uploads|media)\//.test(text) ? getRenderServerUrl() : normalizedBase).href; } catch { return segmentThaiHtml(text); }
+      const isAudio = /voice|audio/i.test(field);
+      const isVideo = /video/i.test(field);
+      const isImage = !isAudio && !isVideo && (/photos|photo|storefrontAndAtmosphere|contactCards|menuBoard|drinkCups|floorPlanAndSpecs|surroundingNeighbors/i.test(field) || /\.(png|jpe?g|webp|gif)(\?|$)/i.test(text));
+      const link = text.startsWith('data:') ? directLink : url;
+      return `<div class="audit-media">${isImage ? `<img src="${escapeHtml(url)}" crossorigin="anonymous" alt="ภาพที่บันทึกในประวัติ" />` : ''}<a href="${escapeHtml(link)}" target="_blank" rel="noopener noreferrer">${segmentThaiHtml(isAudio ? 'เปิดไฟล์เสียง' : isVideo ? 'เปิดวิดีโอ' : isImage ? 'เปิดภาพ' : 'เปิดไฟล์แนบ')}</a>${isAudio || isVideo ? `<span class="audit-empty"> · ${segmentThaiHtml('เปิดผ่านลิงก์หรือ QR ของรายการเพื่อฟังและดูต่อ')}</span>` : ''}</div>`;
+    }
+    return segmentThaiHtml(text);
+  };
 
-  // Build Activity & Handoff Log + Viewer Log
+  const currentStage = item.handoffStage || 'awaiting';
+  const recordedStages = historyEntries.filter(e => e.version === 2).flatMap(e => [e.stageBefore, e.stageAfter]);
+  const lastRelevantStage = Math.max(0, ...[currentStage, ...recordedStages].map(stage => activityStages.findIndex(([key]) => key === stage)));
+  const stageJourneyHtml = () => `<div class="audit-stages">${activityStages.slice(0, lastRelevantStage + 1).map(([stage], index) => {
+    const visits = historyEntries.filter(e => e.version === 2 && (e.stageBefore === stage || e.stageAfter === stage));
+    const entries = visits.filter(e => e.stageAfter === stage && e.stageBefore !== stage);
+    const current = currentStage === stage;
+    if (!visits.length) return `<div class="audit-stage audit-stage-missing">${segmentThaiHtml(`พาร์ท ${index + 1}: ไม่พบการบันทึกในพาร์ทนี้${current ? ' (สถานะปัจจุบัน)' : ''}`)}</div>`;
+    const rows = historyEntries.map((e, i) => e.version === 2 && e.stageAfter === stage ? activityRowsHtml[i] : '').join('');
+    return `<section class="audit-part"><div class="audit-stage ${current ? 'audit-current' : ''}"><strong>${segmentThaiHtml(activityStageName(stage))}${current ? ' · ปัจจุบัน' : ''}</strong>${entries.length > 1 ? `<span>${segmentThaiHtml(`บันทึกเข้า ${entries.length} ครั้ง`)}</span>` : ''}</div>${rows || `<p class="audit-empty">${segmentThaiHtml('พบพาร์ทนี้ในประวัติการส่งต่อไปขั้นตอนอื่น')}</p>`}</section>`;
+  }).join('')}</div>`;
+
   const activityRowsHtml = historyEntries
     .map((h, idx) => {
       const actionLabel =
-        h.action === 'handoff'
-          ? 'อัปเดตสถานะการส่งต่องาน (Handoff)'
-          : h.action === 'comment'
-          ? 'เพิ่มความคิดเห็นในรายการ'
-          : h.action === 'reply'
-          ? 'ตอบกลับความคิดเห็น'
+        h.kind === 'handoff' || h.action === 'handoff'
+          ? 'ส่งต่องาน'
+          : h.kind === 'comment' || h.action === 'comment'
+          ? 'ความคิดเห็น'
+          : h.kind === 'reply' || h.action === 'reply'
+          ? 'ตอบกลับ'
           : h.action;
-      return `
-      <tr>
-        <td style="text-align:center;font-weight:700;">${idx + 1}</td>
-        <td><div class="cell-title">${segmentThaiHtml(h.user)}</div></td>
-        <td><div class="cell-text">${segmentThaiHtml(actionLabel)}</div></td>
-        <td><div class="cell-sub">${escapeHtml(new Date(h.timestamp).toLocaleString('th-TH'))}</div></td>
-      </tr>`;
-    })
-    .join('');
+      const person = users.find(u => u.id === h.userId || u.alias === h.user || u.name === h.user);
+      const avatar = h.userAvatar || person?.avatar;
+      const safeAvatar = avatar && /^(https?:\/\/|\.\/|\/(?!\/)|data:image\/)/i.test(avatar) ? avatar : '';
+      const moved = h.version === 2 && h.stageBefore && h.stageBefore !== h.stageAfter;
+      return `<article class="audit-event" data-activity-id="${escapeHtml(h.id || idx)}">
+        <div class="audit-event-heading">${safeAvatar ? `<img class="audit-avatar" src="${escapeHtml(safeAvatar)}" crossorigin="anonymous" alt="${escapeHtml(person?.alias || h.user)}" />` : `<span class="audit-avatar audit-avatar-fallback">${escapeHtml((person?.alias || h.user || '?').slice(0, 1))}</span>`}<strong>${segmentThaiHtml(person?.alias || h.user)}</strong><span>${segmentThaiHtml(Number.isNaN(Date.parse(h.timestamp)) ? h.timestamp : new Date(h.timestamp).toLocaleString('th-TH'))}</span></div>
+        <div class="audit-action">${segmentThaiHtml(actionLabel)}</div>
+        ${h.version === 2 ? `<div class="audit-transition">${segmentThaiHtml(moved ? `${activityStageName(h.stageBefore)} → ${activityStageName(h.stageAfter)}` : `ณ ${activityStageName(h.stageAfter)}`)}</div>` : ''}
+        ${h.content ? `<div class="audit-content">${h.version !== 2 ? `<div class="audit-empty">${segmentThaiHtml('ข้อความที่ยังเก็บในรายการ · ไม่ทราบพาร์ท ณ เวลานั้น')}</div>` : ''}${h.content.replyToAuthor ? `<strong>${segmentThaiHtml(`ตอบกลับ ${h.content.replyToAuthor}`)}</strong>` : ''}<p>${segmentThaiHtml(h.content.text)}</p>${h.content.photoUrl ? historyValueHtml(h.content.photoUrl, 'photo') : ''}${h.content.voiceUrl || h.content.audioUrl ? historyValueHtml(h.content.voiceUrl || h.content.audioUrl, 'voice') : ''}</div>` : ''}
+        ${(h.kind === 'create' ? [] : h.changes || []).filter(c => c.field !== 'handoffStage').map(c => `<div class="audit-change"><h4>${segmentThaiHtml(activityFieldLabels[c.field] || c.field)}</h4>${c.before != null && c.before !== '' && (!Array.isArray(c.before) || c.before.length) ? `<div class="audit-before"><b>ก่อนเปลี่ยน</b><div>${historyValueHtml(c.before, c.field)}</div></div>` : ''}<div class="audit-after">${c.before != null && c.before !== '' ? '<b>หลังเปลี่ยน</b>' : ''}<div>${historyValueHtml(c.after, c.field)}</div></div></div>`).join('')}
+      </article>`;
+    });
+  const unassignedHistoryHtml = historyEntries.map((h, i) => h.version === 2 && activityStages.some(([stage]) => stage === h.stageAfter) ? '' : activityRowsHtml[i]).join('');
 
   const viewerRowsHtml =
     viewedBy.length > 0
@@ -616,6 +593,7 @@ export function buildExecutiveReportHtml(
 <html lang="th">
 <head>
   <meta charset="UTF-8" />
+  <base href="${escapeHtml(normalizedBase)}" />
   <meta name="viewport" content="width=840, initial-scale=0.45, minimum-scale=0.3, maximum-scale=2.0, user-scalable=yes" />
   <title>ฉันจะเป็นหัวแถว - ${escapeHtml(title)}</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -1090,6 +1068,38 @@ export function buildExecutiveReportHtml(
       margin-top: 2px;
     }
 
+    /* Complete activity history: normal document flow, with no fixed-height cells. */
+    .activity-report { overflow: visible; }
+    .activity-report .w-seg { max-width: 100%; white-space: normal; overflow-wrap: anywhere; }
+    .audit-intro, .audit-legacy { font-size: 11px; line-height: 1.6; }
+    .audit-legacy { color: #92400e; background: #fffbeb; padding: 8px; }
+    .audit-current-summary { border-left: 3px solid #059669; padding: 8px 12px; font-size: 11.5px; margin-bottom: 12px; }
+    .audit-stages { margin-bottom: 12px; }
+    .audit-stage { border-bottom: 1px solid #cbd5e1; padding: 6px 0; font-size: 10px; break-inside: avoid; break-after: avoid; }
+    .audit-stage strong { display: block; font-size: 11px; }
+    .audit-stage-missing { grid-column: 1 / -1; border: 0; padding: 2px 0; color: #64748b; }
+    .audit-current { background: #ecfdf5; border-color: #10b981; }
+    .audit-event { border-bottom: 1px solid #e2e8f0; padding: 8px 0; margin: 0; font-size: 11.5px; overflow-wrap: anywhere; break-inside: auto; }
+    .audit-event-heading { display: flex; align-items: center; gap: 7px; font-size: 11px; break-after: avoid; }
+    .audit-event-heading > span:last-child { color: #64748b; margin-left: auto; font-size: 10px; }
+    .audit-avatar { width: 27px; height: 27px; border-radius: 50%; object-fit: cover; flex-shrink: 0; }
+    .audit-avatar-fallback { background: #e2e8f0; color: #475569; text-align: center; line-height: 27px; }
+    .audit-action { font-weight: 700; margin-top: 6px; }
+    .audit-transition { color: #047857; font-weight: 700; margin: 6px 0; }
+    .audit-change { margin: 6px 0; break-inside: auto; }
+    .audit-change h4 { margin: 0 0 2px; color: #334155; font-size: 11px; break-after: avoid; }
+    .audit-before, .audit-after { padding: 2px 8px; border-left: 2px solid #cbd5e1; }
+    .audit-after { border-color: #10b981; }
+    .audit-before > b, .audit-after > b { display: block; font-size: 10px; color: #64748b; break-after: avoid; }
+    .audit-after > b { color: #047857; }
+    .audit-empty { color: #64748b; font-size: 10px; }
+    .audit-value-item { margin: 4px 0; }
+    .audit-media { margin: 5px 0; break-inside: avoid; }
+    .audit-media img { display: block; width: 160px; max-height: 160px; object-fit: contain; margin: 4px 0; }
+    .audit-media a { color: #047857; text-decoration: underline; }
+    .audit-content p { margin: 6px 0; orphans: 3; widows: 3; }
+    .audit-viewers { font-size: 13px; margin: 16px 0 5px; break-after: avoid; }
+
     /* Tables */
     .data-table {
       width: 100%;
@@ -1380,7 +1390,7 @@ export function buildExecutiveReportHtml(
           <div class="info-item">
             <span class="info-label">${segmentThaiHtml('ผู้รับผิดชอบรับช่วงต่อ & กำหนดติดตาม')}</span>
             <span class="info-value">${segmentThaiHtml(
-              `${item.assignedTo || 'ยังไม่ระบุผู้รับผิดชอบ'} · กำหนดติดตาม: ${item.targetFollowUpDate || '-'}`
+              `${item.assignedTo ? userName(item.assignedTo) : 'ยังไม่ระบุผู้รับผิดชอบ'} · กำหนดติดตาม: ${item.targetFollowUpDate || '-'}`
             )}</span>
           </div>
           <div class="info-item">
@@ -1429,33 +1439,15 @@ export function buildExecutiveReportHtml(
         ${photosGridHtml}
       </div>
 
-      <!-- Group 5: All Threaded Comments & Replies -->
-      <div class="section-box">
-        <div class="section-title">${segmentThaiHtml(`กลุ่มที่ 5: บันทึกความคิดเห็นและการตอบกลับทั้งหมด (${notes.length} หัวข้อสนทนา)`)}</div>
-        ${commentsHtml}
-      </div>
-
       <!-- Group 6: Activity & Handoff Log + Viewer Log -->
-      <div class="section-box">
-        <div class="section-title">${segmentThaiHtml(`กลุ่มที่ 6: ประวัติการดำเนินงาน (${historyEntries.length} รายการ) & ผู้เปิดอ่าน (${viewedBy.length} คน)`)}</div>
-        <table class="data-table">
-          <colgroup>
-            <col style="width:8%;" />
-            <col style="width:24%;" />
-            <col style="width:44%;" />
-            <col style="width:24%;" />
-          </colgroup>
-          <thead>
-            <tr>
-              <th style="text-align:center;">#</th>
-              <th>${segmentThaiHtml('ผู้ปฏิบัติงาน')}</th>
-              <th>${segmentThaiHtml('รายการที่ดำเนินการ / ส่งต่องาน')}</th>
-              <th>${segmentThaiHtml('วันและเวลา')}</th>
-            </tr>
-          </thead>
-          <tbody>${activityRowsHtml}</tbody>
-        </table>
-        ${viewerRowsHtml}
+      <div class="section-box activity-report" id="activity-history">
+        <div class="section-title">${segmentThaiHtml(`กลุ่มที่ 5: ประวัติการดำเนินงานและความคิดเห็น (${historyEntries.length} เหตุการณ์)`)}</div>
+        <p class="audit-intro">${segmentThaiHtml('จัดตามพาร์ทที่เกี่ยวข้อง แต่ละพาร์ทเรียงเหตุการณ์จากเก่าไปใหม่')}</p>
+        <div class="audit-current-summary"><strong>${segmentThaiHtml(`ปัจจุบัน: ${handoffStageLabel}`)}</strong><div>${segmentThaiHtml(`ผู้รับช่วงต่อ: ${item.assignedTo ? userName(item.assignedTo) : 'ยังไม่ระบุ'} · กำหนดติดตาม: ${item.targetFollowUpDate || 'ยังไม่ระบุ'}`)}</div></div>
+        ${stageJourneyHtml()}
+        ${historyEntries.some(h => h.version !== 2) ? `<p class="audit-legacy">${segmentThaiHtml('ประวัติเก่าแสดงตามที่บันทึกไว้ ไม่เติมขั้นตอนย้อนหลัง')}</p>` : ''}
+        ${unassignedHistoryHtml ? `<h3 class="audit-viewers">ประวัติที่ไม่ได้ระบุพาร์ท</h3>${unassignedHistoryHtml}` : ''}
+        ${viewedBy.length ? `<h3 class="audit-viewers">${segmentThaiHtml('ผู้เปิดอ่านรายการ')}</h3>${viewerRowsHtml}` : ''}
       </div>
     </div>
   </div>
@@ -1551,6 +1543,13 @@ export function buildExecutiveReportHtml(
       var statusEl = document.getElementById('status-indicator');
       if (statusEl) statusEl.textContent = 'กำลังสร้างไฟล์ PDF...';
       var element = document.getElementById('report-content');
+      // Avoid blank/truncated canvas exports for very long histories. Native print
+      // paginates the full document without imposing one enormous image canvas.
+      if (element && element.scrollHeight > 14000) {
+        if (statusEl) statusEl.textContent = 'รายงานมีหลายหน้า กรุณาเลือกบันทึกเป็น PDF ในหน้าพิมพ์เพื่อเก็บข้อมูลครบ';
+        window.print();
+        return;
+      }
       if (window.html2pdf && element) {
         window.scrollTo(0, 0);
         var opt = {
@@ -1571,7 +1570,7 @@ export function buildExecutiveReportHtml(
           jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
           pagebreak: {
             mode: ['css', 'legacy'],
-            avoid: ['tr', '.info-item', '.voice-card', '.video-card', '.photo-card', '.comment-box', '.note-banner', '.handoff-banner', '.report-header', '.file-attachment-card']
+            avoid: ['tr', '.info-item', '.voice-card', '.video-card', '.photo-card', '.comment-box', '.note-banner', '.handoff-banner', '.report-header', '.file-attachment-card', '.audit-stage', '.audit-event-heading', '.audit-media']
           }
         };
         var worker = window.html2pdf().set(opt).from(element);
@@ -1624,20 +1623,20 @@ export function buildExecutiveReportHtml(
 export function openExecutiveReport(
   item: SupplierRecord | StoreInspoRecord | LocationRecord,
   convertCnyToThb: (cny: number) => number,
-  mode: 'print' | 'pdf'
+  mode: 'print' | 'pdf',
+  users: User[] = []
 ): void {
-  const html = buildExecutiveReportHtml(item, convertCnyToThb, mode);
-  const reportWindow = window.open('', '_blank');
-  if (reportWindow) {
-    reportWindow.document.open();
-    reportWindow.document.write(html);
-    reportWindow.document.close();
-  } else {
-    const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
+  const html = buildExecutiveReportHtml(item, convertCnyToThb, mode, users);
+  // Navigate to a complete document. document.write with a cross-site script can
+  // leave a blank popup while the PDF library is blocked or slow to load.
+  const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const reportWindow = window.open(url, '_blank');
+  if (!reportWindow) {
     const a = document.createElement('a');
     a.href = url;
     a.target = '_blank';
     a.click();
   }
+  setTimeout(() => URL.revokeObjectURL(url), 60_000);
 }
