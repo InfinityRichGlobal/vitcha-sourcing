@@ -51,7 +51,10 @@ test('empty dashboard shows zero; loading reads back 42 records and repeat click
   await load(page);
   await expect(page.getByTestId('mockup-result')).toContainText('เพิ่ม 0 รายการ');
   await expect(page.getByTestId('mockup-result')).toContainText('ข้ามรายการเดิม 42');
+  await expect(page.getByRole('dialog')).toBeVisible();
   await page.screenshot({ path: 'test-results/sample-pack-mobile.png' });
+  await page.getByRole('button', { name: 'ปิดผลโหลดข้อมูล', exact: true }).click();
+  await expect(page.getByRole('dialog')).not.toBeVisible();
 });
 test('lost acknowledgement is recovered from server receipt', async ({ page }) => {
   await page.route('**/api/system/sample-pack', async route => {
@@ -61,12 +64,7 @@ test('lost acknowledgement is recovered from server receipt', async ({ page }) =
   await load(page);
   await expect(page.getByTestId('mockup-result')).toContainText('เพิ่ม 42 รายการ');
 });
-test('refresh reports failure and recovers; same-frame touch gesture refreshes data', async ({ page }) => {
-  const failing = (route: any) => route.fulfill({ status: 503, contentType: 'application/json', body: '{"error":"offline"}' });
-  await page.route('**/api/data**', failing);
-  await page.getByRole('button', { name: 'รีเฟรชข้อมูล', exact: true }).click();
-  await expect(page.getByTestId('refresh-controls')).toContainText('รีเฟรชไม่สำเร็จ');
-  await page.unroute('**/api/data**', failing);
+async function pull(page: Page) {
   await page.evaluate(() => {
     window.scrollTo(0, 0);
     const target = document.querySelector('main')!;
@@ -75,5 +73,23 @@ test('refresh reports failure and recovers; same-frame touch gesture refreshes d
     target.dispatchEvent(new TouchEvent('touchmove', { bubbles: true, cancelable: true, touches: [touch(240)] }));
     target.dispatchEvent(new TouchEvent('touchend', { bubbles: true, touches: [] }));
   });
-  await expect(page.getByTestId('refresh-controls')).toContainText('อัปเดตข้อมูลสำเร็จ');
+}
+test('pull refresh has no permanent button, reports failure and recovers', async ({ page }) => {
+  await expect(page.getByRole('button', { name: 'รีเฟรชข้อมูล', exact: true })).toHaveCount(0);
+  const failing = (route: any) => route.fulfill({ status: 503, contentType: 'application/json', body: '{"error":"offline"}' });
+  await page.route('**/api/data**', failing);
+  await pull(page);
+  await expect(page.getByTestId('refresh-feedback')).toContainText('รีเฟรชไม่สำเร็จ');
+  await page.getByRole('button', { name: 'ปิดผลรีเฟรช' }).click();
+  await expect(page.getByTestId('refresh-feedback')).toHaveCount(0);
+  await page.unroute('**/api/data**', failing);
+  await pull(page);
+  await expect(page.getByTestId('refresh-feedback')).toContainText('อัปเดตข้อมูลสำเร็จ');
+});
+
+test('another client write appears through polling without reload or signing out', async ({ page }) => {
+  const response = await page.request.post(base + '/api/suppliers', { headers: { Authorization: `Bearer ${token}` }, data: { id: 'realtime-fixture', name: 'Live supplier', category: 'Machine', rating: 4, quickTags: [], photos: { storefrontAndAtmosphere: [], contactCards: [] }, catalogItems: [], location: { lat: 13.7, lng: 100.5 }, status: 'scouted' } });
+  expect(response.ok()).toBeTruthy();
+  await expect(page.getByRole('button').filter({ hasText: 'ซัพพลายเออร์' }).first()).toContainText('1', { timeout: 10000 });
+  await expect(page.getByRole('banner')).toBeVisible();
 });

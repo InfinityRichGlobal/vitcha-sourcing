@@ -47,8 +47,7 @@ export const PinLoginModal: React.FC<PinLoginModalProps> = ({
       setPassword('');
       if (onClose) onClose();
     } else {
-      setError('Username / Email หรือรหัสผ่านไม่ถูกต้อง กรุณาตรวจสอบอีกครั้ง');
-      setPassword('');
+      setError('เข้าสู่ระบบยังไม่สำเร็จ กรุณาตรวจข้อความแจ้งเตือนแล้วลองใหม่');
     }
   };
 

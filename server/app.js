@@ -1,3 +1,4 @@
+import { packSnapshot } from './snapshot-wire.js';
 import express from 'express';
 import { SAMPLE_PACK_ID, sampleCatalog, mergeSamples } from './sample-pack.js';
 import cors from 'cors';
@@ -335,7 +336,8 @@ export function createApp({ dataDir, defaults = DEFAULT_DATABASE, sessionTtlMs =
           read: isRead,
         };
       });
-    res.json({ version, ...productData(db), ...pick(db, ['suppliers', 'drinkStores', 'locations', 'leadLabItems', 'franchiseStores', 'categories', 'storeCategories', 'locationTypes', 'quickTagsList', 'quickMessages', 'updatedAt', 'revision']), suppliers: (db.suppliers || []).map(item => currentRecord(db, item)), drinkStores: (db.drinkStores || []).map(item => currentRecord(db, item)), locations: (db.locations || []).map(item => currentRecord(db, item)), leadLabItems: db.leadLabItems || [], franchiseStores: db.franchiseStores || [], users: db.users.filter(u => !MOCK_IDS.has(u.id)).map(publicUser), invites: req.user.role === 'admin' ? db.invites : [], notifications: userNotifications, ...sessionResult(req.session, db) });
+    const snapshot = { version, ...productData(db), ...pick(db, ['suppliers', 'drinkStores', 'locations', 'leadLabItems', 'franchiseStores', 'categories', 'storeCategories', 'locationTypes', 'quickTagsList', 'quickMessages', 'updatedAt', 'revision']), suppliers: (db.suppliers || []).map(item => currentRecord(db, item)), drinkStores: (db.drinkStores || []).map(item => currentRecord(db, item)), locations: (db.locations || []).map(item => currentRecord(db, item)), leadLabItems: db.leadLabItems || [], franchiseStores: db.franchiseStores || [], users: db.users.filter(u => !MOCK_IDS.has(u.id)).map(publicUser), invites: req.user.role === 'admin' ? db.invites : [], notifications: userNotifications, ...sessionResult(req.session, db) };
+    res.json(req.query.media === 'images-v1' ? packSnapshot(snapshot) : snapshot);
   });
   app.get('/api/backup', (req, res) => { requireFounder(req); res.json(read()); });
   for (const [route, collection] of [['suppliers', 'suppliers'], ['drink-stores', 'drinkStores'], ['locations', 'locations']]) {

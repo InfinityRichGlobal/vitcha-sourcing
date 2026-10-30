@@ -2,6 +2,7 @@ import React, { useState, useEffect, lazy, Suspense } from 'react';
 import { ConnectionStatus } from './components/ConnectionStatus';
 import { AppProvider, useApp } from './context/AppContext';
 import { TopHeader } from './components/TopHeader';
+import { MockupResultDialog } from './components/MockupResultDialog';
 import { PullToRefresh } from './components/PullToRefresh';
 import { NavigationTabs } from './components/NavigationTabs';
 import { DashboardOverview } from './components/DashboardOverview';
@@ -34,7 +35,7 @@ import { SupplierRecord, StoreInspoRecord, LocationRecord } from './types';
 const ModalLoading = () => <div className="fixed inset-0 z-[110] grid place-items-center bg-slate-950/30 p-4 backdrop-blur-sm"><div role="status" className="rounded-2xl bg-white px-8 py-6 text-sm font-medium text-slate-600 shadow-xl">กำลังเปิดรายละเอียด…</div></div>;
 
 const MainApp: React.FC = () => {
-  const { activeTab, setActiveTab, suppliers, drinkStores, locations, isAuthenticated, isRestoringSession, editingSupplier, editingStore, editingLocation, isMockLoading, mockLoadMessage, mockLoadStatus } = useApp();
+  const { activeTab, setActiveTab, suppliers, drinkStores, locations, isAuthenticated, isRestoringSession, editingSupplier, editingStore, editingLocation, mockLoadMessage, mockLoadStatus } = useApp();
 
   const [isNewSupplierOpen, setIsNewSupplierOpen] = useState(false);
   const [isNewStoreInspoOpen, setIsNewStoreInspoOpen] = useState(false);
@@ -226,14 +227,7 @@ const MainApp: React.FC = () => {
       {/* 2. Top Standalone Navigation Bar (สลับหน้าใครหน้ามันได้ทันที) */}
       <NavigationTabs />
       <PullToRefresh />
-      {mockLoadStatus !== 'idle' && (
-        <div role="status" data-testid="mockup-result" className={`mx-auto w-full max-w-6xl px-4 py-3 text-sm ${mockLoadStatus === 'error' ? 'text-rose-800 bg-rose-50' : 'text-emerald-900 bg-emerald-50'}`}>
-          <div className="flex items-start gap-2">
-            {isMockLoading && <Loader2 className="w-5 h-5 shrink-0 animate-spin" />}
-            <span>{mockLoadMessage}</span>
-          </div>
-        </div>
-      )}
+      <MockupResultDialog status={mockLoadStatus} message={mockLoadMessage} />
 
       {/* 3. Filterable & Independent View Pages */}
       <main className="flex-1 bg-slate-50/40">

@@ -481,8 +481,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
   const updateCurrentUserProfile: AppContextType['updateCurrentUserProfile'] = (name, alias, avatar, pin, emailOrId, expectedRevision) => perform('profile', () => sendJson('/api/users', { id: currentUser.id, name, alias, avatar, pin: pin || undefined, emailOrId, revision: expectedRevision ?? currentUser.revision ?? 0 }));
   const loginWithCredentials = async (id: string, pin: string) => {
-    try { await loginUserApi(id, pin); setActionError(null); return await refreshCentralData(); }
-    catch (error) { setActionError(error instanceof Error ? error.message : 'เชื่อมต่อไม่ได้'); return false; }
+    try {
+      await loginUserApi(id, pin); setActionError(null);
+      const ok = await refreshCentralData();
+      if (!ok) setActionError('ตรวจสอบบัญชีแล้ว แต่ยังโหลดข้อมูลไม่ได้ กรุณารอการเชื่อมต่อหรือลองใหม่');
+      return ok;
+    } catch (error) {
+      setActionError(error instanceof ApiError ? error.message : 'เชื่อมต่อเซิร์ฟเวอร์ไม่สำเร็จ กรุณาลองใหม่ ไม่ได้หมายความว่ารหัสผ่านผิด');
+      return false;
+    }
   };
   const loginWithPin = loginWithCredentials;
   const logout = async () => {
@@ -566,7 +573,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const counts = Object.entries(labels).map(([key, label]) => `${label} ${latestSnapshot.current[key]?.length || 0}`).join(' · ');
       const message = `ตรวจสอบข้อมูลสำเร็จ: เพิ่ม ${added} รายการ · ข้ามรายการเดิม ${skipped} รายการ — ข้อมูลปัจจุบัน: ${counts}`;
       setMockLoadMessage(message); setMockLoadStatus('success');
-      showToast({ id: crypto.randomUUID(), title: 'โหลดชุดตัวอย่างและตรวจข้อมูลแล้ว', message, timestamp: new Date().toISOString(), type: 'system', actorId: 'system', actorAlias: 'ระบบ VITCHA', read: false });
+
       return true;
     } catch (error) {
       if (sessionToken === getSessionToken()) {

@@ -1,9 +1,9 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { ArrowDown, RotateCcw } from 'lucide-react';
+import { ArrowDown, RotateCcw, X } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 
 export const PullToRefresh: React.FC = () => {
-  const { refreshCentralData, lastRefreshedAt, renderStatus, isMockLoading } = useApp();
+  const { refreshCentralData, isMockLoading } = useApp();
   const [distance, setDistance] = useState(0);
   const [busy, setBusy] = useState(false);
   const [feedback, setFeedback] = useState('');
@@ -52,7 +52,7 @@ export const PullToRefresh: React.FC = () => {
     const start = (e: TouchEvent) => {
       reset();
       if (e.touches.length !== 1 || window.scrollY > 5 || running.current || latest.current.isMockLoading) return;
-      if (document.querySelector('[role="dialog"], [data-no-pull-refresh]')) return;
+      if (document.querySelector('dialog[open], [role="dialog"], [data-no-pull-refresh]')) return;
       const target = e.target instanceof Element ? e.target : null;
       if (target?.closest('input, textarea, select, button, a, .leaflet-container')) return;
       pull.current = { active: true, startY: e.touches[0].clientY, distance: 0 };
@@ -80,19 +80,18 @@ export const PullToRefresh: React.FC = () => {
     };
   }, []);
 
+  useEffect(() => {
+    if (!feedback || !feedback.startsWith('อัปเดต')) return;
+    const timer = setTimeout(() => setFeedback(''), 4000);
+    return () => clearTimeout(timer);
+  }, [feedback]);
+
   return <>
-    <div className="mx-auto flex w-full max-w-6xl flex-wrap items-center justify-between gap-2 px-4 py-2 text-xs text-slate-600" data-testid="refresh-controls">
-      <div role="status" aria-live="polite" className="min-w-0">
-        <div>{busy ? 'กำลังอัปเดตข้อมูล…' : feedback || (renderStatus === 'connected' ? 'เชื่อมต่อข้อมูลแล้ว' : 'ยังเชื่อมต่อข้อมูลไม่ได้')}</div>
-        <div className="text-[11px] text-slate-500">{lastRefreshedAt ? `อัปเดตล่าสุด ${new Date(lastRefreshedAt).toLocaleTimeString('th-TH')}` : 'ยังไม่ได้รับข้อมูลล่าสุด'}</div>
-      </div>
-      <button type="button" disabled={busy || isMockLoading} onClick={() => void refresh()} className="inline-flex min-h-11 shrink-0 items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 font-bold disabled:opacity-50">
-        <RotateCcw className={`h-4 w-4 ${busy ? 'animate-spin' : ''}`} />รีเฟรชข้อมูล
-      </button>
-      {updateAvailable && <button type="button" onClick={() => window.location.reload()} className="text-emerald-700 underline">มีเวอร์ชันใหม่ — โหลดหน้าใหม่</button>}
-    </div>
-    {distance > 0 && <div role="status" className="pointer-events-none fixed left-1/2 top-14 z-50 flex -translate-x-1/2 items-center gap-2 rounded-full border bg-white px-4 py-2 text-xs shadow-lg">
-      <ArrowDown className="h-4 w-4" />{distance >= 55 ? 'ปล่อยเพื่อรีเฟรช' : 'ดึงลงเพื่อรีเฟรช'}
+    {(distance > 0 || busy || feedback || updateAvailable) && <div data-testid="refresh-feedback" role="status" className={`fixed left-1/2 ${feedback ? 'bottom-6' : 'top-16'} z-[260] flex w-max max-w-[90vw] -translate-x-1/2 items-center gap-2 rounded-2xl border bg-white px-4 py-3 text-xs shadow-lg`}>
+      {busy ? <RotateCcw className="h-4 w-4 shrink-0 animate-spin" /> : <ArrowDown className="h-4 w-4 shrink-0" />}
+      <span>{busy ? 'กำลังอัปเดตข้อมูล…' : feedback || (distance >= 55 ? 'ปล่อยเพื่อรีเฟรช' : 'ดึงลงเพื่อรีเฟรช')}</span>
+      {updateAvailable && <button onClick={() => window.location.reload()}>มีเวอร์ชันใหม่ — โหลดหน้าใหม่</button>}
+      {!busy && !distance && <button aria-label="ปิดผลรีเฟรช" onClick={() => { setFeedback(''); setUpdateAvailable(false); }} className="p-2"><X className="h-4 w-4" /></button>}
     </div>}
   </>;
 };

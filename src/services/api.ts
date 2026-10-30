@@ -1,3 +1,4 @@
+import { unpackSnapshot } from './snapshotWire';
 import { SupplierRecord, StoreInspoRecord, User, InviteLink, AppNotification, LabItem, LabFormulaStatus, FranchiseStore } from '../types';
 
 const RENDER_CONFIG_KEY = 'vitcha_render_server_url';
@@ -99,8 +100,8 @@ export async function checkServerHealth(customUrl?: string): Promise<{ ok: boole
 export async function fetchCentralData(signal?: AbortSignal) {
   const key = `${getRenderServerUrl()}|${getSessionToken()}`;
   const cached = centralSnapshot?.key === key ? centralSnapshot.data : null;
-  const query = cached?.version ? `?since=${encodeURIComponent(cached.version)}` : '';
-  const data = await requestJson(`/api/data${query}`, { signal });
+  const query = `?media=images-v1${cached?.version ? `&since=${encodeURIComponent(cached.version)}` : ''}`;
+  const data = unpackSnapshot(await requestJson(`/api/data${query}`, { signal }));
   if (signal?.aborted) throw new DOMException('Aborted', 'AbortError');
   if (data.unchanged && cached) return cached;
   centralSnapshot = { key, data };

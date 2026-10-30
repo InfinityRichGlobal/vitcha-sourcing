@@ -620,3 +620,17 @@ test('sample pack preserves real lab and franchise records even when IDs collide
   assert.deepEqual(data.leadLabItems.find(x=>x.id===lab.id), lab);
   assert.deepEqual(data.franchiseStores.find(x=>x.id===store.id), store);
 });
+
+test('data endpoint deduplicates repeated profile photos for new clients while retaining legacy compatibility', async t => {
+  const avatar = 'data:image/jpeg;base64,' + 'A'.repeat(70000);
+  const defaults = { users: [{id:'user-ice',emailOrId:'ice',name:'ice',alias:'ice',role:'admin',pin:'876543',avatar}], invites:[], suppliers:[],drinkStores:[],notifications:[] };
+  const {call,login}=await setup(t,{defaults}); const token=await login('ice');
+  await call('/api/system/sample-pack',token,{packId:'vitcha-demo-v1',operationId:'avatar-pack'});
+  const legacy=(await call('/api/data',token,undefined,'GET')).data;
+  const wire=(await call('/api/data?media=images-v1',token,undefined,'GET')).data;
+  assert.equal(wire.wireFormat,'images-v1');
+  assert.equal(wire.images.filter(x=>x===avatar).length,1);
+  assert.ok(JSON.stringify(wire).length < JSON.stringify(legacy).length / 2);
+  assert.equal(wire.snapshot.suppliers.length,10);
+  assert.equal((await call(`/api/data?media=images-v1&since=${encodeURIComponent(wire.snapshot.version)}`,token,undefined,'GET')).data.unchanged,true);
+});

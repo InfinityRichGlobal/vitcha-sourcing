@@ -3,11 +3,11 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import ts from 'typescript';
+import { build } from 'esbuild';
 import { createPersistence } from '../server/persistence.js';
 
-const source = fs.readFileSync(new URL('../src/services/api.ts', import.meta.url), 'utf8');
-const compiled = ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2020 } }).outputText;
+const bundled = await build({ entryPoints: ['src/services/api.ts'], bundle: true, write: false, format: 'esm', platform: 'node' });
+const compiled = bundled.outputFiles[0].text;
 const api = await import(`data:text/javascript;base64,${Buffer.from(compiled).toString('base64')}`);
 
 function fixture(t) {
