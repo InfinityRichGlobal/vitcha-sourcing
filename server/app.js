@@ -160,30 +160,12 @@ export function createApp({ dataDir, defaults = DEFAULT_DATABASE, sessionTtlMs =
 
   function findOrSeedLeadLabItem(db, id) {
     const list = db.leadLabItems ||= [];
-    let item = list.find(x => x.id === id);
-    if (!item) {
-      const seed = DEFAULT_LEAD_LAB_ITEMS.find(x => x.id === id);
-      if (seed) {
-        item = JSON.parse(JSON.stringify(seed));
-        list.push(item);
-        save(db);
-      }
-    }
-    return item;
+    return list.find(x => x.id === id);
   }
 
   function findOrSeedFranchiseStore(db, id) {
     const list = db.franchiseStores ||= [];
-    let store = list.find(x => x.id === id);
-    if (!store) {
-      const seed = DEFAULT_FRANCHISE_STORES.find(x => x.id === id);
-      if (seed) {
-        store = JSON.parse(JSON.stringify(seed));
-        list.push(store);
-        save(db);
-      }
-    }
-    return store;
+    return list.find(x => x.id === id);
   }
 
   const requireAdmin = req => { if (req.user.role !== 'admin') fail(403, 'สิทธิ์นี้ใช้ได้เฉพาะผู้ดูแลระบบ'); };
@@ -616,10 +598,6 @@ export function createApp({ dataDir, defaults = DEFAULT_DATABASE, sessionTtlMs =
   app.get('/api/lead-lab/items', (req, res) => {
     requireReader(req);
     const db = read();
-    if (!db.leadLabItems || !db.leadLabItems.length) {
-      db.leadLabItems = JSON.parse(JSON.stringify(DEFAULT_LEAD_LAB_ITEMS));
-      save(db);
-    }
     res.json({ success: true, items: db.leadLabItems || [] });
   });
 
@@ -844,10 +822,6 @@ export function createApp({ dataDir, defaults = DEFAULT_DATABASE, sessionTtlMs =
   app.get('/api/franchise-stores', (req, res) => {
     requireReader(req);
     const db = read();
-    if (!db.franchiseStores || !db.franchiseStores.length) {
-      db.franchiseStores = JSON.parse(JSON.stringify(DEFAULT_FRANCHISE_STORES));
-      save(db);
-    }
     res.json({ success: true, stores: db.franchiseStores || [] });
   });
 
