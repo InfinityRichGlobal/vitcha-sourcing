@@ -150,6 +150,21 @@ export interface AttachedFile {
   driveFileId?: string;   // Google Drive File ID if available
 }
 
+export interface ActivityEntry {
+  id?: string;
+  version?: number;
+  kind?: 'create' | 'update' | 'handoff' | 'comment' | 'reply' | 'delete' | 'restore';
+  action: string;
+  user: string;
+  userId?: string;
+  userAvatar?: string;
+  timestamp: string;
+  stageBefore?: HandoffStage | null;
+  stageAfter?: HandoffStage;
+  changes?: Array<{ field: string; before: unknown; after: unknown }>;
+  content?: Partial<ReviewerNote & ReviewReply> & { noteId?: string };
+}
+
 export interface SupplierRecord {
   revision?: number;
   id: string;
@@ -202,7 +217,7 @@ export interface SupplierRecord {
   reviewerNotes: ReviewerNote[];
   viewedBy?: ViewLogEntry[];
   likes?: LikeEntry[];
-  history: Array<{ action: string; user: string; userAvatar?: string; timestamp: string }>;
+  history: ActivityEntry[];
   updatedAt: string;
 }
 
@@ -275,7 +290,7 @@ export interface StoreInspoRecord {
   reviewerNotes: ReviewerNote[];
   viewedBy?: ViewLogEntry[];
   likes?: LikeEntry[];
-  history: Array<{ action: string; user: string; userAvatar?: string; timestamp: string }>;
+  history: ActivityEntry[];
   updatedAt: string;
 }
 
@@ -365,7 +380,7 @@ export interface LocationRecord {
   reviewerNotes: ReviewerNote[];
   viewedBy?: ViewLogEntry[];
   likes?: LikeEntry[];
-  history: Array<{ action: string; user: string; userAvatar?: string; timestamp: string }>;
+  history: ActivityEntry[];
   updatedAt: string;
 }
 

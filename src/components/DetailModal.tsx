@@ -1,3 +1,4 @@
+import { ActivityTimeline } from './ActivityTimeline';
 import { AvatarImage } from './AvatarImage';
 import React, { useState, useEffect } from 'react';
 import { SupplierRecord, StoreInspoRecord, LocationRecord, PipelineStatus, AttachedFile } from '../types';
@@ -1551,112 +1552,7 @@ export const DetailModal: React.FC<DetailModalProps> = ({
             )}
           </div>
 
-          {/* Bottom Activity & Handoff Log (บันทึกประวัติการอัปเดตและส่งต่องานพาร์ทต่างๆ พร้อมไอคอนผู้รับผิดชอบ) */}
-          <div className="p-3.5 bg-slate-50/90 rounded-xl border border-slate-200/80 space-y-2.5">
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <span className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
-                <i className="fa-solid fa-clock-rotate-left text-emerald-600 text-xs" />
-                <span>ประวัติการดำเนินงาน & ส่งต่องาน (Activity Log)</span>
-              </span>
-              {currentItem.handoffStage && (
-                <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-800 border border-emerald-200">
-                  สถานะส่งต่อ:{' '}
-                  {{
-                    awaiting: 'พาร์ท 1: รอรับช่วงต่อ',
-                    rfq_sent: 'พาร์ท 2: ขอสเปก / ส่ง RFQ',
-                    sample_test: 'พาร์ท 3: ทดสอบตัวอย่าง Lab/R&D',
-                    negotiate: 'พาร์ท 4: ต่อรองราคา & MOQ',
-                    approved: 'พาร์ท 5: ตัวเต็งอนุมัติ',
-                    ordered: 'พาร์ท 6: สั่งซื้อสำเร็จ',
-                  }[currentItem.handoffStage] || currentItem.handoffStage}
-                </span>
-              )}
-            </div>
-
-            {(currentItem.assignedTo || currentItem.targetFollowUpDate || currentItem.handoffNotes) && (
-              <div className="p-2.5 bg-white rounded-lg border border-slate-200/80 text-[11px] space-y-1">
-                <div className="flex flex-wrap items-center gap-3 text-slate-700">
-                  {currentItem.assignedTo && (
-                    <span className="font-bold inline-flex items-center gap-1">
-                      <i className="fa-solid fa-user-check text-emerald-600 text-[10px]" />
-                      <span>ผู้รับช่วงต่อ: {currentItem.assignedTo}</span>
-                    </span>
-                  )}
-                  {currentItem.targetFollowUpDate && (
-                    <span className="font-mono text-slate-500">
-                      กำหนดติดตาม: {currentItem.targetFollowUpDate}
-                    </span>
-                  )}
-                </div>
-                {currentItem.handoffNotes && (
-                  <p className="text-slate-600 whitespace-pre-wrap leading-relaxed">
-                    หมายเหตุส่งต่อ: {currentItem.handoffNotes}
-                  </p>
-                )}
-              </div>
-            )}
-
-            <div className="space-y-1.5 max-h-48 overflow-y-auto pr-1">
-              {(() => {
-                const rawHistory = Array.isArray(currentItem.history) ? currentItem.history : [];
-                const entries =
-                  rawHistory.length > 0
-                    ? rawHistory
-                    : [
-                        {
-                          action: 'สร้างบันทึกรายการสำรวจ',
-                          user: currentItem.creator.alias,
-                          userAvatar: currentItem.creator.avatar,
-                          timestamp: currentItem.creator.timestamp,
-                        },
-                      ];
-                return entries.map((h, idx) => {
-                  const matchedUser = users.find(
-                    (u) => u.alias === h.user || u.name === h.user
-                  );
-                  const avatarUrl =
-                    h.userAvatar ||
-                    matchedUser?.avatar ||
-                    (h.user === currentItem.creator.alias
-                      ? currentItem.creator.avatar
-                      : './logo.jpg');
-                  const actionLabel =
-                    h.action === 'handoff'
-                      ? 'อัปเดตสถานะการส่งต่องาน (Handoff)'
-                      : h.action === 'comment'
-                        ? 'เพิ่มความคิดเห็นในรายการ'
-                        : h.action === 'reply'
-                          ? 'ตอบกลับความคิดเห็น'
-                          : h.action;
-                  return (
-                    <div
-                      key={`${h.timestamp}-${idx}`}
-                      className="flex items-center justify-between gap-2 px-2.5 py-1.5 bg-white rounded-lg border border-slate-200/70 text-[11px]"
-                    >
-                      <div className="flex items-center gap-2 min-w-0">
-                        <AvatarImage
-                          src={avatarUrl}
-                          alt={h.user}
-                          className="w-5 h-5 rounded-full object-cover border border-slate-200 shrink-0"
-                        />
-                        <span className="font-bold text-slate-900 shrink-0">{h.user}</span>
-                        <span className="text-slate-600 truncate">{actionLabel}</span>
-                      </div>
-                      <span className="text-[10px] font-mono text-slate-400 shrink-0">
-                        {new Date(h.timestamp).toLocaleString('th-TH', {
-                          day: '2-digit',
-                          month: '2-digit',
-                          year: '2-digit',
-                          hour: '2-digit',
-                          minute: '2-digit',
-                        })}
-                      </span>
-                    </div>
-                  );
-                });
-              })()}
-            </div>
-          </div>
+          <ActivityTimeline key={currentItem.id} item={currentItem} users={users} />
         </div>
 
         {/* Footer */}

@@ -146,3 +146,13 @@ Snapshot transport accepts `media=images-v1` and deduplicates repeated embedded 
 ## Two-brand mockup refresh
 
 The v2 sample catalog uses the supplied VITCHA/VITZA logos and a shared concept storefront, with no branch names. VITZA soda concepts are explicitly unapproved ideas rather than incorrectly linked tea recipes. The founder-only `/api/system/brand-concept` operation requires confirmation and the current database revision. It atomically retires only the four known mock branch IDs, adds two brand records and two topping records, preserves all members and unrelated records, and records an idempotent migration receipt. Real records colliding with retired IDs cause a conflict. The previous sample-pack ID remains accepted for existing clients but resolves to the new catalog.
+
+## Complete record activity journey (2026-10-31)
+
+Supplier, reference-store and location detail views retain the activity section and default to all stages. Six stage buttons filter the same inline timeline; visited stages are derived only from versioned server events, never from the ordinal position of the current stage. Repeated/backward moves remain separate events. Legacy history is retained with an explicit limitation message, and surviving full comments/replies are readable without guessing their historical stage.
+
+The server appends version-2 audit events with actor ID, timestamp, stage before/after, and full allowed-field before/after values for creation, edits, handoff, media/attachment changes, deletion and restoration. Comment/reply events keep immutable text/media snapshots. Hand-off revisions and operation-ID retry deduplication remain enforced. Client-supplied audit history is not accepted by ordinary record writes. No member credentials, roles, or production records are migrated or reset by this release.
+
+Timeline media opens in a dismissible in-page dialog. Full notes wrap on mobile; filters and incremental loading keep long histories usable. Older shortened text and missing transitions cannot be reconstructed. Retaining historical attachment URLs does not guarantee a file remains available if removed from its external storage.
+
+Validation includes full text/cleared-field preservation, backward and skipped stages, retry deduplication, stale-write rejection, immutable comments after replies, attachment removal, membership preservation, delete/restore continuity, mobile history/media/filter/reload behavior and legacy-stage honesty.

@@ -109,7 +109,10 @@ test('overlapping photo batches keep save disabled until every image is ready', 
   const response = await responsePromise;
   expect(response.ok()).toBeTruthy();
   const saved = (await response.json()).item;
-  expect(JSON.stringify(saved).match(/\/uploads\//g)?.length).toBe(2);
+  // Count current photos, not their immutable copies in activity history.
+  expect(Object.values(saved.photos).flat()).toHaveLength(2);
+  expect(JSON.stringify(saved.photos).match(/\/uploads\//g)?.length).toBe(2);
+  expect(saved.history.find((event: any) => event.kind === 'create').changes.find((change: any) => change.field === 'photos').after).toEqual(saved.photos);
   for (const url of Object.values(saved.photos).flat() as string[]) expect((await page.request.get(url)).ok()).toBeTruthy();
   await expect(dialog).not.toBeVisible();
 });

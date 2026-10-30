@@ -1,3 +1,4 @@
+import { recordActivity } from './activity-history.js';
 import { packSnapshot } from './snapshot-wire.js';
 import express from 'express';
 import { SAMPLE_PACK_ID, sampleCatalog, mergeSamples } from './sample-pack.js';
@@ -359,12 +360,15 @@ export function createApp({ dataDir, defaults = DEFAULT_DATABASE, sessionTtlMs =
         item = { ...target, ...pick(input, fields) };
         validateRecord(item, collection);
         // Concurrent notes, likes, handoff and audit history are not client-editable.
-        touch(item); item.history = [...(target.history || []), { action: 'แก้ไขและอัปเดตข้อมูลรายการ', user: req.user.alias, userAvatar: req.user.avatar, timestamp: now() }];
+        touch(item); item.history = [...(target.history || [])];
+        recordActivity(item, req.user, { kind: 'update', action: 'แก้ไขข้อมูลรายการ', before: target, fields });
         list[list.indexOf(target)] = item;
       } else {
         if (input.revision !== undefined) fail(404, 'รายการนี้ถูกลบแล้ว');
         const createdAt = now();
         item = { ...pick(input, [...fields, ...HANDOFF]), id: input.id, type: collection === 'suppliers' ? 'supplier' : collection === 'drinkStores' ? 'drink_store' : 'location', creator: { ...pick(req.user, ['id', 'name', 'alias', 'avatar']), timestamp: createdAt }, creationHash, reviewerNotes: [], likes: [], viewedBy: [], history: [{ action: 'สร้างบันทึกรายการสำรวจใหม่', user: req.user.alias, userAvatar: req.user.avatar, timestamp: createdAt }], revision: 1, updatedAt: createdAt };
+        item.history = [];
+        recordActivity(item, req.user, { kind: 'create', action: 'สร้างบันทึกรายการสำรวจใหม่', fields: [...fields, ...HANDOFF], timestamp: createdAt });
         validateRecord(item, collection); list.unshift(item);
       }
       notify(db, req.user, item.type, target ? 'อัปเดตข้อมูลรายการ' : 'เพิ่มรายการใหม่', item.name || item.storeName, item.id);
@@ -375,6 +379,7 @@ export function createApp({ dataDir, defaults = DEFAULT_DATABASE, sessionTtlMs =
       const item = list.find(x => x.id === req.params.id);
       if (!item) fail(404, 'ไม่พบรายการ');
       expectRevision(item, req.body?.revision);
+      recordActivity(item, req.user, { kind: 'delete', action: 'ลบรายการเข้าถังขยะ', before: item });
       db[collection] = list.filter(x => x.id !== item.id);
       db.trash = [
         {
@@ -394,6 +399,7 @@ export function createApp({ dataDir, defaults = DEFAULT_DATABASE, sessionTtlMs =
       if (!item) fail(404, 'ไม่พบรายการ');
       if (!clean(operationId)) fail(400, 'Missing operation ID');
       if ((item.appliedOperations || []).includes(operationId)) return res.json({ success: true });
+      const beforeActivity = structuredClone(pick(item, HANDOFF));
       const author = { authorId: req.user.id, author: req.user.alias, authorAvatar: req.user.avatar, authorRole: req.user.role, timestamp: now() };
       if (action === 'comment' || action === 'reply') {
         const rawText = clean(data.text);
@@ -455,14 +461,19 @@ export function createApp({ dataDir, defaults = DEFAULT_DATABASE, sessionTtlMs =
           if (data.status) parts.push(`เปลี่ยนสถานะเป็น ${statusLabels[data.status] || data.status}`);
           if (data.assignedTo !== undefined) parts.push(data.assignedTo ? `มอบหมายผู้รับช่วงต่อ: ${data.assignedTo}` : 'ยกเลิกผู้รับผิดชอบ');
           if (data.targetFollowUpDate) parts.push(`นัดติดตาม: ${data.targetFollowUpDate}`);
-          if (data.handoffNotes) parts.push(`บันทึกส่งต่องาน: ${clean(data.handoffNotes).slice(0, 80)}`);
+          if (data.handoffNotes) parts.push(`บันทึกส่งต่องาน: ${clean(data.handoffNotes)}`);
           historyText = parts.length > 0 ? parts.join(' · ') : 'อัปเดตสถานะการส่งต่องาน';
         } else if (action === 'comment') {
-          historyText = `แสดงความคิดเห็น: "${clean(data.text || 'แนบไฟล์สื่อ').slice(0, 60)}"`;
+          historyText = `แสดงความคิดเห็น: "${clean(data.text || 'แนบไฟล์สื่อ')}"`;
         } else if (action === 'reply') {
           historyText = `ตอบกลับความคิดเห็น${data.replyToAuthor ? ` @${clean(data.replyToAuthor)}` : ''}`;
         }
-        (item.history ||= []).push({ action: historyText, user: req.user.alias, userAvatar: req.user.avatar, timestamp: now() });
+        const content = action === 'comment'
+          ? item.reviewerNotes.find(n => n.id === operationId)
+          : action === 'reply'
+            ? { ...item.reviewerNotes.find(n => n.id === data.noteId)?.replies.find(r => r.id === operationId), noteId: data.noteId }
+            : undefined;
+        recordActivity(item, req.user, { id: operationId, kind: action, action: historyText, before: beforeActivity, fields: action === 'handoff' ? HANDOFF : [], content });
         const notifTitle = action === 'handoff' ? 'อัปเดตงานส่งต่อ' : action === 'reply' ? 'ตอบกลับความคิดเห็น' : 'ความคิดเห็นใหม่';
         notify(db, req.user, action === 'handoff' ? 'status' : action, notifTitle, clean(data.text).slice(0, 120) || item.name || item.storeName, item.id);
       }
@@ -555,6 +566,7 @@ export function createApp({ dataDir, defaults = DEFAULT_DATABASE, sessionTtlMs =
       selected.push({item, collection});
     }
     if (action === 'restore') for (const {item, collection} of selected) {
+      if (['suppliers','drinkStores','locations'].includes(collection)) recordActivity(item, req.user, { kind: 'restore', action: 'กู้คืนรายการจากถังขยะ', before: item });
       touch(item);
       delete item._trashedFrom; delete item.trashedAt; delete item.trashedBy;
       (db[collection] ||= []).unshift(item);
@@ -572,6 +584,7 @@ export function createApp({ dataDir, defaults = DEFAULT_DATABASE, sessionTtlMs =
     const targetCollection = item._trashedFrom || (item.type === 'supplier' ? 'suppliers' : item.type === 'drink_store' ? 'drinkStores' : item.type === 'franchise_store' ? 'franchiseStores' : item.type === 'lead_lab' ? 'leadLabItems' : 'locations');
     if (!['suppliers', 'drinkStores', 'locations', 'franchiseStores', 'leadLabItems'].includes(targetCollection)) fail(400, 'ประเภทรายการในถังขยะไม่ถูกต้อง');
     if ((db[targetCollection] || []).some(record => record.id === item.id)) fail(409, 'มีรายการรหัสนี้อยู่แล้ว กรุณาตรวจสอบก่อนกู้คืน');
+    if (['suppliers','drinkStores','locations'].includes(targetCollection)) recordActivity(item, req.user, { kind: 'restore', action: 'กู้คืนรายการจากถังขยะ', before: item });
     touch(item);
     delete item._trashedFrom;
     delete item.trashedAt;
