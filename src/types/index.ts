@@ -529,6 +529,9 @@ export interface FranchiseStore {
   videos?: string[];
   viewLogs?: ViewLogEntry[];
   menuItems: StoreMenuItem[];
+  createdById?: string;
+  createdByName?: string;
+  createdByAvatar?: string;
   createdAt: string;
   updatedAt: string;
   isMock?: boolean;

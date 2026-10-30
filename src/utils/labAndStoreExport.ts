@@ -115,6 +115,12 @@ export function printLeadLabSpecReport(item: LabItem) {
       <div style="font-size: 13px; font-family: monospace; color: #475569; margin-bottom: 8px;">${escapeHtml(item.nameEn)} · ${escapeHtml(item.category)}</div>
       <div style="font-size: 12px; font-weight: bold; margin-bottom: 8px;">สถานะ: <span style="color: #4f46e5;">${escapeHtml(statusLabel)}</span></div>
       <div style="font-size: 12px; color: #334155; line-height: 1.6;">${escapeHtml(item.description)}</div>
+      <div style="font-size: 11px; color: #64748b; margin-top: 8px; padding-top: 6px; border-top: 1px dashed #cbd5e1;">
+        👤 ผู้สร้างสูตร: <strong>${escapeHtml(item.createdByName || 'R&D Team')}</strong> (${item.createdAt ? new Date(item.createdAt).toLocaleDateString('th-TH') : '-'})
+        ${item.galleryPhotos && item.galleryPhotos.length > 0 ? ` · 📷 รูปแนบ: ${item.galleryPhotos.length} ภาพ` : ''}
+        ${item.audioNotes && item.audioNotes.length > 0 ? ` · 🎙️ วอยซ์เสียง: ${item.audioNotes.length} คลิป` : ''}
+        ${item.videos && item.videos.length > 0 ? ` · 🎬 คลิปวิดีโอ: ${item.videos.length} คลิป` : ''}
+      </div>
     </div>
   </div>
 
@@ -316,6 +322,12 @@ export function printFranchiseStoreReport(store: FranchiseStore, enrichedMenuIte
     <div class="title-block">
       <h1>🏪 ${escapeHtml(store.name)} · ${escapeHtml(store.branch)}</h1>
       <div class="sub">"${escapeHtml(store.brandTagline)}" | เวลาทำการ: ${escapeHtml(store.openingHours || '10:00 - 21:30 น.')} | โทร: ${escapeHtml(store.contactNumber || '-')}</div>
+      <div style="font-size: 11px; color: #047857; margin-top: 3px;">
+        👤 ผู้สร้างร้าน: <strong>${escapeHtml(store.createdByName || 'Franchise Team')}</strong> (${store.createdAt ? new Date(store.createdAt).toLocaleDateString('th-TH') : '-'})
+        ${store.galleryPhotos && store.galleryPhotos.length > 0 ? ` · 📷 รูปภาพสาขา: ${store.galleryPhotos.length} ภาพ` : ''}
+        ${store.audioNotes && store.audioNotes.length > 0 ? ` · 🎙️ วอยซ์เสียง: ${store.audioNotes.length} คลิป` : ''}
+        ${store.videos && store.videos.length > 0 ? ` · 🎬 คลิปวิดีโอ: ${store.videos.length} คลิป` : ''}
+      </div>
     </div>
     <div style="text-align: right; font-size: 11px;">
       <span style="background: #ecfdf5; color: #065f46; padding: 4px 8px; border-radius: 6px; font-weight: bold; border: 1px solid #a7f3d0;">

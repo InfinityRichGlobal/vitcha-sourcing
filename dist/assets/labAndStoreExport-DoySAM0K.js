@@ -1,19 +1,19 @@
-import{c as b,$ as M}from"./index-DrjsgaMQ.js";/**
+import{c as b,$ as N}from"./index-BLHqGdnq.js";/**
  * @license lucide-react v1.62.0 - ISC
  *
  * This source code is licensed under the ISC license.
  * See the LICENSE file in the root directory of this source tree.
- */const B={name:"droplet",size:24,node:[["path",{d:"M12 22a7 7 0 0 0 7-7c0-2-1-3.9-3-5.5s-3.5-4-4-6.5c-.5 2.5-2 4.9-4 6.5C6 11.1 5 13 5 15a7 7 0 0 0 7 7z",key:"c7niix"}]]};B.node;const C=b(B);/**
+ */const B={name:"droplet",size:24,node:[["path",{d:"M12 22a7 7 0 0 0 7-7c0-2-1-3.9-3-5.5s-3.5-4-4-6.5c-.5 2.5-2 4.9-4 6.5C6 11.1 5 13 5 15a7 7 0 0 0 7 7z",key:"c7niix"}]]};B.node;const R=b(B);/**
  * @license lucide-react v1.62.0 - ISC
  *
  * This source code is licensed under the ISC license.
  * See the LICENSE file in the root directory of this source tree.
- */const P={name:"heart",size:24,node:[["path",{d:"M2 9.5a5.5 5.5 0 0 1 9.591-3.676.56.56 0 0 0 .818 0A5.49 5.49 0 0 1 22 9.5c0 2.29-1.5 4-3 5.5l-5.492 5.313a2 2 0 0 1-3 .019L5 15c-1.5-1.5-3-3.2-3-5.5",key:"mvr1a0"}]]};P.node;const E=b(P);/**
+ */const P={name:"heart",size:24,node:[["path",{d:"M2 9.5a5.5 5.5 0 0 1 9.591-3.676.56.56 0 0 0 .818 0A5.49 5.49 0 0 1 22 9.5c0 2.29-1.5 4-3 5.5l-5.492 5.313a2 2 0 0 1-3 .019L5 15c-1.5-1.5-3-3.2-3-5.5",key:"mvr1a0"}]]};P.node;const A=b(P);/**
  * @license lucide-react v1.62.0 - ISC
  *
  * This source code is licensed under the ISC license.
  * See the LICENSE file in the root directory of this source tree.
- */const I={name:"video",size:24,node:[["path",{d:"m16 13 5.223 3.482a.5.5 0 0 0 .777-.416V7.87a.5.5 0 0 0-.752-.432L16 10.5",key:"ftymec"}],["rect",{x:"2",y:"6",width:"14",height:"12",rx:"2",key:"158x01"}]]};I.node;const N=b(I);var j=M();function t(e){return e==null?"":String(e).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;")}function _(e){const o=window.open("","_blank");if(!o){window.print();return}const l=e.suggestedPriceThb>0?((e.suggestedPriceThb-e.costTotalThb)/e.suggestedPriceThb*100).toFixed(1):"0.0",a={approved:"✅ ผ่านเกณฑ์อนุมัติ (Approved)",testing:"⏳ กำลังทดลอง & วิจัย (Testing)",shelved:"📦 พักสูตร (Shelved)"}[e.status]||e.status,r=(e.revisionCycles||[]).flatMap(s=>(s.comments||[]).map(n=>({...n,cycleTitle:s.title}))),p=`<!DOCTYPE html>
+ */const D={name:"video",size:24,node:[["path",{d:"m16 13 5.223 3.482a.5.5 0 0 0 .777-.416V7.87a.5.5 0 0 0-.752-.432L16 10.5",key:"ftymec"}],["rect",{x:"2",y:"6",width:"14",height:"12",rx:"2",key:"158x01"}]]};D.node;const C=b(D);var E=N();function t(e){return e==null?"":String(e).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;")}function j(e){const s=window.open("","_blank");if(!s){window.print();return}const l=e.suggestedPriceThb>0?((e.suggestedPriceThb-e.costTotalThb)/e.suggestedPriceThb*100).toFixed(1):"0.0",i={approved:"✅ ผ่านเกณฑ์อนุมัติ (Approved)",testing:"⏳ กำลังทดลอง & วิจัย (Testing)",shelved:"📦 พักสูตร (Shelved)"}[e.status]||e.status,r=(e.revisionCycles||[]).flatMap(o=>(o.comments||[]).map(n=>({...n,cycleTitle:o.title}))),p=`<!DOCTYPE html>
 <html lang="th">
 <head>
   <meta charset="UTF-8">
@@ -90,8 +90,14 @@ import{c as b,$ as M}from"./index-DrjsgaMQ.js";/**
     <div class="info-card">
       <div style="font-size: 18px; font-weight: 900; color: #0f172a;">${t(e.name)}</div>
       <div style="font-size: 13px; font-family: monospace; color: #475569; margin-bottom: 8px;">${t(e.nameEn)} · ${t(e.category)}</div>
-      <div style="font-size: 12px; font-weight: bold; margin-bottom: 8px;">สถานะ: <span style="color: #4f46e5;">${t(a)}</span></div>
+      <div style="font-size: 12px; font-weight: bold; margin-bottom: 8px;">สถานะ: <span style="color: #4f46e5;">${t(i)}</span></div>
       <div style="font-size: 12px; color: #334155; line-height: 1.6;">${t(e.description)}</div>
+      <div style="font-size: 11px; color: #64748b; margin-top: 8px; padding-top: 6px; border-top: 1px dashed #cbd5e1;">
+        👤 ผู้สร้างสูตร: <strong>${t(e.createdByName||"R&D Team")}</strong> (${e.createdAt?new Date(e.createdAt).toLocaleDateString("th-TH"):"-"})
+        ${e.galleryPhotos&&e.galleryPhotos.length>0?` · 📷 รูปแนบ: ${e.galleryPhotos.length} ภาพ`:""}
+        ${e.audioNotes&&e.audioNotes.length>0?` · 🎙️ วอยซ์เสียง: ${e.audioNotes.length} คลิป`:""}
+        ${e.videos&&e.videos.length>0?` · 🎬 คลิปวิดีโอ: ${e.videos.length} คลิป`:""}
+      </div>
     </div>
   </div>
 
@@ -185,11 +191,11 @@ import{c as b,$ as M}from"./index-DrjsgaMQ.js";/**
       </tr>
     </thead>
     <tbody>
-      ${(e.ingredients||[]).map(s=>`
+      ${(e.ingredients||[]).map(o=>`
       <tr>
-        <td>${t(s.name)}</td>
-        <td>${s.quantity} ${t(s.unit)}</td>
-        <td>฿${s.costThb.toFixed(2)}</td>
+        <td>${t(o.name)}</td>
+        <td>${o.quantity} ${t(o.unit)}</td>
+        <td>฿${o.costThb.toFixed(2)}</td>
       </tr>`).join("")}
     </tbody>
   </table>
@@ -199,13 +205,13 @@ import{c as b,$ as M}from"./index-DrjsgaMQ.js";/**
   <div style="font-size: 11px; color: #475569; margin-bottom: 8px;">
     ❤️ ยอดไลก์สูตร: <strong>${(e.likedBy||[]).length} ไลก์</strong> | ประวัติรอบการพัฒนา: <strong>${(e.revisionCycles||[]).length} รอบ</strong>
   </div>
-  ${r.slice(0,4).map(s=>`
+  ${r.slice(0,4).map(o=>`
   <div class="comment-item">
     <div class="comment-meta">
-      <span>👤 ${t(s.authorName)} [เจาะจง: หวาน ${t(s.sweetnessTarget||"ภาพรวม")}%]</span>
-      <span>👍 ${(s.likes||[]).length} ไลก์</span>
+      <span>👤 ${t(o.authorName)} [เจาะจง: หวาน ${t(o.sweetnessTarget||"ภาพรวม")}%]</span>
+      <span>👍 ${(o.likes||[]).length} ไลก์</span>
     </div>
-    <div style="font-size: 12px; color: #1e1b4b;">"${t(s.content)}"</div>
+    <div style="font-size: 12px; color: #1e1b4b;">"${t(o.content)}"</div>
   </div>`).join("")}
 
   <div style="margin-top: 30px; display: grid; grid-template-columns: 1fr 1fr; gap: 40px; text-align: center; font-size: 12px;">
@@ -217,7 +223,7 @@ import{c as b,$ as M}from"./index-DrjsgaMQ.js";/**
     </div>
   </div>
 </body>
-</html>`;o.document.write(p),o.document.close()}function A(e,o){const l=window.open("","_blank");if(!l){window.print();return}const a=o.filter(n=>{var i;return((i=n.labItem)==null?void 0:i.type)==="drink"}),r=o.filter(n=>{var i;return((i=n.labItem)==null?void 0:i.type)==="topping"}),p=(e.revisionCycles||[]).flatMap(n=>(n.comments||[]).map(i=>i)),s=`<!DOCTYPE html>
+</html>`;s.document.write(p),s.document.close()}function H(e,s){const l=window.open("","_blank");if(!l){window.print();return}const i=s.filter(n=>{var a;return((a=n.labItem)==null?void 0:a.type)==="drink"}),r=s.filter(n=>{var a;return((a=n.labItem)==null?void 0:a.type)==="topping"}),p=(e.revisionCycles||[]).flatMap(n=>(n.comments||[]).map(a=>a)),o=`<!DOCTYPE html>
 <html lang="th">
 <head>
   <meta charset="UTF-8">
@@ -270,6 +276,12 @@ import{c as b,$ as M}from"./index-DrjsgaMQ.js";/**
     <div class="title-block">
       <h1>🏪 ${t(e.name)} · ${t(e.branch)}</h1>
       <div class="sub">"${t(e.brandTagline)}" | เวลาทำการ: ${t(e.openingHours||"10:00 - 21:30 น.")} | โทร: ${t(e.contactNumber||"-")}</div>
+      <div style="font-size: 11px; color: #047857; margin-top: 3px;">
+        👤 ผู้สร้างร้าน: <strong>${t(e.createdByName||"Franchise Team")}</strong> (${e.createdAt?new Date(e.createdAt).toLocaleDateString("th-TH"):"-"})
+        ${e.galleryPhotos&&e.galleryPhotos.length>0?` · 📷 รูปภาพสาขา: ${e.galleryPhotos.length} ภาพ`:""}
+        ${e.audioNotes&&e.audioNotes.length>0?` · 🎙️ วอยซ์เสียง: ${e.audioNotes.length} คลิป`:""}
+        ${e.videos&&e.videos.length>0?` · 🎬 คลิปวิดีโอ: ${e.videos.length} คลิป`:""}
+      </div>
     </div>
     <div style="text-align: right; font-size: 11px;">
       <span style="background: #ecfdf5; color: #065f46; padding: 4px 8px; border-radius: 6px; font-weight: bold; border: 1px solid #a7f3d0;">
@@ -280,7 +292,7 @@ import{c as b,$ as M}from"./index-DrjsgaMQ.js";/**
   </div>
 
   <!-- Drinks Table -->
-  <div style="font-weight: 800; font-size: 13px; color: #0f172a; margin-bottom: 6px;">🥤 หมวดหมู่เครื่องดื่ม (Handcrafted Beverages) - ${a.length} รายการ</div>
+  <div style="font-weight: 800; font-size: 13px; color: #0f172a; margin-bottom: 6px;">🥤 หมวดหมู่เครื่องดื่ม (Handcrafted Beverages) - ${i.length} รายการ</div>
   <table>
     <thead>
       <tr>
@@ -293,9 +305,9 @@ import{c as b,$ as M}from"./index-DrjsgaMQ.js";/**
       </tr>
     </thead>
     <tbody>
-      ${a.map((n,i)=>{var f,h,x,m,v,y,u,w,$,k,L,T,z,S;const d=n.labItem,c=n.menuItem;return`
+      ${i.map((n,a)=>{var h,f,x,v,y,u,m,w,$,k,L,T,z,S;const d=n.labItem,c=n.menuItem;return`
         <tr>
-          <td style="text-align: center; font-weight: bold;">${i+1}</td>
+          <td style="text-align: center; font-weight: bold;">${a+1}</td>
           <td>
             <strong>${t(c.customName||d.name)}</strong>
             <div style="font-size: 10px; color: #64748b;">${t(d.nameEn)} (${t(d.code)})</div>
@@ -303,15 +315,15 @@ import{c as b,$ as M}from"./index-DrjsgaMQ.js";/**
           </td>
           <td style="text-align: right;" class="price">฿${c.retailPriceThb}</td>
           <td>
-            ไซรัป: <strong>${((h=(f=d.sweetnessLevels)==null?void 0:f.half)==null?void 0:h.syrupMl)||15} ml</strong> (Brix: ${((m=(x=d.sweetnessLevels)==null?void 0:x.half)==null?void 0:m.brix)||8.5}°Bx)
-            <div style="font-size: 10px; color: #475569;">${t(((y=(v=d.sweetnessLevels)==null?void 0:v.half)==null?void 0:y.tasteNotes)||"")}</div>
+            ไซรัป: <strong>${((f=(h=d.sweetnessLevels)==null?void 0:h.half)==null?void 0:f.syrupMl)||15} ml</strong> (Brix: ${((v=(x=d.sweetnessLevels)==null?void 0:x.half)==null?void 0:v.brix)||8.5}°Bx)
+            <div style="font-size: 10px; color: #475569;">${t(((u=(y=d.sweetnessLevels)==null?void 0:y.half)==null?void 0:u.tasteNotes)||"")}</div>
           </td>
           <td>
-            0%: ไซรัป ${((w=(u=d.sweetnessLevels)==null?void 0:u.zero)==null?void 0:w.syrupMl)||0}ml (${((k=($=d.sweetnessLevels)==null?void 0:$.zero)==null?void 0:k.brix)||3}°Bx)<br/>
+            0%: ไซรัป ${((w=(m=d.sweetnessLevels)==null?void 0:m.zero)==null?void 0:w.syrupMl)||0}ml (${((k=($=d.sweetnessLevels)==null?void 0:$.zero)==null?void 0:k.brix)||3}°Bx)<br/>
             100%: ไซรัป ${((T=(L=d.sweetnessLevels)==null?void 0:L.full)==null?void 0:T.syrupMl)||30}ml (${((S=(z=d.sweetnessLevels)==null?void 0:z.full)==null?void 0:S.brix)||13.5}°Bx)
           </td>
           <td>
-            ${(c.recommendedToppingIds||[]).map(D=>{const g=o.find(F=>F.menuItem.labItemId===D);return g?`<span class="badge" style="margin-right: 3px;">+ ${t(g.menuItem.customName||g.labItem.name)}</span>`:""}).join("")||"-"}
+            ${(c.recommendedToppingIds||[]).map(I=>{const g=s.find(F=>F.menuItem.labItemId===I);return g?`<span class="badge" style="margin-right: 3px;">+ ${t(g.menuItem.customName||g.labItem.name)}</span>`:""}).join("")||"-"}
           </td>
         </tr>`}).join("")}
     </tbody>
@@ -330,9 +342,9 @@ import{c as b,$ as M}from"./index-DrjsgaMQ.js";/**
       </tr>
     </thead>
     <tbody>
-      ${r.map((n,i)=>`
+      ${r.map((n,a)=>`
       <tr>
-        <td style="text-align: center; font-weight: bold;">${i+1}</td>
+        <td style="text-align: center; font-weight: bold;">${a+1}</td>
         <td>
           <strong>${t(n.menuItem.customName||n.labItem.name)}</strong>
           <span class="badge badge-seller" style="margin-left: 6px;">${t(n.menuItem.badge||"Topping")}</span>
@@ -350,12 +362,12 @@ import{c as b,$ as M}from"./index-DrjsgaMQ.js";/**
     <span>📋 รหัสสาขา: <strong>${t(e.id)}</strong></span>
   </div>
 </body>
-</html>`;l.document.write(s),l.document.close()}async function H(e){const o=e.suggestedPriceThb>0?((e.suggestedPriceThb-e.costTotalThb)/e.suggestedPriceThb*100).toFixed(1):"0.0",l=typeof window<"u"?`${window.location.origin}${window.location.pathname}?tab=lead_lab&view=${encodeURIComponent(e.id)}`:"",a=`🧪 [LEAD LAB R&D] สรุปสูตรเครื่องดื่มมาตรฐาน
+</html>`;l.document.write(o),l.document.close()}async function _(e){const s=e.suggestedPriceThb>0?((e.suggestedPriceThb-e.costTotalThb)/e.suggestedPriceThb*100).toFixed(1):"0.0",l=typeof window<"u"?`${window.location.origin}${window.location.pathname}?tab=lead_lab&view=${encodeURIComponent(e.id)}`:"",i=`🧪 [LEAD LAB R&D] สรุปสูตรเครื่องดื่มมาตรฐาน
 ━━━━━━━━━━━━━━━━━━━━
 📌 รหัสสูตร: ${e.code}
 🥤 ชื่อสูตร: ${e.name} (${e.nameEn})
 🏷️ หมวดหมู่: ${e.category}
-💰 ต้นทุนรวม: ฿${e.costTotalThb.toFixed(2)} | ราคาขายแนะนำ: ฿${e.suggestedPriceThb.toFixed(2)} (GP ${o}%)
+💰 ต้นทุนรวม: ฿${e.costTotalThb.toFixed(2)} | ราคาขายแนะนำ: ฿${e.suggestedPriceThb.toFixed(2)} (GP ${s}%)
 ━━━━━━━━━━━━━━━━━━━━
 🍬 เมทริกซ์ความหวาน & Brix:
 • หวาน 0%: ไซรัป ${e.sweetnessLevels.zero.syrupMl}ml (Brix ${e.sweetnessLevels.zero.brix}°Bx)
@@ -363,7 +375,7 @@ import{c as b,$ as M}from"./index-DrjsgaMQ.js";/**
 • หวาน 100%: ไซรัป ${e.sweetnessLevels.full.syrupMl}ml (Brix ${e.sweetnessLevels.full.brix}°Bx)
 ━━━━━━━━━━━━━━━━━━━━
 ❤️ ไลก์: ${(e.likedBy||[]).length} คน | 💬 รอบพัฒนา: ${(e.revisionCycles||[]).length} รอบ
-🔗 กดดูสูตรทันที: ${l}`;try{navigator.clipboard&&await navigator.clipboard.writeText(a)}catch(p){console.warn("Failed to copy text",p)}const r=`https://line.me/R/msg/text/?${encodeURIComponent(a)}`;return window.open(r,"_blank"),!0}async function U(e,o){const l=typeof window<"u"?`${window.location.origin}${window.location.pathname}?tab=franchise_stores&view=${encodeURIComponent(e.id)}`:"",a=`🏪 [FRANCHISE STORE] ข้อมูลสาขาและเมนูบอร์ด
+🔗 กดดูสูตรทันที: ${l}`;try{navigator.clipboard&&await navigator.clipboard.writeText(i)}catch(p){console.warn("Failed to copy text",p)}const r=`https://line.me/R/msg/text/?${encodeURIComponent(i)}`;return window.open(r,"_blank"),!0}async function U(e,s){const l=typeof window<"u"?`${window.location.origin}${window.location.pathname}?tab=franchise_stores&view=${encodeURIComponent(e.id)}`:"",i=`🏪 [FRANCHISE STORE] ข้อมูลสาขาและเมนูบอร์ด
 ━━━━━━━━━━━━━━━━━━━━
 📌 แบรนด์: ${e.name}
 📍 สาขา: ${e.branch}
@@ -371,6 +383,6 @@ import{c as b,$ as M}from"./index-DrjsgaMQ.js";/**
 ⏰ เวลาทำการ: ${e.openingHours||"10:00 - 21:30 น."}
 📞 โทร: ${e.contactNumber||"-"}
 ━━━━━━━━━━━━━━━━━━━━
-🥤 จำนวนเมนูพร้อมจำหน่าย: ${o} รายการ
+🥤 จำนวนเมนูพร้อมจำหน่าย: ${s} รายการ
 ❤️ ทีมงานไลก์: ${(e.likedBy||[]).length} คน
-🔗 กดดูข้อมูลสาขาทันที: ${l}`;try{navigator.clipboard&&await navigator.clipboard.writeText(a)}catch(p){console.warn("Failed to copy text",p)}const r=`https://line.me/R/msg/text/?${encodeURIComponent(a)}`;return window.open(r,"_blank"),!0}export{C as D,E as H,N as V,U as a,A as b,_ as p,j as r,H as s};
+🔗 กดดูข้อมูลสาขาทันที: ${l}`;try{navigator.clipboard&&await navigator.clipboard.writeText(i)}catch(p){console.warn("Failed to copy text",p)}const r=`https://line.me/R/msg/text/?${encodeURIComponent(i)}`;return window.open(r,"_blank"),!0}export{R as D,A as H,C as V,U as a,H as b,j as p,E as r,_ as s};

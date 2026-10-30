@@ -37,13 +37,17 @@ import {
   Loader2,
   Paperclip,
   Image as ImageIcon,
-  Video
+  Video,
+  Check
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
-import { FranchiseStore, StoreMenuItem, LabItem } from '../types';
+import { FranchiseStore, StoreMenuItem, LabItem, VoiceNoteEntry } from '../types';
 import { compressImageFile } from '../utils/imageCompressor';
 import { printFranchiseStoreReport, shareFranchiseStore, printLeadLabSpecReport, shareLeadLabItem } from '../utils/labAndStoreExport';
 import { uploadMediaToServer } from '../services/api';
+import { saveVideoFile } from '../utils/mediaStorage';
+import { AudioRecorder } from './AudioRecorder';
+import { VideoPlayer } from './VideoPlayer';
 
 export function FranchiseStoreView({
   initialStoreId,
@@ -189,6 +193,33 @@ export function FranchiseStoreView({
           btn: 'bg-purple-600 hover:bg-purple-500 text-white',
           border: 'border-purple-500/30',
           badge: 'bg-purple-100 text-purple-800 border-purple-300'
+        };
+      case 'rose':
+        return {
+          bg: 'from-rose-950 via-slate-900 to-pink-950 border-rose-800/40',
+          accent: 'text-rose-400',
+          pill: 'bg-rose-500/20 text-rose-300 border-rose-400/30',
+          btn: 'bg-rose-600 hover:bg-rose-500 text-white',
+          border: 'border-rose-500/30',
+          badge: 'bg-rose-100 text-rose-800 border-rose-300'
+        };
+      case 'indigo':
+        return {
+          bg: 'from-indigo-950 via-slate-900 to-blue-950 border-indigo-800/40',
+          accent: 'text-indigo-400',
+          pill: 'bg-indigo-500/20 text-indigo-300 border-indigo-400/30',
+          btn: 'bg-indigo-600 hover:bg-indigo-500 text-white',
+          border: 'border-indigo-500/30',
+          badge: 'bg-indigo-100 text-indigo-800 border-indigo-300'
+        };
+      case 'slate':
+        return {
+          bg: 'from-slate-950 via-zinc-900 to-neutral-950 border-slate-700/40',
+          accent: 'text-slate-300',
+          pill: 'bg-slate-700/40 text-slate-200 border-slate-600/40',
+          btn: 'bg-slate-800 hover:bg-slate-700 text-white',
+          border: 'border-slate-600/40',
+          badge: 'bg-slate-200 text-slate-800 border-slate-400'
         };
       case 'emerald':
       default:
@@ -849,6 +880,72 @@ export function FranchiseStoreView({
         )}
       </div>
 
+      {/* 📸 STORE MULTIMEDIA (แกลเลอรีภาพสาขา · เสียงบรรยาย · วิดีโอ) */}
+      {((activeStore.galleryPhotos && activeStore.galleryPhotos.length > 0) ||
+        (activeStore.audioNotes && activeStore.audioNotes.length > 0) ||
+        (activeStore.videos && activeStore.videos.length > 0)) && (
+        <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-4 shadow-xs space-y-3.5 print:hidden">
+          <div className="flex items-center gap-2">
+            <ImageIcon className="w-4 h-4 text-emerald-600" />
+            <span className="text-xs sm:text-sm font-extrabold text-slate-800 dark:text-white">
+              มัลติมีเดียและบรรยากาศสาขา (Store Atmosphere & Media)
+            </span>
+          </div>
+
+          {activeStore.galleryPhotos && activeStore.galleryPhotos.length > 0 && (
+            <div className="space-y-1.5">
+              <span className="text-[11px] font-bold text-slate-400">รูปภาพสาขา ({activeStore.galleryPhotos.length})</span>
+              <div className="flex gap-2.5 overflow-x-auto pb-1">
+                {activeStore.galleryPhotos.map((photo, pIdx) => (
+                  <a
+                    key={pIdx}
+                    href={photo}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="w-20 h-20 rounded-xl overflow-hidden shrink-0 border border-slate-200 dark:border-slate-700 shadow-xs hover:opacity-80 transition-opacity"
+                  >
+                    <img src={photo} alt="" className="w-full h-full object-cover" />
+                  </a>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {activeStore.audioNotes && activeStore.audioNotes.length > 0 && (
+            <div className="space-y-1.5">
+              <span className="text-[11px] font-bold text-slate-400">เสียงบรรยายสาขา ({activeStore.audioNotes.length})</span>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                {activeStore.audioNotes.map((note) => (
+                  <div key={note.id} className="p-2.5 rounded-xl bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-100 dark:border-emerald-900/40 flex items-center gap-2.5">
+                    <Volume2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <div className="text-xs font-bold text-emerald-900 dark:text-emerald-300 truncate">{note.title || 'เสียงบรรยายสาขา'}</div>
+                      {note.url && <audio controls src={note.url} className="w-full h-7 mt-1" />}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {activeStore.videos && activeStore.videos.length > 0 && (
+            <div className="space-y-1.5">
+              <span className="text-[11px] font-bold text-slate-400">คลิปวิดีโอหน้าร้าน ({activeStore.videos.length})</span>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {activeStore.videos.map((vid, vIdx) => (
+                  <VideoPlayer
+                    key={vIdx}
+                    src={vid}
+                    className="rounded-xl border border-slate-200 dark:border-slate-700 shadow-xs h-40"
+                    badgeLabel={`คลิปสาขา #${vIdx + 1}`}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
       {/* 📋 DIGITAL MENU BOARD SIMULATOR (แสดงผลแถวละ 2 รายการบนมือถือ สัดส่วน Fit คงที่) */}
       <div className="bg-white dark:bg-slate-900 rounded-2xl sm:rounded-3xl border border-slate-200 dark:border-slate-800 shadow-md p-4 sm:p-6 md:p-8 space-y-6 print:border-none print:shadow-none print:p-0">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-4 sm:pb-6 border-b border-slate-200 dark:border-slate-800 gap-3">
@@ -882,7 +979,7 @@ export function FranchiseStoreView({
             <span className="text-xs text-slate-400 font-normal">({drinksList.length} รายการ)</span>
           </div>
 
-          <div className="columns-2 sm:columns-2 md:columns-3 lg:columns-4 gap-3 sm:gap-4 [column-fill:_balance]">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
             {drinksList.map(({ menuItem, labItem }) => {
               const badgeStyle = {
                 'Best Seller': 'bg-amber-500 text-white',
@@ -894,55 +991,54 @@ export function FranchiseStoreView({
               }[menuItem.badge || 'None'];
 
               return (
-                <div key={menuItem.id} className="break-inside-avoid mb-3 sm:mb-4">
-                  <div
-                    onClick={() => setSelectedQuickSopItem({ menuItem, labItem })}
-                    className="group relative rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/80 p-2.5 sm:p-3 hover:shadow-md transition-all duration-200 cursor-pointer flex flex-col justify-between hover:-translate-y-0.5 print:border-slate-300 print:bg-white"
-                  >
-                    <div>
-                      {/* Product Image (Fit container) */}
-                      <div className="relative rounded-xl overflow-hidden bg-slate-900 border border-slate-200/50 dark:border-slate-700/50 flex items-center justify-center">
-                        <img
-                          src={labItem.photoUrl}
-                          alt={menuItem.customName || labItem.name}
-                          className="w-full h-auto max-h-56 object-contain group-hover:scale-102 transition-transform duration-200"
-                        />
-                        {menuItem.badge && menuItem.badge !== 'None' && (
-                          <div
-                            className={`absolute top-2 left-2 px-2 py-0.5 rounded-md font-extrabold text-[10px] shadow-sm uppercase tracking-wider ${badgeStyle}`}
-                          >
-                            {menuItem.badge}
-                          </div>
-                        )}
-                        <span className="absolute bottom-2 right-2 px-1.5 py-0.5 rounded bg-black/70 text-white font-mono text-[9px] font-bold backdrop-blur-xs">
-                          {labItem.code}
-                        </span>
-                      </div>
-
-                      {/* Item Details */}
-                      <div className="pt-2.5 pb-1 space-y-1">
-                        <div className="flex items-start justify-between gap-1.5">
-                          <h3 className="font-extrabold text-xs sm:text-sm text-slate-900 dark:text-white leading-tight group-hover:text-indigo-600 transition-colors">
-                            {menuItem.customName || labItem.name}
-                          </h3>
-                          <div className="font-mono font-black text-sm text-indigo-600 dark:text-indigo-400 shrink-0">
-                            ฿{menuItem.retailPriceThb}
-                          </div>
+                <div
+                  key={menuItem.id}
+                  onClick={() => setSelectedQuickSopItem({ menuItem, labItem })}
+                  className="group relative rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/80 p-2.5 sm:p-3 hover:shadow-md transition-all duration-200 cursor-pointer flex flex-col justify-between hover:-translate-y-0.5 print:border-slate-300 print:bg-white"
+                >
+                  <div>
+                    {/* Product Image (Square Fit container, no awkward black background) */}
+                    <div className="relative aspect-square rounded-xl overflow-hidden bg-slate-100 dark:bg-slate-800 border border-slate-200/60 dark:border-slate-700/60 flex items-center justify-center">
+                      <img
+                        src={labItem.photoUrl}
+                        alt={menuItem.customName || labItem.name}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                      />
+                      {menuItem.badge && menuItem.badge !== 'None' && (
+                        <div
+                          className={`absolute top-2 left-2 px-2 py-0.5 rounded-md font-extrabold text-[10px] shadow-sm uppercase tracking-wider ${badgeStyle}`}
+                        >
+                          {menuItem.badge}
                         </div>
-                        <div className="text-[10px] text-slate-400 dark:text-slate-500 font-mono truncate">
-                          {labItem.nameEn}
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="pt-2 border-t border-slate-200/60 dark:border-slate-700/60 flex items-center justify-between text-[10px] text-slate-500">
-                      <span className="flex items-center gap-1 font-medium">
-                        <Droplet className="w-3 h-3 text-indigo-500" /> หวาน 0/50/100
-                      </span>
-                      <span className="text-indigo-600 dark:text-indigo-400 font-bold group-hover:underline">
-                        สูตรชง SOP →
+                      )}
+                      <span className="absolute bottom-2 right-2 px-1.5 py-0.5 rounded bg-black/70 text-white font-mono text-[9px] font-bold backdrop-blur-xs">
+                        {labItem.code}
                       </span>
                     </div>
+
+                    {/* Item Details */}
+                    <div className="pt-2.5 pb-1 space-y-1">
+                      <div className="flex items-start justify-between gap-1.5">
+                        <h3 className="font-extrabold text-xs sm:text-sm text-slate-900 dark:text-white leading-tight group-hover:text-indigo-600 transition-colors">
+                          {menuItem.customName || labItem.name}
+                        </h3>
+                        <div className="font-mono font-black text-sm text-indigo-600 dark:text-indigo-400 shrink-0">
+                          ฿{menuItem.retailPriceThb}
+                        </div>
+                      </div>
+                      <div className="text-[10px] text-slate-400 dark:text-slate-500 font-mono truncate">
+                        {labItem.nameEn}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="pt-2 border-t border-slate-200/60 dark:border-slate-700/60 flex items-center justify-between text-[10px] text-slate-500">
+                    <span className="flex items-center gap-1 font-medium">
+                      <Droplet className="w-3 h-3 text-indigo-500" /> หวาน 0/50/100
+                    </span>
+                    <span className="text-indigo-600 dark:text-indigo-400 font-bold group-hover:underline">
+                      สูตรชง SOP →
+                    </span>
                   </div>
                 </div>
               );
@@ -1259,33 +1355,45 @@ function StoreFormModal({
   onSave: (storeData: Partial<FranchiseStore>) => Promise<void>;
 }) {
   const [name, setName] = useState(store?.name || '');
+  const [themeColor, setThemeColor] = useState(store?.themeColor || 'emerald');
+  const [categoriesInput, setCategoriesInput] = useState(
+    store?.menuCategories ? store.menuCategories.join(', ') : ''
+  );
+
+  // Primary 1-image picker (Upload vs URL) - Strictly empty by default for new stores
+  const [photoMode, setPhotoMode] = useState<'upload' | 'url'>('upload');
+  const [logoUrl, setLogoUrl] = useState(store?.logoUrl || '');
+  const [isCompressing, setIsCompressing] = useState(false);
+
+  // Optional store details - strictly empty by default
   const [branch, setBranch] = useState(store?.branch || '');
   const [brandTagline, setBrandTagline] = useState(store?.brandTagline || '');
-  const [openingHours, setOpeningHours] = useState(store?.openingHours || '10:00 - 21:30 น. (เปิดทุกวัน)');
-  const [contactNumber, setContactNumber] = useState(store?.contactNumber || '02-123-4567');
-  const [themeColor, setThemeColor] = useState(store?.themeColor || 'emerald');
-
-  // Primary 1-image picker (Upload vs URL)
-  const [photoMode, setPhotoMode] = useState<'upload' | 'url'>('upload');
-  const [logoUrl, setLogoUrl] = useState(
-    store?.logoUrl ||
-      'https://images.unsplash.com/photo-1544787219-7f47ccb76574?w=800&auto=format&fit=crop&q=80'
-  );
-  const [isCompressing, setIsCompressing] = useState(false);
+  const [openingHours, setOpeningHours] = useState(store?.openingHours || '');
+  const [contactNumber, setContactNumber] = useState(store?.contactNumber || '');
 
   // Unlimited Gallery & Audio/Video
   const [galleryPhotos, setGalleryPhotos] = useState<string[]>(store?.galleryPhotos || []);
-  const [audioNoteUrl, setAudioNoteUrl] = useState(store?.audioNotes?.[0]?.url || '');
-  const [videoUrl, setVideoUrl] = useState(store?.videos?.[0] || '');
-  const [isUploadingMedia, setIsUploadingMedia] = useState(false);
-
-  const audioFileInputRef = useRef<HTMLInputElement | null>(null);
-  const videoFileInputRef = useRef<HTMLInputElement | null>(null);
-
-  const [categoriesInput, setCategoriesInput] = useState(
-    (store?.menuCategories || ['ชานมพรีเมียม & ชาสด', 'ชาผลไม้ & ชีสโฟม', 'ท็อปปิ้งซิกเนเจอร์']).join(', ')
+  const [voiceNotes, setVoiceNotes] = useState<VoiceNoteEntry[]>(
+    (store?.audioNotes || []).map((an) => ({
+      id: an.id,
+      url: an.url,
+      durationSec: an.duration || 0,
+    }))
   );
+  const [videos, setVideos] = useState<string[]>(store?.videos || []);
+  const [isVideoLoading, setIsVideoLoading] = useState(false);
+
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const COLOR_PALETTES = [
+    { id: 'emerald', label: 'เขียวมรกต', dot: 'bg-emerald-500', ring: 'ring-emerald-500' },
+    { id: 'cyan', label: 'ฟ้าคราฟต์', dot: 'bg-cyan-500', ring: 'ring-cyan-500' },
+    { id: 'amber', label: 'ส้มชาไทย', dot: 'bg-amber-500', ring: 'ring-amber-500' },
+    { id: 'purple', label: 'ม่วงพรีเมียม', dot: 'bg-purple-500', ring: 'ring-purple-500' },
+    { id: 'rose', label: 'ชมพูกุหลาบ', dot: 'bg-rose-500', ring: 'ring-rose-500' },
+    { id: 'indigo', label: 'อินดิโก้', dot: 'bg-indigo-600', ring: 'ring-indigo-600' },
+    { id: 'slate', label: 'ดำมินิมอล', dot: 'bg-slate-800', ring: 'ring-slate-800' },
+  ];
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -1314,51 +1422,64 @@ function StoreFormModal({
     }
   };
 
-  const handleAudioUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    try {
-      setIsUploadingMedia(true);
-      const url = await uploadMediaToServer(file, {
-        recordType: 'franchise_store_audio',
-        recordTitle: name || 'Store Audio',
-      });
-      setAudioNoteUrl(url);
-    } catch (err: any) {
-      alert(err.message || 'อัปโหลดเสียงไม่สำเร็จ');
-    } finally {
-      setIsUploadingMedia(false);
-    }
-  };
-
   const handleVideoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
     try {
-      setIsUploadingMedia(true);
-      const url = await uploadMediaToServer(file, {
-        recordType: 'franchise_store_video',
-        recordTitle: name || 'Store Video',
-      });
-      setVideoUrl(url);
+      setIsVideoLoading(true);
+      for (const file of Array.from(files)) {
+        const videoData = await saveVideoFile(file, {
+          recordType: 'franchise_store_video',
+          recordTitle: name || 'Store Video',
+        });
+        if (videoData) {
+          setVideos((prev) => [...prev, videoData]);
+        }
+      }
     } catch (err: any) {
       alert(err.message || 'อัปโหลดคลิปไม่สำเร็จ');
     } finally {
-      setIsUploadingMedia(false);
+      setIsVideoLoading(false);
     }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Strict validation
     if (!name.trim()) {
-      alert('กรุณาระบุชื่อร้านแฟรนไชส์');
+      alert('กรุณาระบุชื่อแบรนด์ร้านค้า *');
       return;
     }
+    if (!themeColor.trim()) {
+      alert('กรุณาเลือกโทนสีแบรนด์ประจำร้าน *');
+      return;
+    }
+    if (!categoriesInput.trim()) {
+      alert('กรุณาระบุ Concept หรือหมวดหมู่เมนูของร้าน *');
+      return;
+    }
+    if (!logoUrl.trim()) {
+      alert('กรุณาอัปโหลดหรือระบุภาพโลโก้ / ปกร้านค้าหลัก *');
+      return;
+    }
+
     setIsSubmitting(true);
     const parsedCats = categoriesInput
       .split(',')
       .map((c) => c.trim())
       .filter(Boolean);
+
+    const audioNotesFormatted = voiceNotes.map((vn, idx) => ({
+      id: vn.id || `audio-${idx}-${crypto.randomUUID()}`,
+      url: vn.url,
+      duration: vn.durationSec,
+      title: `เสียงบรรยายหน้าร้าน ${name.trim()} #${idx + 1}`,
+      authorName: currentUser.alias || currentUser.name,
+      createdAt: new Date().toISOString(),
+    }));
+
+    const nowIso = new Date().toISOString();
 
     await onSave({
       id: store?.id || `store-${crypto.randomUUID()}`,
@@ -1367,29 +1488,24 @@ function StoreFormModal({
       brandTagline: brandTagline.trim(),
       logoUrl: logoUrl.trim(),
       galleryPhotos,
-      audioNotes: audioNoteUrl.trim()
-        ? [
-            {
-              id: `audio-${crypto.randomUUID()}`,
-              url: audioNoteUrl.trim(),
-              title: `เสียงบรรยายหน้าร้าน ${name.trim()}`,
-              authorName: currentUser.alias || currentUser.name,
-              createdAt: new Date().toISOString(),
-            },
-          ]
-        : [],
-      videos: videoUrl.trim() ? [videoUrl.trim()] : [],
+      audioNotes: audioNotesFormatted,
+      videos,
       contactNumber: contactNumber.trim(),
       openingHours: openingHours.trim(),
       themeColor,
       menuCategories: parsedCats,
       menuItems: store?.menuItems || [],
+      createdById: store?.createdById || currentUser.id,
+      createdByName: store?.createdByName || currentUser.alias || currentUser.name,
+      createdByAvatar: store?.createdByAvatar || currentUser.avatar,
+      createdAt: store?.createdAt || nowIso,
+      updatedAt: nowIso,
       revisionCycles: store?.revisionCycles || [
         {
           cycleNumber: 1,
           title: `รอบเปิดตัวร้าน ${name.trim()} และบอร์ดเมนู`,
           status: 'active',
-          createdAt: new Date().toISOString(),
+          createdAt: nowIso,
           createdBy: currentUser.alias || currentUser.name,
           comments: [],
         },
@@ -1399,7 +1515,7 @@ function StoreFormModal({
     setIsSubmitting(false);
   };
 
-  return (
+  return createPortal(
     <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-3 sm:p-5 overflow-y-auto">
       <div className="bg-white dark:bg-slate-900 rounded-3xl max-w-xl w-full p-5 sm:p-6 shadow-2xl border border-slate-200 dark:border-slate-800 space-y-4 animate-scale-up max-h-[92vh] overflow-y-auto">
         <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
@@ -1414,48 +1530,73 @@ function StoreFormModal({
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-3.5 text-xs">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div>
-              <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1">ชื่อแบรนด์ร้านค้า *</label>
-              <input
-                type="text"
-                required
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="เช่น VITCHA, VITCHAMINZAAR..."
-                className="w-full p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 font-bold"
-              />
-            </div>
-            <div>
-              <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1">สาขา</label>
-              <input
-                type="text"
-                value={branch}
-                onChange={(e) => setBranch(e.target.value)}
-                placeholder="เช่น สาขา Siam Square One (Flagship)"
-                className="w-full p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800"
-              />
-            </div>
-          </div>
-
+        <form onSubmit={handleSubmit} className="space-y-4 text-xs">
+          {/* 1. Brand Name */}
           <div>
-            <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1">สโลแกนประจำแบรนด์ (Tagline)</label>
+            <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1">
+              ชื่อแบรนด์ร้านค้า <span className="text-rose-500 font-black">*</span>
+            </label>
             <input
               type="text"
-              value={brandTagline}
-              onChange={(e) => setBrandTagline(e.target.value)}
-              placeholder="เช่น ชานมสดและชาพรีเมียมของคนที่จะเป็นหัวแถว"
-              className="w-full p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 italic"
+              required
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="เช่น VITCHA, VITCHAMINZAAR..."
+              className="w-full p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 font-bold"
             />
           </div>
 
-          {/* 🖼️ STORE COVER / LOGO PHOTO (1 PHOTO WITH URL VS UPLOAD) */}
+          {/* 2. Color Palette Selector (Moved right after Brand Name, Palette Buttons) */}
+          <div className="p-3 bg-slate-50 dark:bg-slate-800/60 rounded-2xl border border-slate-200 dark:border-slate-700 space-y-2">
+            <label className="font-bold text-slate-700 dark:text-slate-300 block">
+              โทนสีแบรนด์ประจำร้าน <span className="text-rose-500 font-black">*</span>
+            </label>
+            <div className="flex items-center gap-2.5 flex-wrap">
+              {COLOR_PALETTES.map((pal) => {
+                const isSelected = themeColor === pal.id;
+                return (
+                  <button
+                    key={pal.id}
+                    type="button"
+                    onClick={() => setThemeColor(pal.id)}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all border ${
+                      isSelected
+                        ? 'bg-white dark:bg-slate-800 shadow-md ring-2 ' + pal.ring + ' border-transparent'
+                        : 'bg-white/80 dark:bg-slate-800/80 hover:bg-white text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700'
+                    }`}
+                  >
+                    <span className={`w-3.5 h-3.5 rounded-full ${pal.dot} shrink-0`} />
+                    <span>{pal.label}</span>
+                    {isSelected && <Check className="w-3.5 h-3.5 text-emerald-600 ml-0.5" />}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* 3. Concept (Formerly หมวดหมู่เมนู, Moved right after Color Palette) */}
+          <div>
+            <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1">
+              Concept <span className="text-rose-500 font-black">*</span>
+            </label>
+            <input
+              type="text"
+              required
+              value={categoriesInput}
+              onChange={(e) => setCategoriesInput(e.target.value)}
+              placeholder="เช่น ชานมพรีเมียม & ชาสด, คราฟต์โซดา, ท็อปปิ้งซิกเนเจอร์..."
+              className="w-full p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 font-medium"
+            />
+          </div>
+
+          {/* 4. Logo / Cover Photo (Clean Label without parenthetical text) */}
           <div className="p-3 bg-slate-50 dark:bg-slate-800/60 rounded-2xl border border-slate-200 dark:border-slate-700 space-y-2.5">
             <div className="flex items-center justify-between">
               <label className="font-extrabold text-slate-800 dark:text-white flex items-center gap-1.5">
                 <Camera className="w-3.5 h-3.5 text-emerald-600" />
-                <span>ภาพโลโก้ / ปกร้านค้าหลัก (1 ภาพ มีผลต่อการแสดงผลหน้าร้าน)</span>
+                <span>
+                  ภาพโลโก้ / ปกร้านค้าหลัก <span className="text-rose-500 font-black">*</span>
+                </span>
               </label>
               <div className="flex rounded-lg border border-slate-200 dark:border-slate-700 overflow-hidden text-[10px] font-bold">
                 <button
@@ -1525,12 +1666,59 @@ function StoreFormModal({
             </div>
           </div>
 
-          {/* 📸 UNLIMITED MEDIA GALLERY & VOICE / VIDEO FOR STORE */}
-          <div className="p-3.5 bg-emerald-50/40 dark:bg-emerald-950/20 rounded-2xl border border-emerald-100 dark:border-emerald-900/40 space-y-3">
+          {/* 5. Additional Optional Fields (Branch, Tagline, Hours, Phone) */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1">สาขา</label>
+              <input
+                type="text"
+                value={branch}
+                onChange={(e) => setBranch(e.target.value)}
+                placeholder="เช่น สาขา Siam Square One"
+                className="w-full p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800"
+              />
+            </div>
+            <div>
+              <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1">สโลแกนประจำแบรนด์ (Tagline)</label>
+              <input
+                type="text"
+                value={brandTagline}
+                onChange={(e) => setBrandTagline(e.target.value)}
+                placeholder="เช่น ชานมสดของคนที่จะเป็นหัวแถว"
+                className="w-full p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 italic"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1">เวลาทำการ</label>
+              <input
+                type="text"
+                value={openingHours}
+                onChange={(e) => setOpeningHours(e.target.value)}
+                placeholder="เช่น 10:00 - 21:30 น. (เปิดทุกวัน)"
+                className="w-full p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800"
+              />
+            </div>
+            <div>
+              <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1">เบอร์ติดต่อสาขา</label>
+              <input
+                type="text"
+                value={contactNumber}
+                onChange={(e) => setContactNumber(e.target.value)}
+                placeholder="เช่น 02-123-4567"
+                className="w-full p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800"
+              />
+            </div>
+          </div>
+
+          {/* 6. MULTIMEDIA (Clean Label, AudioRecorder & VideoPlayer like Supplier Modal) */}
+          <div className="p-3.5 bg-emerald-50/40 dark:bg-emerald-950/20 rounded-2xl border border-emerald-100 dark:border-emerald-900/40 space-y-3.5">
             <div className="flex items-center justify-between">
-              <label className="font-extrabold text-emerald-900 dark:text-emerald-300 flex items-center gap-1.5">
-                <ImageIcon className="w-3.5 h-3.5 text-emerald-600" />
-                <span>พาร์ทมัลติมีเดียเพิ่มเติม (ภาพบรรยากาศสาขา · บันทึกเสียง · คลิป)</span>
+              <label className="font-extrabold text-emerald-900 dark:text-emerald-300 flex items-center gap-1.5 text-xs">
+                <ImageIcon className="w-4 h-4 text-emerald-600" />
+                <span>พาร์ทมัลติมีเดียเพิ่มเติม</span>
               </label>
               <label className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[10px] cursor-pointer shadow-xs">
                 <Plus className="w-3 h-3" />
@@ -1547,136 +1735,89 @@ function StoreFormModal({
 
             {/* Gallery Thumbnails */}
             {galleryPhotos.length > 0 && (
-              <div className="flex gap-2 overflow-x-auto pb-1">
-                {galleryPhotos.map((photo, pIdx) => (
-                  <div key={pIdx} className="relative w-14 h-14 rounded-lg overflow-hidden shrink-0 border border-slate-200 dark:border-slate-700 shadow-xs group">
-                    <img src={photo} alt="" className="w-full h-full object-cover" />
-                    <button
-                      type="button"
-                      onClick={() => setGalleryPhotos((p) => p.filter((_, i) => i !== pIdx))}
-                      className="absolute top-0.5 right-0.5 w-4 h-4 rounded-full bg-rose-600 text-white flex items-center justify-center opacity-80 hover:opacity-100"
-                    >
-                      <X className="w-2.5 h-2.5" />
-                    </button>
-                  </div>
-                ))}
+              <div className="space-y-1">
+                <span className="text-[10px] font-bold text-slate-400">รูปภาพสาขา ({galleryPhotos.length} รูป)</span>
+                <div className="flex gap-2 overflow-x-auto pb-1">
+                  {galleryPhotos.map((photo, pIdx) => (
+                    <div key={pIdx} className="relative w-14 h-14 rounded-lg overflow-hidden shrink-0 border border-slate-200 dark:border-slate-700 shadow-xs group">
+                      <img src={photo} alt="" className="w-full h-full object-cover" />
+                      <button
+                        type="button"
+                        onClick={() => setGalleryPhotos((p) => p.filter((_, i) => i !== pIdx))}
+                        className="absolute top-0.5 right-0.5 w-4 h-4 rounded-full bg-rose-600 text-white flex items-center justify-center opacity-80 hover:opacity-100"
+                        title="ลบรูปนี้"
+                      >
+                        <X className="w-2.5 h-2.5" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
 
-            {/* Audio & Video inputs */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-[11px]">
-              <div className="space-y-1">
-                <div className="flex items-center justify-between">
-                  <label className="font-bold text-slate-600 dark:text-slate-400 flex items-center gap-1">
-                    <Mic className="w-3 h-3 text-emerald-600" />
-                    <span>เสียงบรรยาย / Voice Note สาขา</span>
-                  </label>
-                  <button
-                    type="button"
-                    onClick={() => audioFileInputRef.current?.click()}
-                    disabled={isUploadingMedia}
-                    className="text-[10px] font-bold text-emerald-600 hover:text-emerald-700 inline-flex items-center gap-0.5"
-                  >
-                    <Upload className="w-2.5 h-2.5" />
-                    <span>เลือกไฟล์เสียง</span>
-                  </button>
-                  <input
-                    ref={audioFileInputRef}
-                    type="file"
-                    accept="audio/*"
-                    onChange={handleAudioUpload}
-                    className="hidden"
-                  />
-                </div>
-                <input
-                  type="url"
-                  value={audioNoteUrl}
-                  onChange={(e) => setAudioNoteUrl(e.target.value)}
-                  placeholder="https://... หรืออัปโหลดไฟล์เสียง"
-                  className="w-full p-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-[11px]"
-                />
-              </div>
+            {/* Live Audio Recorder Component */}
+            <div className="pt-2 border-t border-emerald-100 dark:border-emerald-900/50 space-y-1.5">
+              <span className="font-bold text-slate-700 dark:text-slate-300 block flex items-center gap-1.5 text-[11px]">
+                <Mic className="w-3.5 h-3.5 text-emerald-600" />
+                <span>วอยซ์เสียงบรรยายสาขา (อัดเสียงสด / บันทึกได้หลายคลิป)</span>
+              </span>
+              <AudioRecorder
+                voiceNotes={voiceNotes}
+                onVoiceNotesChange={(notes) => setVoiceNotes(notes)}
+                onAudioSaved={(url, dur) => {
+                  setVoiceNotes((prev) => [
+                    ...prev,
+                    { id: `voice-${Date.now()}`, url, durationSec: dur }
+                  ]);
+                }}
+                onAudioDeleted={() => {
+                  setVoiceNotes([]);
+                }}
+              />
+            </div>
 
-              <div className="space-y-1">
-                <div className="flex items-center justify-between">
-                  <label className="font-bold text-slate-600 dark:text-slate-400 flex items-center gap-1">
-                    <Video className="w-3 h-3 text-emerald-600" />
-                    <span>คลิปวิดีโอบรรยากาศหน้าร้าน</span>
-                  </label>
-                  <button
-                    type="button"
-                    onClick={() => videoFileInputRef.current?.click()}
-                    disabled={isUploadingMedia}
-                    className="text-[10px] font-bold text-emerald-600 hover:text-emerald-700 inline-flex items-center gap-0.5"
-                  >
-                    <Upload className="w-2.5 h-2.5" />
-                    <span>เลือกไฟล์คลิป</span>
-                  </button>
+            {/* Video Upload & Preview Component */}
+            <div className="pt-2 border-t border-emerald-100 dark:border-emerald-900/50 space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5 text-[11px]">
+                  <Video className="w-3.5 h-3.5 text-emerald-600" />
+                  <span>คลิปวิดีโอบรรยากาศหน้าร้าน ({videos.length})</span>
+                </span>
+                <label className="text-[10px] font-bold text-emerald-600 hover:text-emerald-700 inline-flex items-center gap-1 cursor-pointer">
+                  <Upload className="w-3 h-3" />
+                  <span>{isVideoLoading ? 'กำลังอัปโหลด...' : '+ เลือกคลิปวิดีโอ'}</span>
                   <input
-                    ref={videoFileInputRef}
                     type="file"
                     accept="video/*"
+                    multiple
+                    disabled={isVideoLoading}
                     onChange={handleVideoUpload}
                     className="hidden"
                   />
-                </div>
-                <input
-                  type="url"
-                  value={videoUrl}
-                  onChange={(e) => setVideoUrl(e.target.value)}
-                  placeholder="https://... หรืออัปโหลดไฟล์คลิป"
-                  className="w-full p-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-[11px]"
-                />
+                </label>
               </div>
-            </div>
-          </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div>
-              <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1">เวลาทำการ</label>
-              <input
-                type="text"
-                value={openingHours}
-                onChange={(e) => setOpeningHours(e.target.value)}
-                placeholder="10:00 - 21:30 น. (เปิดทุกวัน)"
-                className="w-full p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800"
-              />
-            </div>
-            <div>
-              <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1">เบอร์ติดต่อสาขา</label>
-              <input
-                type="text"
-                value={contactNumber}
-                onChange={(e) => setContactNumber(e.target.value)}
-                placeholder="02-123-4567"
-                className="w-full p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800"
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div>
-              <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1">โทนสีแบรนด์ประจำร้าน</label>
-              <select
-                value={themeColor}
-                onChange={(e) => setThemeColor(e.target.value)}
-                className="w-full p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 font-bold"
-              >
-                <option value="emerald">🟢 เขียวมรกต (Emerald Green - สไตล์ชาสด VITCHA)</option>
-                <option value="cyan">🔵 ฟ้าสดใส (Cyan Blue - สไตล์คราฟต์โซดา ZAAR)</option>
-                <option value="amber">🟠 ส้มชาไทย (Amber Orange)</option>
-                <option value="purple">🟣 ม่วงสเปเชียลตี้ (Royal Purple)</option>
-              </select>
-            </div>
-            <div>
-              <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1">หมวดหมู่เมนู (คั่นด้วยจุลภาค)</label>
-              <input
-                type="text"
-                value={categoriesInput}
-                onChange={(e) => setCategoriesInput(e.target.value)}
-                placeholder="ชานมพรีเมียม, คราฟต์โซดา, ท็อปปิ้ง"
-                className="w-full p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800"
-              />
+              {videos.length > 0 && (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                  {videos.map((vid, vIdx) => (
+                    <div key={vIdx} className="relative group">
+                      <VideoPlayer
+                        src={vid}
+                        className="rounded-xl border border-slate-200 dark:border-slate-700 shadow-xs h-36"
+                        badgeLabel={`คลิปสาขา #${vIdx + 1}`}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setVideos((prev) => prev.filter((_, i) => i !== vIdx))}
+                        className="absolute top-2 right-2 p-1 rounded-lg bg-rose-600 text-white shadow-md hover:bg-rose-700 text-xs"
+                        title="ลบคลิปวิดีโอนี้"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
 
@@ -1698,7 +1839,8 @@ function StoreFormModal({
           </div>
         </form>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
 

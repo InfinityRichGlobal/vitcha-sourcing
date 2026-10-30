@@ -41,10 +41,13 @@ import {
   Square
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
-import { LabItem, LabFormulaStatus, LabItemType, SweetnessDetail } from '../types';
+import { LabItem, LabFormulaStatus, LabItemType, SweetnessDetail, VoiceNoteEntry } from '../types';
 import { compressImageFile } from '../utils/imageCompressor';
 import { printLeadLabSpecReport, shareLeadLabItem } from '../utils/labAndStoreExport';
 import { uploadMediaToServer } from '../services/api';
+import { saveVideoFile } from '../utils/mediaStorage';
+import { AudioRecorder } from './AudioRecorder';
+import { VideoPlayer } from './VideoPlayer';
 
 export function LeadLabView({
   initialItemId,
@@ -405,16 +408,7 @@ function LabItemCard({
   onSelect: () => void;
   onToggleLike: () => void;
 }) {
-  const [selectedSweetness, setSelectedSweetness] = useState<'0' | '50' | '100'>('50');
-
   const isLiked = (item.likedBy || []).includes(currentUserId);
-  const activeSweetness =
-    selectedSweetness === '0'
-      ? item.sweetnessLevels.zero
-      : selectedSweetness === '50'
-      ? item.sweetnessLevels.half
-      : item.sweetnessLevels.full;
-
   const totalComments = (item.revisionCycles || []).reduce(
     (acc, cycle) => acc + (cycle.comments ? cycle.comments.length : 0),
     0
@@ -442,10 +436,6 @@ function LabItemCard({
   }[item.status];
 
   const StatusIcon = statusBadge.icon;
-  const grossProfitPercent =
-    item.suggestedPriceThb > 0
-      ? Math.round(((item.suggestedPriceThb - item.costTotalThb) / item.suggestedPriceThb) * 100)
-      : 0;
 
   return (
     <div className="group flex flex-col rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 shadow-2xs hover:shadow-md transition-all duration-200 overflow-hidden break-inside-avoid">
@@ -504,68 +494,12 @@ function LabItemCard({
           </div>
         </div>
 
-        {/* Status Badge & GP */}
-        <div className="flex items-center justify-between text-[10px] pt-1 border-t border-slate-100 dark:border-slate-800">
+        {/* Status Badge */}
+        <div className="pt-1 border-t border-slate-100 dark:border-slate-800">
           <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md border font-bold text-[10px] ${statusBadge.bg}`}>
             <StatusIcon className="w-3 h-3" />
             <span>{statusBadge.shortLabel}</span>
           </span>
-          <div className="text-right">
-            <span className="text-[9px] text-slate-400">GP </span>
-            <span className="font-mono font-bold text-emerald-600 dark:text-emerald-400 text-[11px]">{grossProfitPercent}%</span>
-          </div>
-        </div>
-
-        {/* 🍬 Sweetness Matrix Quick Selector */}
-        <div className="bg-slate-50 dark:bg-slate-800/60 p-2 rounded-xl border border-slate-100 dark:border-slate-800/80 space-y-1.5">
-          <div className="flex items-center justify-between text-[10px]">
-            <span className="font-bold text-slate-600 dark:text-slate-300 flex items-center gap-1">
-              <Droplet className="w-2.5 h-2.5 text-indigo-500" />
-              <span>หวาน:</span>
-            </span>
-            <div className="flex gap-1">
-              {(['0', '50', '100'] as const).map((lvl) => (
-                <button
-                  key={lvl}
-                  type="button"
-                  onClick={() => setSelectedSweetness(lvl)}
-                  className={`px-1.5 py-0.5 rounded font-mono font-bold text-[9px] transition-colors ${
-                    selectedSweetness === lvl
-                      ? 'bg-indigo-600 text-white shadow-xs'
-                      : 'bg-white dark:bg-slate-700 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-600 hover:bg-slate-100'
-                  }`}
-                >
-                  {lvl}%
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Active sweetness summary */}
-          <div className="text-[10px] font-mono flex items-center justify-between text-slate-600 dark:text-slate-300 pt-0.5">
-            <span>{activeSweetness.syrupMl}ml</span>
-            <span className="text-amber-600 dark:text-amber-400 font-bold">{activeSweetness.brix}°Bx</span>
-            <span>{activeSweetness.caloriesKcal}kcal</span>
-          </div>
-          <p className="text-[9px] text-slate-500 dark:text-slate-400 italic truncate">
-            "{activeSweetness.tasteNotes}"
-          </p>
-        </div>
-
-        {/* Cost & Price Row */}
-        <div className="flex items-center justify-between pt-1 border-t border-slate-100 dark:border-slate-800 text-[11px]">
-          <div>
-            <div className="text-[9px] text-slate-400 font-medium">ทุน/แก้ว</div>
-            <div className="font-mono font-bold text-slate-700 dark:text-slate-300">
-              ฿{item.costTotalThb.toFixed(0)}
-            </div>
-          </div>
-          <div className="text-right">
-            <div className="text-[9px] text-slate-400 font-medium">ราคาขาย</div>
-            <div className="font-mono font-black text-sm text-indigo-600 dark:text-indigo-400">
-              ฿{item.suggestedPriceThb.toFixed(0)}
-            </div>
-          </div>
         </div>
 
         {/* Footer Actions & Comments Count */}
@@ -843,9 +777,22 @@ function LabDetailModal({
                 <h2 className="font-extrabold text-slate-900 dark:text-white text-sm sm:text-base leading-snug break-words">
                   {item.name}
                 </h2>
-                <p className="text-xs text-slate-400 truncate mt-0.5 font-mono">
-                  {item.nameEn} · {item.category}
-                </p>
+                <div className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 font-mono break-words leading-tight">
+                  <span>{item.nameEn}</span>
+                  <span className="mx-1 text-slate-300 dark:text-slate-600">·</span>
+                  <span className="font-sans font-bold text-indigo-600 dark:text-indigo-400">{item.category}</span>
+                </div>
+                {/* Creator Attribution Stamp */}
+                <div className="flex items-center gap-1.5 mt-1 text-[11px] text-slate-500 dark:text-slate-400 flex-wrap">
+                  <img
+                    src={item.createdByAvatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=60&auto=format&fit=crop&q=80'}
+                    alt={item.createdByName || 'ผู้สร้างสูตร'}
+                    className="w-4 h-4 rounded-full object-cover border border-slate-200 dark:border-slate-700 shadow-2xs shrink-0"
+                  />
+                  <span>สร้างโดย: <strong className="text-slate-700 dark:text-slate-200 font-bold">{item.createdByName || 'R&D Team'}</strong></span>
+                  <span>·</span>
+                  <span>{item.createdAt ? new Date(item.createdAt).toLocaleDateString('th-TH', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'ไม่ระบุวันเวลา'}</span>
+                </div>
               </div>
             </div>
 
@@ -1010,7 +957,7 @@ function LabDetailModal({
                 </div>
               )}
 
-              {/* Audio Notes & Video clips */}
+              {/* Audio Notes */}
               {(item.audioNotes && item.audioNotes.length > 0) && (
                 <div className="space-y-1.5">
                   <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
@@ -1031,6 +978,26 @@ function LabDetailModal({
                           {note.url && <audio controls src={note.url} className="w-full h-8 mt-1" />}
                         </div>
                       </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Video clips */}
+              {(item.videos && item.videos.length > 0) && (
+                <div className="space-y-1.5">
+                  <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+                    <Video className="w-3.5 h-3.5 text-indigo-600" />
+                    <span>คลิปวิดีโอสาธิตการชง R&D ({item.videos.length} คลิป)</span>
+                  </h4>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                    {item.videos.map((vid, vIdx) => (
+                      <VideoPlayer
+                        key={vIdx}
+                        src={vid}
+                        className="rounded-xl border border-slate-200 dark:border-slate-700 shadow-xs h-40"
+                        badgeLabel={`คลิปสาธิต #${vIdx + 1}`}
+                      />
                     ))}
                   </div>
                 </div>
@@ -1521,73 +1488,48 @@ function NewLabItemModal({
   const [code, setCode] = useState(`RD-${Math.floor(100 + Math.random() * 900)}`);
   const [name, setName] = useState('');
   const [nameEn, setNameEn] = useState('');
-  const [category, setCategory] = useState('ชานมพรีเมียม & ชาสด');
 
-  // Primary 1-image picker (URL vs Upload)
+  // Category with on-the-fly add mode
+  const [category, setCategory] = useState('ชานมพรีเมียม & ชาสด');
+  const [isAddingNewCat, setIsAddingNewCat] = useState(false);
+  const [newCatInput, setNewCatInput] = useState('');
+  const [categoryList, setCategoryList] = useState<string[]>([
+    'ชานมพรีเมียม & ชาสด',
+    'วิตามิน & คราฟต์โซดา',
+    'ชาผลไม้ & ชีสโฟม',
+    'มัทฉะ & สเปเชียลตี้',
+    'ท็อปปิ้ง & เจลลี่',
+  ]);
+
+  // Primary 1-image picker (Upload vs URL)
   const [photoMode, setPhotoMode] = useState<'upload' | 'url'>('upload');
-  const [photoUrl, setPhotoUrl] = useState('https://images.unsplash.com/photo-1544787219-7f47ccb76574?w=800&auto=format&fit=crop&q=80');
+  const [photoUrl, setPhotoUrl] = useState('');
   const [isCompressingPrimary, setIsCompressingPrimary] = useState(false);
 
-  // Unlimited Media Gallery
+  // Multimedia Gallery
   const [galleryPhotos, setGalleryPhotos] = useState<string[]>([]);
-  const [audioNoteUrl, setAudioNoteUrl] = useState('');
-  const [videoUrl, setVideoUrl] = useState('');
-  const [isUploadingMedia, setIsUploadingMedia] = useState(false);
+  const [voiceNotes, setVoiceNotes] = useState<VoiceNoteEntry[]>([]);
+  const [videos, setVideos] = useState<string[]>([]);
+  const [isVideoLoading, setIsVideoLoading] = useState(false);
 
-  const audioFileInputRef = useRef<HTMLInputElement | null>(null);
-  const videoFileInputRef = useRef<HTMLInputElement | null>(null);
-
-  const handleAudioUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    try {
-      setIsUploadingMedia(true);
-      const url = await uploadMediaToServer(file, {
-        recordType: 'lead_lab_audio',
-        recordTitle: name || 'Audio Note',
-      });
-      setAudioNoteUrl(url);
-    } catch (err: any) {
-      alert(err.message || 'อัปโหลดไฟล์เสียงไม่สำเร็จ');
-    } finally {
-      setIsUploadingMedia(false);
-    }
-  };
-
-  const handleVideoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    try {
-      setIsUploadingMedia(true);
-      const url = await uploadMediaToServer(file, {
-        recordType: 'lead_lab_video',
-        recordTitle: name || 'Video Clip',
-      });
-      setVideoUrl(url);
-    } catch (err: any) {
-      alert(err.message || 'อัปโหลดไฟล์วิดีโอไม่สำเร็จ');
-    } finally {
-      setIsUploadingMedia(false);
-    }
-  };
-
+  // Inputs: start strictly empty per user requirement
   const [description, setDescription] = useState('');
-  const [costIngredient, setCostIngredient] = useState('15.00');
-  const [costPackaging, setCostPackaging] = useState('3.50');
-  const [suggestedPrice, setSuggestedPrice] = useState('55.00');
+  const [costIngredient, setCostIngredient] = useState('');
+  const [costPackaging, setCostPackaging] = useState('');
+  const [suggestedPrice, setSuggestedPrice] = useState('');
 
-  // Sweetness matrix inputs
-  const [syrup0, setSyrup0] = useState('0');
-  const [brix0, setBrix0] = useState('3.0');
-  const [notes0, setNotes0] = useState('สัมผัสชาแท้ คลีน สดชื่น ไร้น้ำตาล');
+  // Sweetness matrix inputs (empty strings)
+  const [syrup0, setSyrup0] = useState('');
+  const [brix0, setBrix0] = useState('');
+  const [notes0, setNotes0] = useState('');
 
-  const [syrup50, setSyrup50] = useState('15');
-  const [brix50, setBrix50] = useState('8.5');
-  const [notes50, setNotes50] = useState('หวานละมุน นุ่มนวล กลมกล่อม แนะนำอันดับ 1');
+  const [syrup50, setSyrup50] = useState('');
+  const [brix50, setBrix50] = useState('');
+  const [notes50, setNotes50] = useState('');
 
-  const [syrup100, setSyrup100] = useState('30');
-  const [brix100, setBrix100] = useState('13.5');
-  const [notes100, setNotes100] = useState('หวานจัดจ้าน สดชื่น กลมกล่อมเต็มคำ');
+  const [syrup100, setSyrup100] = useState('');
+  const [brix100, setBrix100] = useState('');
+  const [notes100, setNotes100] = useState('');
 
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -1618,37 +1560,89 @@ function NewLabItemModal({
     }
   };
 
+  const handleVideoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+    try {
+      setIsVideoLoading(true);
+      for (const file of Array.from(files)) {
+        const videoData = await saveVideoFile(file, {
+          recordType: 'lead_lab_video',
+          recordTitle: name || 'R&D Video',
+        });
+        if (videoData) {
+          setVideos((prev) => [...prev, videoData]);
+        }
+      }
+    } catch (err: any) {
+      alert(err.message || 'ไม่สามารถอัปโหลดวิดีโอได้');
+    } finally {
+      setIsVideoLoading(false);
+    }
+  };
+
+  const handleAddNewCategory = () => {
+    const trimmed = newCatInput.trim();
+    if (!trimmed) return;
+    if (!categoryList.includes(trimmed)) {
+      setCategoryList((prev) => [...prev, trimmed]);
+    }
+    setCategory(trimmed);
+    setNewCatInput('');
+    setIsAddingNewCat(false);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name.trim()) {
-      alert('กรุณาระบุชื่อสูตร');
+
+    // Strict validation
+    if (!type) {
+      alert('กรุณาเลือกประเภทสูตร *');
       return;
     }
+    if (!name.trim()) {
+      alert('กรุณากรอกชื่อสูตร (ไทย) *');
+      return;
+    }
+    if (!code.trim()) {
+      alert('กรุณากรอกรหัสสูตร R&D *');
+      return;
+    }
+    if (!category.trim()) {
+      alert('กรุณาระบุหรือเลือกหมวดหมู่ *');
+      return;
+    }
+    if (!photoUrl.trim()) {
+      alert('กรุณาอัปโหลดหรือระบุภาพถ่ายแก้วจริง / ภาพปกหลัก *');
+      return;
+    }
+
     setIsSubmitting(true);
-    const costIng = parseFloat(costIngredient) || 15;
-    const costPkg = parseFloat(costPackaging) || 3.5;
-    const price = parseFloat(suggestedPrice) || 55;
+    const costIng = parseFloat(costIngredient) || 0;
+    const costPkg = parseFloat(costPackaging) || 0;
+    const price = parseFloat(suggestedPrice) || 0;
+
+    const audioNotesFormatted = voiceNotes.map((vn, idx) => ({
+      id: vn.id || `audio-${idx}-${crypto.randomUUID()}`,
+      url: vn.url,
+      duration: vn.durationSec,
+      title: `เสียงบรรยายรสสัมผัส & เทคนิคชง R&D #${idx + 1}`,
+      authorName: currentUser.alias || currentUser.name,
+      createdAt: new Date().toISOString(),
+    }));
+
+    const nowIso = new Date().toISOString();
 
     await onSave({
       type,
       code: code.trim(),
       name: name.trim(),
       nameEn: nameEn.trim() || name.trim(),
-      category,
+      category: category.trim(),
       photoUrl: photoUrl.trim(),
       galleryPhotos,
-      audioNotes: audioNoteUrl.trim()
-        ? [
-            {
-              id: `audio-${crypto.randomUUID()}`,
-              url: audioNoteUrl.trim(),
-              title: 'เสียงบรรยายรสสัมผัส & เทคนิคชง R&D',
-              authorName: currentUser.alias || currentUser.name,
-              createdAt: new Date().toISOString(),
-            },
-          ]
-        : [],
-      videos: videoUrl.trim() ? [videoUrl.trim()] : [],
+      audioNotes: audioNotesFormatted,
+      videos,
       description: description.trim(),
       status: 'testing',
       costIngredientThb: costIng,
@@ -1662,29 +1656,29 @@ function NewLabItemModal({
           syrupMl: parseFloat(syrup0) || 0,
           sweetenerType: 'ไม่ใส่น้ำตาล',
           baseLiquidMl: 180,
-          brix: parseFloat(brix0) || 3.0,
+          brix: parseFloat(brix0) || 0,
           caloriesKcal: 85,
-          tasteNotes: notes0,
+          tasteNotes: notes0.trim() || 'สัมผัสชาแท้ คลีน สดชื่น ไร้น้ำตาล',
         },
         half: {
           level: '50',
           label: 'หวาน 50% (หวานน้อย)',
-          syrupMl: parseFloat(syrup50) || 15,
-          sweetenerType: 'น้ำเชื่อมดอกมะพร้าว GI ต่ำ',
+          syrupMl: parseFloat(syrup50) || 0,
+          sweetenerType: 'น้ำเชื่อมธรรมชาติ / GI ต่ำ',
           baseLiquidMl: 170,
-          brix: parseFloat(brix50) || 8.5,
+          brix: parseFloat(brix50) || 0,
           caloriesKcal: 160,
-          tasteNotes: notes50,
+          tasteNotes: notes50.trim() || 'หวานละมุน นุ่มนวล กลมกล่อม แนะนำ',
         },
         full: {
           level: '100',
           label: 'หวาน 100% (หวานปกติ)',
-          syrupMl: parseFloat(syrup100) || 30,
-          sweetenerType: 'น้ำเชื่อมดอกมะพร้าว',
+          syrupMl: parseFloat(syrup100) || 0,
+          sweetenerType: 'น้ำเชื่อมสูตรมาตรฐาน',
           baseLiquidMl: 160,
-          brix: parseFloat(brix100) || 13.5,
+          brix: parseFloat(brix100) || 0,
           caloriesKcal: 230,
-          tasteNotes: notes100,
+          tasteNotes: notes100.trim() || 'หวานจัดจ้าน สดชื่น กลมกล่อมเต็มคำ',
         },
       },
       technicalSpecs: {
@@ -1698,12 +1692,17 @@ function NewLabItemModal({
         { name: 'วัตถุดิบหลัก R&D', quantity: 1, unit: 'ชุด', costThb: costIng },
       ],
       likedBy: [currentUser.id],
+      createdById: currentUser.id,
+      createdByName: currentUser.alias || currentUser.name,
+      createdByAvatar: currentUser.avatar,
+      createdAt: nowIso,
+      updatedAt: nowIso,
       revisionCycles: [
         {
           cycleNumber: 1,
           title: 'รอบที่ 1: ตั้งสูตรทดลองเริ่มต้นและเทสต์ระดับความหวาน 0/50/100',
           status: 'active',
-          createdAt: new Date().toISOString(),
+          createdAt: nowIso,
           createdBy: currentUser.alias || currentUser.name,
           comments: [],
         },
@@ -1730,10 +1729,13 @@ function NewLabItemModal({
         <form onSubmit={handleSubmit} className="space-y-4 text-xs">
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="font-bold text-slate-600 dark:text-slate-300 block mb-1">ประเภท</label>
+              <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1">
+                ประเภท <span className="text-rose-500 font-black">*</span>
+              </label>
               <select
                 value={type}
                 onChange={(e) => setType(e.target.value as any)}
+                required
                 className="w-full p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 font-bold"
               >
                 <option value="drink">🥤 เครื่องดื่ม (Drink)</option>
@@ -1741,11 +1743,15 @@ function NewLabItemModal({
               </select>
             </div>
             <div>
-              <label className="font-bold text-slate-600 dark:text-slate-300 block mb-1">รหัสสูตร R&D</label>
+              <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1">
+                รหัสสูตร R&D <span className="text-rose-500 font-black">*</span>
+              </label>
               <input
                 type="text"
+                required
                 value={code}
                 onChange={(e) => setCode(e.target.value)}
+                placeholder="เช่น RD-101"
                 className="w-full p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 font-mono font-bold"
               />
             </div>
@@ -1753,7 +1759,9 @@ function NewLabItemModal({
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <label className="font-bold text-slate-600 dark:text-slate-300 block mb-1">ชื่อสูตร (ไทย) *</label>
+              <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1">
+                ชื่อสูตร (ไทย) <span className="text-rose-500 font-black">*</span>
+              </label>
               <input
                 type="text"
                 required
@@ -1764,7 +1772,9 @@ function NewLabItemModal({
               />
             </div>
             <div>
-              <label className="font-bold text-slate-600 dark:text-slate-300 block mb-1">ชื่อภาษาอังกฤษ</label>
+              <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1">
+                ชื่อภาษาอังกฤษ
+              </label>
               <input
                 type="text"
                 value={nameEn}
@@ -1775,27 +1785,62 @@ function NewLabItemModal({
             </div>
           </div>
 
-          <div>
-            <label className="font-bold text-slate-600 dark:text-slate-300 block mb-1">หมวดหมู่</label>
-            <select
-              value={category}
-              onChange={(e) => setCategory(e.target.value)}
-              className="w-full p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 font-medium"
-            >
-              <option value="ชานมพรีเมียม & ชาสด">ชานมพรีเมียม & ชาสด</option>
-              <option value="วิตามิน & คราฟต์โซดา">วิตามิน & คราฟต์โซดา</option>
-              <option value="ชาผลไม้ & ชีสโฟม">ชาผลไม้ & ชีสโฟม</option>
-              <option value="มัทฉะ & สเปเชียลตี้">มัทฉะ & สเปเชียลตี้</option>
-              <option value="ท็อปปิ้ง & เจลลี่">ท็อปปิ้ง & เจลลี่</option>
-            </select>
+          {/* Category with On-The-Fly Addition */}
+          <div className="space-y-1.5">
+            <div className="flex items-center justify-between">
+              <label className="font-bold text-slate-700 dark:text-slate-300">
+                หมวดหมู่ <span className="text-rose-500 font-black">*</span>
+              </label>
+              <button
+                type="button"
+                onClick={() => setIsAddingNewCat(!isAddingNewCat)}
+                className="text-[11px] font-bold text-indigo-600 dark:text-indigo-400 hover:underline inline-flex items-center gap-1"
+              >
+                <Plus className="w-3 h-3" />
+                <span>{isAddingNewCat ? 'เลือกจากรายการ' : '+ เพิ่มหมวดหมู่ใหม่'}</span>
+              </button>
+            </div>
+
+            {isAddingNewCat ? (
+              <div className="flex items-center gap-2">
+                <input
+                  type="text"
+                  value={newCatInput}
+                  onChange={(e) => setNewCatInput(e.target.value)}
+                  placeholder="พิมพ์ชื่อหมวดหมู่ใหม่..."
+                  className="flex-1 p-2 rounded-xl border border-indigo-300 dark:border-indigo-700 bg-white dark:bg-slate-800 text-xs font-bold"
+                  autoFocus
+                />
+                <button
+                  type="button"
+                  onClick={handleAddNewCategory}
+                  className="px-3 py-2 rounded-xl bg-indigo-600 text-white font-bold text-xs"
+                >
+                  ใช้หมวดนี้
+                </button>
+              </div>
+            ) : (
+              <select
+                value={category}
+                onChange={(e) => setCategory(e.target.value)}
+                required
+                className="w-full p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 font-medium"
+              >
+                {categoryList.map((cat, cIdx) => (
+                  <option key={cIdx} value={cat}>{cat}</option>
+                ))}
+              </select>
+            )}
           </div>
 
-          {/* 🖼️ PRIMARY COVER PHOTO (1 PHOTO) WITH TOGGLE URL VS UPLOAD */}
+          {/* 🖼️ PRIMARY COVER PHOTO (Clean Label without parenthetical text) */}
           <div className="p-3.5 bg-slate-50 dark:bg-slate-800/60 rounded-2xl border border-slate-200 dark:border-slate-700 space-y-2.5">
             <div className="flex items-center justify-between">
               <label className="font-extrabold text-slate-800 dark:text-white flex items-center gap-1.5">
                 <Camera className="w-3.5 h-3.5 text-indigo-600" />
-                <span>ภาพถ่ายแก้วจริง / ภาพปกหลัก (1 ภาพ มีผลต่อการแสดงผลหน้าร้าน)</span>
+                <span>
+                  ภาพถ่ายแก้วจริง / ภาพปกหลัก <span className="text-rose-500 font-black">*</span>
+                </span>
               </label>
               <div className="flex rounded-lg border border-slate-200 dark:border-slate-700 overflow-hidden text-[10px] font-bold">
                 <button
@@ -1866,12 +1911,12 @@ function NewLabItemModal({
             </div>
           </div>
 
-          {/* 📸 UNLIMITED MEDIA GALLERY & VOICE / VIDEO */}
-          <div className="p-3.5 bg-indigo-50/40 dark:bg-indigo-950/20 rounded-2xl border border-indigo-100 dark:border-indigo-900/40 space-y-3">
+          {/* 📸 MULTIMEDIA (Clean Label, AudioRecorder & VideoPlayer like Supplier Modal) */}
+          <div className="p-3.5 bg-indigo-50/40 dark:bg-indigo-950/20 rounded-2xl border border-indigo-100 dark:border-indigo-900/40 space-y-3.5">
             <div className="flex items-center justify-between">
-              <label className="font-extrabold text-indigo-900 dark:text-indigo-300 flex items-center gap-1.5">
-                <ImageIcon className="w-3.5 h-3.5 text-indigo-600" />
-                <span>พาร์ทมัลติมีเดียเพิ่มเติม (แกลเลอรีรูปภาพไม่จำกัด · บันทึกเสียง · คลิป)</span>
+              <label className="font-extrabold text-indigo-900 dark:text-indigo-300 flex items-center gap-1.5 text-xs">
+                <ImageIcon className="w-4 h-4 text-indigo-600" />
+                <span>พาร์ทมัลติมีเดียเพิ่มเติม</span>
               </label>
               <label className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-[10px] cursor-pointer shadow-xs">
                 <Plus className="w-3 h-3" />
@@ -1888,92 +1933,94 @@ function NewLabItemModal({
 
             {/* Gallery Thumbnails */}
             {galleryPhotos.length > 0 && (
-              <div className="flex gap-2 overflow-x-auto pb-1">
-                {galleryPhotos.map((photo, pIdx) => (
-                  <div key={pIdx} className="relative w-14 h-14 rounded-lg overflow-hidden shrink-0 border border-slate-200 dark:border-slate-700 shadow-xs group">
-                    <img src={photo} alt="" className="w-full h-full object-cover" />
-                    <button
-                      type="button"
-                      onClick={() => setGalleryPhotos(p => p.filter((_, i) => i !== pIdx))}
-                      className="absolute top-0.5 right-0.5 w-4 h-4 rounded-full bg-rose-600 text-white flex items-center justify-center opacity-80 hover:opacity-100"
-                    >
-                      <X className="w-2.5 h-2.5" />
-                    </button>
-                  </div>
-                ))}
+              <div className="space-y-1">
+                <span className="text-[10px] font-bold text-slate-400">รูปภาพเพิ่มเติม ({galleryPhotos.length} รูป)</span>
+                <div className="flex gap-2 overflow-x-auto pb-1">
+                  {galleryPhotos.map((photo, pIdx) => (
+                    <div key={pIdx} className="relative w-14 h-14 rounded-lg overflow-hidden shrink-0 border border-slate-200 dark:border-slate-700 shadow-xs group">
+                      <img src={photo} alt="" className="w-full h-full object-cover" />
+                      <button
+                        type="button"
+                        onClick={() => setGalleryPhotos(p => p.filter((_, i) => i !== pIdx))}
+                        className="absolute top-0.5 right-0.5 w-4 h-4 rounded-full bg-rose-600 text-white flex items-center justify-center opacity-80 hover:opacity-100"
+                        title="ลบรูปนี้"
+                      >
+                        <X className="w-2.5 h-2.5" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
 
-            {/* Audio & Video inputs (URL or Direct Upload) */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-[11px]">
-              <div className="space-y-1.5">
-                <div className="flex items-center justify-between">
-                  <label className="font-bold text-slate-600 dark:text-slate-400 flex items-center gap-1">
-                    <Mic className="w-3 h-3 text-indigo-600" />
-                    <span>เสียงบรรยาย Voice Note R&D</span>
-                  </label>
-                  <button
-                    type="button"
-                    onClick={() => audioFileInputRef.current?.click()}
-                    disabled={isUploadingMedia}
-                    className="text-[10px] font-bold text-indigo-600 hover:text-indigo-700 inline-flex items-center gap-0.5"
-                  >
-                    <Upload className="w-2.5 h-2.5" />
-                    <span>เลือกไฟล์เสียง</span>
-                  </button>
-                  <input
-                    ref={audioFileInputRef}
-                    type="file"
-                    accept="audio/*"
-                    onChange={handleAudioUpload}
-                    className="hidden"
-                  />
-                </div>
-                <input
-                  type="url"
-                  value={audioNoteUrl}
-                  onChange={(e) => setAudioNoteUrl(e.target.value)}
-                  placeholder="https://... หรืออัปโหลดไฟล์เสียง"
-                  className="w-full p-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-[11px]"
-                />
-              </div>
+            {/* Live Audio Recorder Component */}
+            <div className="pt-2 border-t border-indigo-100 dark:border-indigo-900/50 space-y-1.5">
+              <span className="font-bold text-slate-700 dark:text-slate-300 block flex items-center gap-1.5 text-[11px]">
+                <Mic className="w-3.5 h-3.5 text-indigo-600" />
+                <span>วอยซ์เสียงบรรยายสูตร R&D (อัดเสียงสด / บันทึกได้หลายคลิป)</span>
+              </span>
+              <AudioRecorder
+                voiceNotes={voiceNotes}
+                onVoiceNotesChange={(notes) => setVoiceNotes(notes)}
+                onAudioSaved={(url, dur) => {
+                  setVoiceNotes((prev) => [
+                    ...prev,
+                    { id: `voice-${Date.now()}`, url, durationSec: dur }
+                  ]);
+                }}
+                onAudioDeleted={() => {
+                  setVoiceNotes([]);
+                }}
+              />
+            </div>
 
-              <div className="space-y-1.5">
-                <div className="flex items-center justify-between">
-                  <label className="font-bold text-slate-600 dark:text-slate-400 flex items-center gap-1">
-                    <Video className="w-3 h-3 text-indigo-600" />
-                    <span>คลิปวิดีโอสาธิตการชง</span>
-                  </label>
-                  <button
-                    type="button"
-                    onClick={() => videoFileInputRef.current?.click()}
-                    disabled={isUploadingMedia}
-                    className="text-[10px] font-bold text-indigo-600 hover:text-indigo-700 inline-flex items-center gap-0.5"
-                  >
-                    <Upload className="w-2.5 h-2.5" />
-                    <span>เลือกไฟล์คลิป</span>
-                  </button>
+            {/* Video Upload & Preview Component */}
+            <div className="pt-2 border-t border-indigo-100 dark:border-indigo-900/50 space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5 text-[11px]">
+                  <Video className="w-3.5 h-3.5 text-indigo-600" />
+                  <span>คลิปวิดีโอสาธิตการชง ({videos.length})</span>
+                </span>
+                <label className="text-[10px] font-bold text-indigo-600 hover:text-indigo-700 inline-flex items-center gap-1 cursor-pointer">
+                  <Upload className="w-3 h-3" />
+                  <span>{isVideoLoading ? 'กำลังอัปโหลด...' : '+ เลือกคลิปวิดีโอ'}</span>
                   <input
-                    ref={videoFileInputRef}
                     type="file"
                     accept="video/*"
+                    multiple
+                    disabled={isVideoLoading}
                     onChange={handleVideoUpload}
                     className="hidden"
                   />
-                </div>
-                <input
-                  type="url"
-                  value={videoUrl}
-                  onChange={(e) => setVideoUrl(e.target.value)}
-                  placeholder="https://... หรืออัปโหลดไฟล์วิดีโอ"
-                  className="w-full p-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-[11px]"
-                />
+                </label>
               </div>
+
+              {videos.length > 0 && (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                  {videos.map((vid, vIdx) => (
+                    <div key={vIdx} className="relative group">
+                      <VideoPlayer
+                        src={vid}
+                        className="rounded-xl border border-slate-200 dark:border-slate-700 shadow-xs h-36"
+                        badgeLabel={`คลิป #${vIdx + 1}`}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setVideos(prev => prev.filter((_, i) => i !== vIdx))}
+                        className="absolute top-2 right-2 p-1 rounded-lg bg-rose-600 text-white shadow-md hover:bg-rose-700 text-xs"
+                        title="ลบคลิปวิดีโอนี้"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
 
           <div>
-            <label className="font-bold text-slate-600 dark:text-slate-300 block mb-1">คำอธิบายและแนวคิด</label>
+            <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1">คำอธิบายและแนวคิด</label>
             <textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
@@ -1983,9 +2030,9 @@ function NewLabItemModal({
             />
           </div>
 
-          {/* Sweetness Matrix Input Box */}
+          {/* Sweetness Matrix Input Box (Empty defaults) */}
           <div className="p-3 bg-indigo-50/50 dark:bg-indigo-950/20 rounded-2xl border border-indigo-100 dark:border-indigo-900/40 space-y-2">
-            <span className="font-bold text-indigo-900 dark:text-indigo-300 block">
+            <span className="font-bold text-indigo-900 dark:text-indigo-300 block text-xs">
               กำหนดค่าความหวาน & Brix เริ่มต้น (0% / 50% / 100%)
             </span>
             <div className="grid grid-cols-3 gap-2 text-[11px]">
@@ -1997,7 +2044,7 @@ function NewLabItemModal({
                   value={syrup0}
                   onChange={(e) => setSyrup0(e.target.value)}
                   placeholder="ไซรัป ml"
-                  className="w-full p-1 border rounded text-[11px]"
+                  className="w-full p-1 border rounded text-[11px] bg-slate-50 dark:bg-slate-900"
                 />
                 <input
                   type="number"
@@ -2005,7 +2052,14 @@ function NewLabItemModal({
                   value={brix0}
                   onChange={(e) => setBrix0(e.target.value)}
                   placeholder="Brix °Bx"
-                  className="w-full p-1 border rounded text-[11px]"
+                  className="w-full p-1 border rounded text-[11px] bg-slate-50 dark:bg-slate-900"
+                />
+                <input
+                  type="text"
+                  value={notes0}
+                  onChange={(e) => setNotes0(e.target.value)}
+                  placeholder="โน้ตรสสัมผัส"
+                  className="w-full p-1 border rounded text-[10px] bg-slate-50 dark:bg-slate-900"
                 />
               </div>
 
@@ -2017,7 +2071,7 @@ function NewLabItemModal({
                   value={syrup50}
                   onChange={(e) => setSyrup50(e.target.value)}
                   placeholder="ไซรัป ml"
-                  className="w-full p-1 border rounded text-[11px]"
+                  className="w-full p-1 border rounded text-[11px] bg-slate-50 dark:bg-slate-900"
                 />
                 <input
                   type="number"
@@ -2025,7 +2079,14 @@ function NewLabItemModal({
                   value={brix50}
                   onChange={(e) => setBrix50(e.target.value)}
                   placeholder="Brix °Bx"
-                  className="w-full p-1 border rounded text-[11px]"
+                  className="w-full p-1 border rounded text-[11px] bg-slate-50 dark:bg-slate-900"
+                />
+                <input
+                  type="text"
+                  value={notes50}
+                  onChange={(e) => setNotes50(e.target.value)}
+                  placeholder="โน้ตรสสัมผัส"
+                  className="w-full p-1 border rounded text-[10px] bg-slate-50 dark:bg-slate-900"
                 />
               </div>
 
@@ -2037,7 +2098,7 @@ function NewLabItemModal({
                   value={syrup100}
                   onChange={(e) => setSyrup100(e.target.value)}
                   placeholder="ไซรัป ml"
-                  className="w-full p-1 border rounded text-[11px]"
+                  className="w-full p-1 border rounded text-[11px] bg-slate-50 dark:bg-slate-900"
                 />
                 <input
                   type="number"
@@ -2045,32 +2106,41 @@ function NewLabItemModal({
                   value={brix100}
                   onChange={(e) => setBrix100(e.target.value)}
                   placeholder="Brix °Bx"
-                  className="w-full p-1 border rounded text-[11px]"
+                  className="w-full p-1 border rounded text-[11px] bg-slate-50 dark:bg-slate-900"
+                />
+                <input
+                  type="text"
+                  value={notes100}
+                  onChange={(e) => setNotes100(e.target.value)}
+                  placeholder="โน้ตรสสัมผัส"
+                  className="w-full p-1 border rounded text-[10px] bg-slate-50 dark:bg-slate-900"
                 />
               </div>
             </div>
           </div>
 
-          {/* Financials */}
+          {/* Financials (Empty defaults) */}
           <div className="grid grid-cols-3 gap-3">
             <div>
-              <label className="font-bold text-slate-600 dark:text-slate-300 block mb-1">ต้นทุนวัตถุดิบ (฿)</label>
+              <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1">ต้นทุนวัตถุดิบ (฿)</label>
               <input
                 type="number"
                 step="0.5"
                 value={costIngredient}
                 onChange={(e) => setCostIngredient(e.target.value)}
-                className="w-full p-2 rounded-xl border border-slate-200 dark:border-slate-700 font-mono font-bold"
+                placeholder="0.00"
+                className="w-full p-2 rounded-xl border border-slate-200 dark:border-slate-700 font-mono font-bold bg-slate-50 dark:bg-slate-800"
               />
             </div>
             <div>
-              <label className="font-bold text-slate-600 dark:text-slate-300 block mb-1">ต้นทุนแก้ว/ฝา (฿)</label>
+              <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1">ต้นทุนแก้ว/ฝา (฿)</label>
               <input
                 type="number"
                 step="0.5"
                 value={costPackaging}
                 onChange={(e) => setCostPackaging(e.target.value)}
-                className="w-full p-2 rounded-xl border border-slate-200 dark:border-slate-700 font-mono font-bold"
+                placeholder="0.00"
+                className="w-full p-2 rounded-xl border border-slate-200 dark:border-slate-700 font-mono font-bold bg-slate-50 dark:bg-slate-800"
               />
             </div>
             <div>
@@ -2080,7 +2150,8 @@ function NewLabItemModal({
                 step="1"
                 value={suggestedPrice}
                 onChange={(e) => setSuggestedPrice(e.target.value)}
-                className="w-full p-2 rounded-xl border border-emerald-300 dark:border-emerald-700 font-mono font-bold text-emerald-600 dark:text-emerald-400"
+                placeholder="0.00"
+                className="w-full p-2 rounded-xl border border-emerald-300 dark:border-emerald-700 font-mono font-bold text-emerald-600 dark:text-emerald-400 bg-slate-50 dark:bg-slate-800"
               />
             </div>
           </div>
