@@ -51,6 +51,7 @@ import { saveVideoFile } from '../utils/mediaStorage';
 import { AudioRecorder } from './AudioRecorder';
 import { VideoPlayer } from './VideoPlayer';
 import { StorePhotoGallery } from './StorePhotoGallery';
+import { LabItemFormModal } from './LeadLabView';
 
 export function FranchiseStoreView({
   initialStoreId,
@@ -65,6 +66,8 @@ export function FranchiseStoreView({
     currentUser,
     users,
     saveFranchiseStore,
+    saveLeadLabItem,
+    deleteLeadLabItem,
     deleteFranchiseStore,
     toggleLikeFranchiseStore,
     addFranchiseStoreComment,
@@ -95,7 +98,11 @@ export function FranchiseStoreView({
     menuItem: StoreMenuItem;
     labItem: LabItem;
   } | null>(null);
-  const [isAddMenuModalOpen, setIsAddMenuModalOpen] = useState(false);
+  const [editingLab, setEditingLab] = useState<LabItem | null>(null);
+  const [menuEditor, setMenuEditor] = useState<{ store: FranchiseStore; item?: StoreMenuItem } | null>(null);
+  const [menuRemoval, setMenuRemoval] = useState<{ store: FranchiseStore; item: StoreMenuItem } | null>(null);
+  const [removingMenu, setRemovingMenu] = useState(false);
+  const canEditMenus = ['admin', 'editor', 'reviewer'].includes(currentUser.role);
   const [storeCategoryFilter, setStoreCategoryFilter] = useState<string>('all');
   const [newCategoryName, setNewCategoryName] = useState('');
   const [isAddingCategory, setIsAddingCategory] = useState(false);
@@ -126,10 +133,10 @@ export function FranchiseStoreView({
   const synchronizedQuickSopItem = useMemo(() => {
     if (!selectedQuickSopItem) return null;
     const latestLabItem = leadLabItems.find((x) => x.id === selectedQuickSopItem.labItem.id);
-    return {
+    return latestLabItem ? {
       menuItem: selectedQuickSopItem.menuItem,
-      labItem: latestLabItem || selectedQuickSopItem.labItem,
-    };
+      labItem: latestLabItem,
+    } : null;
   }, [leadLabItems, selectedQuickSopItem]);
 
   // Record view on opening store
@@ -142,7 +149,7 @@ export function FranchiseStoreView({
   // Map menu items to full LabItem details
   const enrichedMenuItems = useMemo(() => {
     if (!activeStore) return [];
-    return (activeStore.menuItems || [])
+    return [...(activeStore.menuItems || [])].sort((a,b) => a.displayOrder - b.displayOrder)
       .map((menuItem) => {
         const labItem = leadLabItems.find((x) => x.id === menuItem.labItemId);
         return {
@@ -689,7 +696,8 @@ export function FranchiseStoreView({
           </button>
           <button
             type="button"
-            onClick={() => setIsAddMenuModalOpen(true)}
+            onClick={() => setMenuEditor({ store: activeStore })}
+            disabled={!canEditMenus}
             className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs shadow-xs transition-all"
           >
             <Plus className="w-4 h-4" />
@@ -697,7 +705,7 @@ export function FranchiseStoreView({
           </button>
           <button
             type="button"
-            onClick={() => printFranchiseStoreReport(activeStore, enrichedMenuItems)}
+            onClick={() => printFranchiseStoreReport(activeStore, enrichedMenuItems, users)}
             style={/^#[0-9a-f]{6}$/i.test(activeStore.themeColor || '') ? {backgroundColor: activeStore.themeColor, color: '#fff'} : undefined} className={`inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl font-bold text-xs shadow-xs transition-all ${theme.btn}`}
           >
             <Printer className="w-4 h-4" />
@@ -916,6 +924,12 @@ export function FranchiseStoreView({
         </div>
       )}
 
+      {(activeStore.menuItems || []).some(m => !leadLabItems.some(l => l.id === m.labItemId)) && <section className="rounded-2xl border border-amber-200 bg-amber-50 p-4 space-y-2">
+        <h3 className="font-bold text-amber-900">เมนูที่ยังไม่พบสูตรเชื่อมต่อ</h3>
+        <p className="text-xs text-amber-800">สูตรอาจอยู่ในถังขยะ กู้คืนสูตรเพื่อใช้งานต่อ หรือนำเมนูออกจากร้านนี้</p>
+        {activeStore.menuItems.filter(m => !leadLabItems.some(l => l.id === m.labItemId)).map(m => <div key={m.id} className="flex justify-between items-center gap-3 text-sm"><span>{m.customName || m.labItemId}</span>{canEditMenus && <button type="button" className="font-bold text-rose-700 px-3 py-2" onClick={() => setMenuRemoval({store:activeStore,item:m})}>นำออกจากร้าน</button>}</div>)}
+      </section>}
+
       {/* 📋 DIGITAL MENU BOARD SIMULATOR (แสดงผลแถวละ 2 รายการบนมือถือ สัดส่วน Fit คงที่) */}
       <div className="bg-white dark:bg-slate-900 rounded-2xl sm:rounded-3xl border border-slate-200 dark:border-slate-800 shadow-md p-4 sm:p-6 md:p-8 space-y-6 print:border-none print:shadow-none print:p-0">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-4 sm:pb-6 border-b border-slate-200 dark:border-slate-800 gap-3">
@@ -1010,6 +1024,13 @@ export function FranchiseStoreView({
                       สูตรชง SOP →
                     </span>
                   </div>
+                  <div className="mt-2 space-y-2 print:hidden" onClick={e => e.stopPropagation()}>
+                    <span className={`text-[10px] font-bold ${menuItem.isAvailable ? 'text-emerald-700' : 'text-amber-700'}`}>{menuItem.isAvailable ? 'เปิดขาย' : 'พักขาย'}</span>
+                    {canEditMenus && <div className="flex flex-wrap gap-1.5">
+                      <button type="button" aria-label={`แก้ไขเมนู ${menuItem.customName || labItem.name}`} onClick={() => setMenuEditor({ store: activeStore, item: menuItem })} className="inline-flex items-center gap-1 rounded-lg border border-indigo-200 bg-white px-2 py-2 text-[11px] font-bold text-indigo-700"><Edit2 className="w-3 h-3" />แก้ไขเมนู</button>
+                      <button type="button" aria-label={`นำเมนู ${menuItem.customName || labItem.name} ออกจากร้าน`} onClick={() => setMenuRemoval({ store: activeStore, item: menuItem })} className="inline-flex items-center gap-1 rounded-lg border border-rose-200 bg-white px-2 py-2 text-[11px] font-bold text-rose-600"><Trash2 className="w-3 h-3" />นำออกจากร้าน</button>
+                    </div>}
+                  </div>
                 </div>
               );
             })}
@@ -1046,6 +1067,13 @@ export function FranchiseStoreView({
                         +฿{menuItem.retailPriceThb}
                       </div>
                     </div>
+                  </div>
+                  <div className="mt-2 space-y-2 print:hidden" onClick={e => e.stopPropagation()}>
+                    <span className={`text-[10px] font-bold ${menuItem.isAvailable ? 'text-emerald-700' : 'text-amber-700'}`}>{menuItem.isAvailable ? 'เปิดขาย' : 'พักขาย'}</span>
+                    {canEditMenus && <div className="flex flex-wrap gap-1.5">
+                      <button type="button" aria-label={`แก้ไขเมนู ${menuItem.customName || labItem.name}`} onClick={() => setMenuEditor({ store: activeStore, item: menuItem })} className="inline-flex items-center gap-1 rounded-lg border border-indigo-200 bg-white px-2 py-2 text-[11px] font-bold text-indigo-700"><Edit2 className="w-3 h-3" />แก้ไขเมนู</button>
+                      <button type="button" aria-label={`นำเมนู ${menuItem.customName || labItem.name} ออกจากร้าน`} onClick={() => setMenuRemoval({ store: activeStore, item: menuItem })} className="inline-flex items-center gap-1 rounded-lg border border-rose-200 bg-white px-2 py-2 text-[11px] font-bold text-rose-600"><Trash2 className="w-3 h-3" />นำออกจากร้าน</button>
+                    </div>}
                   </div>
                 </div>
               ))}
@@ -1266,6 +1294,11 @@ export function FranchiseStoreView({
           users={users}
           onClose={() => setSelectedQuickSopItem(null)}
           onNavigateToLab={onNavigateToLab}
+          onEdit={canEditMenus ? () => { setEditingLab(structuredClone(synchronizedQuickSopItem.labItem)); setSelectedQuickSopItem(null); } : undefined}
+          onDelete={canEditMenus ? async () => {
+            if (!window.confirm(`ลบสูตร "${synchronizedQuickSopItem.labItem.name}" ไปถังขยะ? เมนูที่เชื่อมสูตรนี้จะยังไม่มีสูตรใช้งานจนกว่าจะกู้คืน`)) return;
+            if (await deleteLeadLabItem(synchronizedQuickSopItem.labItem.id)) setSelectedQuickSopItem(null);
+          } : undefined}
           onToggleLikeLabItem={toggleLikeLeadLabItem}
           onAddLabComment={addLeadLabComment}
           onToggleLabCommentLike={toggleLikeLeadLabComment}
@@ -1273,22 +1306,31 @@ export function FranchiseStoreView({
         />
       )}
 
-      {/* ➕ ADD MENU ITEM MODAL */}
-      {isAddMenuModalOpen && (
-        <AddMenuItemModal
-          store={activeStore}
-          leadLabItems={leadLabItems}
-          onClose={() => setIsAddMenuModalOpen(false)}
-          onSave={async (newMenuItem) => {
-            const nextMenuItems = [...activeStore.menuItems, newMenuItem];
-            if (!await saveFranchiseStore({
-              ...activeStore,
-              menuItems: nextMenuItems,
-            })) return;
-            setIsAddMenuModalOpen(false);
-          }}
-        />
+      {editingLab && canEditMenus && <LabItemFormModal key={editingLab.id} item={editingLab} currentUser={currentUser} onClose={() => setEditingLab(null)} onSave={async item => { if (await saveLeadLabItem(item)) setEditingLab(null); }} />}
+      {menuEditor && canEditMenus && (
+        <AddMenuItemModal key={menuEditor.item?.id || 'new-menu'} store={menuEditor.store} item={menuEditor.item} leadLabItems={leadLabItems}
+          onClose={() => setMenuEditor(null)}
+          onSave={async nextItem => {
+            const snapshot = menuEditor.store;
+            const menuItems = menuEditor.item ? snapshot.menuItems.map(m => m.id === nextItem.id ? nextItem : m) : [...snapshot.menuItems, nextItem];
+            if (!await saveFranchiseStore({ id: snapshot.id, expectedUpdatedAt: snapshot.updatedAt, menuItems })) return;
+            setMenuEditor(null);
+          }} />
       )}
+      {menuRemoval && canEditMenus && createPortal(<div role="dialog" aria-modal="true" aria-label="ยืนยันนำเมนูออกจากร้าน" data-no-pull-refresh className="fixed inset-0 z-[60] bg-black/60 flex items-center justify-center p-4">
+        <div className="w-full max-w-md rounded-2xl bg-white p-6 space-y-4">
+          <h3 className="font-bold text-lg">นำเมนูนี้ออกจากร้าน?</h3>
+          <p>{menuRemoval.item.customName || leadLabItems.find(l => l.id === menuRemoval.item.labItemId)?.name}</p>
+          <p className="text-sm text-slate-600">สูตรต้นฉบับใน R&D และเมนูของร้านอื่นยังอยู่ สามารถเพิ่มกลับเข้าร้านได้ภายหลัง</p>
+          <div className="flex justify-end gap-2"><button disabled={removingMenu} onClick={() => setMenuRemoval(null)} className="px-4 py-2 rounded-xl bg-slate-100">ยกเลิก</button><button disabled={removingMenu} className="px-4 py-2 rounded-xl bg-rose-600 text-white" onClick={async () => {
+            setRemovingMenu(true);
+            try {
+              const snapshot = menuRemoval.store;
+              if (await saveFranchiseStore({ id: snapshot.id, expectedUpdatedAt: snapshot.updatedAt, menuItems: snapshot.menuItems.filter(m => m.id !== menuRemoval.item.id) })) setMenuRemoval(null);
+            } finally { setRemovingMenu(false); }
+          }}>{removingMenu ? 'กำลังบันทึก…' : 'ยืนยันนำออกจากร้าน'}</button></div>
+        </div>
+      </div>, document.body)}
 
       {/* ➕ EDIT STORE MODAL */}
       {isStoreFormOpen && (
@@ -1893,50 +1935,59 @@ function StoreFormModal({
 // =========================================================================
 function AddMenuItemModal({
   store,
+  item,
   leadLabItems,
   onClose,
   onSave,
 }: {
   store: FranchiseStore;
+  item?: StoreMenuItem;
   leadLabItems: LabItem[];
   onClose: () => void;
   onSave: (item: StoreMenuItem) => Promise<void>;
 }) {
   const [selectedLabItemId, setSelectedLabItemId] = useState(
-    leadLabItems.filter((x) => x.status === 'approved')[0]?.id || leadLabItems[0]?.id || ''
+    item?.labItemId || leadLabItems.filter((x) => x.status === 'approved')[0]?.id || leadLabItems[0]?.id || ''
   );
-  const [customName, setCustomName] = useState('');
-  const [retailPrice, setRetailPrice] = useState('55');
-  const [badge, setBadge] = useState<any>('None');
-  const [category, setCategory] = useState(store.menuCategories?.[0] || 'ชานมพรีเมียม & ชาสด');
+  const [customName, setCustomName] = useState(item?.customName || '');
+  const [retailPrice, setRetailPrice] = useState(String(item?.retailPriceThb ?? 55));
+  const [badge, setBadge] = useState<StoreMenuItem['badge']>(item?.badge || 'None');
+  const [category, setCategory] = useState(item?.category || store.menuCategories?.[0] || 'ชานมพรีเมียม & ชาสด');
 
+  const [isAvailable, setIsAvailable] = useState(item?.isAvailable ?? true);
+  const [displayOrder, setDisplayOrder] = useState(String(item?.displayOrder ?? store.menuItems.length + 1));
+  const [submitting, setSubmitting] = useState(false);
+  const recordId = useRef(item?.id || `menu-${crypto.randomUUID()}`);
+  useEffect(() => { const close = (e: KeyboardEvent) => { if (e.key === 'Escape' && !submitting) onClose(); }; document.addEventListener('keydown', close); return () => document.removeEventListener('keydown', close); }, [onClose, submitting]);
   const selectedLabItem = useMemo(() => {
     return leadLabItems.find((x) => x.id === selectedLabItemId);
   }, [leadLabItems, selectedLabItemId]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedLabItemId) return;
-    await onSave({
-      id: `menu-${Date.now()}`,
+    if (!selectedLabItemId || submitting || !retailPrice.trim() || !Number.isFinite(Number(retailPrice)) || Number(retailPrice) < 0) return;
+    setSubmitting(true);
+    try { await onSave({
+      ...item,
+      id: recordId.current,
       labItemId: selectedLabItemId,
       category,
       customName: customName.trim() || undefined,
-      retailPriceThb: parseFloat(retailPrice) || 55,
+      retailPriceThb: Number(retailPrice),
       badge: badge === 'None' ? undefined : badge,
-      displayOrder: store.menuItems.length + 1,
-      isAvailable: true,
-    });
+      displayOrder: Number(displayOrder),
+      isAvailable,
+    }); } finally { setSubmitting(false); }
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-      <div className="bg-white dark:bg-slate-900 rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-200 dark:border-slate-800 space-y-4 animate-scale-up text-xs">
+    <div role="dialog" aria-modal="true" aria-label="แบบฟอร์มเมนูในร้าน" data-no-pull-refresh className="fixed inset-0 z-[60] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+      <div className="bg-white dark:bg-slate-900 rounded-3xl max-w-md w-full max-h-[92vh] overflow-y-auto p-6 shadow-2xl border border-slate-200 dark:border-slate-800 space-y-4 animate-scale-up text-xs">
         <div className="flex items-center justify-between border-b pb-3">
           <h3 className="font-extrabold text-sm text-slate-800 dark:text-white">
-            แอดเมนูจาก LEAD LAB เข้าร้าน {store.name}
+            {item ? 'แก้ไขเมนูในร้าน' : 'เพิ่มเมนูจาก LEAD LAB'} · {store.name}
           </h3>
-          <button type="button" onClick={onClose} className="text-slate-400">
+          <button type="button" onClick={onClose} aria-label="ปิดแบบฟอร์มเมนู" disabled={submitting} className="text-slate-400">
             <X className="w-4 h-4" />
           </button>
         </div>
@@ -1947,7 +1998,7 @@ function AddMenuItemModal({
               เลือกสูตรที่พัฒนาแล้วใน LEAD LAB:
             </label>
             <select
-              value={selectedLabItemId}
+              aria-label="สูตรที่เชื่อม" disabled={Boolean(item)} value={selectedLabItemId}
               onChange={(e) => {
                 setSelectedLabItemId(e.target.value);
                 const found = leadLabItems.find((x) => x.id === e.target.value);
@@ -1970,11 +2021,11 @@ function AddMenuItemModal({
               จัดเข้าหมวดหมู่เมนูของร้าน:
             </label>
             <select
-              value={category}
+              aria-label="หมวดหมู่เมนู" value={category}
               onChange={(e) => setCategory(e.target.value)}
               className="w-full p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 font-bold"
             >
-              {(store.menuCategories || ['ชานมพรีเมียม & ชาสด', 'ชาผลไม้ & ชีสโฟม', 'ท็อปปิ้งซิกเนเจอร์']).map((c, i) => (
+              {[...new Set([category, ...(store.menuCategories || ['ชานมพรีเมียม & ชาสด', 'ชาผลไม้ & ชีสโฟม', 'ท็อปปิ้งซิกเนเจอร์'])])].map((c, i) => (
                 <option key={i} value={c}>{c}</option>
               ))}
             </select>
@@ -1986,7 +2037,7 @@ function AddMenuItemModal({
             </label>
             <input
               type="text"
-              value={customName}
+              aria-label="ชื่อเมนูในร้าน" value={customName}
               onChange={(e) => setCustomName(e.target.value)}
               placeholder={selectedLabItem?.name || ''}
               className="w-full p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800"
@@ -2000,7 +2051,7 @@ function AddMenuItemModal({
               </label>
               <input
                 type="number"
-                value={retailPrice}
+                aria-label="ราคาขายหน้าร้าน" min="0" step="0.01" required value={retailPrice}
                 onChange={(e) => setRetailPrice(e.target.value)}
                 className="w-full p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 font-mono font-bold text-indigo-600 text-sm"
               />
@@ -2011,7 +2062,7 @@ function AddMenuItemModal({
               </label>
               <select
                 value={badge}
-                onChange={(e) => setBadge(e.target.value)}
+                onChange={(e) => setBadge(e.target.value as StoreMenuItem['badge'])}
                 className="w-full p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 font-semibold"
               >
                 <option value="None">ไม่มีแท็ก</option>
@@ -2024,6 +2075,9 @@ function AddMenuItemModal({
             </div>
           </div>
 
+          <label className="block font-bold">ลำดับเมนู<input aria-label="ลำดับเมนู" type="number" required min="0" step="1" value={displayOrder} onChange={e => setDisplayOrder(e.target.value)} className="mt-1 w-full rounded-xl border p-2.5" /></label>
+          <label className="flex items-center gap-2 font-bold"><input type="checkbox" checked={isAvailable} onChange={e => setIsAvailable(e.target.checked)} />เปิดขายเมนูนี้</label>
+          <p className="text-slate-500">ข้อมูลนี้ใช้เฉพาะร้านนี้ ภาพและสูตรอ้างอิงจาก R&D</p>
           <div className="flex justify-end gap-2 pt-3 border-t">
             <button
               type="button"
@@ -2033,10 +2087,10 @@ function AddMenuItemModal({
               ยกเลิก
             </button>
             <button
-              type="submit"
+              type="submit" disabled={submitting}
               className="px-5 py-2 rounded-xl bg-indigo-600 text-white font-bold"
             >
-              แอดเมนูเข้าร้าน
+              {submitting ? 'กำลังบันทึก…' : item ? 'บันทึกการแก้ไขเมนู' : 'เพิ่มเมนูเข้าร้าน'}
             </button>
           </div>
         </form>
@@ -2054,6 +2108,8 @@ function QuickSopModal({
   users = [],
   onClose,
   onNavigateToLab,
+  onEdit,
+  onDelete,
   onToggleLikeLabItem,
   onAddLabComment,
   onToggleLabCommentLike,
@@ -2064,6 +2120,8 @@ function QuickSopModal({
   users?: any[];
   onClose: () => void;
   onNavigateToLab?: () => void;
+  onEdit?: () => void;
+  onDelete?: () => void;
   onToggleLikeLabItem: (labItemId: string) => Promise<any>;
   onAddLabComment: (
     labItemId: string,
@@ -2283,6 +2341,7 @@ function QuickSopModal({
             </button>
           </div>
 
+          {onEdit && <div className="flex flex-wrap gap-2"><button type="button" onClick={onEdit} className="inline-flex items-center gap-1 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-bold text-amber-800"><Edit2 className="w-4 h-4" />แก้ไขสูตร R&D</button><button type="button" onClick={onDelete} className="inline-flex items-center gap-1 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-bold text-rose-600"><Trash2 className="w-4 h-4" />ลบสูตร</button></div>}
           {/* Row 2: Action Toolbar (Like, LINE Share, PDF Spec, Open in Lab) */}
           <div className="flex items-center gap-1.5 flex-wrap pt-1 border-t border-slate-100 dark:border-slate-800/80">
             {/* Like recipe button */}
@@ -2314,7 +2373,7 @@ function QuickSopModal({
             {/* PDF Spec Export */}
             <button
               type="button"
-              onClick={() => printLeadLabSpecReport(labItem)}
+              onClick={() => printLeadLabSpecReport(labItem, users)}
               className="px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 text-slate-700 dark:text-slate-200 text-xs font-bold inline-flex items-center gap-1.5 transition-all shadow-xs"
               title="พิมพ์เอกสารสเปกสูตรฉบับเต็ม"
             >

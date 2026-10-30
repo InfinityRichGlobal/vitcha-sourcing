@@ -1,4 +1,7 @@
-import { LabItem, FranchiseStore } from '../types';
+import { LabItem, FranchiseStore, User } from '../types';
+import { buildFranchiseStoreReportHtml, EnrichedStoreMenu } from './franchiseReport';
+import { buildRecordedHistory, historyPrintCss, openPrintReport, reportActions, reportPrintScript, reportUrl } from './printReportSupport';
+export { buildFranchiseStoreReportHtml } from './franchiseReport';
 
 function escapeHtml(str?: string | number | null): string {
   if (str === undefined || str === null) return '';
@@ -12,13 +15,11 @@ function escapeHtml(str?: string | number | null): string {
 /**
  * Open a dedicated, pristine A4 printable document for a LEAD LAB formula
  */
-export function printLeadLabSpecReport(item: LabItem) {
-  const printWindow = window.open('', '_blank');
-  if (!printWindow) {
-    window.print();
-    return;
-  }
+export function printLeadLabSpecReport(item: LabItem, users: User[] = []) {
+  openPrintReport(buildLeadLabSpecReportHtml(item, users));
+}
 
+export function buildLeadLabSpecReportHtml(item: LabItem, users: User[] = []): string {
   const gpPercent = item.suggestedPriceThb > 0
     ? (((item.suggestedPriceThb - item.costTotalThb) / item.suggestedPriceThb) * 100).toFixed(1)
     : '0.0';
@@ -29,19 +30,13 @@ export function printLeadLabSpecReport(item: LabItem) {
     shelved: '📦 พักสูตร (Shelved)',
   }[item.status] || item.status;
 
-  const commentsList = (item.revisionCycles || []).flatMap((c) =>
-    (c.comments || []).map((comm) => ({
-      ...comm,
-      cycleTitle: c.title,
-    }))
-  );
-
   const html = `<!DOCTYPE html>
 <html lang="th">
 <head>
   <meta charset="UTF-8">
   <title>LEAD LAB R&D Spec - ${escapeHtml(item.code)} ${escapeHtml(item.name)}</title>
   <style>
+    ${historyPrintCss}
     @page { size: A4; margin: 15mm; }
     body {
       font-family: -apple-system, BlinkMacSystemFont, "Sarabun", "Prompt", sans-serif;
@@ -90,11 +85,7 @@ export function printLeadLabSpecReport(item: LabItem) {
   </style>
 </head>
 <body>
-  <div class="print-actions">
-    <button class="btn btn-close" onclick="window.close()">ปิดหน้าต่าง</button>
-    <button class="btn btn-print" onclick="window.print()">🖨️ พิมพ์เอกสาร / บันทึกเป็น PDF</button>
-  </div>
-
+  ${reportActions}
   <div class="header">
     <div class="title-block">
       <h1>LEAD LAB 🧪 "แล๊ปของคนหัวแถว"</h1>
@@ -108,7 +99,7 @@ export function printLeadLabSpecReport(item: LabItem) {
 
   <div class="grid-2">
     <div class="photo-box">
-      <img src="${escapeHtml(item.photoUrl)}" alt="${escapeHtml(item.name)}" />
+      <img src="${escapeHtml(reportUrl(item.photoUrl))}" alt="${escapeHtml(item.name)}" />
     </div>
     <div class="info-card">
       <div style="font-size: 18px; font-weight: 900; color: #0f172a;">${escapeHtml(item.name)}</div>
@@ -223,19 +214,7 @@ export function printLeadLabSpecReport(item: LabItem) {
     </tbody>
   </table>
 
-  <!-- Social & Feedback Section -->
-  <div class="sec-title">💬 บันทึกการโต้ตอบ & ข้อเสนอแนะจากทีมงาน (Team Collaboration)</div>
-  <div style="font-size: 11px; color: #475569; margin-bottom: 8px;">
-    ❤️ ยอดไลก์สูตร: <strong>${(item.likedBy || []).length} ไลก์</strong> | ประวัติรอบการพัฒนา: <strong>${(item.revisionCycles || []).length} รอบ</strong>
-  </div>
-  ${commentsList.slice(0, 4).map(comm => `
-  <div class="comment-item">
-    <div class="comment-meta">
-      <span>👤 ${escapeHtml(comm.authorName)} [เจาะจง: หวาน ${escapeHtml(comm.sweetnessTarget || 'ภาพรวม')}%]</span>
-      <span>👍 ${(comm.likes || []).length} ไลก์</span>
-    </div>
-    <div style="font-size: 12px; color: #1e1b4b;">"${escapeHtml(comm.content)}"</div>
-  </div>`).join('')}
+  ${buildRecordedHistory(item, users)}
 
   <div style="margin-top: 30px; display: grid; grid-template-columns: 1fr 1fr; gap: 40px; text-align: center; font-size: 12px;">
     <div style="border-top: 1px solid #94a3b8; padding-top: 8px;">
@@ -245,180 +224,18 @@ export function printLeadLabSpecReport(item: LabItem) {
       ลงชื่อ ผู้มีอำนาจอนุมัติ (Owner / Management)
     </div>
   </div>
+${reportPrintScript}
 </body>
 </html>`;
 
-  printWindow.document.write(html);
-  printWindow.document.close();
+  return html;
 }
 
 /**
  * Open a dedicated, pristine A4 printable document for Franchise Store Menu & Barista SOP
  */
-export function printFranchiseStoreReport(store: FranchiseStore, enrichedMenuItems: any[]) {
-  const printWindow = window.open('', '_blank');
-  if (!printWindow) {
-    window.print();
-    return;
-  }
-
-  const drinks = enrichedMenuItems.filter(x => x.labItem?.type === 'drink');
-  const toppings = enrichedMenuItems.filter(x => x.labItem?.type === 'topping');
-
-  const commentsList = (store.revisionCycles || []).flatMap((c) =>
-    (c.comments || []).map((comm) => comm)
-  );
-
-  const html = `<!DOCTYPE html>
-<html lang="th">
-<head>
-  <meta charset="UTF-8">
-  <title>คู่มือเมนูหน้าร้าน & SOP - ${escapeHtml(store.name)}</title>
-  <style>
-    @page { size: A4 landscape; margin: 12mm; }
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, "Sarabun", "Prompt", sans-serif;
-      color: #0f172a;
-      background: #ffffff;
-      margin: 0;
-      padding: 15px;
-      font-size: 12px;
-      line-height: 1.4;
-    }
-    .header {
-      border-bottom: 2px solid #059669;
-      padding-bottom: 10px;
-      margin-bottom: 14px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-    .title-block h1 { margin: 0; font-size: 22px; color: #065f46; font-weight: 900; }
-    .title-block .sub { font-size: 12px; color: #047857; margin-top: 2px; }
-    table { width: 100%; border-collapse: collapse; margin-bottom: 14px; font-size: 11px; }
-    th { background: #f0fdf4; color: #065f46; padding: 6px 8px; text-align: left; font-weight: 700; border: 1px solid #bbf7d0; }
-    td { padding: 6px 8px; border: 1px solid #e2e8f0; vertical-align: top; }
-    .badge { display: inline-block; padding: 2px 6px; border-radius: 4px; font-size: 9px; font-weight: 800; background: #e0f2fe; color: #0369a1; }
-    .badge-seller { background: #fef3c7; color: #b45309; }
-    .badge-must { background: #fce7f3; color: #be185d; }
-    .price { font-weight: 800; color: #059669; font-family: monospace; font-size: 13px; }
-    .print-actions { margin-bottom: 15px; padding: 10px; background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 8px; display: flex; justify-content: flex-end; gap: 8px; }
-    .btn { padding: 6px 14px; border-radius: 6px; font-size: 12px; font-weight: 700; cursor: pointer; border: none; }
-    .btn-print { background: #059669; color: #fff; }
-    .btn-close { background: #e2e8f0; color: #334155; }
-    @media print {
-      .print-actions { display: none !important; }
-      body { padding: 0; }
-    }
-  </style>
-</head>
-<body>
-  <div class="print-actions">
-    <button class="btn btn-close" onclick="window.close()">ปิดหน้าต่าง</button>
-    <button class="btn btn-print" onclick="window.print()">🖨️ พิมพ์ป้ายเมนู & SOP หน้าร้าน (PDF)</button>
-  </div>
-
-  <div class="header">
-    <div class="title-block">
-      <h1>🏪 ${escapeHtml(store.name)} · ${escapeHtml(store.branch)}</h1>
-      <div class="sub">"${escapeHtml(store.brandTagline)}" | เวลาทำการ: ${escapeHtml(store.openingHours || '10:00 - 21:30 น.')} | โทร: ${escapeHtml(store.contactNumber || '-')}</div>
-      <div style="font-size: 11px; color: #047857; margin-top: 3px;">
-        👤 ผู้สร้างร้าน: <strong>${escapeHtml(store.createdByName || 'Franchise Team')}</strong> (${store.createdAt ? new Date(store.createdAt).toLocaleDateString('th-TH') : '-'})
-        ${store.galleryPhotos && store.galleryPhotos.length > 0 ? ` · 📷 รูปภาพสาขา: ${store.galleryPhotos.length} ภาพ` : ''}
-        ${store.audioNotes && store.audioNotes.length > 0 ? ` · 🎙️ วอยซ์เสียง: ${store.audioNotes.length} คลิป` : ''}
-        ${store.videos && store.videos.length > 0 ? ` · 🎬 คลิปวิดีโอ: ${store.videos.length} คลิป` : ''}
-      </div>
-    </div>
-    <div style="text-align: right; font-size: 11px;">
-      <span style="background: #ecfdf5; color: #065f46; padding: 4px 8px; border-radius: 6px; font-weight: bold; border: 1px solid #a7f3d0;">
-        กระดานเมนู & คู่มือ SOP บาริสต้าฉบับหน้าร้าน
-      </span>
-      <div style="color: #64748b; margin-top: 3px;">อัปเดตล่าสุด: ${new Date().toLocaleDateString('th-TH')}</div>
-    </div>
-  </div>
-
-  <!-- Drinks Table -->
-  <div style="font-weight: 800; font-size: 13px; color: #0f172a; margin-bottom: 6px;">🥤 หมวดหมู่เครื่องดื่ม (Handcrafted Beverages) - ${drinks.length} รายการ</div>
-  <table>
-    <thead>
-      <tr>
-        <th style="width: 5%;">ลำดับ</th>
-        <th style="width: 25%;">ชื่อเมนูหน้าร้าน / รหัสสูตร</th>
-        <th style="width: 10%; text-align: right;">ราคาขาย</th>
-        <th style="width: 20%;">สูตรหวาน 50% (บาริสต้าแนะนำ)</th>
-        <th style="width: 20%;">สูตรหวาน 0% / 100%</th>
-        <th style="width: 20%;">ท็อปปิ้งที่แนะนำ</th>
-      </tr>
-    </thead>
-    <tbody>
-      ${drinks.map((item: any, idx: number) => {
-        const lab = item.labItem;
-        const menu = item.menuItem;
-        return `
-        <tr>
-          <td style="text-align: center; font-weight: bold;">${idx + 1}</td>
-          <td>
-            <strong>${escapeHtml(menu.customName || lab.name)}</strong>
-            <div style="font-size: 10px; color: #64748b;">${escapeHtml(lab.nameEn)} (${escapeHtml(lab.code)})</div>
-            ${menu.badge && menu.badge !== 'None' ? `<span class="badge ${menu.badge === 'Best Seller' ? 'badge-seller' : menu.badge === 'Must Try' ? 'badge-must' : ''}">${escapeHtml(menu.badge)}</span>` : ''}
-          </td>
-          <td style="text-align: right;" class="price">฿${menu.retailPriceThb}</td>
-          <td>
-            ไซรัป: <strong>${lab.sweetnessLevels?.half?.syrupMl || 15} ml</strong> (Brix: ${lab.sweetnessLevels?.half?.brix || 8.5}°Bx)
-            <div style="font-size: 10px; color: #475569;">${escapeHtml(lab.sweetnessLevels?.half?.tasteNotes || '')}</div>
-          </td>
-          <td>
-            0%: ไซรัป ${lab.sweetnessLevels?.zero?.syrupMl || 0}ml (${lab.sweetnessLevels?.zero?.brix || 3}°Bx)<br/>
-            100%: ไซรัป ${lab.sweetnessLevels?.full?.syrupMl || 30}ml (${lab.sweetnessLevels?.full?.brix || 13.5}°Bx)
-          </td>
-          <td>
-            ${(menu.recommendedToppingIds || []).map((tId: string) => {
-              const top = enrichedMenuItems.find(x => x.menuItem.labItemId === tId);
-              return top ? `<span class="badge" style="margin-right: 3px;">+ ${escapeHtml(top.menuItem.customName || top.labItem.name)}</span>` : '';
-            }).join('') || '-'}
-          </td>
-        </tr>`;
-      }).join('')}
-    </tbody>
-  </table>
-
-  <!-- Toppings Table -->
-  ${toppings.length > 0 ? `
-  <div style="font-weight: 800; font-size: 13px; color: #0f172a; margin-bottom: 6px;">🍮 หมวดหมู่ท็อปปิ้ง (Specialty Toppings) - ${toppings.length} รายการ</div>
-  <table>
-    <thead>
-      <tr>
-        <th style="width: 5%;">ลำดับ</th>
-        <th style="width: 35%;">ชื่อท็อปปิ้ง</th>
-        <th style="width: 15%; text-align: right;">ราคาเพิ่ม/แก้ว</th>
-        <th style="width: 45%;">คำแนะนำและลักษณะสัมผัส</th>
-      </tr>
-    </thead>
-    <tbody>
-      ${toppings.map((item: any, idx: number) => `
-      <tr>
-        <td style="text-align: center; font-weight: bold;">${idx + 1}</td>
-        <td>
-          <strong>${escapeHtml(item.menuItem.customName || item.labItem.name)}</strong>
-          <span class="badge badge-seller" style="margin-left: 6px;">${escapeHtml(item.menuItem.badge || 'Topping')}</span>
-        </td>
-        <td style="text-align: right;" class="price">+฿${item.menuItem.retailPriceThb}</td>
-        <td>${escapeHtml(item.labItem.description || '-')}</td>
-      </tr>`).join('')}
-    </tbody>
-  </table>` : ''}
-
-  <!-- Social feedback note -->
-  <div style="margin-top: 10px; padding: 8px 12px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 10px; color: #64748b; display: flex; justify-content: space-between;">
-    <span>❤️ ได้รับความนิยมจากทีมงาน: <strong>${(store.likedBy || []).length} ไลก์</strong></span>
-    <span>💬 คอมเมนต์ปรับปรุงหน้าร้าน: <strong>${commentsList.length} ข้อความ</strong></span>
-    <span>📋 รหัสสาขา: <strong>${escapeHtml(store.id)}</strong></span>
-  </div>
-</body>
-</html>`;
-
-  printWindow.document.write(html);
-  printWindow.document.close();
+export function printFranchiseStoreReport(store: FranchiseStore, enrichedMenuItems: EnrichedStoreMenu[], users: User[] = []) {
+  openPrintReport(buildFranchiseStoreReportHtml(store, enrichedMenuItems, users));
 }
 
 /**

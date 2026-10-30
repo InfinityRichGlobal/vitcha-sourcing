@@ -2,6 +2,7 @@ import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react'
 import { createPortal } from 'react-dom';
 import {
   FlaskConical,
+  Edit2,
   Plus,
   Search,
   Heart,
@@ -76,6 +77,8 @@ export function LeadLabView({
   const [statusFilter, setStatusFilter] = useState<'all' | LabFormulaStatus>('all');
   const [selectedItem, setSelectedItem] = useState<LabItem | null>(null);
   const [isNewModalOpen, setIsNewModalOpen] = useState(false);
+  const [editingLab, setEditingLab] = useState<LabItem | null>(null);
+  const canEditLab = ['admin', 'editor', 'reviewer'].includes(currentUser.role);
 
   // Synchronize deep-linked initialItemId
   useEffect(() => {
@@ -105,7 +108,7 @@ export function LeadLabView({
   // Keep selectedItem synchronized with state updates
   const activeDetailItem = useMemo(() => {
     if (!selectedItem) return null;
-    return leadLabItems.find((x) => x.id === selectedItem.id) || selectedItem;
+    return leadLabItems.find((x) => x.id === selectedItem.id) || null;
   }, [leadLabItems, selectedItem]);
 
   // Stats count with drinks and toppings breakdown
@@ -146,7 +149,7 @@ export function LeadLabView({
           <div className="flex flex-wrap sm:flex-nowrap items-center gap-3">
             <button
               type="button"
-              onClick={() => setIsNewModalOpen(true)}
+              onClick={() => setIsNewModalOpen(true)} disabled={!canEditLab}
               className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-2xl bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 hover:from-indigo-500 hover:to-pink-500 text-white font-bold text-sm shadow-lg shadow-indigo-500/25 transition-all duration-200 active:scale-95"
             >
               <Plus className="w-4 h-4" />
@@ -356,7 +359,7 @@ export function LeadLabView({
       )}
 
       {/* 🔍 DETAILED MODAL */}
-      {activeDetailItem && (
+      {activeDetailItem && !editingLab && (
         <LabDetailModal
           item={activeDetailItem}
           currentUser={currentUser}
@@ -368,6 +371,7 @@ export function LeadLabView({
           onCycleRevision={(summary, nextTitle) => cycleLeadLabRevision(activeDetailItem.id, summary, nextTitle)}
           onSetStatus={(status) => setLeadLabStatus(activeDetailItem.id, status)}
           onRecordView={() => recordLeadLabItemView(activeDetailItem.id)}
+          onEdit={canEditLab ? () => setEditingLab(structuredClone(activeDetailItem)) : undefined}
           onDelete={async () => {
             if (window.confirm(`ยืนยันการลบสูตร "${activeDetailItem.name}" หรือไม่?`)) {
               if (!await deleteLeadLabItem(activeDetailItem.id)) return;
@@ -378,13 +382,16 @@ export function LeadLabView({
       )}
 
       {/* ➕ CREATE NEW RECIPE MODAL */}
-      {isNewModalOpen && (
-        <NewLabItemModal
+      {(isNewModalOpen || editingLab) && canEditLab && (
+        <LabItemFormModal
+          key={editingLab?.id || 'new-lab'}
+          item={editingLab || undefined}
           currentUser={currentUser}
-          onClose={() => setIsNewModalOpen(false)}
+          onClose={() => { setIsNewModalOpen(false); setEditingLab(null); }}
           onSave={async (itemData) => {
             if (!await saveLeadLabItem(itemData)) return;
             setIsNewModalOpen(false);
+            setEditingLab(null);
           }}
         />
       )}
@@ -559,6 +566,7 @@ function LabDetailModal({
   onSetStatus,
   onRecordView,
   onDelete,
+  onEdit,
 }: {
   item: LabItem;
   currentUser: any;
@@ -575,6 +583,7 @@ function LabDetailModal({
   onSetStatus: (status: LabFormulaStatus) => void;
   onRecordView?: () => void;
   onDelete: () => void;
+  onEdit?: () => void;
 }) {
   const [commentText, setCommentText] = useState('');
   const [sweetnessTarget, setSweetnessTarget] = useState<'all' | '0' | '50' | '100'>('all');
@@ -806,6 +815,11 @@ function LabDetailModal({
             </button>
           </div>
 
+          {onEdit && <div className="flex flex-wrap gap-2 border-t border-slate-100 pt-2">
+            <button type="button" onClick={onEdit} className="inline-flex items-center gap-1.5 rounded-xl bg-amber-50 border border-amber-200 px-3 py-2 text-xs font-bold text-amber-800"><Edit2 className="w-4 h-4" />แก้ไขสูตร</button>
+            <button type="button" onClick={onDelete} className="inline-flex items-center gap-1.5 rounded-xl bg-rose-50 border border-rose-200 px-3 py-2 text-xs font-bold text-rose-600"><Trash2 className="w-4 h-4" />ลบสูตร</button>
+          </div>}
+
           {/* Row 2: Action Toolbar Row (Like · แชร์ LINE · PDF · ลบ) */}
           <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pt-1.5 border-t border-slate-100 dark:border-slate-800 select-none">
             {/* Like Button with avatars preview */}
@@ -837,7 +851,7 @@ function LabDetailModal({
             {/* Print / PDF Spec Sheet */}
             <button
               type="button"
-              onClick={() => printLeadLabSpecReport(item)}
+              onClick={() => printLeadLabSpecReport(item, users)}
               className="h-7 sm:h-8 px-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold active:scale-95 transition-all inline-flex items-center gap-1.5 shrink-0 shadow-xs"
               title="พิมพ์เอกสารสเปกสูตร R&D หรือบันทึก PDF"
             >
@@ -845,16 +859,7 @@ function LabDetailModal({
               <span>สเปก R&D (PDF)</span>
             </button>
 
-            {/* Delete Formula Button */}
-            <button
-              type="button"
-              onClick={onDelete}
-              className="h-7 sm:h-8 px-2.5 rounded-xl bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/30 dark:hover:bg-rose-950/60 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-900/40 text-xs font-bold active:scale-95 transition-all inline-flex items-center gap-1.5 shrink-0 shadow-xs ml-auto"
-              title="ลบสูตรนี้ออกจากระบบ"
-            >
-              <Trash2 className="w-3.5 h-3.5 text-rose-500 shrink-0" />
-              <span>ลบสูตร</span>
-            </button>
+
           </div>
         </div>
 
@@ -1475,26 +1480,29 @@ function LabDetailModal({
 // ==========================================
 // NEW LAB ITEM MODAL
 // ==========================================
-function NewLabItemModal({
+export function LabItemFormModal({
+  item,
   currentUser,
   onClose,
   onSave,
 }: {
+  item?: LabItem;
   currentUser: any;
   onClose: () => void;
   onSave: (item: Partial<LabItem>) => Promise<void>;
 }) {
-  const recordId = useRef(`lab-${crypto.randomUUID()}`);
-  const [type, setType] = useState<LabItemType>('drink');
-  const [code, setCode] = useState(`RD-${Math.floor(100 + Math.random() * 900)}`);
-  const [name, setName] = useState('');
-  const [nameEn, setNameEn] = useState('');
+  const recordId = useRef(item?.id || `lab-${crypto.randomUUID()}`);
+  const [type, setType] = useState<LabItemType>(item?.type || 'drink');
+  const [code, setCode] = useState(item?.code || `RD-${Math.floor(100 + Math.random() * 900)}`);
+  const [name, setName] = useState(item?.name || '');
+  const [nameEn, setNameEn] = useState(item?.nameEn || '');
 
   // Category with on-the-fly add mode
-  const [category, setCategory] = useState('ชานมพรีเมียม & ชาสด');
+  const [category, setCategory] = useState(item?.category || 'ชานมพรีเมียม & ชาสด');
   const [isAddingNewCat, setIsAddingNewCat] = useState(false);
   const [newCatInput, setNewCatInput] = useState('');
   const [categoryList, setCategoryList] = useState<string[]>([
+    ...(item?.category ? [item.category] : []),
     'ชานมพรีเมียม & ชาสด',
     'วิตามิน & คราฟต์โซดา',
     'ชาผลไม้ & ชีสโฟม',
@@ -1504,34 +1512,37 @@ function NewLabItemModal({
 
   // Primary 1-image picker (Upload vs URL)
   const [photoMode, setPhotoMode] = useState<'upload' | 'url'>('upload');
-  const [photoUrl, setPhotoUrl] = useState('');
+  const [photoUrl, setPhotoUrl] = useState(item?.photoUrl || '');
   const [isCompressingPrimary, setIsCompressingPrimary] = useState(false);
 
   // Multimedia Gallery
-  const [galleryPhotos, setGalleryPhotos] = useState<string[]>([]);
-  const [voiceNotes, setVoiceNotes] = useState<VoiceNoteEntry[]>([]);
-  const [videos, setVideos] = useState<string[]>([]);
+  const [galleryPhotos, setGalleryPhotos] = useState<string[]>(item?.galleryPhotos || []);
+  const [voiceNotes, setVoiceNotes] = useState<VoiceNoteEntry[]>((item?.audioNotes || []).map(a => ({ id: a.id, url: a.url, durationSec: a.duration || 0 })));
+  const [videos, setVideos] = useState<string[]>(item?.videos || []);
   const [isVideoLoading, setIsVideoLoading] = useState(false);
 
   // Inputs: start strictly empty per user requirement
-  const [description, setDescription] = useState('');
-  const [costIngredient, setCostIngredient] = useState('');
-  const [costPackaging, setCostPackaging] = useState('');
-  const [suggestedPrice, setSuggestedPrice] = useState('');
+  const [description, setDescription] = useState(String(item?.description ?? ''));
+  const [costIngredient, setCostIngredient] = useState(String(item?.costIngredientThb ?? ''));
+  const [costPackaging, setCostPackaging] = useState(String(item?.costPackagingThb ?? ''));
+  const [suggestedPrice, setSuggestedPrice] = useState(String(item?.suggestedPriceThb ?? ''));
 
   // Sweetness matrix inputs (empty strings)
-  const [syrup0, setSyrup0] = useState('');
-  const [brix0, setBrix0] = useState('');
-  const [notes0, setNotes0] = useState('');
+  const [syrup0, setSyrup0] = useState(String(item?.sweetnessLevels?.zero?.syrupMl ?? ''));
+  const [brix0, setBrix0] = useState(String(item?.sweetnessLevels?.zero?.brix ?? ''));
+  const [notes0, setNotes0] = useState(String(item?.sweetnessLevels?.zero?.tasteNotes ?? ''));
 
-  const [syrup50, setSyrup50] = useState('');
-  const [brix50, setBrix50] = useState('');
-  const [notes50, setNotes50] = useState('');
+  const [syrup50, setSyrup50] = useState(String(item?.sweetnessLevels?.half?.syrupMl ?? ''));
+  const [brix50, setBrix50] = useState(String(item?.sweetnessLevels?.half?.brix ?? ''));
+  const [notes50, setNotes50] = useState(String(item?.sweetnessLevels?.half?.tasteNotes ?? ''));
 
-  const [syrup100, setSyrup100] = useState('');
-  const [brix100, setBrix100] = useState('');
-  const [notes100, setNotes100] = useState('');
+  const [syrup100, setSyrup100] = useState(String(item?.sweetnessLevels?.full?.syrupMl ?? ''));
+  const [brix100, setBrix100] = useState(String(item?.sweetnessLevels?.full?.brix ?? ''));
+  const [notes100, setNotes100] = useState(String(item?.sweetnessLevels?.full?.tasteNotes ?? ''));
 
+  const [technicalSpecs, setTechnicalSpecs] = useState<NonNullable<LabItem['technicalSpecs']>>(item?.technicalSpecs || {});
+  const [ingredients, setIngredients] = useState<LabItem['ingredients']>(item?.ingredients || []);
+  const [sweetnessExtra, setSweetnessExtra] = useState(item?.sweetnessLevels);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handlePrimaryUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -1596,6 +1607,7 @@ function NewLabItemModal({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    if (isSubmitting) return;
     // Strict validation
     if (!type) {
       alert('กรุณาเลือกประเภทสูตร *');
@@ -1623,7 +1635,7 @@ function NewLabItemModal({
     const costPkg = parseFloat(costPackaging) || 0;
     const price = parseFloat(suggestedPrice) || 0;
 
-    const audioNotesFormatted = voiceNotes.map((vn, idx) => ({
+    const audioNotesFormatted = voiceNotes.map((vn, idx) => item?.audioNotes?.find(a => a.id === vn.id) || ({
       id: vn.id || `audio-${idx}-${crypto.randomUUID()}`,
       url: vn.url,
       duration: vn.durationSec,
@@ -1634,7 +1646,9 @@ function NewLabItemModal({
 
     const nowIso = new Date().toISOString();
 
-    await onSave({
+    try { await onSave({
+      ...item,
+      expectedUpdatedAt: item?.updatedAt,
       id: recordId.current,
       type,
       code: code.trim(),
@@ -1646,60 +1660,46 @@ function NewLabItemModal({
       audioNotes: audioNotesFormatted,
       videos,
       description: description.trim(),
-      status: 'testing',
+      status: item?.status || 'testing',
       costIngredientThb: costIng,
       costPackagingThb: costPkg,
       costTotalThb: costIng + costPkg,
       suggestedPriceThb: price,
       sweetnessLevels: {
         zero: {
+          ...(sweetnessExtra?.zero || { sweetenerType: '', baseLiquidMl: 0, caloriesKcal: 0, brix: 0, tasteNotes: '', syrupMl: 0 }),
           level: '0',
-          label: 'หวาน 0% (ไม่หวาน)',
+          label: item?.sweetnessLevels?.zero?.label || 'หวาน 0% (ไม่หวาน)',
           syrupMl: parseFloat(syrup0) || 0,
-          sweetenerType: 'ไม่ใส่น้ำตาล',
-          baseLiquidMl: 180,
           brix: parseFloat(brix0) || 0,
-          caloriesKcal: 85,
-          tasteNotes: notes0.trim() || 'สัมผัสชาแท้ คลีน สดชื่น ไร้น้ำตาล',
+          tasteNotes: notes0.trim(),
         },
         half: {
+          ...(sweetnessExtra?.half || { sweetenerType: '', baseLiquidMl: 0, caloriesKcal: 0, brix: 0, tasteNotes: '', syrupMl: 0 }),
           level: '50',
-          label: 'หวาน 50% (หวานน้อย)',
+          label: item?.sweetnessLevels?.half?.label || 'หวาน 50% (หวานน้อย)',
           syrupMl: parseFloat(syrup50) || 0,
-          sweetenerType: 'น้ำเชื่อมธรรมชาติ / GI ต่ำ',
-          baseLiquidMl: 170,
           brix: parseFloat(brix50) || 0,
-          caloriesKcal: 160,
-          tasteNotes: notes50.trim() || 'หวานละมุน นุ่มนวล กลมกล่อม แนะนำ',
+          tasteNotes: notes50.trim(),
         },
         full: {
+          ...(sweetnessExtra?.full || { sweetenerType: '', baseLiquidMl: 0, caloriesKcal: 0, brix: 0, tasteNotes: '', syrupMl: 0 }),
           level: '100',
-          label: 'หวาน 100% (หวานปกติ)',
+          label: item?.sweetnessLevels?.full?.label || 'หวาน 100% (หวานปกติ)',
           syrupMl: parseFloat(syrup100) || 0,
-          sweetenerType: 'น้ำเชื่อมสูตรมาตรฐาน',
-          baseLiquidMl: 160,
           brix: parseFloat(brix100) || 0,
-          caloriesKcal: 230,
-          tasteNotes: notes100.trim() || 'หวานจัดจ้าน สดชื่น กลมกล่อมเต็มคำ',
+          tasteNotes: notes100.trim(),
         },
       },
-      technicalSpecs: {
-        brewingTempC: 90,
-        extractionTimeSec: 180,
-        teaLeavesG: 12,
-        waterMl: 180,
-        shelfLifeHours: 6,
-      },
-      ingredients: [
-        { name: 'วัตถุดิบหลัก R&D', quantity: 1, unit: 'ชุด', costThb: costIng },
-      ],
-      likedBy: [currentUser.id],
-      createdById: currentUser.id,
-      createdByName: currentUser.alias || currentUser.name,
-      createdByAvatar: currentUser.avatar,
-      createdAt: nowIso,
+      technicalSpecs,
+      ingredients,
+      likedBy: item?.likedBy || [currentUser.id],
+      createdById: item?.createdById || currentUser.id,
+      createdByName: item?.createdByName || currentUser.alias || currentUser.name,
+      createdByAvatar: item?.createdByAvatar || currentUser.avatar,
+      createdAt: item?.createdAt || nowIso,
       updatedAt: nowIso,
-      revisionCycles: [
+      revisionCycles: item?.revisionCycles || [
         {
           cycleNumber: 1,
           title: 'รอบที่ 1: ตั้งสูตรทดลองเริ่มต้นและเทสต์ระดับความหวาน 0/50/100',
@@ -1709,8 +1709,7 @@ function NewLabItemModal({
           comments: [],
         },
       ],
-    });
-    setIsSubmitting(false);
+    }); } finally { setIsSubmitting(false); }
   };
 
   return createPortal(
@@ -1720,7 +1719,7 @@ function NewLabItemModal({
           <div className="flex items-center gap-2">
             <FlaskConical className="w-5 h-5 text-indigo-600" />
             <h3 className="font-extrabold text-base sm:text-lg text-slate-800 dark:text-white">
-              สร้างสูตรใหม่ใน LEAD LAB 🧪
+              {item ? 'แก้ไขสูตร R&D' : 'สร้างสูตรใหม่ใน LEAD LAB 🧪'}
             </h3>
           </div>
           <button type="button" onClick={onClose} className="text-slate-400 hover:text-slate-600">
@@ -1767,7 +1766,7 @@ function NewLabItemModal({
               <input
                 type="text"
                 required
-                value={name}
+                aria-label="ชื่อสูตรภาษาไทย" value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="เช่น ชาไทยคั่วโบราณซิกเนเจอร์"
                 className="w-full p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 font-bold"
@@ -2024,7 +2023,7 @@ function NewLabItemModal({
           <div>
             <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1">คำอธิบายและแนวคิด</label>
             <textarea
-              value={description}
+              aria-label="คำอธิบายสูตร" value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder="จุดเด่น รสสัมผัส แหล่งที่มาของใบชาและวัตถุดิบ..."
               rows={2}
@@ -2158,6 +2157,12 @@ function NewLabItemModal({
             </div>
           </div>
 
+          <fieldset className="rounded-xl border p-3 space-y-3"><legend className="font-bold px-1">ข้อมูลสูตรเพิ่มเติม</legend>
+            <div className="grid grid-cols-2 gap-3">{([['brewingTempC','อุณหภูมิสกัด (°C)'],['extractionTimeSec','เวลาสกัด (วินาที)'],['teaLeavesG','ใบชา / ผง (g)'],['waterMl','น้ำสกัด (ml)'],['shelfLifeHours','อายุจัดเก็บ (ชั่วโมง)']] as const).map(([key,label]) => <label key={key}>{label}<input aria-label={label} type="number" min="0" step="any" value={technicalSpecs[key] ?? ''} onChange={e => setTechnicalSpecs(p => ({...p,[key]: e.target.value === '' ? undefined : Number(e.target.value)}))} className="mt-1 w-full border rounded-lg p-2" /></label>)}</div>
+            {item && (['zero','half','full'] as const).map((key, index) => <div key={key} className="border-t pt-3 grid grid-cols-2 gap-2"><b className="col-span-2">รายละเอียดหวาน {[0,50,100][index]}%</b><label>สารให้ความหวาน<input aria-label={`สารให้ความหวาน ${key}`} value={sweetnessExtra?.[key].sweetenerType || ''} onChange={e => setSweetnessExtra(p => p ? ({...p,[key]:{...p[key],sweetenerType:e.target.value}}) : p)} className="w-full border rounded-lg p-2" /></label>{([['baseLiquidMl','ของเหลวหลัก (ml)'],['milkOrMixerMl','นม / มิกเซอร์ (ml)'],['caloriesKcal','พลังงาน (kcal)']] as const).map(([field,label]) => <label key={field}>{label}<input aria-label={`${label} ${key}`} type="number" min="0" step="any" value={sweetnessExtra?.[key][field] ?? ''} onChange={e => setSweetnessExtra(p => p ? ({...p,[key]:{...p[key],[field]:Number(e.target.value)}}) : p)} className="w-full border rounded-lg p-2" /></label>)}</div>)}
+            <div className="flex justify-between items-center"><b>วัตถุดิบและสัดส่วน</b><button type="button" onClick={() => setIngredients(p => [...p,{name:'',quantity:0,unit:'g',costThb:0}])} className="text-indigo-700 font-bold">+ เพิ่มวัตถุดิบ</button></div>
+            {ingredients.map((ing,index) => <div key={index} className="grid grid-cols-2 sm:grid-cols-4 gap-2 border-t pt-2"><label>วัตถุดิบ<input aria-label={`วัตถุดิบ ${index+1}`} required value={ing.name} onChange={e => setIngredients(p => p.map((v,i) => i === index ? {...v,name:e.target.value} : v))} className="w-full border p-2 rounded-lg" /></label><label>ปริมาณ<input type="number" min="0" step="any" value={ing.quantity} onChange={e => setIngredients(p => p.map((v,i) => i === index ? {...v,quantity:Number(e.target.value)} : v))} className="w-full border p-2 rounded-lg" /></label><label>หน่วย<input value={ing.unit} onChange={e => setIngredients(p => p.map((v,i) => i === index ? {...v,unit:e.target.value} : v))} className="w-full border p-2 rounded-lg" /></label><label>ต้นทุน (฿)<input type="number" min="0" step="any" value={ing.costThb} onChange={e => setIngredients(p => p.map((v,i) => i === index ? {...v,costThb:Number(e.target.value)} : v))} className="w-full border p-2 rounded-lg" /></label><button type="button" onClick={() => setIngredients(p => p.filter((_,i) => i !== index))} className="text-rose-600 text-left">นำวัตถุดิบออก</button></div>)}
+          </fieldset>
           <div className="flex justify-end gap-3 pt-3 border-t border-slate-100 dark:border-slate-800">
             <button
               type="button"
@@ -2171,7 +2176,7 @@ function NewLabItemModal({
               disabled={isSubmitting}
               className="px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold shadow-md shadow-indigo-500/20"
             >
-              {isSubmitting ? 'กำลังบันทึก...' : 'บันทึกสูตรเข้า R&D'}
+              {isSubmitting ? 'กำลังบันทึก...' : item ? 'บันทึกการแก้ไขสูตร' : 'บันทึกสูตรเข้า R&D'}
             </button>
           </div>
         </form>

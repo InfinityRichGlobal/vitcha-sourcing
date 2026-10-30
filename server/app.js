@@ -669,6 +669,7 @@ export function createApp({ dataDir, defaults = DEFAULT_DATABASE, sessionTtlMs =
     if (!item) fail(400, 'Missing item data');
     const list = db.leadLabItems ||= [];
     const idx = list.findIndex(x => x.id === item.id);
+    if (idx < 0 && item.expectedUpdatedAt !== undefined) fail(409, 'สูตรนี้ถูกลบแล้ว กรุณาตรวจสอบถังขยะหรือเปิดข้อมูลล่าสุด');
     if (idx < 0 && !item.name) fail(400, 'Missing name or item data');
     const nowIso = now();
     let saved;
@@ -897,6 +898,7 @@ export function createApp({ dataDir, defaults = DEFAULT_DATABASE, sessionTtlMs =
     if (!store) fail(400, 'Missing store data');
     const list = db.franchiseStores ||= [];
     const idx = list.findIndex(x => x.id === store.id);
+    if (idx < 0 && store.expectedUpdatedAt !== undefined) fail(409, 'แบรนด์นี้ถูกลบแล้ว กรุณาตรวจสอบถังขยะหรือเปิดข้อมูลล่าสุด');
     if (idx < 0 && !store.name) fail(400, 'Missing store name');
     if (idx >= 0 && Object.keys(store).every(key => ['id','revisionCycles','likedBy'].includes(key))) {
       fail(409, 'กรุณาเปิดเว็บแอปเวอร์ชันล่าสุดก่อนส่งความเห็นหรือกดถูกใจ ยังไม่ได้บันทึกคำสั่งนี้');

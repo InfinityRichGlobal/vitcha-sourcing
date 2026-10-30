@@ -829,3 +829,17 @@ test('activity audit preserves full immutable before/after, skipped and backward
   assert.equal((await call(`/api/trash/${item.id}/restore`,token,{})).status,200);
   record=await snapshot();assert.deepEqual(record.history.slice(-2).map(e=>e.kind),['delete','restore']);
 });
+
+test('stale R&D and franchise edit forms cannot recreate records after another user moves them to trash', async t => {
+  const { call, login } = await setup(t); const editor = await login('review'); const admin = await login('ice');
+  for (const [route, key, collection] of [['/api/lead-lab/items','item','leadLabItems'],['/api/franchise-stores','store','franchiseStores']]) {
+    const created = await call(route, editor, { id: 'deleted-edit-'+collection, name: 'Keep in trash' });
+    assert.equal(created.status, 200); const record = created.data[key];
+    assert.equal((await call(`${route}/${record.id}`, editor, {}, 'DELETE')).status, 200);
+    assert.equal((await call(route, editor, { ...record, name: 'Stale form must not restore', expectedUpdatedAt: record.updatedAt })).status, 409);
+    const db = (await call('/api/data', admin, undefined, 'GET')).data;
+    assert.equal(db[collection].some(x => x.id === record.id), false);
+    const trash = (await call('/api/trash', admin, undefined, 'GET')).data;
+    assert.ok(JSON.stringify(trash).includes('Keep in trash'));
+  }
+});
