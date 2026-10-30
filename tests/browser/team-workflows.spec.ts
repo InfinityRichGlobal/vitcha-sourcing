@@ -100,9 +100,10 @@ test("both maintenance menus send confirmation passwords and preserve data on re
   const before = await data(page, token);
   await navigateTab(page, "ตั้งค่าเนื้อหา");
   for (const surface of ['settings', 'drawer']) {
+    // A rejected password keeps the drawer open so the user can retry.
+    if (surface === 'drawer') await page.getByRole('button', { name: /แพลตฟอร์ม/ }).click();
+    const container = surface === 'drawer' ? page.locator('.fixed.inset-0') : page.locator('main');
     for (const [name, confirm] of [['ล้างเฉพาะ Mockup', 'CLEAR_MOCKUP'], ['ล้างข้อมูลเป็น 0', 'CLEAR_RECORDS']]) {
-      if (surface === 'drawer') await page.getByRole('button', { name: /แพลตฟอร์ม/ }).click();
-      const container = surface === 'drawer' ? page.locator('.fixed.inset-0') : page.locator('main');
       page.once('dialog', dialog => dialog.accept('wrong-confirmation'));
       const responsePromise = page.waitForResponse(response => new URL(response.url()).pathname === '/api/system/clear');
       await container.getByRole('button', { name, exact: true }).click();
@@ -111,6 +112,8 @@ test("both maintenance menus send confirmation passwords and preserve data on re
       expect(response.status()).toBe(403);
       await expect(page.getByRole('alert')).toContainText('รหัสผ่านยืนยันการล้างข้อมูลไม่ถูกต้อง');
       await page.getByRole('button', { name: 'ปิดข้อความแจ้งเตือน', exact: true }).click();
+      await expect(container).toBeVisible();
+      await expect(container.getByRole('button', { name, exact: true })).toBeEnabled();
     }
   }
   const after = await data(page, token);
