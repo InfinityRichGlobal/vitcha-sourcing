@@ -1119,6 +1119,48 @@ export function createApp({ dataDir, defaults = DEFAULT_DATABASE, sessionTtlMs =
     }
     fail(503, 'เซิร์ฟเวอร์นี้ไม่ได้เปิดโหมด Cloud Media Storage');
   });
+  // GEOCODE PROXY (Places & Landmark Search like Google Maps / LINE MAN)
+  app.get('/api/geocode/search', async (req, res) => {
+    requireReader(req);
+    const q = clean(req.query.q);
+    if (!q) return res.json([]);
+    try {
+      const resp = await fetch(
+        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}&limit=10&accept-language=th,en`,
+        {
+          headers: { 'User-Agent': 'VitchaSourcing/1.0' },
+          signal: AbortSignal.timeout(6000),
+        }
+      );
+      if (!resp.ok) return res.json([]);
+      const data = await resp.json();
+      res.json(Array.isArray(data) ? data : []);
+    } catch {
+      res.json([]);
+    }
+  });
+
+  app.get('/api/geocode/reverse', async (req, res) => {
+    requireReader(req);
+    const lat = parseFloat(req.query.lat);
+    const lon = parseFloat(req.query.lng || req.query.lon);
+    if (isNaN(lat) || isNaN(lon)) return res.json({});
+    try {
+      const resp = await fetch(
+        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&accept-language=th,en`,
+        {
+          headers: { 'User-Agent': 'VitchaSourcing/1.0' },
+          signal: AbortSignal.timeout(6000),
+        }
+      );
+      if (!resp.ok) return res.json({});
+      const data = await resp.json();
+      res.json(data || {});
+    } catch {
+      res.json({});
+    }
+  });
+
   // Unpredictable media URLs support native video range requests. Never accept HTML/SVG.
   if (mediaStorage?.serve) app.get('/media/:id', mediaStorage.serve);
   app.use('/uploads', express.static(uploads, { dotfiles: 'deny', setHeaders: res => { res.set('X-Content-Type-Options', 'nosniff'); res.set('Content-Security-Policy', "default-src 'none'; sandbox"); } }));

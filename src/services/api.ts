@@ -209,3 +209,101 @@ export async function loginUserApi(idOrEmail: string, pin: string) {
   setSessionToken(result.token);
   return result;
 }
+
+export interface GeocodePlaceItem {
+  id: string;
+  name: string;
+  displayName: string;
+  lat: number;
+  lng: number;
+  type?: string;
+  country?: 'TH' | 'CN' | 'OTHER';
+}
+
+export async function searchPlacesApi(query: string, signal?: AbortSignal): Promise<GeocodePlaceItem[]> {
+  const cleanQ = query.trim();
+  if (!cleanQ) return [];
+
+  try {
+    const data = await requestJson(`/api/geocode/search?q=${encodeURIComponent(cleanQ)}`, { signal }, 7000);
+    if (Array.isArray(data) && data.length > 0) {
+      return data
+        .map((item: any) => {
+          const dName = item.display_name || '';
+          const isTh = /thailand|ไทย/i.test(dName);
+          const isCn = /china|จีน|guangdong|guangzhou/i.test(dName);
+          return {
+            id: String(item.place_id || Math.random()),
+            name: item.name || dName.split(',')[0].trim(),
+            displayName: dName,
+            lat: parseFloat(item.lat),
+            lng: parseFloat(item.lon),
+            type: item.type || item.class || 'place',
+            country: isTh ? 'TH' : isCn ? 'CN' : 'OTHER',
+          } as GeocodePlaceItem;
+        })
+        .filter((item: GeocodePlaceItem) => !isNaN(item.lat) && !isNaN(item.lng));
+    }
+  } catch {
+    // Try fallback
+  }
+
+  try {
+    const resp = await fetch(
+      `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(cleanQ)}&limit=10&accept-language=th,en`,
+      { signal, headers: { Accept: 'application/json' } }
+    );
+    if (resp.ok) {
+      const data = await resp.json();
+      if (Array.isArray(data)) {
+        return data
+          .map((item: any) => {
+            const dName = item.display_name || '';
+            const isTh = /thailand|ไทย/i.test(dName);
+            const isCn = /china|จีน|guangdong|guangzhou/i.test(dName);
+            return {
+              id: String(item.place_id || Math.random()),
+              name: item.name || dName.split(',')[0].trim(),
+              displayName: dName,
+              lat: parseFloat(item.lat),
+              lng: parseFloat(item.lon),
+              type: item.type || item.class || 'place',
+              country: isTh ? 'TH' : isCn ? 'CN' : 'OTHER',
+            } as GeocodePlaceItem;
+          })
+          .filter((item: GeocodePlaceItem) => !isNaN(item.lat) && !isNaN(item.lng));
+      }
+    }
+  } catch {
+    // Ignore fetch error
+  }
+
+  return [];
+}
+
+export async function reverseGeocodeApi(lat: number, lng: number, signal?: AbortSignal): Promise<string> {
+  if (isNaN(lat) || isNaN(lng)) return '';
+  try {
+    const data = await requestJson(`/api/geocode/reverse?lat=${lat}&lng=${lng}`, { signal }, 7000);
+    if (data && (data.display_name || data.name)) {
+      return data.display_name || data.name;
+    }
+  } catch {
+    // Try fallback
+  }
+
+  try {
+    const resp = await fetch(
+      `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&accept-language=th,en`,
+      { signal, headers: { Accept: 'application/json' } }
+    );
+    if (resp.ok) {
+      const data = await resp.json();
+      return data.display_name || data.name || '';
+    }
+  } catch {
+    // Ignore fallback error
+  }
+
+  return '';
+}
