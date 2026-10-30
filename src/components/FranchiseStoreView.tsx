@@ -50,6 +50,7 @@ import { uploadMediaToServer } from '../services/api';
 import { saveVideoFile } from '../utils/mediaStorage';
 import { AudioRecorder } from './AudioRecorder';
 import { VideoPlayer } from './VideoPlayer';
+import { StorePhotoGallery } from './StorePhotoGallery';
 
 export function FranchiseStoreView({
   initialStoreId,
@@ -384,25 +385,19 @@ export function FranchiseStoreView({
   if (!selectedStoreId || !activeStore) {
     return (
       <div className="max-w-6xl mx-auto px-3 sm:px-5 py-3.5 space-y-4 sm:space-y-6 pb-24 animate-in fade-in">
-        {franchiseStores.some(store => store.sharedConcept === 'VITCHA × VITZA') && <figure className="overflow-hidden rounded-3xl border border-orange-100 bg-white">
-          <img src="./brand-mockups/shared-storefront.jpg" alt="หน้าร้านร่วม VITCHA และ VITZA หนึ่งเคาน์เตอร์สองแบรนด์ — ภาพจำลอง" className="w-full aspect-[3/2] sm:aspect-[2.4/1] object-cover" />
-          <figcaption className="px-4 py-3 text-xs text-slate-600">ภาพคอนเซ็ปต์จำลอง · เคาน์เตอร์เดียว สองแบรนด์ · ไม่มีสาขา</figcaption>
-        </figure>}
         {/* Top Hero Banner */}
-        <div className="relative overflow-hidden rounded-2xl sm:rounded-3xl bg-gradient-to-br from-slate-950 via-slate-900 to-emerald-950 text-white p-5 sm:p-7 md:p-8 shadow-xl border border-slate-800">
+        <div data-testid="brand-directory-intro" className="relative overflow-hidden rounded-2xl sm:rounded-3xl bg-gradient-to-br from-slate-950 via-slate-900 to-emerald-950 text-white p-5 sm:p-7 md:p-8 shadow-xl border border-slate-800">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div className="space-y-2">
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-emerald-500/20 text-emerald-300 border border-emerald-400/30">
                 <Store className="w-3.5 h-3.5" />
-                <span>TWO BRANDS · ONE CONCEPT</span>
+                <span>ข้อมูลแบรนด์และหน้าร้าน</span>
               </div>
               <h1 className="text-xl sm:text-3xl font-black text-white tracking-tight flex flex-col sm:flex-row items-start sm:items-center gap-2">
                 <span>แบรนด์และหน้าร้าน</span>
-                <span className="text-emerald-400 font-bold text-base sm:text-lg">"แล๊ปของคนหัวแถว"</span>
               </h1>
               <p className="text-slate-300 text-xs sm:text-sm max-w-2xl leading-relaxed">
-                VITCHA × VITZA — หนึ่งคอนเซ็ปต์ สองแบรนด์ ไม่มีสาขา · ออกแบบเมนูบอร์ด
-                และทดลองสูตรร่วมกัน ภาพหน้าร้านและรายละเอียดเป็น Mockup
+                เลือกดูข้อมูลแบรนด์ หน้าร้าน เมนู และสื่อประกอบ หรือเพิ่มข้อมูลเพื่อจัดการร่วมกันในทีม
               </p>
               <div className="flex flex-wrap items-center gap-4 text-xs text-slate-400 pt-2">
                 <span className="flex items-center gap-1.5 font-bold text-slate-200">
@@ -895,22 +890,7 @@ export function FranchiseStoreView({
           </div>
 
           {activeStore.galleryPhotos && activeStore.galleryPhotos.length > 0 && (
-            <div className="space-y-1.5">
-              <span className="text-[11px] font-bold text-slate-400">ภาพหน้าร้านจำลอง ({activeStore.galleryPhotos.length})</span>
-              <div className="flex gap-2.5 overflow-x-auto pb-1">
-                {activeStore.galleryPhotos.map((photo, pIdx) => (
-                  <a
-                    key={pIdx}
-                    href={photo}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="w-20 h-20 rounded-xl overflow-hidden shrink-0 border border-slate-200 dark:border-slate-700 shadow-xs hover:opacity-80 transition-opacity"
-                  >
-                    <img src={photo} alt="" className="w-full h-full object-cover" />
-                  </a>
-                ))}
-              </div>
-            </div>
+            <StorePhotoGallery key={activeStore.id} photos={activeStore.galleryPhotos} />
           )}
 
           {activeStore.audioNotes && activeStore.audioNotes.length > 0 && (

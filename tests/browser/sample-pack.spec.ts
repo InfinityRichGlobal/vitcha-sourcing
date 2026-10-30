@@ -101,6 +101,8 @@ test('two brands share one concept, preserve supplied logos, and both show the t
   await page.locator('[data-no-pull-refresh]').getByRole('button',{name:/แบรนด์และหน้าร้าน/}).click();
   await expect(page.getByRole('heading',{name:/แบรนด์และหน้าร้าน/})).toBeVisible();
   await expect(page.locator('main')).toContainText('2 แบรนด์');
+  await expect(page.getByTestId('brand-directory-intro')).not.toContainText(/VITCHA|VITZA|TWO BRANDS|Mockup|ไม่มีสาขา/);
+  await expect(page.locator('img[src="./brand-mockups/shared-storefront.jpg"]')).toHaveCount(0);
   await expect(page.locator('main')).not.toContainText(/CentralWorld|Siam Square|Silom|One Bangkok/);
   await expect(page.locator('img[src="./brand-mockups/vitcha-logo.png"]')).toBeVisible();
   await expect(page.locator('img[src="./brand-mockups/vitza-logo.png"]')).toBeVisible();
@@ -117,4 +119,52 @@ test('two brands share one concept, preserve supplied logos, and both show the t
   await expect(page.locator('main')).toContainText('บุกไข่มุกน้ำตาลทรายแดง');
   await page.evaluate(() => window.scrollTo(0,0));
   await page.screenshot({path:'test-results/vitza-storefront-mobile.png',fullPage:true});
+});
+
+
+test('store photos open in a closable gallery with buttons, keyboard and swipe', async ({page}) => {
+  await page.request.post(base+'/api/system/sample-pack',{headers:{Authorization:`Bearer ${token}`},data:{packId:'vitcha-demo-v2',operationId:'gallery-ui'}});
+  const updated = await page.request.post(base+'/api/franchise-stores',{headers:{Authorization:`Bearer ${token}`},data:{id:'brand-vitcha',galleryPhotos:['./brand-mockups/shared-storefront.jpg','./brand-mockups/vitcha-logo.png','./brand-mockups/vitza-logo.png']}});
+  expect(updated.ok()).toBeTruthy();
+  await page.reload();
+  await page.getByRole('button',{name:/แพลตฟอร์ม/}).click();
+  await page.locator('[data-no-pull-refresh]').getByRole('button',{name:/แบรนด์และหน้าร้าน/}).click();
+  await page.getByRole('button',{name:/เข้าร้าน/}).first().click();
+  const url = page.url();
+  const thumbnail = page.getByRole('button',{name:'เปิดภาพหน้าร้าน 1',exact:true});
+  await thumbnail.click();
+  const gallery = page.getByRole('dialog',{name:'รูปภาพหน้าร้าน'});
+  await expect(gallery).toBeVisible();
+  await expect(gallery.getByRole('status')).toHaveText('1 / 3');
+  await gallery.getByRole('button',{name:'ภาพถัดไป'}).click();
+  await expect(gallery.getByRole('img')).toHaveAttribute('src','./brand-mockups/vitcha-logo.png');
+  await page.keyboard.press('ArrowRight');
+  await expect(gallery.getByRole('status')).toHaveText('3 / 3');
+  await gallery.getByRole('button',{name:'ภาพก่อนหน้า'}).click();
+  await page.keyboard.press('ArrowLeft');
+  await expect(gallery.getByRole('status')).toHaveText('1 / 3');
+  const swipe = page.getByTestId('store-photo-swipe');
+  await swipe.evaluate(element => {
+    const start = new Touch({identifier:1,target:element,clientX:300,clientY:200});
+    const end = new Touch({identifier:1,target:element,clientX:100,clientY:205});
+    element.dispatchEvent(new TouchEvent('touchstart',{bubbles:true,touches:[start]}));
+    element.dispatchEvent(new TouchEvent('touchend',{bubbles:true,touches:[],changedTouches:[end]}));
+  });
+  await expect(gallery.getByRole('status')).toHaveText('2 / 3');
+  await page.screenshot({path:'test-results/store-gallery-mobile.png'});
+  await gallery.getByRole('button',{name:'ปิดภาพ',exact:true}).click();
+  await expect(gallery).not.toBeVisible();
+  await expect(thumbnail).toBeFocused();
+  expect(page.url()).toBe(url);
+  await thumbnail.click();
+  await page.keyboard.press('Escape');
+  await expect(gallery).not.toBeVisible();
+  expect(await page.evaluate(()=>document.body.style.overflow)).not.toBe('hidden');
+  expect(page.context().pages()).toHaveLength(1);
+  await page.getByRole('button',{name:/หน้ารวมแบรนด์/}).click();
+  await page.getByRole('button',{name:/เข้าร้าน/}).nth(1).click();
+  await page.getByRole('button',{name:'เปิดภาพหน้าร้าน 1',exact:true}).click();
+  await expect(gallery.getByRole('status')).toHaveText('1 / 1');
+  await expect(gallery.getByRole('button',{name:'ภาพถัดไป'})).toBeDisabled();
+  await gallery.getByRole('button',{name:'ปิดภาพ',exact:true}).click();
 });
