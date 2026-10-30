@@ -36,7 +36,7 @@ test.describe('Mobile Balanced Frame & 2-Column Product Cards', () => {
     await signIn(page, 'admin');
 
     // Click on Card 6 (LEAD LAB) from Dashboard
-    const leadLabCard = page.locator('button:has-text("แล็บคนหัวแถว")').first();
+    const leadLabCard = page.locator('button:has-text("แล๊ปของคนหัวแถว")').first();
     await expect(leadLabCard).toBeVisible();
     await leadLabCard.click();
 

@@ -95,8 +95,11 @@ export function LeadLabView({
               <FlaskConical className="w-3.5 h-3.5 text-indigo-400 animate-pulse" />
               <span>LEAD LAB · นวัตกรรมเครื่องดื่ม & ท็อปปิ้ง</span>
             </div>
-            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold tracking-tight text-white leading-tight">
-              LEAD LAB 🧪 <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-300 via-purple-300 to-pink-300">"แล็บของคนที่จะเป็นหัวแถว"</span>
+            <h1 className="text-xl sm:text-2xl lg:text-4xl font-extrabold tracking-tight text-white leading-tight flex flex-wrap items-center gap-x-2 gap-y-1">
+              <span>LEAD LAB 🧪</span>
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-300 via-purple-300 to-pink-300 whitespace-nowrap">
+                "แล๊ปของคนหัวแถว"
+              </span>
             </h1>
             <p className="text-slate-300 text-sm sm:text-base leading-relaxed">
               พื้นที่คิดค้นและพัฒนานวัตกรรมสูตรเครื่องดื่ม & ท็อปปิ้ง R&D Sensory Test, ควบคุมค่า Brix, คำนวณต้นทุนต่อแก้ว (Cost/Cup) และระบบสรุปปิดประเด็นปรับปรุงสูตร

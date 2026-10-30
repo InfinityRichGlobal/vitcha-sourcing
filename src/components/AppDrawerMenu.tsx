@@ -189,7 +189,7 @@ export const AppDrawerMenu: React.FC<AppDrawerMenuProps> = ({
                   activeTab === 'lead_lab' ? 'text-violet-400' : 'text-violet-600'
                 }`}
               />
-              <span>LEAD LAB 🧪 (แล็บคนหัวแถว)</span>
+              <span>LEAD LAB 🧪 (แล๊ปของคนหัวแถว)</span>
             </div>
             <span
               className={`text-[11px] font-mono px-2 py-0.5 rounded-full ${

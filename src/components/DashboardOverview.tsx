@@ -403,7 +403,7 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
           </div>
         </button>
 
-        {/* 6. LEAD LAB 🧪 (แล็บของคนที่จะเป็นหัวแถว · นวัตกรรมเครื่องดื่ม & ท็อปปิ้ง) */}
+        {/* 6. LEAD LAB 🧪 (แล๊ปของคนหัวแถว · นวัตกรรมเครื่องดื่ม & ท็อปปิ้ง) */}
         <button
           type="button"
           onClick={() => setActiveTab('lead_lab')}
@@ -422,7 +422,7 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
             <span className="text-[10px] font-bold text-violet-700 font-sans">สูตร</span>
           </div>
           <div className="text-xs font-extrabold text-violet-950 mt-0.5 whitespace-nowrap flex items-center gap-1">
-            <span>แล็บคนหัวแถว</span>
+            <span>แล๊ปของคนหัวแถว</span>
             <span className="text-[10px] text-violet-600 font-bold">· R&D</span>
           </div>
         </button>
