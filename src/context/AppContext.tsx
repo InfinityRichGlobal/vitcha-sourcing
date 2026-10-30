@@ -117,9 +117,11 @@ interface AppContextType {
   updateUserRole: (userId: string, newRole: UserRole) => Promise<boolean>;
   recordItemView: (targetId: string, type: 'supplier' | 'drink_store' | 'location') => void;
   toggleLikeItem: (targetId: string, type: 'supplier' | 'drink_store' | 'location') => void;
-  loadFullMockupData: () => void;
-  resetSystemData: (password: string) => void;
-  clearMockupOnly: (password: string) => void;
+  isMockLoading: boolean;
+  isClearing: boolean;
+  loadFullMockupData: () => Promise<boolean>;
+  resetSystemData: (password: string) => Promise<boolean>;
+  clearMockupOnly: (password: string) => Promise<boolean>;
 
   // Handoff & Operations (บริหารจัดการรับช่วงต่อ)
   updateHandoff: (
@@ -227,8 +229,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [suppliers, setSuppliers] = useState<SupplierRecord[]>([]);
   const [drinkStores, setDrinkStores] = useState<StoreInspoRecord[]>([]);
   const [locations, setLocations] = useState<LocationRecord[]>([]);
-  const [leadLabItems, setLeadLabItems] = useState<LabItem[]>(INITIAL_LEAD_LAB_ITEMS);
-  const [franchiseStores, setFranchiseStores] = useState<FranchiseStore[]>(INITIAL_FRANCHISE_STORES);
+  const [leadLabItems, setLeadLabItems] = useState<LabItem[]>([]);
+  const [franchiseStores, setFranchiseStores] = useState<FranchiseStore[]>([]);
+  const [isMockLoading, setIsMockLoading] = useState(false);
+  const [isClearing, setIsClearing] = useState(false);
   const [invites, setInvites] = useState<InviteLink[]>([]);
   const [categories, setCategories] = useState(INITIAL_CATEGORIES);
   const [storeCategories, setStoreCategories] = useState(INITIAL_STORE_CATEGORIES);
@@ -300,8 +304,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       setProducts(data.products || []); setProductCategories(data.productCategories || []); setProductTags(data.productTags || []); setProductSets(data.productSets || []); productTaxonomyRevision.current = data.productTaxonomyRevision || 0;
       setUsers(data.users); setInvites(data.invites);
       setSuppliers(data.suppliers); setDrinkStores(data.drinkStores); setLocations(data.locations || []);
-      setLeadLabItems(data.leadLabItems && data.leadLabItems.length ? data.leadLabItems : INITIAL_LEAD_LAB_ITEMS);
-      setFranchiseStores(data.franchiseStores && data.franchiseStores.length ? data.franchiseStores : INITIAL_FRANCHISE_STORES);
+      setLeadLabItems(Array.isArray(data.leadLabItems) ? data.leadLabItems : []);
+      setFranchiseStores(Array.isArray(data.franchiseStores) ? data.franchiseStores : []);
       databaseRevision.current = data.revision || 0;
       settingsRef.current = Object.fromEntries(settingsKeys.map(k => [k, data[k] || []]));
       setCategories(data.categories || []); setStoreCategories(data.storeCategories || []);
@@ -511,12 +515,19 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const addQuickMessage = (title: string, text: string) => changeSettings('quickMessages', p => [...p, { id: crypto.randomUUID(), title, text }]);
   const editQuickMessage = (id: string, title: string, text: string) => changeSettings('quickMessages', p => p.map(q => q.id === id ? { ...q, title, text } : q));
   const deleteQuickMessage = (id: string) => changeSettings('quickMessages', p => p.filter(q => q.id !== id));
-  const loadFullMockupData = () => {
-    if (currentUser.id !== 'user-ice' || simulatedFromAdmin) { setActionError('ไม่สามารถดำเนินการนี้ได้'); return; }
-    void perform('demo', async () => {
+  const loadFullMockupData = async (): Promise<boolean> => {
+    if (currentUser.id !== 'user-ice' || simulatedFromAdmin) {
+      setActionError('ไม่สามารถดำเนินการนี้ได้ (เฉพาะผู้ก่อตั้ง: user-ice)');
+      return false;
+    }
+    setIsMockLoading(true);
+    setActionError(null);
+    try {
+      const freshData = await fetchCentralData();
+      const currentRev = freshData?.revision ?? databaseRevision.current;
       await sendJson('/api/system/samples', {
-        revision: databaseRevision.current,
-        operationId: commandId('sample-load'),
+        revision: currentRev,
+        operationId: `sample-load-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
         snapshot: {
           suppliers: INITIAL_SUPPLIERS,
           drinkStores: INITIAL_DRINK_STORES,
@@ -525,15 +536,89 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           franchiseStores: INITIAL_FRANCHISE_STORES,
         },
       });
-      commandIds.current.delete('sample-load');
-    });
+      await latestRefresh.current(true);
+      showToast({
+        id: crypto.randomUUID(),
+        title: '✅ โหลดข้อมูลจำลองสำเร็จ',
+        message: `นำเข้าข้อมูลครบสมบูรณ์ทุกมิติ (${INITIAL_SUPPLIERS.length} ซัพพลายเออร์, ${INITIAL_DRINK_STORES.length} ร้านเครื่องดื่ม, ${INITIAL_LOCATIONS.length} ทำเล, ${INITIAL_LEAD_LAB_ITEMS.length} สูตร R&D, ${INITIAL_FRANCHISE_STORES.length} สาขาแฟรนไชส์)`,
+        timestamp: new Date().toISOString(),
+        type: 'system',
+        actorId: 'system',
+        actorAlias: 'ระบบ VITCHA',
+        read: false,
+      });
+      return true;
+    } catch (err: any) {
+      console.error('loadFullMockupData error:', err);
+      setActionError(err instanceof Error ? err.message : 'เกิดข้อผิดพลาดในการโหลดข้อมูลจำลอง');
+      return false;
+    } finally {
+      setIsMockLoading(false);
+    }
   };
-  const resetSystemData = (password: string) => {
-    void perform('reset', () => sendJson('/api/system/clear', { revision: databaseRevision.current, confirm: 'CLEAR_RECORDS', password }));
+  const resetSystemData = async (password: string): Promise<boolean> => {
+    if (currentUser.id !== 'user-ice' || simulatedFromAdmin) {
+      setActionError('ไม่สามารถดำเนินการนี้ได้ (เฉพาะผู้ก่อตั้ง)');
+      return false;
+    }
+    setIsClearing(true);
+    setActionError(null);
+    try {
+      const freshData = await fetchCentralData();
+      const currentRev = freshData?.revision ?? databaseRevision.current;
+      const ok = await perform('reset', () => sendJson('/api/system/clear', { revision: currentRev, confirm: 'CLEAR_RECORDS', password }));
+      if (ok) {
+        await latestRefresh.current(true);
+        showToast({
+          id: crypto.randomUUID(),
+          title: '🗑️ ล้างข้อมูลระบบเป็น 0 เรียบร้อย',
+          message: 'ล้างข้อมูลรายการทั้งหมดแล้ว สมาชิกและสิทธิ์ในระบบยังคงอยู่ครบ',
+          timestamp: new Date().toISOString(),
+          type: 'system',
+          actorId: 'system',
+          actorAlias: 'ระบบ VITCHA',
+          read: false,
+        });
+      }
+      return ok;
+    } catch (err: any) {
+      setActionError(err instanceof Error ? err.message : 'ล้างข้อมูลไม่สำเร็จ');
+      return false;
+    } finally {
+      setIsClearing(false);
+    }
   };
-  const clearMockupOnly = (password: string) => {
-    if (currentUser.id !== 'user-ice' || simulatedFromAdmin) { setActionError('ไม่สามารถดำเนินการนี้ได้ (เฉพาะเจ้าของระบบ)'); return; }
-    void perform('reset-mockup', () => sendJson('/api/system/clear', { revision: databaseRevision.current, confirm: 'CLEAR_MOCKUP', password }));
+  const clearMockupOnly = async (password: string): Promise<boolean> => {
+    if (currentUser.id !== 'user-ice' || simulatedFromAdmin) {
+      setActionError('ไม่สามารถดำเนินการนี้ได้ (เฉพาะผู้ก่อตั้ง)');
+      return false;
+    }
+    setIsClearing(true);
+    setActionError(null);
+    try {
+      const freshData = await fetchCentralData();
+      const currentRev = freshData?.revision ?? databaseRevision.current;
+      const ok = await perform('reset-mockup', () => sendJson('/api/system/clear', { revision: currentRev, confirm: 'CLEAR_MOCKUP', password }));
+      if (ok) {
+        await latestRefresh.current(true);
+        showToast({
+          id: crypto.randomUUID(),
+          title: '🧹 ล้างเฉพาะข้อมูล Mockup เรียบร้อย',
+          message: 'ลบรายการจำลองออกทั้งหมดแล้ว ข้อมูลจริงและสมาชิกยังคงอยู่ครบ',
+          timestamp: new Date().toISOString(),
+          type: 'system',
+          actorId: 'system',
+          actorAlias: 'ระบบ VITCHA',
+          read: false,
+        });
+      }
+      return ok;
+    } catch (err: any) {
+      setActionError(err instanceof Error ? err.message : 'ล้างข้อมูล Mockup ไม่สำเร็จ');
+      return false;
+    } finally {
+      setIsClearing(false);
+    }
   };
   const broadcastNotification: AppContextType['broadcastNotification'] = async (title, message, type, targetId, avatar, suppressToast, options) => {
     const n: AppNotification = { id: crypto.randomUUID(), title, message, type, targetId, avatar, timestamp: new Date().toISOString(), read: false };
@@ -844,7 +929,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setActiveTab, setCountryFilter, setSearchQuery, setSelectedCategory, setSelectedStatus, setSelectedTag, setSelectedRating,
     dismissToast, markAllNotificationsRead, markNotificationRead, clearAllNotifications, clearNotification, broadcastNotification, addCategory, editCategory, deleteCategory, addStoreCategory, editStoreCategory, deleteStoreCategory,
     addLocationType, editLocationType, deleteLocationType,
-    addQuickTag, editQuickTag, deleteQuickTag, addQuickMessage, editQuickMessage, deleteQuickMessage, updateUserRole, recordItemView, toggleLikeItem, loadFullMockupData, resetSystemData, clearMockupOnly,
+    addQuickTag, editQuickTag, deleteQuickTag, addQuickMessage, editQuickMessage, deleteQuickMessage, updateUserRole, recordItemView, toggleLikeItem,
+    isMockLoading, isClearing, loadFullMockupData, resetSystemData, clearMockupOnly,
     updateHandoff, addSupplier, updateSupplier, deleteSupplier, addStoreInspo, updateStoreInspo, deleteStoreInspo, addLocation, updateLocation, deleteLocation, canEditItems, canDeleteItems, canComment, canAddItems,
     trashItems, fetchTrash, restoreTrashItem, permanentDeleteTrashItem,
     editingSupplier, editingStore, editingLocation, openEditItem, closeEditItem, addReviewerNote, addReviewReply, updatePipelineStatus, updateExchangeRate, toggleCurrencyMode, convertCnyToThb, convertThbToCny,

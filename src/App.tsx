@@ -28,12 +28,13 @@ import { InstallPromptModal } from './components/InstallPromptModal';
 import { NotificationSheetModal } from './components/NotificationSheetModal';
 import { NotificationToast } from './components/NotificationToast';
 import { RegisterWithInviteModal } from './components/RegisterWithInviteModal';
+import { Loader2 } from 'lucide-react';
 import { SupplierRecord, StoreInspoRecord, LocationRecord } from './types';
 
 const ModalLoading = () => <div className="fixed inset-0 z-[110] grid place-items-center bg-slate-950/30 p-4 backdrop-blur-sm"><div role="status" className="rounded-2xl bg-white px-8 py-6 text-sm font-medium text-slate-600 shadow-xl">กำลังเปิดรายละเอียด…</div></div>;
 
 const MainApp: React.FC = () => {
-  const { activeTab, setActiveTab, suppliers, drinkStores, locations, isAuthenticated, isRestoringSession, editingSupplier, editingStore, editingLocation } = useApp();
+  const { activeTab, setActiveTab, suppliers, drinkStores, locations, isAuthenticated, isRestoringSession, editingSupplier, editingStore, editingLocation, isMockLoading } = useApp();
 
   const [isNewSupplierOpen, setIsNewSupplierOpen] = useState(false);
   const [isNewStoreInspoOpen, setIsNewStoreInspoOpen] = useState(false);
@@ -359,6 +360,32 @@ const MainApp: React.FC = () => {
         onClose={() => setIsNotificationsOpen(false)}
         onSelectItem={handleSelectFromNotification}
       />
+
+      {/* Global Mockup Loading Modal Overlay */}
+      {isMockLoading && (
+        <div className="fixed inset-0 z-[200] bg-slate-950/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl p-6 sm:p-8 max-w-sm w-full shadow-2xl border border-emerald-100 flex flex-col items-center text-center space-y-4 animate-in fade-in zoom-in-95 duration-200">
+            <div className="w-16 h-16 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center border-2 border-emerald-200 shadow-inner">
+              <Loader2 className="w-8 h-8 animate-spin" />
+            </div>
+            <div className="space-y-1.5">
+              <h3 className="font-extrabold text-slate-900 text-base sm:text-lg">
+                กำลังจำลองชุดข้อมูลเต็มระบบ
+              </h3>
+              <p className="text-xs text-slate-500 leading-relaxed">
+                กำลังนำเข้าข้อมูลซัพพลายเออร์, ร้านตัวอย่าง, ทำเลศักยภาพ, สูตร R&D และสาขาแฟรนไชส์...
+              </p>
+            </div>
+            <div className="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
+              <div className="bg-gradient-to-r from-emerald-500 to-teal-400 h-2 rounded-full animate-pulse w-4/5"></div>
+            </div>
+            <div className="inline-flex items-center gap-1.5 text-[11px] font-bold text-emerald-700 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-200">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span>
+              <span>กรุณารอสักครู่ ระบบกำลังประมวลผล</span>
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
   );

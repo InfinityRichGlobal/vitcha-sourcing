@@ -14,6 +14,7 @@ import {
   Database,
   LogOut,
   Trash2,
+  Loader2,
 } from 'lucide-react';
 
 interface AppDrawerMenuProps {
@@ -48,6 +49,8 @@ export const AppDrawerMenu: React.FC<AppDrawerMenuProps> = ({
     simulatedFromAdmin,
     restoreAdminUser,
     logout,
+    isMockLoading,
+    isClearing,
     loadFullMockupData,
     resetSystemData,
     clearMockupOnly,
@@ -431,48 +434,76 @@ export const AppDrawerMenu: React.FC<AppDrawerMenuProps> = ({
           <div className="grid grid-cols-1 gap-1.5">
             <button
               type="button"
-              onClick={() => {
-                loadFullMockupData();
-                onClose();
+              disabled={isMockLoading || isClearing}
+              onClick={async () => {
+                const ok = await loadFullMockupData();
+                if (ok) {
+                  window.alert('✅ โหลดชุดข้อมูลจำลองเต็มระบบเสร็จสมบูรณ์เรียบร้อยแล้ว!\n\nประกอบด้วย:\n- โรงงาน & ซัพพลายเออร์ 97 รายการ\n- ร้านเครื่องดื่มตัวอย่าง 74 รายการ\n- ทำเลศักยภาพ 71 รายการ\n- สูตรและแล็บ R&D 19 รายการ\n- สาขาแฟรนไชส์ 25 รายการ\n\nข้อมูลครบถ้วนทุกมิติ พร้อมให้ทีมงานทดสอบ นำเสนอ และใช้งานได้ทันทีครับ');
+                  onClose();
+                }
               }}
-              className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-extrabold bg-emerald-50 hover:bg-emerald-100 text-emerald-900 border border-emerald-200 transition-all"
+              className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-extrabold border transition-all ${
+                isMockLoading
+                  ? 'bg-emerald-100 text-emerald-800 border-emerald-300 cursor-wait'
+                  : 'bg-emerald-50 hover:bg-emerald-100 text-emerald-900 border-emerald-200 active:scale-98'
+              }`}
             >
               <div className="flex items-center gap-2">
-                <Database className="w-4 h-4 text-emerald-600" />
-                <span>โหลดข้อมูล Mockup เต็มระบบ</span>
+                {isMockLoading ? (
+                  <Loader2 className="w-4 h-4 text-emerald-600 animate-spin" />
+                ) : (
+                  <Database className="w-4 h-4 text-emerald-600" />
+                )}
+                <span>{isMockLoading ? 'กำลังโหลดข้อมูลจำลอง...' : 'โหลดข้อมูล Mockup เต็มระบบ'}</span>
               </div>
               <span className="text-[10px] font-mono bg-emerald-200/70 text-emerald-900 px-1.5 py-0.5 rounded">
-                จัดเต็มทุกฟังก์ชัน
+                {isMockLoading ? 'กำลังประมวลผล' : 'จัดเต็มทุกฟังก์ชัน'}
               </span>
             </button>
 
             <div className="grid grid-cols-2 gap-1.5">
               <button
                 type="button"
-                onClick={() => {
+                disabled={isMockLoading || isClearing}
+                onClick={async () => {
                   const pwd = window.prompt('กรุณากรอกรหัสผ่านเพื่อล้างเฉพาะข้อมูล Mockup ออกจากระบบ:');
-                  if (pwd === null) return;
-                  clearMockupOnly(pwd.trim());
-                  onClose();
+                  if (!pwd) return;
+                  const ok = await clearMockupOnly(pwd.trim());
+                  if (ok) {
+                    window.alert('🧹 ล้างข้อมูลจำลอง Mockup เรียบร้อยแล้ว!\n(ข้อมูลจริงและสมาชิกยังคงอยู่ครบถ้วน)');
+                    onClose();
+                  }
                 }}
-                className="flex items-center justify-center gap-1.5 px-2 py-2 rounded-xl text-[11px] font-bold bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 transition-all text-center"
+                className="flex items-center justify-center gap-1.5 px-2 py-2 rounded-xl text-[11px] font-bold bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 transition-all text-center disabled:opacity-50"
               >
-                <Trash2 className="w-3.5 h-3.5 text-amber-600 shrink-0" />
-                <span>ล้างเฉพาะ Mockup</span>
+                {isClearing ? (
+                  <Loader2 className="w-3.5 h-3.5 text-amber-600 animate-spin" />
+                ) : (
+                  <Trash2 className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                )}
+                <span>{isClearing ? 'กำลังล้าง...' : 'ล้างเฉพาะ Mockup'}</span>
               </button>
 
               <button
                 type="button"
-                onClick={() => {
-                  const pwd = window.prompt('กรุณากรอกรหัสผ่านเพื่อยืนยันการล้างข้อมูลทั้งหมดเป็น 0:');
-                  if (pwd === null) return;
-                  resetSystemData(pwd.trim());
-                  onClose();
+                disabled={isMockLoading || isClearing}
+                onClick={async () => {
+                  const pwd = window.prompt('กรุณากรอกรหัสผ่านเพื่อยืนยันการล้างข้อมูลทั้งหมดเป็น 0 (สมาชิกคงเดิม):');
+                  if (!pwd) return;
+                  const ok = await resetSystemData(pwd.trim());
+                  if (ok) {
+                    window.alert('🗑️ ล้างข้อมูลระบบเป็น 0 เรียบร้อยแล้ว!\n(สมาชิกและสิทธิ์ในระบบยังคงอยู่ครบถ้วน)');
+                    onClose();
+                  }
                 }}
-                className="flex items-center justify-center gap-1.5 px-2 py-2 rounded-xl text-[11px] font-bold bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 transition-all text-center"
+                className="flex items-center justify-center gap-1.5 px-2 py-2 rounded-xl text-[11px] font-bold bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 transition-all text-center disabled:opacity-50"
               >
-                <RotateCcw className="w-3.5 h-3.5 text-rose-600 shrink-0" />
-                <span>ล้างข้อมูลเป็น 0</span>
+                {isClearing ? (
+                  <Loader2 className="w-3.5 h-3.5 text-rose-600 animate-spin" />
+                ) : (
+                  <RotateCcw className="w-3.5 h-3.5 text-rose-600 shrink-0" />
+                )}
+                <span>{isClearing ? 'กำลังล้าง...' : 'ล้างข้อมูลเป็น 0'}</span>
               </button>
             </div>
           </div>

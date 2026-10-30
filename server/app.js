@@ -913,8 +913,10 @@ export function createApp({ dataDir, defaults = DEFAULT_DATABASE, sessionTtlMs =
     const { operationId, snapshot } = req.body;
     if (!clean(operationId)) fail(400, 'Missing operation ID');
     if ((db.sampleOperations || []).includes(operationId)) return res.json({ success: true });
-    expectRevision(db, req.body.revision);
-    if (!snapshot || !Array.isArray(snapshot.suppliers) || !Array.isArray(snapshot.drinkStores) || snapshot.suppliers.length + snapshot.drinkStores.length > 100) fail(400, 'ข้อมูลตัวอย่างไม่ถูกต้อง');
+    if (req.body.revision !== undefined && req.body.revision !== null && !Number.isInteger(req.body.revision)) fail(400, 'Invalid revision');
+    if (!snapshot || !Array.isArray(snapshot.suppliers) || !Array.isArray(snapshot.drinkStores)) fail(400, 'ข้อมูลตัวอย่างไม่ถูกต้อง');
+    const totalSamples = snapshot.suppliers.length + snapshot.drinkStores.length + (Array.isArray(snapshot.locations) ? snapshot.locations.length : 0);
+    if (totalSamples > 1000) fail(400, 'ข้อมูลตัวอย่างมีจำนวนมากเกินไป');
     const collections = ['suppliers', 'drinkStores', ...(Array.isArray(snapshot.locations) ? ['locations'] : [])];
     for (const collection of collections) {
       const fields = collection === 'suppliers' ? SUPPLIER : collection === 'drinkStores' ? STORE : LOCATION;

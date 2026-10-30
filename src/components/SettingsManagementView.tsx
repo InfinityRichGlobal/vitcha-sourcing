@@ -26,6 +26,7 @@ import {
   Flame,
   Globe,
   RefreshCw,
+  Loader2,
 } from 'lucide-react';
 
 export const SettingsManagementView: React.FC = () => {
@@ -55,6 +56,8 @@ export const SettingsManagementView: React.FC = () => {
     createInvite,
     deleteInvite,
     refreshCentralData,
+    isMockLoading,
+    isClearing,
     loadFullMockupData,
     resetSystemData,
     clearMockupOnly,
@@ -329,37 +332,67 @@ export const SettingsManagementView: React.FC = () => {
 
         <button
           type="button"
-          onClick={loadFullMockupData}
-          className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-extrabold shadow-xs active:scale-95 transition-all"
+          disabled={isMockLoading || isClearing}
+          onClick={async () => {
+            const ok = await loadFullMockupData();
+            if (ok) {
+              window.alert('✅ โหลดชุดข้อมูลจำลองเต็มระบบเสร็จสมบูรณ์เรียบร้อยแล้ว!\n\nประกอบด้วย:\n- โรงงาน & ซัพพลายเออร์ 97 รายการ\n- ร้านเครื่องดื่มตัวอย่าง 74 รายการ\n- ทำเลศักยภาพ 71 รายการ\n- สูตรและแล็บ R&D 19 รายการ\n- สาขาแฟรนไชส์ 25 รายการ\n\nข้อมูลครบถ้วนทุกมิติ พร้อมให้ทีมงานทดสอบ นำเสนอ และใช้งานได้ทันทีครับ');
+            }
+          }}
+          className={`inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-extrabold shadow-xs transition-all ${
+            isMockLoading
+              ? 'bg-emerald-700 text-white cursor-wait opacity-85'
+              : 'bg-emerald-600 hover:bg-emerald-700 text-white active:scale-95'
+          }`}
         >
-          <Database className="w-3.5 h-3.5" />
-          <span>โหลด Mockup เต็มระบบ</span>
+          {isMockLoading ? (
+            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+          ) : (
+            <Database className="w-3.5 h-3.5" />
+          )}
+          <span>{isMockLoading ? 'กำลังโหลดข้อมูลจำลอง...' : 'โหลด Mockup เต็มระบบ'}</span>
         </button>
 
         <button
           type="button"
-          onClick={() => {
+          disabled={isMockLoading || isClearing}
+          onClick={async () => {
             const pwd = window.prompt('กรุณากรอกรหัสผ่านเพื่อล้างเฉพาะข้อมูล Mockup ออกจากระบบ:');
-            if (pwd === null) return;
-            clearMockupOnly(pwd.trim());
+            if (!pwd) return;
+            const ok = await clearMockupOnly(pwd.trim());
+            if (ok) {
+              window.alert('🧹 ล้างข้อมูลจำลอง Mockup เรียบร้อยแล้ว!\n(ข้อมูลจริงและสมาชิกยังคงอยู่ครบถ้วน)');
+            }
           }}
-          className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 text-xs font-bold active:scale-95 transition-all"
+          className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 text-xs font-bold active:scale-95 transition-all disabled:opacity-50"
         >
-          <Trash2 className="w-3.5 h-3.5 text-amber-600" />
-          <span>ล้างเฉพาะ Mockup</span>
+          {isClearing ? (
+            <Loader2 className="w-3.5 h-3.5 text-amber-600 animate-spin" />
+          ) : (
+            <Trash2 className="w-3.5 h-3.5 text-amber-600" />
+          )}
+          <span>{isClearing ? 'กำลังล้าง...' : 'ล้างเฉพาะ Mockup'}</span>
         </button>
 
         <button
           type="button"
-          onClick={() => {
-            const pwd = window.prompt('กรุณากรอกรหัสผ่านเพื่อยืนยันการล้างข้อมูลทั้งหมดเป็น 0:');
-            if (pwd === null) return;
-            resetSystemData(pwd.trim());
+          disabled={isMockLoading || isClearing}
+          onClick={async () => {
+            const pwd = window.prompt('กรุณากรอกรหัสผ่านเพื่อยืนยันการล้างข้อมูลทั้งหมดเป็น 0 (สมาชิกคงเดิม):');
+            if (!pwd) return;
+            const ok = await resetSystemData(pwd.trim());
+            if (ok) {
+              window.alert('🗑️ ล้างข้อมูลระบบเป็น 0 เรียบร้อยแล้ว!\n(สมาชิกและสิทธิ์ในระบบยังคงอยู่ครบถ้วน)');
+            }
           }}
-          className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-xs font-bold active:scale-95 transition-all"
+          className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-xs font-bold active:scale-95 transition-all disabled:opacity-50"
         >
-          <RotateCcw className="w-3.5 h-3.5 text-rose-600" />
-          <span>ล้างข้อมูลเป็น 0</span>
+          {isClearing ? (
+            <Loader2 className="w-3.5 h-3.5 text-rose-600 animate-spin" />
+          ) : (
+            <RotateCcw className="w-3.5 h-3.5 text-rose-600" />
+          )}
+          <span>{isClearing ? 'กำลังล้าง...' : 'ล้างข้อมูลเป็น 0'}</span>
         </button>
       </div>
       <div className="bg-white p-4 sm:p-5 rounded-2xl border-2 border-slate-900/10 shadow-sm space-y-4">
