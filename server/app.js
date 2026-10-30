@@ -14,9 +14,9 @@ const ROLES = ['admin', 'reviewer', 'viewer'];
 const STAGES = ['awaiting', 'rfq_sent', 'sample_test', 'negotiate', 'approved', 'ordered'];
 const STATUSES = ['scouted', 'reviewing', 'rfq_sent', 'shortlisted', 'ordered'];
 const HANDOFF = ['assignedTo', 'targetFollowUpDate', 'handoffNotes', 'handoffStage', 'status'];
-const SUPPLIER = ['name', 'chineseName', 'marketOrCity', 'category', 'rating', 'quickTags', 'isFactory', 'phone', 'wechatId', 'lineId', 'address', 'photos', 'videos', 'catalogItems', 'memo', 'voiceNoteUrl', 'voiceDurationSec', 'voiceNotes', 'location', 'country', 'isMockup'];
-const STORE = ['storeName', 'chineseName', 'storeCategory', 'brandConcept', 'city', 'phone', 'lineId', 'wechatId', 'photos', 'videos', 'ratings', 'drinkItems', 'tastingNotes', 'voiceNoteUrl', 'voiceDurationSec', 'voiceNotes', 'location', 'country', 'isMockup'];
-const LOCATION = ['name', 'foreignName', 'locationType', 'zoneOrFloor', 'unitNumber', 'location', 'spaceSpecs', 'leaseTerms', 'ratings', 'photos', 'videos', 'voiceNoteUrl', 'voiceDurationSec', 'voiceNotes', 'quickTags', 'country', 'isMockup'];
+const SUPPLIER = ['name', 'chineseName', 'marketOrCity', 'category', 'rating', 'quickTags', 'isFactory', 'phone', 'wechatId', 'lineId', 'address', 'photos', 'videos', 'catalogItems', 'memo', 'voiceNoteUrl', 'voiceDurationSec', 'voiceNotes', 'location', 'country', 'isMockup', 'attachedFiles'];
+const STORE = ['storeName', 'chineseName', 'storeCategory', 'brandConcept', 'city', 'phone', 'lineId', 'wechatId', 'photos', 'videos', 'ratings', 'drinkItems', 'tastingNotes', 'voiceNoteUrl', 'voiceDurationSec', 'voiceNotes', 'location', 'country', 'isMockup', 'attachedFiles'];
+const LOCATION = ['name', 'foreignName', 'locationType', 'zoneOrFloor', 'unitNumber', 'location', 'spaceSpecs', 'leaseTerms', 'ratings', 'photos', 'videos', 'voiceNoteUrl', 'voiceDurationSec', 'voiceNotes', 'quickTags', 'country', 'isMockup', 'attachedFiles'];
 const now = () => new Date().toISOString();
 const pick = (obj, keys) => Object.fromEntries(keys.filter(k => obj[k] !== undefined).map(k => [k, obj[k]]));
 const clean = value => typeof value === 'string' ? value.trim() : '';
@@ -81,6 +81,13 @@ function validateRecord(record, collection) {
     }
   }
   if ((record.videos || []).some(url => typeof url !== 'string' || /^(idb:|blob:)/.test(url))) fail(400, 'กรุณาอัปโหลดวิดีโอขึ้นเซิร์ฟเวอร์ให้สำเร็จก่อน');
+  if (record.attachedFiles) {
+    if (!Array.isArray(record.attachedFiles)) fail(400, 'รายการไฟล์แนบไม่ถูกต้อง');
+    for (const f of record.attachedFiles) {
+      if (!f || typeof f !== 'object' || Array.isArray(f)) fail(400, 'ไฟล์แนบไม่ถูกต้อง');
+      if (typeof f.url !== 'string' || /^(idb:|blob:)/.test(f.url)) fail(400, 'กรุณาอัปโหลดไฟล์แนบขึ้นเซิร์ฟเวอร์ให้สำเร็จก่อน');
+    }
+  }
 }
 
 export function createApp({ dataDir, defaults = DEFAULT_DATABASE, sessionTtlMs = 30 * 24 * 60 * 60 * 1000, recoveryPasswordHash = null, persistence = null, mediaStorage = null } = {}) {

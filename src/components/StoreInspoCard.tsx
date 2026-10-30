@@ -19,6 +19,8 @@ import {
   Pencil,
   Camera,
   Paperclip,
+  Coffee,
+  Mic,
 } from 'lucide-react';
 
 interface StoreInspoCardProps {
@@ -76,6 +78,12 @@ export const StoreInspoCard: React.FC<StoreInspoCardProps> = ({
   const likes = Array.isArray(store.likes) ? store.likes : [];
   const isLikedByMe = likes.some((l) => l.userId === currentUser.id);
   const drinkItems = Array.isArray(store.drinkItems) ? store.drinkItems : [];
+  const voiceNotesCount = (store.voiceNotes && store.voiceNotes.length > 0)
+    ? store.voiceNotes.length
+    : (store.voiceNoteUrl ? 1 : 0);
+  const drinkCount = drinkItems.length;
+  const attachedFilesCount = store.attachedFiles?.length || 0;
+  const videosCount = store.videos?.length || 0;
 
   const handlePostComment = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -147,16 +155,28 @@ export const StoreInspoCard: React.FC<StoreInspoCardProps> = ({
                   <i className="fa-solid fa-mug-hot text-[10px] text-amber-600" />
                   <span>{store.storeCategory || 'เรฟร้านน้ำ'}</span>
                 </span>
-                {store.videos && store.videos.length > 0 && (
-                  <span className="px-2 py-0.5 rounded-md bg-purple-50 text-purple-700 border border-purple-200 text-[10px] font-bold inline-flex items-center gap-1">
-                    <i className="fa-solid fa-video text-[9px]" />
-                    <span>{store.videos.length} คลิป</span>
+                {drinkCount > 0 && (
+                  <span className="px-2 py-0.5 rounded-md bg-amber-50 text-amber-800 border border-amber-200 text-[10px] font-bold inline-flex items-center gap-1 shadow-2xs">
+                    <Coffee className="w-2.5 h-2.5 text-amber-600" />
+                    <span>{drinkCount} เมนู</span>
                   </span>
                 )}
-                {store.attachedFiles && store.attachedFiles.length > 0 && (
-                  <span className="px-2 py-0.5 rounded-md bg-amber-50 text-amber-800 border border-amber-200 text-[10px] font-bold inline-flex items-center gap-1">
-                    <Paperclip className="w-2.5 h-2.5" />
-                    <span>{store.attachedFiles.length} ไฟล์แนบ</span>
+                {videosCount > 0 && (
+                  <span className="px-2 py-0.5 rounded-md bg-purple-50 text-purple-700 border border-purple-200 text-[10px] font-bold inline-flex items-center gap-1 shadow-2xs">
+                    <i className="fa-solid fa-video text-[9px]" />
+                    <span>{videosCount} คลิป</span>
+                  </span>
+                )}
+                {voiceNotesCount > 0 && (
+                  <span className="px-2 py-0.5 rounded-md bg-rose-50 text-rose-700 border border-rose-200 text-[10px] font-bold inline-flex items-center gap-1 shadow-2xs">
+                    <Mic className="w-2.5 h-2.5 text-rose-600" />
+                    <span>{voiceNotesCount} เสียง</span>
+                  </span>
+                )}
+                {attachedFilesCount > 0 && (
+                  <span className="px-2 py-0.5 rounded-md bg-sky-50 text-sky-700 border border-sky-200 text-[10px] font-bold inline-flex items-center gap-1 shadow-2xs">
+                    <Paperclip className="w-2.5 h-2.5 text-sky-600" />
+                    <span>{attachedFilesCount} ไฟล์แนบ</span>
                   </span>
                 )}
               </div>
@@ -266,10 +286,40 @@ export const StoreInspoCard: React.FC<StoreInspoCardProps> = ({
           ) : (
             <div
               onClick={() => onSelect(store)}
-              className="p-3 rounded-xl bg-slate-50 border border-dashed border-slate-200 text-center flex items-center justify-center gap-1.5 text-slate-400 text-xs cursor-pointer hover:bg-slate-100/70 transition-colors"
+              className="p-3 rounded-xl bg-slate-50/90 border border-dashed border-slate-200/90 hover:bg-slate-100/80 transition-colors cursor-pointer space-y-2 text-center"
             >
-              <Camera className="w-3.5 h-3.5 text-slate-300" />
-              <span>ยังไม่มีรูปภาพหน้าร้าน (แตะเพื่อดูรายละเอียด)</span>
+              <div className="flex items-center justify-center gap-1.5 text-slate-400 text-xs">
+                <Camera className="w-3.5 h-3.5 text-slate-300" />
+                <span>ยังไม่มีรูปภาพหน้าร้าน (แตะเพื่อดูรายละเอียด)</span>
+              </div>
+              {(drinkCount > 0 || videosCount > 0 || voiceNotesCount > 0 || attachedFilesCount > 0) && (
+                <div className="flex items-center justify-center gap-1.5 flex-wrap pt-0.5">
+                  {drinkCount > 0 && (
+                    <span className="px-2 py-0.5 rounded-md bg-amber-50 text-amber-800 border border-amber-200 text-[10px] font-bold inline-flex items-center gap-1">
+                      <Coffee className="w-2.5 h-2.5 text-amber-600" />
+                      <span>{drinkCount} เมนู</span>
+                    </span>
+                  )}
+                  {videosCount > 0 && (
+                    <span className="px-2 py-0.5 rounded-md bg-purple-50 text-purple-700 border border-purple-200 text-[10px] font-bold inline-flex items-center gap-1">
+                      <i className="fa-solid fa-video text-[9px]" />
+                      <span>{videosCount} คลิป</span>
+                    </span>
+                  )}
+                  {voiceNotesCount > 0 && (
+                    <span className="px-2 py-0.5 rounded-md bg-rose-50 text-rose-700 border border-rose-200 text-[10px] font-bold inline-flex items-center gap-1">
+                      <Mic className="w-2.5 h-2.5 text-rose-600" />
+                      <span>{voiceNotesCount} คลิปเสียง</span>
+                    </span>
+                  )}
+                  {attachedFilesCount > 0 && (
+                    <span className="px-2 py-0.5 rounded-md bg-sky-50 text-sky-700 border border-sky-200 text-[10px] font-bold inline-flex items-center gap-1">
+                      <Paperclip className="w-2.5 h-2.5 text-sky-600" />
+                      <span>{attachedFilesCount} ไฟล์แนบ</span>
+                    </span>
+                  )}
+                </div>
+              )}
             </div>
           )}
         </div>

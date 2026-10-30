@@ -19,6 +19,8 @@ import {
   Pencil,
   Camera,
   Paperclip,
+  Package,
+  Mic,
 } from 'lucide-react';
 
 interface SupplierCardProps {
@@ -78,6 +80,12 @@ export const SupplierCard: React.FC<SupplierCardProps> = ({
   const likes = Array.isArray(supplier.likes) ? supplier.likes : [];
   const isLikedByMe = likes.some((l) => l.userId === currentUser.id);
   const catalogItems = Array.isArray(supplier.catalogItems) ? supplier.catalogItems : [];
+  const voiceNotesCount = (supplier.voiceNotes && supplier.voiceNotes.length > 0)
+    ? supplier.voiceNotes.length
+    : (supplier.voiceNoteUrl ? 1 : 0);
+  const catalogCount = catalogItems.length;
+  const attachedFilesCount = supplier.attachedFiles?.length || 0;
+  const videosCount = supplier.videos?.length || 0;
 
   const handlePostComment = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -152,16 +160,28 @@ export const SupplierCard: React.FC<SupplierCardProps> = ({
                   <i className="fa-solid fa-industry text-[10px] text-emerald-600" />
                   <span>{supplier.category}</span>
                 </span>
-                {supplier.videos && supplier.videos.length > 0 && (
-                  <span className="px-2 py-0.5 rounded-md bg-purple-50 text-purple-700 border border-purple-200 text-[10px] font-bold inline-flex items-center gap-1">
-                    <i className="fa-solid fa-video text-[9px]" />
-                    <span>{supplier.videos.length} คลิป</span>
+                {catalogCount > 0 && (
+                  <span className="px-2 py-0.5 rounded-md bg-amber-50 text-amber-800 border border-amber-200 text-[10px] font-bold inline-flex items-center gap-1 shadow-2xs">
+                    <Package className="w-2.5 h-2.5 text-amber-600" />
+                    <span>{catalogCount} สินค้า</span>
                   </span>
                 )}
-                {supplier.attachedFiles && supplier.attachedFiles.length > 0 && (
-                  <span className="px-2 py-0.5 rounded-md bg-sky-50 text-sky-700 border border-sky-200 text-[10px] font-bold inline-flex items-center gap-1">
-                    <Paperclip className="w-2.5 h-2.5" />
-                    <span>{supplier.attachedFiles.length} ไฟล์แนบ</span>
+                {videosCount > 0 && (
+                  <span className="px-2 py-0.5 rounded-md bg-purple-50 text-purple-700 border border-purple-200 text-[10px] font-bold inline-flex items-center gap-1 shadow-2xs">
+                    <i className="fa-solid fa-video text-[9px]" />
+                    <span>{videosCount} คลิป</span>
+                  </span>
+                )}
+                {voiceNotesCount > 0 && (
+                  <span className="px-2 py-0.5 rounded-md bg-rose-50 text-rose-700 border border-rose-200 text-[10px] font-bold inline-flex items-center gap-1 shadow-2xs">
+                    <Mic className="w-2.5 h-2.5 text-rose-600" />
+                    <span>{voiceNotesCount} เสียง</span>
+                  </span>
+                )}
+                {attachedFilesCount > 0 && (
+                  <span className="px-2 py-0.5 rounded-md bg-sky-50 text-sky-700 border border-sky-200 text-[10px] font-bold inline-flex items-center gap-1 shadow-2xs">
+                    <Paperclip className="w-2.5 h-2.5 text-sky-600" />
+                    <span>{attachedFilesCount} ไฟล์แนบ</span>
                   </span>
                 )}
               </div>
@@ -266,10 +286,40 @@ export const SupplierCard: React.FC<SupplierCardProps> = ({
           ) : (
             <div
               onClick={() => onSelect(supplier)}
-              className="p-3 rounded-xl bg-slate-50 border border-dashed border-slate-200 text-center flex items-center justify-center gap-1.5 text-slate-400 text-xs cursor-pointer hover:bg-slate-100/70 transition-colors"
+              className="p-3 rounded-xl bg-slate-50/90 border border-dashed border-slate-200/90 hover:bg-slate-100/80 transition-colors cursor-pointer space-y-2 text-center"
             >
-              <Camera className="w-3.5 h-3.5 text-slate-300" />
-              <span>ยังไม่มีรูปภาพหน้างาน (แตะเพื่อดูรายละเอียด)</span>
+              <div className="flex items-center justify-center gap-1.5 text-slate-400 text-xs">
+                <Camera className="w-3.5 h-3.5 text-slate-300" />
+                <span>ยังไม่มีรูปภาพหน้างาน (แตะเพื่อดูรายละเอียด)</span>
+              </div>
+              {(catalogCount > 0 || videosCount > 0 || voiceNotesCount > 0 || attachedFilesCount > 0) && (
+                <div className="flex items-center justify-center gap-1.5 flex-wrap pt-0.5">
+                  {catalogCount > 0 && (
+                    <span className="px-2 py-0.5 rounded-md bg-amber-50 text-amber-800 border border-amber-200 text-[10px] font-bold inline-flex items-center gap-1">
+                      <Package className="w-2.5 h-2.5 text-amber-600" />
+                      <span>{catalogCount} สินค้า</span>
+                    </span>
+                  )}
+                  {videosCount > 0 && (
+                    <span className="px-2 py-0.5 rounded-md bg-purple-50 text-purple-700 border border-purple-200 text-[10px] font-bold inline-flex items-center gap-1">
+                      <i className="fa-solid fa-video text-[9px]" />
+                      <span>{videosCount} คลิป</span>
+                    </span>
+                  )}
+                  {voiceNotesCount > 0 && (
+                    <span className="px-2 py-0.5 rounded-md bg-rose-50 text-rose-700 border border-rose-200 text-[10px] font-bold inline-flex items-center gap-1">
+                      <Mic className="w-2.5 h-2.5 text-rose-600" />
+                      <span>{voiceNotesCount} คลิปเสียง</span>
+                    </span>
+                  )}
+                  {attachedFilesCount > 0 && (
+                    <span className="px-2 py-0.5 rounded-md bg-sky-50 text-sky-700 border border-sky-200 text-[10px] font-bold inline-flex items-center gap-1">
+                      <Paperclip className="w-2.5 h-2.5 text-sky-600" />
+                      <span>{attachedFilesCount} ไฟล์แนบ</span>
+                    </span>
+                  )}
+                </div>
+              )}
             </div>
           )}
         </div>

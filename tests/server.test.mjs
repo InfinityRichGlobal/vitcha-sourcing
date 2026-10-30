@@ -523,3 +523,61 @@ test('Google Drive session endpoint enforces file size and provides upload detai
   assert.equal(valid.status, 200);
   assert.equal(typeof valid.data.directAvailable, 'boolean');
 });
+
+test('attachedFiles are preserved on create and edit of suppliers, drink stores, and locations', async t => {
+  const { call, login } = await setup(t);
+  const token = await login('ice');
+
+  const files = [
+    {
+      id: 'file-1',
+      name: 'Quotation_2026.pdf',
+      url: 'https://drive.google.com/file/d/test12345/view',
+      size: 1024 * 50,
+      mimeType: 'application/pdf',
+      uploadedAt: new Date().toISOString(),
+    },
+  ];
+
+  // 1. Supplier with attachedFiles
+  const supRes = await call('/api/suppliers', token, {
+    ...item,
+    id: 'sup-with-files',
+    name: 'ซัพพลายเออร์มีไฟล์แนบ',
+    attachedFiles: files,
+  });
+  assert.equal(supRes.status, 200);
+  assert.ok(supRes.data.item.attachedFiles);
+  assert.equal(supRes.data.item.attachedFiles.length, 1);
+  assert.equal(supRes.data.item.attachedFiles[0].name, 'Quotation_2026.pdf');
+
+  // Verify in GET /api/data
+  const data = (await call('/api/data', token, undefined, 'GET')).data;
+  const foundSup = data.suppliers.find(s => s.id === 'sup-with-files');
+  assert.ok(foundSup);
+  assert.ok(foundSup.attachedFiles);
+  assert.equal(foundSup.attachedFiles[0].name, 'Quotation_2026.pdf');
+
+  // 2. Reject malformed attachedFiles
+  const badSup = await call('/api/suppliers', token, {
+    ...item,
+    id: 'sup-bad-files',
+    name: 'Bad Files',
+    attachedFiles: 'not-an-array',
+  });
+  assert.equal(badSup.status, 400);
+
+  // 3. Location with attachedFiles
+  const locRes = await call('/api/locations', token, {
+    id: 'loc-with-files',
+    name: 'ทำเลสุขุมวิท',
+    locationType: 'mall',
+    location: { lat: 13.72, lng: 100.58 },
+    ratings: { footTraffic: 4, visibility: 4, accessibility: 4, valueRoi: 4 },
+    photos: { storefrontAndAtmosphere: [] },
+    attachedFiles: files,
+  });
+  assert.equal(locRes.status, 200);
+  assert.ok(locRes.data.item.attachedFiles);
+  assert.equal(locRes.data.item.attachedFiles[0].url, 'https://drive.google.com/file/d/test12345/view');
+});
