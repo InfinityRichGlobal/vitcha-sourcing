@@ -45,3 +45,12 @@ test('China basemap loads with English labels and keeps its zoom across polling'
   await expect.poll(async () => Math.abs((await separation()) - zoomed)).toBeLessThan(15);
   await map.screenshot({ path: 'test-results/english-china-map.png' });
 });
+
+test('pasting a place link uses its pin instead of the map viewport and accepts zero coordinates',async({page})=>{
+ await signIn(page);
+ await page.route('**/api/geocode/search**',r=>r.fulfill({json:[]}));
+ const input=page.getByPlaceholder('🔍 ค้นหาสถานที่ หรือ วางพิกัด (lat, lng) หรือ วางลิงก์ Google Maps...');
+ await input.fill('https://www.google.com/maps/place/Tea/@13.75,100.49,12z/data=!3d13.751!4d100.492');
+ await expect(page.getByText('📍 ตรวจพบพิกัด (13.75100, 100.49200)',{exact:true})).toBeVisible();
+ await input.fill('0, 100');await expect(page.getByText('📍 ตรวจพบพิกัด (0.00000, 100.00000)',{exact:true})).toBeVisible();
+});

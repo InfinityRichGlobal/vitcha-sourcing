@@ -106,7 +106,7 @@ export const MapView: React.FC<MapViewProps> = ({
     const parsed = parseCoordinatesOrMapUrl(searchQuery);
     const detectedMatches: Array<{ id: string; name: string; displayName: string; lat: number; lng: number; type: string }> = [];
 
-    if (parsed && (parsed.type === 'coords' || parsed.type === 'direct_url') && parsed.lat && parsed.lng) {
+    if (parsed && (parsed.type === 'coords' || parsed.type === 'direct_url') && parsed.lat !== undefined && parsed.lng !== undefined) {
       detectedMatches.push({
         id: 'detected-coords',
         name: `📍 ตรวจพบพิกัด (${parsed.lat.toFixed(5)}, ${parsed.lng.toFixed(5)})`,
@@ -117,7 +117,7 @@ export const MapView: React.FC<MapViewProps> = ({
       });
     } else if (parsed && parsed.type === 'short_url' && parsed.url) {
       resolveMapUrlApi(parsed.url).then((res) => {
-        if (res.ok && res.lat && res.lng) {
+        if (res.ok && res.lat !== undefined && res.lng !== undefined) {
           const item = {
             id: 'detected-short-url',
             name: `🔗 พิกัดจาก Google Maps (${res.lat.toFixed(5)}, ${res.lng.toFixed(5)})`,

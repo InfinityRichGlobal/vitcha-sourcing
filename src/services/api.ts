@@ -368,7 +368,7 @@ export function parseCoordinatesOrMapUrl(input: string): ParsedLocationInput | n
 
   // Pattern 1: Raw coordinates with optional parentheses
   // e.g. "(13.9848152, 100.4729654)", "13.9848152, 100.4729654", "13.9848152 100.4729654"
-  const coordRegex = /(?:\(|\b)([+-]?\d{1,2}\.\d+)[,\s]+([+-]?\d{1,3}\.\d+)(?:\)|\b)/;
+  const coordRegex = /^\(?\s*([+-]?\d{1,2}(?:\.\d+)?)[,\s]+([+-]?\d{1,3}(?:\.\d+)?)\s*\)?$/;
   const coordMatch = str.match(coordRegex);
   if (coordMatch) {
     const lat = parseFloat(coordMatch[1]);
@@ -382,11 +382,15 @@ export function parseCoordinatesOrMapUrl(input: string): ParsedLocationInput | n
   const urlMatch = str.match(/https?:\/\/[^\s]+/i);
   if (urlMatch) {
     const url = urlMatch[0].replace(/[)>,;.]+$/, '');
-    const qMatch = url.match(/[?&]q=(-?\d+\.\d+),(-?\d+\.\d+)/);
-    const atMatch = url.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/);
-    const dMatch = url.match(/!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)/);
-    const llMatch = url.match(/[?&]ll=(-?\d+\.\d+),(-?\d+\.\d+)/);
-    const match = qMatch || atMatch || dMatch || llMatch;
+    let decoded: string;
+    try { decoded = decodeURIComponent(url); } catch { return null; }
+    const pair = '(-?\\d+(?:\\.\\d+)?),\\s*(-?\\d+(?:\\.\\d+)?)';
+    const qMatch = decoded.match(new RegExp('[?&](?:q|query)=' + pair));
+    const dMatch = decoded.match(/!3d(-?\d+(?:\.\d+)?)!4d(-?\d+(?:\.\d+)?)/);
+    const llMatch = decoded.match(new RegExp('[?&]ll=' + pair));
+    const atMatch = decoded.match(new RegExp('@' + pair));
+    // A place's actual pin is more precise than the map viewport center.
+    const match = qMatch || dMatch || llMatch || atMatch;
     if (match) {
       const lat = parseFloat(match[1]);
       const lng = parseFloat(match[2]);
@@ -395,9 +399,13 @@ export function parseCoordinatesOrMapUrl(input: string): ParsedLocationInput | n
       }
     }
     // Pattern 3: Shortened Google Maps link
-    if (/maps\.app\.goo\.gl|goo\.gl\/maps/i.test(url)) {
-      return { type: 'short_url', url };
-    }
+    try {
+      const parsedUrl = new URL(url);
+      if (parsedUrl.protocol === 'https:' && !parsedUrl.username && !parsedUrl.password &&
+          (parsedUrl.hostname === 'maps.app.goo.gl' || (parsedUrl.hostname === 'goo.gl' && parsedUrl.pathname.startsWith('/maps')))) {
+        return { type: 'short_url', url };
+      }
+    } catch { return null; }
   }
   return null;
 }

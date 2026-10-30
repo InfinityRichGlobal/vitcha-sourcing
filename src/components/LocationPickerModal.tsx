@@ -295,7 +295,7 @@ export const LocationPickerModal: React.FC<LocationPickerModalProps> = ({
     const parsed = parseCoordinatesOrMapUrl(query);
     const detectedMatches: GeocodePlaceItem[] = [];
 
-    if (parsed && (parsed.type === 'coords' || parsed.type === 'direct_url') && parsed.lat && parsed.lng) {
+    if (parsed && (parsed.type === 'coords' || parsed.type === 'direct_url') && parsed.lat !== undefined && parsed.lng !== undefined) {
       detectedMatches.push({
         id: 'detected-coords',
         name: `📍 ตรวจพบพิกัด (${parsed.lat.toFixed(5)}, ${parsed.lng.toFixed(5)})`,
@@ -309,7 +309,7 @@ export const LocationPickerModal: React.FC<LocationPickerModalProps> = ({
       setIsSearching(true);
       resolveMapUrlApi(parsed.url).then((res) => {
         setIsSearching(false);
-        if (res.ok && res.lat && res.lng) {
+        if (res.ok && res.lat !== undefined && res.lng !== undefined) {
           const item: GeocodePlaceItem = {
             id: 'detected-short-url',
             name: `🔗 พิกัดจาก Google Maps (${res.lat.toFixed(5)}, ${res.lng.toFixed(5)})`,
@@ -402,7 +402,7 @@ export const LocationPickerModal: React.FC<LocationPickerModalProps> = ({
 
     // Check for instant coordinate or map URL match on Enter / click Search
     const parsed = parseCoordinatesOrMapUrl(searchQuery);
-    if (parsed && (parsed.type === 'coords' || parsed.type === 'direct_url') && parsed.lat && parsed.lng) {
+    if (parsed && (parsed.type === 'coords' || parsed.type === 'direct_url') && parsed.lat !== undefined && parsed.lng !== undefined) {
       handleFlyToCoord(parsed.lat, parsed.lng, 17);
       triggerReverseGeocode(parsed.lat, parsed.lng);
       setShowDropdown(false);
@@ -413,7 +413,7 @@ export const LocationPickerModal: React.FC<LocationPickerModalProps> = ({
       try {
         const res = await resolveMapUrlApi(parsed.url);
         setIsSearching(false);
-        if (res.ok && res.lat && res.lng) {
+        if (res.ok && res.lat !== undefined && res.lng !== undefined) {
           handleFlyToCoord(res.lat, res.lng, 17);
           triggerReverseGeocode(res.lat, res.lng);
           setShowDropdown(false);
@@ -452,7 +452,7 @@ export const LocationPickerModal: React.FC<LocationPickerModalProps> = ({
       setSearchQuery(clean);
       setShowDropdown(true);
       const parsed = parseCoordinatesOrMapUrl(clean);
-      if (parsed && (parsed.type === 'coords' || parsed.type === 'direct_url') && parsed.lat && parsed.lng) {
+      if (parsed && (parsed.type === 'coords' || parsed.type === 'direct_url') && parsed.lat !== undefined && parsed.lng !== undefined) {
         handleFlyToCoord(parsed.lat, parsed.lng, 17);
         triggerReverseGeocode(parsed.lat, parsed.lng);
         setShowDropdown(false);
@@ -462,7 +462,7 @@ export const LocationPickerModal: React.FC<LocationPickerModalProps> = ({
         try {
           const res = await resolveMapUrlApi(parsed.url);
           setIsSearching(false);
-          if (res.ok && res.lat && res.lng) {
+          if (res.ok && res.lat !== undefined && res.lng !== undefined) {
             handleFlyToCoord(res.lat, res.lng, 17);
             triggerReverseGeocode(res.lat, res.lng);
             setShowDropdown(false);

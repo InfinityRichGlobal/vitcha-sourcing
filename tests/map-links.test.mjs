@@ -18,3 +18,17 @@ test('Google Maps place pin takes precedence over the viewport center', async ()
   const result=await resolveMapLink('https://www.google.com/maps/place/Tea/@13,100,12z/data=!3d13.751!4d100.492',async()=>({status:200,headers:new Headers()}));
   assert.equal(result.lat,13.751);assert.equal(result.lng,100.492);
 });
+
+test('pasted map URLs keep the actual destination, encoded coordinates and negative signs', async () => {
+  const {build}=await import('esbuild');const {createRequire}=await import('node:module');const fs=await import('node:fs/promises');const os=await import('node:os');const path=await import('node:path');
+  const dir=await fs.mkdtemp(path.join(os.tmpdir(),'map-input-'));const file=path.join(dir,'api.cjs');
+  try {
+    await build({entryPoints:['src/services/api.ts'],outfile:file,bundle:true,platform:'node',format:'cjs',logLevel:'silent'});
+    const {parseCoordinatesOrMapUrl:parse}=createRequire(import.meta.url)(file);
+    assert.deepEqual(parse('https://www.google.com/maps/place/Tea/@13.75,100.49,12z/data=!3d13.751!4d100.492'),{type:'direct_url',lat:13.751,lng:100.492,url:'https://www.google.com/maps/place/Tea/@13.75,100.49,12z/data=!3d13.751!4d100.492',raw:'13.7510000, 100.4920000'});
+    assert.equal(parse('https://www.google.com/maps?q=-33%2C151').lat,-33);
+    assert.equal(parse('(-33.8, 151.2)').lat,-33.8);
+    assert.equal(parse('0, 100').lat,0);
+    for(const value of ['95,200','https://maps.app.goo.gl.evil.example/x','https://www.google.com/maps?q=%ZZ'])assert.equal(parse(value),null);
+  } finally {await fs.rm(dir,{recursive:true,force:true});}
+});
