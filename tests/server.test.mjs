@@ -25,7 +25,7 @@ async function setup(t, options = {}) {
 
 test('every data/mutation API requires a real session', async t => {
   const { call } = await setup(t);
-  for (const [route, method] of [['/api/data','GET'],['/api/suppliers','POST'],['/api/users','POST'],['/api/invites','POST'],['/api/sync','POST'],['/api/upload','POST'],['/api/backup','GET']]) assert.equal((await call(route, 'forged', method === 'GET' ? undefined : {}, method)).status, 401, route);
+  for (const [route, method] of [['/api/data','GET'],['/api/suppliers','POST'],['/api/users','POST'],['/api/users/user-review/display-name','POST'],['/api/invites','POST'],['/api/sync','POST'],['/api/upload','POST'],['/api/backup','GET']]) assert.equal((await call(route, 'forged', method === 'GET' ? undefined : {}, method)).status, 401, route);
 });
 test('snapshot polling avoids repeated payloads while observing writes and changed identities', async t => {
   const { call, login } = await setup(t); const token = await login('ice');
@@ -329,6 +329,43 @@ test('one display name and immediate avatar update appear in all sessions, posts
   assert.equal((await call('/api/profile/avatar',author,{avatar,revision:0})).status,409);
   assert.equal((await call('/api/login',null,{idOrEmail:'review',pin:' 🔒 A ! '})).status,200);
   assert.equal((await call('/api/login',null,{idOrEmail:'review',pin:'🔒 A !'})).status,401);
+});
+
+test('founder can rename a member without changing credentials, permissions or active sessions', async t => {
+  const {call,login,dir}=await setup(t);
+  const founder=await login('ice'), member=await login('review'), observer=await login('view');
+  await call('/api/suppliers',member,item);
+  await call('/api/suppliers/sup-test/actions',member,{action:'comment',operationId:'rename-note',data:{text:'Existing comment'}});
+  const readUsers=()=>JSON.parse(fs.readFileSync(path.join(dir,'database.json'))).users;
+  const before=readUsers();
+  const response=await call('/api/users/user-review/display-name',founder,{displayName:'P.Tui',revision:0});
+  assert.equal(response.status,200);assert.equal(response.data.user.name,'P.Tui');assert.equal(response.data.user.alias,'P.Tui');
+  const after=readUsers();assert.equal(after.length,before.length);
+  for(const user of before) {
+    const saved=after.find(u=>u.id===user.id);assert.ok(saved);
+    for(const key of ['emailOrId','pin','pinHash','role','avatar','createdAt']) assert.deepEqual(saved[key],user[key],key);
+    if(user.id!=='user-review') {assert.equal(saved.name,user.name);assert.equal(saved.alias,user.alias);}
+  }
+  assert.equal((await call('/api/session',member,undefined,'GET')).data.user.name,'P.Tui');
+  const data=(await call('/api/data',observer,undefined,'GET')).data;
+  assert.equal(data.users.find(u=>u.id==='user-review').name,'P.Tui');
+  assert.equal(data.suppliers[0].creator.alias,'P.Tui');
+  assert.equal(data.suppliers[0].reviewerNotes[0].author,'P.Tui');
+  assert.equal((await call('/api/login',null,{idOrEmail:'review',pin:'876543'})).status,200);
+});
+
+test('member rename is founder-only, rejects extra fields and stale revisions', async t => {
+  const {call,login}=await setup(t);const founder=await login('ice');
+  const route='/api/users/user-review/display-name', body={displayName:'P.Tui',revision:0};
+  for(const role of ['admin','review','view']) assert.equal((await call(route,await login(role),body)).status,403);
+  for(const field of ['pin','emailOrId','role','avatar']) assert.equal((await call(route,founder,{...body,[field]:'forged'})).status,400);
+  for(const displayName of ['', '   ', 'x'.repeat(121), 123]) assert.equal((await call(route,founder,{...body,displayName})).status,400);
+  assert.equal((await call('/api/users/missing/display-name',founder,body)).status,404);
+  assert.equal((await call('/api/users/user-ann/display-name',founder,body)).status,403);
+  assert.equal((await call(route,founder,body)).status,200);
+  assert.equal((await call(route,founder,{...body,displayName:'Stale'})).status,409);
+  await call('/api/simulate',founder,{userId:'user-mook'});
+  assert.equal((await call(route,founder,{...body,revision:1})).status,403);
 });
 
 test('configured recovery credential accepts the exact account after throttling without exposure or changing its password', async t => {

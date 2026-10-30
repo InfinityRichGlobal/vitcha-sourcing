@@ -524,6 +524,19 @@ export function createApp({ dataDir, defaults = DEFAULT_DATABASE, sessionTtlMs =
     save(db);
     res.json({ success: true, user: publicUser(user) });
   });
+  app.post('/api/users/:id/display-name', (req, res) => {
+    requireFounder(req);
+    const input = req.body || {};
+    if (Object.keys(input).some(key => !['displayName', 'revision'].includes(key))) fail(400, 'แก้ไขได้เฉพาะชื่อที่แสดง');
+    const displayName = typeof input.displayName === 'string' ? clean(input.displayName) : '';
+    if (!displayName || displayName.length > 120) fail(400, 'กรุณาระบุชื่อที่แสดงไม่เกิน 120 ตัวอักษร');
+    const db = read(); const user = db.users.find(u => u.id === req.params.id);
+    if (!user) fail(404, 'ไม่พบสมาชิก');
+    if (MOCK_IDS.has(user.id)) fail(403, 'ไม่สามารถเปลี่ยนบัญชีจำลอง');
+    expectRevision(user, input.revision);
+    user.name = displayName; user.alias = displayName; user.revision = revision(user) + 1;
+    save(db); res.json({ success: true, user: publicUser(user) });
+  });
   app.delete('/api/users/:id', (req, res) => {
     requireAdmin(req);
     if (req.params.id === 'user-ice' || MOCK_IDS.has(req.params.id) || req.params.id === req.user.id) fail(403, 'ไม่สามารถลบบัญชีนี้');
