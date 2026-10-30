@@ -50,7 +50,6 @@ import { uploadMediaToServer } from '../services/api';
 import { saveVideoFile } from '../utils/mediaStorage';
 import { AudioRecorder } from './AudioRecorder';
 import { VideoPlayer } from './VideoPlayer';
-import { LocationPickerModal } from './LocationPickerModal';
 
 export function FranchiseStoreView({
   initialStoreId,
@@ -1356,9 +1355,6 @@ function StoreFormModal({
 
   // Optional store details - strictly empty by default
   const [branch, setBranch] = useState(store?.branch || '');
-  const [storeLat, setStoreLat] = useState<number | undefined>(store?.lat);
-  const [storeLng, setStoreLng] = useState<number | undefined>(store?.lng);
-  const [isLocationPickerOpen, setIsLocationPickerOpen] = useState(false);
   const [brandTagline, setBrandTagline] = useState(store?.brandTagline || '');
   const [openingHours, setOpeningHours] = useState(store?.openingHours || '');
   const [contactNumber, setContactNumber] = useState(store?.contactNumber || '');
@@ -1500,8 +1496,6 @@ function StoreFormModal({
       id: store?.id || `store-${crypto.randomUUID()}`,
       name: name.trim(),
       branch: branch.trim() || 'สาขาหลัก',
-      lat: storeLat,
-      lng: storeLng,
       brandTagline: brandTagline.trim(),
       logoUrl: logoUrl.trim(),
       galleryPhotos,
@@ -1720,42 +1714,17 @@ function StoreFormModal({
             </div>
           </div>
 
-          {/* 5. Additional Optional Fields (Branch with Location Picker, Tagline, Hours, Phone) */}
+          {/* 5. Additional Optional Fields (Branch, Tagline, Hours, Phone) */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <div className="flex items-center justify-between mb-1">
-                <label className="font-bold text-slate-700 dark:text-slate-300 block">
-                  สาขา / ทำเลที่ตั้ง
-                </label>
-                <button
-                  type="button"
-                  onClick={() => setIsLocationPickerOpen(true)}
-                  className="inline-flex items-center gap-1 text-[11px] font-bold text-sky-600 hover:text-sky-700"
-                >
-                  <MapPin className="w-3 h-3" />
-                  <span>{storeLat && storeLng ? '📍 แก้ไขพิกัดแผนที่' : '📍 ปักหมุดพิกัดแผนที่'}</span>
-                </button>
-              </div>
+              <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1">สาขา</label>
               <input
                 type="text"
                 value={branch}
                 onChange={(e) => setBranch(e.target.value)}
-                placeholder="เช่น สาขา Siam Square One, ปตท. ราชพฤกษ์..."
+                placeholder="เช่น สาขา Siam Square One"
                 className="w-full p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800"
               />
-              {storeLat && storeLng && (
-                <div className="mt-1 flex items-center gap-1.5 text-[10px] text-emerald-700 dark:text-emerald-400 font-bold bg-emerald-50 dark:bg-emerald-950/40 px-2.5 py-1 rounded-xl border border-emerald-200 dark:border-emerald-800">
-                  <MapPin className="w-3 h-3 shrink-0" />
-                  <span className="truncate">พิกัด GPS: {storeLat.toFixed(5)}, {storeLng.toFixed(5)}</span>
-                  <button
-                    type="button"
-                    onClick={() => { setStoreLat(undefined); setStoreLng(undefined); }}
-                    className="ml-auto text-slate-400 hover:text-rose-500 text-[10px]"
-                  >
-                    ล้างพิกัด
-                  </button>
-                </div>
-              )}
             </div>
             <div>
               <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1">สโลแกนประจำแบรนด์ (Tagline)</label>
@@ -1917,28 +1886,6 @@ function StoreFormModal({
             </button>
           </div>
         </form>
-
-        {isLocationPickerOpen && (
-          <LocationPickerModal
-            isOpen={isLocationPickerOpen}
-            onClose={() => setIsLocationPickerOpen(false)}
-            onConfirm={(result) => {
-              if (result.lat && result.lng) {
-                setStoreLat(result.lat);
-                setStoreLng(result.lng);
-              }
-              if (result.addressText) {
-                setBranch(result.addressText);
-              }
-              setIsLocationPickerOpen(false);
-            }}
-            initialLat={storeLat}
-            initialLng={storeLng}
-            initialAddress={branch}
-            themeColor="emerald"
-            title="เลือกตำแหน่งพิกัดร้านสาขาบนแผนที่"
-          />
-        )}
       </div>
     </div>,
     document.body
