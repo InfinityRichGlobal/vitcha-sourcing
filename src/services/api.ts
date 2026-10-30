@@ -132,7 +132,42 @@ export async function uploadMediaToServer(
   file: File,
   options?: { recordId?: string; recordType?: string; recordTitle?: string }
 ): Promise<string> {
-  const mimeType = file.type.split(';')[0].toLowerCase();
+  let mimeType = file.type ? file.type.split(';')[0].toLowerCase() : '';
+
+  // Fallback MIME detection from file extension if browser/OS reported empty or octet-stream
+  if (!mimeType || mimeType === 'application/octet-stream') {
+    const ext = (file.name || '').split('.').pop()?.toLowerCase();
+    const extMap: Record<string, string> = {
+      pdf: 'application/pdf',
+      doc: 'application/msword',
+      docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      xls: 'application/vnd.ms-excel',
+      xlsx: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      ppt: 'application/vnd.ms-powerpoint',
+      pptx: 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+      txt: 'text/plain',
+      csv: 'text/csv',
+      zip: 'application/zip',
+      rar: 'application/x-zip-compressed',
+      '7z': 'application/x-zip-compressed',
+      jpg: 'image/jpeg',
+      jpeg: 'image/jpeg',
+      png: 'image/png',
+      webp: 'image/webp',
+      gif: 'image/gif',
+      mp4: 'video/mp4',
+      mov: 'video/quicktime',
+      webm: 'video/webm',
+      mp3: 'audio/mpeg',
+      wav: 'audio/wav',
+      m4a: 'audio/mp4',
+      aac: 'audio/aac',
+      ogg: 'audio/ogg',
+    };
+    if (ext && extMap[ext]) {
+      mimeType = extMap[ext];
+    }
+  }
 
   // Try direct resumable upload to Google Drive first if session is available
   try {
@@ -335,7 +370,7 @@ export function parseCoordinatesOrMapUrl(input: string): ParsedLocationInput | n
   // Pattern 2: Google Maps direct link with coordinates in query or path
   const urlMatch = str.match(/https?:\/\/[^\s]+/i);
   if (urlMatch) {
-    const url = urlMatch[0];
+    const url = urlMatch[0].replace(/[)>,;.]+$/, '');
     const qMatch = url.match(/[?&]q=(-?\d+\.\d+),(-?\d+\.\d+)/);
     const atMatch = url.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/);
     const dMatch = url.match(/!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)/);

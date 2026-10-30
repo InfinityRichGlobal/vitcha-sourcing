@@ -16,6 +16,7 @@ import { uploadMediaToServer } from '../services/api';
 export interface AttachedFilesSectionProps {
   files?: AttachedFile[];
   onChange?: (files: AttachedFile[]) => void;
+  onBusyChange?: (busy: boolean) => void;
   readOnly?: boolean;
   recordType?: 'suppliers' | 'drink_stores' | 'locations' | 'misc';
   recordTitle?: string;
@@ -23,6 +24,26 @@ export interface AttachedFilesSectionProps {
   title?: string;
   subtitle?: string;
   themeColor?: 'emerald' | 'amber' | 'sky' | 'indigo';
+}
+
+export function openFileSafely(url: string, name?: string) {
+  if (url.startsWith('data:')) {
+    try {
+      const arr = url.split(',');
+      const mime = arr[0].match(/:(.*?);/)?.[1] || 'application/octet-stream';
+      const bstr = atob(arr[1]);
+      let n = bstr.length;
+      const u8arr = new Uint8Array(n);
+      while (n--) {
+        u8arr[n] = bstr.charCodeAt(n);
+      }
+      const blob = new Blob([u8arr], { type: mime });
+      const blobUrl = URL.createObjectURL(blob);
+      window.open(blobUrl, '_blank', 'noopener,noreferrer');
+      return;
+    } catch {}
+  }
+  window.open(url, '_blank', 'noopener,noreferrer');
 }
 
 export function getFileCategoryInfo(name: string, mimeType?: string) {
@@ -93,6 +114,7 @@ export function formatBytes(bytes?: number): string {
 export const AttachedFilesSection: React.FC<AttachedFilesSectionProps> = ({
   files = [],
   onChange,
+  onBusyChange,
   readOnly = false,
   recordType = 'misc',
   recordTitle = '',
@@ -128,6 +150,7 @@ export const AttachedFilesSection: React.FC<AttachedFilesSectionProps> = ({
     if (!selected || selected.length === 0) return;
 
     setIsUploading(true);
+    onBusyChange?.(true);
     const updated = [...files];
 
     for (let i = 0; i < selected.length; i++) {
@@ -154,6 +177,7 @@ export const AttachedFilesSection: React.FC<AttachedFilesSectionProps> = ({
     }
 
     setIsUploading(false);
+    onBusyChange?.(false);
     setUploadProgress(null);
     if (onChange) onChange(updated);
     e.target.value = '';
@@ -273,6 +297,12 @@ export const AttachedFilesSection: React.FC<AttachedFilesSectionProps> = ({
                     href={file.url}
                     target="_blank"
                     rel="noopener noreferrer"
+                    onClick={(e) => {
+                      if (file.url.startsWith('data:')) {
+                        e.preventDefault();
+                        openFileSafely(file.url, file.name);
+                      }
+                    }}
                     className="p-1.5 rounded-lg bg-slate-50 hover:bg-sky-50 text-slate-600 hover:text-sky-700 border border-slate-200 hover:border-sky-200 transition-colors inline-flex items-center gap-1 text-[11px] font-bold"
                     title="เปิดไฟล์ดูบนเบราว์เซอร์ / Google Drive"
                   >

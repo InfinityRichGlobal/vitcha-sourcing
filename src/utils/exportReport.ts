@@ -1517,31 +1517,34 @@ export function buildExecutiveReportHtml(
       }));
     }
 
-    // Rasterize SVG QR image onto PNG Data URL so html2canvas renders it crisply on all mobile browsers
+    // Rasterize all SVG QR images onto PNG Data URLs so html2canvas renders them crisply on all browsers
     function rasterizeQrImage() {
-      return new Promise(function(resolve) {
-        var qrImg = document.getElementById('report-qr-img');
-        if (!qrImg || !qrImg.src) return resolve();
-        var finish = function() { resolve(); };
-        var temp = new Image();
-        temp.onload = function() {
-          try {
-            var canvas = document.createElement('canvas');
-            canvas.width = 240;
-            canvas.height = 240;
-            var ctx = canvas.getContext('2d');
-            if (ctx) {
-              ctx.fillStyle = '#ffffff';
-              ctx.fillRect(0, 0, 240, 240);
-              ctx.drawImage(temp, 0, 0, 240, 240);
-              qrImg.src = canvas.toDataURL('image/png');
-            }
-          } catch (e) {}
-          finish();
-        };
-        temp.onerror = finish;
-        temp.src = qrImg.src;
-      });
+      var qrImgs = Array.prototype.slice.call(document.querySelectorAll('#report-qr-img, .file-attachment-qr img'));
+      if (!qrImgs.length) return Promise.resolve();
+      return Promise.all(qrImgs.map(function(img) {
+        return new Promise(function(resolve) {
+          if (!img || !img.src) return resolve();
+          var finish = function() { resolve(); };
+          var temp = new Image();
+          temp.onload = function() {
+            try {
+              var canvas = document.createElement('canvas');
+              canvas.width = 240;
+              canvas.height = 240;
+              var ctx = canvas.getContext('2d');
+              if (ctx) {
+                ctx.fillStyle = '#ffffff';
+                ctx.fillRect(0, 0, 240, 240);
+                ctx.drawImage(temp, 0, 0, 240, 240);
+                img.src = canvas.toDataURL('image/png');
+              }
+            } catch (e) {}
+            finish();
+          };
+          temp.onerror = finish;
+          temp.src = img.src;
+        });
+      }));
     }
 
     function triggerDownloadPdf() {
@@ -1568,7 +1571,7 @@ export function buildExecutiveReportHtml(
           jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
           pagebreak: {
             mode: ['css', 'legacy'],
-            avoid: ['tr', '.info-item', '.voice-card', '.video-card', '.photo-card', '.comment-box', '.note-banner', '.handoff-banner', '.report-header']
+            avoid: ['tr', '.info-item', '.voice-card', '.video-card', '.photo-card', '.comment-box', '.note-banner', '.handoff-banner', '.report-header', '.file-attachment-card']
           }
         };
         var worker = window.html2pdf().set(opt).from(element);

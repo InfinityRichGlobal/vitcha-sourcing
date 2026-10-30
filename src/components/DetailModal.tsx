@@ -6,7 +6,7 @@ import { SeenByBadge } from './SeenByBadge';
 import { openExecutiveReport } from '../utils/exportReport';
 import { getItemVoiceNotes } from '../utils/audioHelper';
 import { VideoPlayer } from './VideoPlayer';
-import { getFileCategoryInfo, formatBytes } from './AttachedFilesSection';
+import { getFileCategoryInfo, formatBytes, openFileSafely } from './AttachedFilesSection';
 import {
   X,
   MapPin,
@@ -1050,6 +1050,12 @@ export const DetailModal: React.FC<DetailModalProps> = ({
                       href={file.url}
                       target="_blank"
                       rel="noopener noreferrer"
+                      onClick={(e) => {
+                        if (file.url.startsWith('data:')) {
+                          e.preventDefault();
+                          openFileSafely(file.url, file.name);
+                        }
+                      }}
                       className="bg-white rounded-xl border border-slate-200/90 hover:border-sky-300 hover:shadow-xs p-3 flex items-center justify-between gap-3 transition-all group cursor-pointer"
                     >
                       <div className="flex items-center gap-2.5 min-w-0 flex-1">

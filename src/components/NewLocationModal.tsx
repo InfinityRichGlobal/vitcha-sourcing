@@ -116,6 +116,7 @@ export const NewLocationModal: React.FC<NewLocationModalProps> = ({ isOpen, onCl
   const [videos, setVideos] = useState<string[]>([]);
   const [isVideoLoading, setIsVideoLoading] = useState(false);
   const [attachedFiles, setAttachedFiles] = useState<AttachedFile[]>([]);
+  const [isFilesUploading, setIsFilesUploading] = useState(false);
   const [mainVoiceUrl, setMainVoiceUrl] = useState<string | undefined>();
   const [mainVoiceSec, setMainVoiceSec] = useState<number>(0);
   const [mainVoiceNotes, setMainVoiceNotes] = useState<VoiceNoteEntry[]>([]);
@@ -1227,6 +1228,7 @@ export const NewLocationModal: React.FC<NewLocationModalProps> = ({ isOpen, onCl
             <AttachedFilesSection
               files={attachedFiles}
               onChange={setAttachedFiles}
+              onBusyChange={setIsFilesUploading}
               recordType="locations"
               recordTitle={name || 'ทำเลที่ตั้ง'}
               recordId={editingLocation?.id}
@@ -1436,7 +1438,7 @@ export const NewLocationModal: React.FC<NewLocationModalProps> = ({ isOpen, onCl
 
               <button
                 type="submit"
-                disabled={isSaving || isCompressingPhotos || audioPending > 0}
+                disabled={isSaving || isCompressingPhotos || audioPending > 0 || isFilesUploading || isVideoLoading}
                 className="px-5 py-2 rounded-xl bg-sky-600 hover:bg-sky-700 disabled:opacity-40 text-white text-xs font-bold transition-all shadow-xs flex items-center gap-1.5"
               >
                 <i aria-hidden="true" className="fa-solid fa-floppy-disk" />

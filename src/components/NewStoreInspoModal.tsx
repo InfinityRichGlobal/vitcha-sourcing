@@ -74,6 +74,7 @@ export const NewStoreInspoModal: React.FC<NewStoreInspoModalProps> = ({ isOpen, 
   const [videos, setVideos] = useState<string[]>([]);
   const [isVideoLoading, setIsVideoLoading] = useState(false);
   const [attachedFiles, setAttachedFiles] = useState<AttachedFile[]>([]);
+  const [isFilesUploading, setIsFilesUploading] = useState(false);
 
   // Drink Items
   const [drinkItems, setDrinkItems] = useState<DrinkDetailItem[]>([]);
@@ -827,6 +828,7 @@ export const NewStoreInspoModal: React.FC<NewStoreInspoModalProps> = ({ isOpen, 
           <AttachedFilesSection
             files={attachedFiles}
             onChange={setAttachedFiles}
+            onBusyChange={setIsFilesUploading}
             recordType="drink_stores"
             recordTitle={storeName || 'ร้านน้ำเรฟ'}
             recordId={editingStore?.id}
@@ -1115,7 +1117,7 @@ export const NewStoreInspoModal: React.FC<NewStoreInspoModalProps> = ({ isOpen, 
             <button
               type="button"
               onClick={handleSubmit}
-              disabled={isSaving || isVideoLoading || isLocating || isCompressingPhotos || audioPending > 0}
+              disabled={isSaving || isVideoLoading || isLocating || isCompressingPhotos || audioPending > 0 || isFilesUploading}
               className="min-h-11 px-5 py-2.5 text-sm font-bold rounded-xl bg-amber-600 hover:bg-amber-700 disabled:opacity-60 text-white shadow-lg shadow-amber-600/20 active:scale-95 transition-all flex items-center gap-1.5"
             >
               {isSaving ? (
