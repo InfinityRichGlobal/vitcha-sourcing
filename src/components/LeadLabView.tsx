@@ -831,10 +831,10 @@ function LabDetailModal({
   };
 
   return (
-    <div className="fixed inset-0 z-[90] bg-black/60 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4 overflow-hidden">
-      <div className="bg-white dark:bg-slate-900 rounded-2xl sm:rounded-3xl max-w-4xl w-full h-[94vh] max-h-[94vh] flex flex-col shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden animate-scale-up">
+    <div className="fixed inset-0 z-[90] bg-black/70 backdrop-blur-md flex flex-col sm:items-center sm:justify-center p-0 sm:p-4 overflow-hidden">
+      <div className="bg-white dark:bg-slate-900 rounded-none sm:rounded-3xl max-w-4xl w-full h-[100dvh] sm:h-[92vh] sm:max-h-[92vh] flex flex-col shadow-2xl border-0 sm:border border-slate-200 dark:border-slate-800 overflow-hidden animate-scale-up">
         {/* Sticky Header — 2 Rows (Row 1: Title + Close; Row 2: Action Toolbar) */}
-        <div className="p-3.5 sm:p-4 border-b border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 sticky top-0 z-20 space-y-2.5 shrink-0">
+        <div className="pt-[calc(env(safe-area-inset-top,0px)+0.75rem)] pb-3 px-3.5 sm:px-4 sm:pt-4 border-b border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 sticky top-0 z-20 space-y-2.5 shrink-0 shadow-xs">
           {/* Row 1: Item Title + Close Button */}
           <div className="flex items-start justify-between gap-2.5">
             <div className="flex items-start gap-2.5 min-w-0 flex-1">
@@ -1487,7 +1487,7 @@ function LabDetailModal({
         </div>
 
         {/* Sticky Footer */}
-        <div className="p-3 sm:p-4 bg-slate-50 dark:bg-slate-800/80 border-t border-slate-200 dark:border-slate-700 flex items-center justify-between sticky bottom-0 z-10 shrink-0 text-xs">
+        <div className="pt-3 pb-[calc(env(safe-area-inset-bottom,0px)+0.75rem)] px-3.5 sm:px-4 sm:pb-4 bg-slate-50 dark:bg-slate-800/80 border-t border-slate-200 dark:border-slate-700 flex items-center justify-between sticky bottom-0 z-10 shrink-0 text-xs">
           <div className="text-slate-500 flex items-center gap-2">
             <span className="font-mono font-bold text-indigo-600 dark:text-indigo-400">{item.code}</span>
             <span>·</span>

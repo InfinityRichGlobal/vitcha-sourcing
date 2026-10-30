@@ -604,8 +604,44 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     sweetnessTarget?: 'all' | '0' | '50' | '100',
     extra?: { photoUrl?: string; voiceUrl?: string; duration?: number }
   ) => {
+    let text = content ? String(content).trim() : '';
+    if (!text && (extra?.photoUrl || extra?.voiceUrl)) {
+      text = extra?.photoUrl && extra?.voiceUrl ? '📷 แนบรูปภาพและเสียง' : extra?.photoUrl ? '📷 แนบรูปภาพ' : '🎙️ ข้อความเสียง';
+    }
+    const optimisticComment: any = {
+      id: `comm-${Date.now()}`,
+      authorId: currentUser.id,
+      authorName: currentUser.alias || currentUser.name,
+      authorAvatar: currentUser.avatar,
+      createdAt: new Date().toISOString(),
+      content: text,
+      sweetnessTarget: sweetnessTarget || 'all',
+      photoUrl: extra?.photoUrl,
+      voiceUrl: extra?.voiceUrl,
+      duration: extra?.duration,
+      likes: [],
+    };
+    setLeadLabItems(prev => prev.map(item => {
+      if (item.id !== id) return item;
+      const cycles = [...(item.revisionCycles || [])];
+      let active = cycles.find(c => c.status === 'active');
+      if (!active) {
+        active = {
+          cycleNumber: cycles.length + 1,
+          title: `รอบที่ ${cycles.length + 1}: เปิดรอบพัฒนาต่อ`,
+          status: 'active',
+          createdAt: new Date().toISOString(),
+          createdBy: currentUser.alias || currentUser.name,
+          comments: []
+        };
+        cycles.push(active);
+      }
+      active.comments = [...(active.comments || []), optimisticComment];
+      return { ...item, revisionCycles: cycles };
+    }));
+
     return perform('comment-lead-lab', async () => {
-      const res = await commentLeadLabItemApi(id, { content, sweetnessTarget, ...extra });
+      const res = await commentLeadLabItemApi(id, { content: text, sweetnessTarget, ...extra });
       if (res?.item) {
         setLeadLabItems(p => p.map(x => x.id === id ? res.item : x));
       }

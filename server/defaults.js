@@ -1,3 +1,5 @@
+import { DEFAULT_LEAD_LAB_ITEMS, DEFAULT_FRANCHISE_STORES } from './seeds.js';
+
 export const DEFAULT_DATABASE = {
   users: [
     {
@@ -164,8 +166,8 @@ export const DEFAULT_DATABASE = {
   suppliers: [],
   drinkStores: [],
   locations: [],
-  leadLabItems: [],
-  franchiseStores: [],
+  leadLabItems: DEFAULT_LEAD_LAB_ITEMS,
+  franchiseStores: DEFAULT_FRANCHISE_STORES,
   notifications: [],
   categories: [
     'เคาน์เตอร์ & สเตนเลส',

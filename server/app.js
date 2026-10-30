@@ -6,6 +6,7 @@ import { randomBytes, randomUUID, createHash, createHmac, scryptSync, timingSafe
 import { createPersistence } from './persistence.js';
 import { DEFAULT_DATABASE } from './defaults.js';
 import { productData, registerProductRoutes } from './products.js';
+import { DEFAULT_LEAD_LAB_ITEMS, DEFAULT_FRANCHISE_STORES } from './seeds.js';
 
 const MOCK_ROLES = { 'user-beam': 'reviewer', 'user-ann': 'viewer', 'user-mook': 'admin' };
 const MOCK_IDS = new Set(Object.keys(MOCK_ROLES));
@@ -147,7 +148,43 @@ export function createApp({ dataDir, defaults = DEFAULT_DATABASE, sessionTtlMs =
     initial.locationTypes = DEFAULT_LOCATION_TYPES;
     migrated = true;
   }
+  if (!initial.leadLabItems || !initial.leadLabItems.length) {
+    initial.leadLabItems = JSON.parse(JSON.stringify(DEFAULT_LEAD_LAB_ITEMS));
+    migrated = true;
+  }
+  if (!initial.franchiseStores || !initial.franchiseStores.length) {
+    initial.franchiseStores = JSON.parse(JSON.stringify(DEFAULT_FRANCHISE_STORES));
+    migrated = true;
+  }
   if (migrated) save(initial);
+
+  function findOrSeedLeadLabItem(db, id) {
+    const list = db.leadLabItems ||= [];
+    let item = list.find(x => x.id === id);
+    if (!item) {
+      const seed = DEFAULT_LEAD_LAB_ITEMS.find(x => x.id === id);
+      if (seed) {
+        item = JSON.parse(JSON.stringify(seed));
+        list.push(item);
+        save(db);
+      }
+    }
+    return item;
+  }
+
+  function findOrSeedFranchiseStore(db, id) {
+    const list = db.franchiseStores ||= [];
+    let store = list.find(x => x.id === id);
+    if (!store) {
+      const seed = DEFAULT_FRANCHISE_STORES.find(x => x.id === id);
+      if (seed) {
+        store = JSON.parse(JSON.stringify(seed));
+        list.push(store);
+        save(db);
+      }
+    }
+    return store;
+  }
 
   const requireAdmin = req => { if (req.user.role !== 'admin') fail(403, 'สิทธิ์นี้ใช้ได้เฉพาะผู้ดูแลระบบ'); };
   const requireWriter = req => { if (!['admin', 'reviewer'].includes(req.user.role)) fail(403, 'บัญชีนี้ดูข้อมูลได้เท่านั้น'); };
@@ -308,6 +345,14 @@ export function createApp({ dataDir, defaults = DEFAULT_DATABASE, sessionTtlMs =
           read: isRead,
         };
       });
+    if (!db.leadLabItems || !db.leadLabItems.length) {
+      db.leadLabItems = JSON.parse(JSON.stringify(DEFAULT_LEAD_LAB_ITEMS));
+      save(db);
+    }
+    if (!db.franchiseStores || !db.franchiseStores.length) {
+      db.franchiseStores = JSON.parse(JSON.stringify(DEFAULT_FRANCHISE_STORES));
+      save(db);
+    }
     res.json({ version, ...productData(db), ...pick(db, ['suppliers', 'drinkStores', 'locations', 'leadLabItems', 'franchiseStores', 'categories', 'storeCategories', 'locationTypes', 'quickTagsList', 'quickMessages', 'updatedAt', 'revision']), suppliers: (db.suppliers || []).map(item => currentRecord(db, item)), drinkStores: (db.drinkStores || []).map(item => currentRecord(db, item)), locations: (db.locations || []).map(item => currentRecord(db, item)), leadLabItems: db.leadLabItems || [], franchiseStores: db.franchiseStores || [], users: db.users.filter(u => !MOCK_IDS.has(u.id)).map(publicUser), invites: req.user.role === 'admin' ? db.invites : [], notifications: userNotifications, ...sessionResult(req.session, db) });
   });
   app.get('/api/backup', (req, res) => { requireFounder(req); res.json(read()); });
@@ -579,6 +624,10 @@ export function createApp({ dataDir, defaults = DEFAULT_DATABASE, sessionTtlMs =
   app.get('/api/lead-lab/items', (req, res) => {
     requireReader(req);
     const db = read();
+    if (!db.leadLabItems || !db.leadLabItems.length) {
+      db.leadLabItems = JSON.parse(JSON.stringify(DEFAULT_LEAD_LAB_ITEMS));
+      save(db);
+    }
     res.json({ success: true, items: db.leadLabItems || [] });
   });
 
@@ -625,7 +674,7 @@ export function createApp({ dataDir, defaults = DEFAULT_DATABASE, sessionTtlMs =
   app.post('/api/lead-lab/items/:id/view', (req, res) => {
     requireReader(req);
     const db = read();
-    const item = (db.leadLabItems || []).find(x => x.id === req.params.id);
+    const item = findOrSeedLeadLabItem(db, req.params.id);
     if (!item) return res.json({ success: true });
     item.viewLogs ||= [];
     const nowIso = now();
@@ -671,8 +720,7 @@ export function createApp({ dataDir, defaults = DEFAULT_DATABASE, sessionTtlMs =
   app.post('/api/lead-lab/items/:id/like', (req, res) => {
     requireReader(req);
     const db = read();
-    const list = db.leadLabItems ||= [];
-    const item = list.find(x => x.id === req.params.id);
+    const item = findOrSeedLeadLabItem(db, req.params.id);
     if (!item) fail(404, 'ไม่พบสูตร');
     item.likedBy ||= [];
     const userId = req.user.id;
@@ -689,8 +737,7 @@ export function createApp({ dataDir, defaults = DEFAULT_DATABASE, sessionTtlMs =
   app.post('/api/lead-lab/items/:id/comments', (req, res) => {
     requireReader(req);
     const db = read();
-    const list = db.leadLabItems ||= [];
-    const item = list.find(x => x.id === req.params.id);
+    const item = findOrSeedLeadLabItem(db, req.params.id);
     if (!item) fail(404, 'ไม่พบสูตร');
     const { content, sweetnessTarget, photoUrl, voiceUrl, duration } = req.body;
     let text = content ? String(content).trim() : '';
@@ -734,8 +781,7 @@ export function createApp({ dataDir, defaults = DEFAULT_DATABASE, sessionTtlMs =
   app.post('/api/lead-lab/items/:id/comments/:commentId/like', (req, res) => {
     requireReader(req);
     const db = read();
-    const list = db.leadLabItems ||= [];
-    const item = list.find(x => x.id === req.params.id);
+    const item = findOrSeedLeadLabItem(db, req.params.id);
     if (!item) fail(404, 'ไม่พบสูตร');
     let targetComment = null;
     for (const c of item.revisionCycles || []) {
@@ -758,8 +804,7 @@ export function createApp({ dataDir, defaults = DEFAULT_DATABASE, sessionTtlMs =
   app.post('/api/lead-lab/items/:id/cycle', (req, res) => {
     requireWriter(req);
     const db = read();
-    const list = db.leadLabItems ||= [];
-    const item = list.find(x => x.id === req.params.id);
+    const item = findOrSeedLeadLabItem(db, req.params.id);
     if (!item) fail(404, 'ไม่พบสูตร');
     const { action, summary, nextTitle } = req.body;
     item.revisionCycles ||= [];
@@ -792,8 +837,7 @@ export function createApp({ dataDir, defaults = DEFAULT_DATABASE, sessionTtlMs =
   app.post('/api/lead-lab/items/:id/status', (req, res) => {
     requireAdmin(req);
     const db = read();
-    const list = db.leadLabItems ||= [];
-    const item = list.find(x => x.id === req.params.id);
+    const item = findOrSeedLeadLabItem(db, req.params.id);
     if (!item) fail(404, 'ไม่พบสูตร');
     const { status } = req.body;
     if (!['approved', 'testing', 'shelved'].includes(status)) fail(400, 'สถานะไม่ถูกต้อง');
@@ -808,6 +852,10 @@ export function createApp({ dataDir, defaults = DEFAULT_DATABASE, sessionTtlMs =
   app.get('/api/franchise-stores', (req, res) => {
     requireReader(req);
     const db = read();
+    if (!db.franchiseStores || !db.franchiseStores.length) {
+      db.franchiseStores = JSON.parse(JSON.stringify(DEFAULT_FRANCHISE_STORES));
+      save(db);
+    }
     res.json({ success: true, stores: db.franchiseStores || [] });
   });
 
@@ -843,7 +891,7 @@ export function createApp({ dataDir, defaults = DEFAULT_DATABASE, sessionTtlMs =
   app.post('/api/franchise-stores/:id/view', (req, res) => {
     requireReader(req);
     const db = read();
-    const store = (db.franchiseStores || []).find(x => x.id === req.params.id);
+    const store = findOrSeedFranchiseStore(db, req.params.id);
     if (!store) return res.json({ success: true });
     store.viewLogs ||= [];
     const nowIso = now();

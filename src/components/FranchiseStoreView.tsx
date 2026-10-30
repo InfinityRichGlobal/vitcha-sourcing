@@ -2063,10 +2063,10 @@ function QuickSopModal({
   };
 
   return (
-    <div className="fixed inset-0 z-[90] bg-black/60 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4 overflow-hidden">
-      <div className="bg-white dark:bg-slate-900 rounded-2xl sm:rounded-3xl max-w-xl w-full h-[92vh] max-h-[92vh] flex flex-col shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden animate-scale-up">
+    <div className="fixed inset-0 z-[90] bg-black/70 backdrop-blur-md flex flex-col sm:items-center sm:justify-center p-0 sm:p-4 overflow-hidden">
+      <div className="bg-white dark:bg-slate-900 rounded-none sm:rounded-3xl max-w-xl w-full h-[100dvh] sm:h-[92vh] sm:max-h-[92vh] flex flex-col shadow-2xl border-0 sm:border border-slate-200 dark:border-slate-800 overflow-hidden animate-scale-up">
         {/* Sticky 2-Row Header */}
-        <div className="shrink-0 p-3 sm:p-4 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 space-y-2">
+        <div className="shrink-0 pt-[calc(env(safe-area-inset-top,0px)+0.75rem)] pb-3 px-3 sm:px-4 sm:pt-4 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 space-y-2">
           {/* Row 1: Code + Title + Close */}
           <div className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-3 min-w-0">
@@ -2482,7 +2482,7 @@ function QuickSopModal({
         </div>
 
         {/* Sticky Action Footer */}
-        <div className="shrink-0 p-3 sm:p-4 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/90 flex items-center justify-between gap-2">
+        <div className="shrink-0 pt-3 pb-[calc(env(safe-area-inset-bottom,0px)+0.75rem)] px-3.5 sm:px-4 sm:pb-4 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/90 flex items-center justify-between gap-2">
           <div className="text-[11px] text-slate-500 dark:text-slate-400 font-medium truncate">
             🥤 เมนูประจำสาขา: <span className="font-bold text-slate-700 dark:text-slate-200">{menuItem.category}</span>
           </div>
