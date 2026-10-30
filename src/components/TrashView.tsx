@@ -28,7 +28,7 @@ export const TrashView: React.FC = () => {
   } = useApp();
 
   const [searchQuery, setSearchQuery] = useState('');
-  const [filterType, setFilterType] = useState<'all' | 'supplier' | 'drink_store' | 'location'>('all');
+  const [filterType, setFilterType] = useState<'all' | 'supplier' | 'drink_store' | 'location' | 'franchise_store' | 'lead_lab'>('all');
   const [restoringId, setRestoringId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
@@ -107,6 +107,10 @@ export const TrashView: React.FC = () => {
         return { label: 'ร้านน้ำ & เรฟ', icon: <Coffee className="w-3.5 h-3.5" />, color: 'bg-amber-50 text-amber-700 border-amber-200' };
       case 'location':
         return { label: 'สถานที่ & ทำเล', icon: <i className="fa-solid fa-map-location-dot text-xs" />, color: 'bg-sky-50 text-sky-700 border-sky-200' };
+      case 'franchise_store':
+        return { label: 'ร้านแฟรนไชส์', icon: <i className="fa-solid fa-store text-xs" />, color: 'bg-teal-50 text-teal-700 border-teal-200' };
+      case 'lead_lab':
+        return { label: 'สูตร R&D (LEAD LAB)', icon: <i className="fa-solid fa-flask text-xs" />, color: 'bg-indigo-50 text-indigo-700 border-indigo-200' };
       default:
         return { label: 'รายการทั่วไป', icon: <Trash2 className="w-3.5 h-3.5" />, color: 'bg-slate-50 text-slate-700 border-slate-200' };
     }
@@ -178,6 +182,8 @@ export const TrashView: React.FC = () => {
               { id: 'supplier', label: 'ซัพพลายเออร์' },
               { id: 'drink_store', label: 'ร้านน้ำ' },
               { id: 'location', label: 'สถานที่ & ทำเล' },
+              { id: 'franchise_store', label: 'ร้านแฟรนไชส์' },
+              { id: 'lead_lab', label: 'สูตร R&D' },
             ].map((tab) => (
               <button
                 key={tab.id}
@@ -215,7 +221,7 @@ export const TrashView: React.FC = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {filteredItems.map((item) => {
             const typeInfo = getTypeLabel(item.type);
-            const firstPhoto = Array.isArray(item.photos) ? item.photos[0] : Object.values(item.photos || {}).flat().find(photo => typeof photo === 'string' && photo.length > 0);
+            const firstPhoto = item.logoUrl || item.photoUrl || (Array.isArray(item.photos) ? item.photos[0] : Object.values(item.photos || {}).flat().find(photo => typeof photo === 'string' && photo.length > 0));
             const isRestoring = restoringId === item.id;
             const isDeleting = deletingId === item.id;
 

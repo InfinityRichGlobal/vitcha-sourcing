@@ -3372,13 +3372,81 @@ export const INITIAL_FRANCHISE_STORES: FranchiseStore[] = [
     "brandTagline": "ชานมสดและชาพรีเมียมของคนที่จะเป็นหัวแถว",
     "branch": "สาขา Siam Square One (Flagship ชั้น 1)",
     "themeColor": "emerald",
-    "logoUrl": "https://images.unsplash.com/photo-1544787219-7f47ccb76574?w=150&auto=format&fit=crop&q=80",
+    "logoUrl": "https://images.unsplash.com/photo-1544787219-7f47ccb76574?w=400&auto=format&fit=crop&q=80",
     "contactNumber": "02-123-4567",
     "openingHours": "10:00 - 21:30 น. (เปิดทุกวัน)",
+    "menuCategories": [
+      "ชานมพรีเมียม & ชาสด",
+      "ชาผลไม้สด & คลาวด์ชีส",
+      "มัทฉะ & สเปเชียลตี้",
+      "ท็อปปิ้งซิกเนเจอร์"
+    ],
+    "likedBy": [
+      "user-ice",
+      "user-beam",
+      "user-ann"
+    ],
+    "viewLogs": [
+      {
+        "userId": "user-ice",
+        "name": "SuperiCez",
+        "alias": "SuperiCez",
+        "avatar": "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80",
+        "role": "admin",
+        "lastViewedAt": "2026-10-30T09:45:00Z",
+        "viewCount": 28
+      },
+      {
+        "userId": "user-beam",
+        "name": "คุณบีม (QC)",
+        "alias": "คุณบีม (QC)",
+        "avatar": "https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?w=150&auto=format&fit=crop&q=80",
+        "role": "editor",
+        "lastViewedAt": "2026-10-30T08:12:00Z",
+        "viewCount": 14
+      }
+    ],
+    "revisionCycles": [
+      {
+        "cycleNumber": 1,
+        "title": "รอบเปิดตัว Flagship Siam Square One & บอร์ดเมนู Q4",
+        "status": "active",
+        "createdAt": "2026-10-27T10:00:00Z",
+        "createdBy": "SuperiCez",
+        "comments": [
+          {
+            "id": "comm-store-v-1",
+            "authorId": "user-ice",
+            "authorName": "SuperiCez (Owner)",
+            "authorAvatar": "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80",
+            "createdAt": "2026-10-28T14:20:00Z",
+            "content": "บอร์ดเมนูหน้าร้าน Siam Square One จัดวางสวยงามมากครับ ชาไทยพรีเมียมตัวชูโรงยอดขายทดสอบวันแรกสูงถึง 120 แก้ว",
+            "sweetnessTarget": "50",
+            "likes": [
+              "user-beam",
+              "user-ann"
+            ]
+          },
+          {
+            "id": "comm-store-v-2",
+            "authorId": "user-beam",
+            "authorName": "คุณบีม (QC)",
+            "authorAvatar": "https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?w=150&auto=format&fit=crop&q=80",
+            "createdAt": "2026-10-29T11:00:00Z",
+            "content": "สูตรชงด่วน Quick SOP ที่หน้าบาร์ บาริสต้าหยิบดูง่ายและควบคุมค่า Brix หวาน 50% ได้นิ่งมากครับ",
+            "sweetnessTarget": "all",
+            "likes": [
+              "user-ice"
+            ]
+          }
+        ]
+      }
+    ],
     "menuItems": [
       {
         "id": "menu-v-1",
         "labItemId": "lab-1",
+        "category": "ชานมพรีเมียม & ชาสด",
         "customName": "ชาไทยพรีเมียมการันตี VITCHA",
         "retailPriceThb": 55,
         "badge": "Best Seller",
@@ -3392,6 +3460,7 @@ export const INITIAL_FRANCHISE_STORES: FranchiseStore[] = [
       {
         "id": "menu-v-2",
         "labItemId": "lab-3",
+        "category": "ชานมพรีเมียม & ชาสด",
         "customName": "ชามะลิหอมหมื่นลี้ นมสดสลิม",
         "retailPriceThb": 60,
         "badge": "Signature",
@@ -3404,6 +3473,7 @@ export const INITIAL_FRANCHISE_STORES: FranchiseStore[] = [
       {
         "id": "menu-v-3",
         "labItemId": "lab-4",
+        "category": "ชาผลไม้สด & คลาวด์ชีส",
         "customName": "ชาสตรอว์เบอร์รี คลาวด์ชีส",
         "retailPriceThb": 85,
         "badge": "Must Try",
@@ -3416,6 +3486,7 @@ export const INITIAL_FRANCHISE_STORES: FranchiseStore[] = [
       {
         "id": "menu-v-4",
         "labItemId": "lab-5",
+        "category": "มัทฉะ & สเปเชียลตี้",
         "customName": "อูจิมัทฉะ ลาเต้ คลาวด์ (โอ๊ตมิลค์)",
         "retailPriceThb": 95,
         "badge": "New",
@@ -3428,6 +3499,7 @@ export const INITIAL_FRANCHISE_STORES: FranchiseStore[] = [
       {
         "id": "menu-v-5",
         "labItemId": "lab-9",
+        "category": "ท็อปปิ้งซิกเนเจอร์",
         "customName": "ท็อปปิ้ง: ไข่มุกบราวน์ชูก้าร์เตาถ่าน",
         "retailPriceThb": 15,
         "badge": "Best Seller",
@@ -3437,6 +3509,7 @@ export const INITIAL_FRANCHISE_STORES: FranchiseStore[] = [
       {
         "id": "menu-v-6",
         "labItemId": "lab-10",
+        "category": "ท็อปปิ้งซิกเนเจอร์",
         "customName": "ท็อปปิ้ง: ไข่มุกบุกคริสตัลรสพีช",
         "retailPriceThb": 15,
         "badge": "Must Try",
@@ -3454,13 +3527,58 @@ export const INITIAL_FRANCHISE_STORES: FranchiseStore[] = [
     "brandTagline": "นวัตกรรมเครื่องดื่มวิตามินซ่า Sparkling Boost ดับกระหายสดชื่น",
     "branch": "สาขา The EmSphere (G Floor - Trend Food Hall)",
     "themeColor": "cyan",
-    "logoUrl": "https://images.unsplash.com/photo-1551024709-8f23befc6f87?w=150&auto=format&fit=crop&q=80",
+    "logoUrl": "https://images.unsplash.com/photo-1551024709-8f23befc6f87?w=400&auto=format&fit=crop&q=80",
     "contactNumber": "02-987-6543",
     "openingHours": "10:00 - 22:00 น. (เปิดทุกวัน)",
+    "menuCategories": [
+      "วิตามินคราฟต์โซดา ซ่าสดชื่น",
+      "ชาสกัดเย็น 0-Cal",
+      "สเปเชียลดริ้งก์",
+      "ท็อปปิ้งเพื่อสุขภาพ"
+    ],
+    "likedBy": [
+      "user-ice",
+      "user-view"
+    ],
+    "viewLogs": [
+      {
+        "userId": "user-ice",
+        "name": "SuperiCez",
+        "alias": "SuperiCez",
+        "avatar": "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80",
+        "role": "admin",
+        "lastViewedAt": "2026-10-30T09:30:00Z",
+        "viewCount": 19
+      }
+    ],
+    "revisionCycles": [
+      {
+        "cycleNumber": 1,
+        "title": "รอบเปิดตัวแบรนด์ใหม่ VITCHAMINZAAR @ EmSphere",
+        "status": "active",
+        "createdAt": "2026-10-27T12:00:00Z",
+        "createdBy": "SuperiCez",
+        "comments": [
+          {
+            "id": "comm-store-vz-1",
+            "authorId": "user-ice",
+            "authorName": "SuperiCez (Owner)",
+            "authorAvatar": "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80",
+            "createdAt": "2026-10-28T16:00:00Z",
+            "content": "วิตามินซ่าสปาร์คลิ้ง ซิตรัสซี 200% รสชาติเปรี้ยวซ่ากำลังดี กลุ่มลูกค้าออกกำลังกายและวัยรุ่นชอบมากครับ",
+            "sweetnessTarget": "50",
+            "likes": [
+              "user-view"
+            ]
+          }
+        ]
+      }
+    ],
     "menuItems": [
       {
         "id": "menu-vz-1",
         "labItemId": "lab-2",
+        "category": "วิตามินคราฟต์โซดา ซ่าสดชื่น",
         "customName": "วิตามินซ่า สปาร์คลิ้ง ซิตรัสซี 200%",
         "retailPriceThb": 65,
         "badge": "Best Seller",
@@ -3473,6 +3591,7 @@ export const INITIAL_FRANCHISE_STORES: FranchiseStore[] = [
       {
         "id": "menu-vz-2",
         "labItemId": "lab-6",
+        "category": "วิตามินคราฟต์โซดา ซ่าสดชื่น",
         "customName": "สปาร์คลิ้ง ยูซุ ไนโตรคราฟต์ วิตบี",
         "retailPriceThb": 79,
         "badge": "Signature",
@@ -3485,6 +3604,7 @@ export const INITIAL_FRANCHISE_STORES: FranchiseStore[] = [
       {
         "id": "menu-vz-3",
         "labItemId": "lab-7",
+        "category": "ชาสกัดเย็น 0-Cal",
         "customName": "ชาอู่หลงทิกวนอิม สกัดเย็น 0-Cal",
         "retailPriceThb": 50,
         "badge": "Must Try",
@@ -3497,6 +3617,7 @@ export const INITIAL_FRANCHISE_STORES: FranchiseStore[] = [
       {
         "id": "menu-vz-4",
         "labItemId": "lab-8",
+        "category": "สเปเชียลดริ้งก์",
         "customName": "ดาร์กโกโก้ ดับเบิลช็อกโกแลต 72%",
         "retailPriceThb": 65,
         "badge": "New",
@@ -3509,6 +3630,7 @@ export const INITIAL_FRANCHISE_STORES: FranchiseStore[] = [
       {
         "id": "menu-vz-5",
         "labItemId": "lab-10",
+        "category": "ท็อปปิ้งเพื่อสุขภาพ",
         "customName": "ท็อปปิ้ง: ไข่มุกบุกคริสตัลรสพีช 0-Cal",
         "retailPriceThb": 15,
         "badge": "Best Seller",

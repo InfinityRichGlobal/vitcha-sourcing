@@ -71,6 +71,21 @@ test.describe('Mobile Balanced Frame & 2-Column Product Cards', () => {
       .first();
     await storeNavBtn.click();
 
+    // Verify Franchise Directory Hub
+    const directoryHeading = page.locator('h1:has-text("เครือข่ายร้านแฟรนไชส์")').first();
+    await expect(directoryHeading).toBeVisible({ timeout: 10000 });
+
+    if (canSaveArtifacts) {
+      await page.screenshot({
+        path: path.join(brainDir, 'mobile_franchise_hub.png'),
+      });
+    }
+
+    // Enter VITCHA Store from the directory
+    const enterStoreBtn = page.locator('button:has-text("เข้าร้าน")').first();
+    await expect(enterStoreBtn).toBeVisible();
+    await enterStoreBtn.click();
+
     // Verify Franchise store hero
     const storeHero = page.locator('h1:has-text("VITCHA")').first();
     await expect(storeHero).toBeVisible({ timeout: 10000 });

@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
-import { User, SupplierRecord, StoreInspoRecord, LocationRecord, ExchangeRateConfig, InviteLink, PipelineStatus, UserRole, AppNotification, HandoffStage, AppViewTab, QuickMessageTemplate, CuratedProduct, ProductTaxon, ProductSet, ProductChanges, TrashedItem, LabItem, LabFormulaStatus, FranchiseStore } from '../types';
+import { User, SupplierRecord, StoreInspoRecord, LocationRecord, ExchangeRateConfig, InviteLink, PipelineStatus, UserRole, AppNotification, HandoffStage, AppViewTab, QuickMessageTemplate, CuratedProduct, ProductTaxon, ProductSet, ProductChanges, TrashedItem, LabItem, LabFormulaStatus, FranchiseStore, ViewLogEntry } from '../types';
 import { INITIAL_SUPPLIERS, INITIAL_DRINK_STORES, INITIAL_LOCATIONS, INITIAL_CATEGORIES, INITIAL_STORE_CATEGORIES, INITIAL_LOCATION_TYPES, INITIAL_QUICK_TAGS, INITIAL_QUICK_MESSAGES, INITIAL_LEAD_LAB_ITEMS, INITIAL_FRANCHISE_STORES } from '../utils/seedData';
 import { getRenderServerUrl, saveRenderServerUrl, checkServerHealth, fetchCentralData, sendJson, requestJson, getSessionToken, setSessionToken, loginUserApi, ApiError, markNotificationsReadApi, clearNotificationsApi, postLeadLabItemApi, deleteLeadLabItemApi, likeLeadLabItemApi, commentLeadLabItemApi, likeLeadLabCommentApi, cycleLeadLabItemApi, updateLeadLabStatusApi, postFranchiseStoreApi, deleteFranchiseStoreApi } from '../services/api';
 
@@ -24,6 +24,11 @@ interface AppContextType {
   setLeadLabStatus: (id: string, status: LabFormulaStatus) => Promise<boolean>;
   saveFranchiseStore: (store: Partial<FranchiseStore>) => Promise<boolean>;
   deleteFranchiseStore: (id: string) => Promise<boolean>;
+  toggleLikeFranchiseStore: (id: string) => Promise<boolean>;
+  addFranchiseStoreComment: (id: string, content: string, sweetnessTarget?: 'all' | '0' | '50' | '100') => Promise<boolean>;
+  toggleLikeFranchiseStoreComment: (id: string, commentId: string) => Promise<boolean>;
+  recordFranchiseStoreView: (id: string) => void;
+  recordLeadLabItemView: (id: string) => void;
   currentUser: User;
   actionError: string | null;
   clearActionError: () => void;
@@ -649,6 +654,116 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     });
   };
 
+  const toggleLikeFranchiseStore = async (id: string) => {
+    const userId = currentUser.id;
+    const store = franchiseStores.find(x => x.id === id);
+    if (!store) return false;
+    const liked = (store.likedBy || []).includes(userId);
+    const nextLiked = liked ? store.likedBy!.filter(x => x !== userId) : [...(store.likedBy || []), userId];
+    const updated = { ...store, likedBy: nextLiked };
+    setFranchiseStores(p => p.map(s => s.id === id ? updated : s));
+    return saveFranchiseStore({ id, likedBy: nextLiked });
+  };
+
+  const addFranchiseStoreComment = async (id: string, content: string, sweetnessTarget?: 'all' | '0' | '50' | '100') => {
+    const store = franchiseStores.find(x => x.id === id);
+    if (!store) return false;
+    const cycles = store.revisionCycles || [
+      { cycleNumber: 1, title: 'รอบเปิดตัวสาขา & เมนูบอร์ด', status: 'active', createdAt: new Date().toISOString(), createdBy: currentUser.alias, comments: [] }
+    ];
+    const newComment = {
+      id: `comm-${crypto.randomUUID()}`,
+      authorId: currentUser.id,
+      authorName: currentUser.alias || currentUser.name,
+      authorAvatar: currentUser.avatar,
+      createdAt: new Date().toISOString(),
+      content,
+      sweetnessTarget: sweetnessTarget || 'all',
+      likes: []
+    };
+    const activeCycleIndex = cycles.findIndex(c => c.status === 'active');
+    const targetIdx = activeCycleIndex >= 0 ? activeCycleIndex : 0;
+    const nextCycles = cycles.map((c, idx) => {
+      if (idx !== targetIdx) return c;
+      return { ...c, comments: [newComment, ...(c.comments || [])] };
+    });
+    setFranchiseStores(p => p.map(s => s.id === id ? { ...s, revisionCycles: nextCycles } : s));
+    return saveFranchiseStore({ id, revisionCycles: nextCycles });
+  };
+
+  const toggleLikeFranchiseStoreComment = async (id: string, commentId: string) => {
+    const store = franchiseStores.find(x => x.id === id);
+    if (!store) return false;
+    const userId = currentUser.id;
+    const nextCycles = (store.revisionCycles || []).map(cycle => ({
+      ...cycle,
+      comments: (cycle.comments || []).map(comm => {
+        if (comm.id !== commentId) return comm;
+        const liked = (comm.likes || []).includes(userId);
+        const nextLikes = liked ? comm.likes.filter(x => x !== userId) : [...(comm.likes || []), userId];
+        return { ...comm, likes: nextLikes };
+      })
+    }));
+    setFranchiseStores(p => p.map(s => s.id === id ? { ...s, revisionCycles: nextCycles } : s));
+    return saveFranchiseStore({ id, revisionCycles: nextCycles });
+  };
+
+  const recordFranchiseStoreView = (id: string) => {
+    const store = franchiseStores.find(x => x.id === id);
+    if (!store) return;
+    const existing = store.viewLogs || [];
+    const idx = existing.findIndex(v => v.userId === currentUser.id);
+    const nowIso = new Date().toISOString();
+    let nextLogs: ViewLogEntry[];
+    if (idx >= 0) {
+      nextLogs = [...existing];
+      nextLogs[idx] = { ...nextLogs[idx], lastViewedAt: nowIso, viewCount: (nextLogs[idx].viewCount || 1) + 1 };
+    } else {
+      nextLogs = [
+        {
+          userId: currentUser.id,
+          name: currentUser.name,
+          alias: currentUser.alias,
+          avatar: currentUser.avatar,
+          role: currentUser.role,
+          lastViewedAt: nowIso,
+          viewCount: 1
+        },
+        ...existing
+      ];
+    }
+    setFranchiseStores(p => p.map(s => s.id === id ? { ...s, viewLogs: nextLogs } : s));
+    void saveFranchiseStore({ id, viewLogs: nextLogs });
+  };
+
+  const recordLeadLabItemView = (id: string) => {
+    const item = leadLabItems.find(x => x.id === id);
+    if (!item) return;
+    const existing = item.viewLogs || [];
+    const idx = existing.findIndex(v => v.userId === currentUser.id);
+    const nowIso = new Date().toISOString();
+    let nextLogs: ViewLogEntry[];
+    if (idx >= 0) {
+      nextLogs = [...existing];
+      nextLogs[idx] = { ...nextLogs[idx], lastViewedAt: nowIso, viewCount: (nextLogs[idx].viewCount || 1) + 1 };
+    } else {
+      nextLogs = [
+        {
+          userId: currentUser.id,
+          name: currentUser.name,
+          alias: currentUser.alias,
+          avatar: currentUser.avatar,
+          role: currentUser.role,
+          lastViewedAt: nowIso,
+          viewCount: 1
+        },
+        ...existing
+      ];
+    }
+    setLeadLabItems(p => p.map(x => x.id === id ? { ...x, viewLogs: nextLogs } : x));
+    void saveLeadLabItem({ id, viewLogs: nextLogs });
+  };
+
   const updateExchangeRate = (rate: number, isAuto = false) => { if (rate > 0 && Number.isFinite(rate)) setExchangeRate(p => ({ ...p, rate, isAuto, lastUpdated: new Date().toLocaleTimeString('th-TH') })); };
   const toggleCurrencyMode = () => setExchangeRate(p => ({ ...p, currencyMode: p.currencyMode === 'CNY_TO_THB' ? 'THB_TO_CNY' : 'CNY_TO_THB' }));
   const convertCnyToThb = (n: number) => Math.round(n * exchangeRate.rate * 100) / 100;
@@ -660,6 +775,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     products, productCategories, productTags, productSets, saveProduct, updateProducts, manageProductTaxonomy, saveProductSet, deleteProductSet,
     currentUser, users, suppliers, drinkStores, locations, invites, categories, storeCategories, locationTypes, quickTagsList, quickMessages, exchangeRate, syncStatus, pendingSyncCount,
     leadLabItems, franchiseStores, saveLeadLabItem, deleteLeadLabItem, toggleLikeLeadLabItem, addLeadLabComment, toggleLikeLeadLabComment, cycleLeadLabRevision, setLeadLabStatus, saveFranchiseStore, deleteFranchiseStore,
+    toggleLikeFranchiseStore, addFranchiseStoreComment, toggleLikeFranchiseStoreComment, recordFranchiseStoreView, recordLeadLabItemView,
     activeTab, filterResetVersion, countryFilter, searchQuery, selectedCategory, selectedStatus, selectedTag, selectedRating, notifications, activeToast,
     actionError, clearActionError: () => setActionError(null), isMutating: mutationCount > 0,
     setActiveTab, setCountryFilter, setSearchQuery, setSelectedCategory, setSelectedStatus, setSelectedTag, setSelectedRating,

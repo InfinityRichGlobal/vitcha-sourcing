@@ -514,8 +514,8 @@ export function createApp({ dataDir, defaults = DEFAULT_DATABASE, sessionTtlMs =
     const trash = db.trash || [];
     const item = trash.find(x => x.id === req.params.id);
     if (!item) fail(404, 'ไม่พบรายการในถังขยะ');
-    const targetCollection = item._trashedFrom || (item.type === 'supplier' ? 'suppliers' : item.type === 'drink_store' ? 'drinkStores' : 'locations');
-    if (!['suppliers', 'drinkStores', 'locations'].includes(targetCollection)) fail(400, 'ประเภทรายการในถังขยะไม่ถูกต้อง');
+    const targetCollection = item._trashedFrom || (item.type === 'supplier' ? 'suppliers' : item.type === 'drink_store' ? 'drinkStores' : item.type === 'franchise_store' ? 'franchiseStores' : item.type === 'lead_lab' ? 'leadLabItems' : 'locations');
+    if (!['suppliers', 'drinkStores', 'locations', 'franchiseStores', 'leadLabItems'].includes(targetCollection)) fail(400, 'ประเภทรายการในถังขยะไม่ถูกต้อง');
     if ((db[targetCollection] || []).some(record => record.id === item.id)) fail(409, 'มีรายการรหัสนี้อยู่แล้ว กรุณาตรวจสอบก่อนกู้คืน');
     touch(item);
     delete item._trashedFrom;
@@ -627,6 +627,15 @@ export function createApp({ dataDir, defaults = DEFAULT_DATABASE, sessionTtlMs =
     const idx = list.findIndex(x => x.id === req.params.id);
     if (idx < 0) fail(404, 'ไม่พบรายการสูตร');
     const removed = list.splice(idx, 1)[0];
+    db.trash ||= [];
+    db.trash.unshift({
+      ...removed,
+      name: removed.name || removed.code,
+      type: 'lead_lab',
+      _trashedFrom: 'leadLabItems',
+      trashedAt: now(),
+      trashedBy: req.user.alias || req.user.name,
+    });
     save(db);
     res.json({ success: true, item: removed });
   });
@@ -802,6 +811,15 @@ export function createApp({ dataDir, defaults = DEFAULT_DATABASE, sessionTtlMs =
     const idx = list.findIndex(x => x.id === req.params.id);
     if (idx < 0) fail(404, 'ไม่พบร้าน');
     const removed = list.splice(idx, 1)[0];
+    db.trash ||= [];
+    db.trash.unshift({
+      ...removed,
+      name: removed.name,
+      type: 'franchise_store',
+      _trashedFrom: 'franchiseStores',
+      trashedAt: now(),
+      trashedBy: req.user.alias || req.user.name,
+    });
     save(db);
     res.json({ success: true, store: removed });
   });

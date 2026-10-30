@@ -16,8 +16,8 @@ export interface TrashedItem {
   id: string;
   name?: string;
   storeName?: string;
-  type: 'supplier' | 'drink_store' | 'location';
-  _trashedFrom: 'suppliers' | 'drinkStores' | 'locations';
+  type: 'supplier' | 'drink_store' | 'location' | 'franchise_store' | 'lead_lab';
+  _trashedFrom: 'suppliers' | 'drinkStores' | 'locations' | 'franchiseStores' | 'leadLabItems';
   trashedAt: string;
   trashedBy: string;
   category?: string;
@@ -461,6 +461,17 @@ export interface LabItem {
   suggestedPriceThb: number;
   likedBy: string[];
   revisionCycles: LabRevisionCycle[];
+  galleryPhotos?: string[];
+  audioNotes?: Array<{
+    id: string;
+    url: string;
+    duration?: number;
+    title?: string;
+    createdAt?: string;
+    authorName?: string;
+  }>;
+  videos?: string[];
+  viewLogs?: ViewLogEntry[];
   createdById: string;
   createdByName: string;
   createdByAvatar?: string;
@@ -472,6 +483,7 @@ export interface LabItem {
 export interface StoreMenuItem {
   id: string;
   labItemId: string;
+  category?: string;
   customName?: string;
   retailPriceThb: number;
   badge?: 'Best Seller' | 'Must Try' | 'New' | 'Signature' | 'Seasonal' | 'None';
@@ -489,6 +501,10 @@ export interface FranchiseStore {
   logoUrl?: string;
   contactNumber?: string;
   openingHours?: string;
+  menuCategories?: string[];
+  likedBy?: string[];
+  revisionCycles?: LabRevisionCycle[];
+  viewLogs?: ViewLogEntry[];
   menuItems: StoreMenuItem[];
   createdAt: string;
   updatedAt: string;
