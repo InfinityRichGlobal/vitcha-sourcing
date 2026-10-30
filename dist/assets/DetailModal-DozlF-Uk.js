@@ -1,4 +1,4 @@
-import{c as Xs,r as K,j as e,G as Ke,Q as en,ad as tn,a4 as de,ae as sn,u as nn,af as Ee,a5 as rn,w as is,X as Se,P as ls,T as ds,$ as an,V as on,l as ln,_ as Ae,H as dn,Y as ze,ag as cs,i as cn,O as un,Z as us,a6 as hn,R as pn,h as fn,ah as mn,K as xn,k as gn,ai as hs,a7 as bn,aj as vn,W as Oe,p as wn,f as yn,a3 as jn,d as Nn,a1 as kn}from"./index-BXrmddsT.js";import{F as $n,V as Cn}from"./VideoPlayer-D_e22i8e.js";import{g as En,f as Sn,o as An}from"./AttachedFilesSection-CO06-43S.js";import{P as Tn}from"./printer-Da6pwi2e.js";/**
+import{c as Xs,r as K,j as e,G as Ke,Q as en,ad as tn,a4 as de,ae as sn,u as nn,af as Ee,a5 as rn,w as is,X as Se,P as ls,T as ds,$ as an,V as on,l as ln,_ as Ae,H as dn,Y as ze,ag as cs,i as cn,O as un,Z as us,a6 as hn,R as pn,h as fn,ah as mn,K as xn,k as gn,ai as hs,a7 as bn,aj as vn,W as Oe,p as wn,f as yn,a3 as jn,d as Nn,a1 as kn}from"./index-xIsU4UyT.js";import{F as $n,V as Cn}from"./VideoPlayer-DQSRy6cE.js";import{g as En,f as Sn,o as An}from"./AttachedFilesSection-h0yfg641.js";import{P as Tn}from"./printer-CKjh1Ljq.js";/**
  * @license lucide-react v1.62.0 - ISC
  *
  * This source code is licensed under the ISC license.
@@ -686,14 +686,14 @@ Minimum version required to store current data is: `+j+`.
     .audit-stage strong { display: block; font-size: 11px; }
     .audit-stage-missing { grid-column: 1 / -1; border: 0; padding: 2px 0; color: #64748b; }
     .audit-current { background: #ecfdf5; border-color: #10b981; }
-    .audit-event { border-bottom: 1px solid #e2e8f0; padding: 8px 0; margin: 0; font-size: 11.5px; overflow-wrap: anywhere; break-inside: auto; }
+    .audit-event { border-bottom: 1px solid #e2e8f0; padding: 8px 0; margin: 0; font-size: 11.5px; overflow-wrap: anywhere; break-inside: avoid; }
     .audit-event-heading { display: flex; align-items: center; gap: 7px; font-size: 11px; break-after: avoid; }
     .audit-event-heading > span:last-child { color: #64748b; margin-left: auto; font-size: 10px; }
     .audit-avatar { width: 27px; height: 27px; border-radius: 50%; object-fit: cover; flex-shrink: 0; }
     .audit-avatar-fallback { background: #e2e8f0; color: #475569; text-align: center; line-height: 27px; }
     .audit-action { font-weight: 700; margin-top: 6px; }
     .audit-transition { color: #047857; font-weight: 700; margin: 6px 0; }
-    .audit-change { margin: 6px 0; break-inside: auto; }
+    .audit-change { margin: 6px 0; break-inside: avoid; }
     .audit-change h4 { margin: 0 0 2px; color: #334155; font-size: 11px; break-after: avoid; }
     .audit-before, .audit-after { padding: 2px 8px; border-left: 2px solid #cbd5e1; }
     .audit-after { border-color: #10b981; }
@@ -1155,7 +1155,7 @@ Minimum version required to store current data is: `+j+`.
           jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
           pagebreak: {
             mode: ['css', 'legacy'],
-            avoid: ['tr', '.info-item', '.voice-card', '.video-card', '.photo-card', '.comment-box', '.note-banner', '.handoff-banner', '.report-header', '.file-attachment-card', '.audit-stage', '.audit-event-heading', '.audit-media']
+            avoid: ['tr', '.info-item', '.voice-card', '.video-card', '.photo-card', '.comment-box', '.note-banner', '.handoff-banner', '.report-header', '.file-attachment-card', '.audit-stage', '.audit-event', '.audit-change', '.audit-event-heading', '.audit-media']
           }
         };
         var worker = window.html2pdf().set(opt).from(element);
