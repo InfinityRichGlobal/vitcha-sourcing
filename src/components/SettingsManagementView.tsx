@@ -98,7 +98,7 @@ export const SettingsManagementView: React.FC = () => {
   const [editQmText, setEditQmText] = useState('');
 
   // Invite states
-  const [inviteRole, setInviteRole] = useState<UserRole>('reviewer');
+  const [inviteRole, setInviteRole] = useState<UserRole>('editor');
   const [inviteAlias, setInviteAlias] = useState('');
   const [copiedId, setCopiedId] = useState<string | null>(null);
 

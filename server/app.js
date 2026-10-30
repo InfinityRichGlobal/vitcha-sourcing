@@ -11,7 +11,7 @@ import { productData, registerProductRoutes } from './products.js';
 
 const MOCK_ROLES = { 'user-beam': 'reviewer', 'user-ann': 'viewer', 'user-mook': 'admin' };
 const MOCK_IDS = new Set(Object.keys(MOCK_ROLES));
-const ROLES = ['admin', 'reviewer', 'viewer'];
+const ROLES = ['admin', 'editor', 'reviewer', 'viewer'];
 const STAGES = ['awaiting', 'rfq_sent', 'sample_test', 'negotiate', 'approved', 'ordered'];
 const STATUSES = ['scouted', 'reviewing', 'rfq_sent', 'shortlisted', 'ordered'];
 const HANDOFF = ['assignedTo', 'targetFollowUpDate', 'handoffNotes', 'handoffStage', 'status'];
@@ -22,7 +22,7 @@ const now = () => new Date().toISOString();
 const pick = (obj, keys) => Object.fromEntries(keys.filter(k => obj[k] !== undefined).map(k => [k, obj[k]]));
 const clean = value => typeof value === 'string' ? value.trim() : '';
 const fail = (status, message) => { throw Object.assign(new Error(message), { status }); };
-const publicUser = u => ({ ...pick(u, ['id', 'name', 'alias', 'avatar', 'emailOrId', 'createdAt', 'lastActiveAt', 'statusNote', 'revision']), name: u.alias || u.name, role: u.role === 'editor' ? 'reviewer' : u.role });
+const publicUser = u => ({ ...pick(u, ['id', 'name', 'alias', 'avatar', 'emailOrId', 'createdAt', 'lastActiveAt', 'statusNote', 'revision']), name: u.alias || u.name, role: u.role === 'reviewer' ? 'editor' : u.role });
 function currentIdentity(db, value, idKey = 'id') {
   if (!value) return value;
   const user = db.users.find(u => u.id === value[idKey]);
@@ -177,7 +177,7 @@ export function createApp({ dataDir, defaults = DEFAULT_DATABASE, sessionTtlMs =
   }
 
   const requireAdmin = req => { if (req.user.role !== 'admin') fail(403, 'สิทธิ์นี้ใช้ได้เฉพาะผู้ดูแลระบบ'); };
-  const requireWriter = req => { if (!['admin', 'reviewer'].includes(req.user.role)) fail(403, 'บัญชีนี้ดูข้อมูลได้เท่านั้น'); };
+  const requireWriter = req => { if (!['admin', 'editor', 'reviewer'].includes(req.user.role)) fail(403, 'บัญชีนี้ดูข้อมูลได้เท่านั้น'); };
   const requireReader = req => { if (!req.user) fail(401, 'กรุณาเข้าสู่ระบบก่อน'); };
   const requireFounder = req => { if (req.user.id !== 'user-ice' || req.session.simulatedId) fail(403, 'ไม่สามารถดำเนินการนี้ได้'); };
   const sessionResult = (s, db) => ({ user: publicUser(db.users.find(u => u.id === (s.simulatedId || s.userId))), simulated: !!s.simulatedId });
@@ -355,7 +355,7 @@ export function createApp({ dataDir, defaults = DEFAULT_DATABASE, sessionTtlMs =
         fail(409, 'รายการนี้ถูกบันทึกแล้ว กรุณาโหลดข้อมูลล่าสุด');
       }
       if (target) {
-        requireAdmin(req); expectRevision(target, input.revision);
+        requireWriter(req); expectRevision(target, input.revision);
         item = { ...target, ...pick(input, fields) };
         validateRecord(item, collection);
         // Concurrent notes, likes, handoff and audit history are not client-editable.
@@ -371,7 +371,7 @@ export function createApp({ dataDir, defaults = DEFAULT_DATABASE, sessionTtlMs =
       save(db); res.json({ success: true, item });
     });
     app.delete(`/api/${route}/:id`, (req, res) => {
-      requireAdmin(req); const db = read(); const list = db[collection] || [];
+      requireWriter(req); const db = read(); const list = db[collection] || [];
       const item = list.find(x => x.id === req.params.id);
       if (!item) fail(404, 'ไม่พบรายการ');
       expectRevision(item, req.body?.revision);
@@ -537,6 +537,32 @@ export function createApp({ dataDir, defaults = DEFAULT_DATABASE, sessionTtlMs =
     const db = read();
     res.json({ success: true, items: db.trash || [] });
   });
+  app.post('/api/trash/batch', (req, res) => {
+    requireFounder(req);
+    const { action, items } = req.body;
+    if (!['restore', 'delete'].includes(action) || !Array.isArray(items) || !items.length || items.length > 1000) fail(400, 'เลือกรายการ 1–1000 รายการ');
+    const db = read();
+    const selected = [];
+    const ids = new Set();
+    for (const entry of items) {
+      if (!entry || !clean(entry.id) || ids.has(entry.id)) fail(400, 'รายการที่เลือกไม่ถูกต้องหรือซ้ำกัน');
+      ids.add(entry.id);
+      const item = (db.trash || []).find(x => x.id === entry.id);
+      if (!item || item.trashedAt !== entry.trashedAt) fail(409, 'ถังขยะมีการเปลี่ยนแปลง กรุณาโหลดข้อมูลล่าสุดแล้วเลือกอีกครั้ง');
+      const collection = item._trashedFrom || ({supplier:'suppliers',drink_store:'drinkStores',location:'locations',franchise_store:'franchiseStores',lead_lab:'leadLabItems'})[item.type];
+      if (!['suppliers','drinkStores','locations','franchiseStores','leadLabItems'].includes(collection)) fail(400, 'ประเภทรายการไม่ถูกต้อง');
+      if (action === 'restore' && (db[collection] || []).some(x => x.id === item.id)) fail(409, 'มีรายการรหัสนี้อยู่แล้ว ยังไม่ได้กู้คืนรายการที่เลือก');
+      selected.push({item, collection});
+    }
+    if (action === 'restore') for (const {item, collection} of selected) {
+      touch(item);
+      delete item._trashedFrom; delete item.trashedAt; delete item.trashedBy;
+      (db[collection] ||= []).unshift(item);
+    }
+    db.trash = (db.trash || []).filter(x => !ids.has(x.id));
+    save(db);
+    res.json({success:true, count:selected.length});
+  });
   app.post('/api/trash/:id/restore', (req, res) => {
     requireFounder(req);
     const db = read();
@@ -677,7 +703,7 @@ export function createApp({ dataDir, defaults = DEFAULT_DATABASE, sessionTtlMs =
   });
 
   app.delete('/api/lead-lab/items/:id', (req, res) => {
-    requireAdmin(req);
+    requireWriter(req);
     const db = read();
     const list = db.leadLabItems ||= [];
     const idx = list.findIndex(x => x.id === req.params.id);
@@ -814,7 +840,7 @@ export function createApp({ dataDir, defaults = DEFAULT_DATABASE, sessionTtlMs =
   });
 
   app.post('/api/lead-lab/items/:id/status', (req, res) => {
-    requireAdmin(req);
+    requireWriter(req);
     const db = read();
     const item = findOrSeedLeadLabItem(db, req.params.id);
     if (!item) fail(404, 'ไม่พบสูตร');
@@ -890,7 +916,7 @@ export function createApp({ dataDir, defaults = DEFAULT_DATABASE, sessionTtlMs =
   });
 
   app.delete('/api/franchise-stores/:id', (req, res) => {
-    requireAdmin(req);
+    requireWriter(req);
     const db = read();
     const list = db.franchiseStores ||= [];
     const idx = list.findIndex(x => x.id === req.params.id);

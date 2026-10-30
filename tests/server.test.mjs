@@ -61,13 +61,23 @@ test('viewer is read-only even when forging role and creator fields', async t =>
   assert.equal((await call('/api/users', viewer, { id: 'user-view', revision: 0, role: 'admin' })).status, 403);
   assert.equal((await call('/api/invites', viewer, { role: 'admin' })).status, 403);
 });
-test('reviewer may add and hand off but cannot edit or delete core records', async t => {
-  const { call, login } = await setup(t); const token = await login('review');
+test('legacy reviewer is Editor, edits and deletes work but cannot administer or access trash', async t => {
+  const { call, login, dir } = await setup(t); const token = await login('review');
+  const before=JSON.parse(fs.readFileSync(path.join(dir,'database.json'))).users;
+  assert.equal((await call('/api/session',token,undefined,'GET')).data.user.role,'editor');
   const created = await call('/api/suppliers', token, { ...item, creator: { id: 'user-ice' } });
   assert.equal(created.status, 200); assert.equal(created.data.item.creator.id, 'user-review');
-  assert.equal((await call('/api/suppliers', token, { ...item, name: 'overwrite', revision: 1 })).status, 403);
-  assert.equal((await call('/api/suppliers/sup-test', token, { revision: 1 }, 'DELETE')).status, 403);
-  assert.equal((await call('/api/suppliers/sup-test/actions', token, { action: 'handoff', revision: 1, operationId: 'h1', data: { handoffStage: 'rfq_sent' } })).status, 200);
+  assert.equal((await call('/api/suppliers', token, { ...item, name: 'overwrite', revision: 1 })).status, 200);
+  assert.equal((await call('/api/suppliers/sup-test/actions', token, { action: 'handoff', revision: 2, operationId: 'h1', data: { handoffStage: 'rfq_sent' } })).status, 200);
+  assert.equal((await call('/api/suppliers/sup-test', token, { revision: 3 }, 'DELETE')).status, 200);
+  for (const [route,method,body] of [
+    ['/api/trash','GET',undefined],['/api/trash/sup-test/restore','POST',{}],['/api/trash/sup-test','DELETE',{}],['/api/trash/batch','POST',{action:'delete',items:[]}],
+    ['/api/invites','POST',{role:'admin'}],['/api/users','POST',{id:'user-review',revision:0,role:'admin'}],['/api/users/user-view','DELETE',{}],
+    ['/api/settings','POST',{}],['/api/system/sample-pack','POST',{}],['/api/system/clear','POST',{}]
+  ]) assert.equal((await call(route,token,body,method)).status,403,route);
+  const stored=JSON.parse(fs.readFileSync(path.join(dir,'database.json')));
+  assert.ok(stored.trash.some(x=>x.id==='sup-test'));
+  assert.deepEqual(stored.users.map(({lastActiveAt,...u})=>u),before.map(({lastActiveAt,...u})=>u));
 });
 test('admin cannot delete/demote founder or invoke founder simulation', async t => {
   const { call, login } = await setup(t); const token = await login('admin');
@@ -88,7 +98,7 @@ test('legacy simulation roles are repaired without changing real member permissi
   const users = [['ice','admin'],['ann','reviewer'],['mook','editor'],['beam','admin'],['real','editor']].map(([id,role]) => ({ id: `user-${id}`, emailOrId: id, name: id, alias: id, role, pin: '876543' }));
   const { call, login, dir } = await setup(t, { defaults: { users, invites: [], suppliers: [], drinkStores: [], notifications: [] } });
   const token = await login('ice');
-  for (const [id,role] of [['ann','viewer'],['mook','admin'],['beam','reviewer']]) {
+  for (const [id,role] of [['ann','viewer'],['mook','admin'],['beam','editor']]) {
     const result = await call('/api/simulate', token, { userId: `user-${id}` });
     assert.equal(result.status,200); assert.equal(result.data.user.role,role);
     if (role === 'viewer') assert.equal((await call('/api/upload',token,{mimeType:'image/png',base64:'data:image/png;base64,eA=='})).status,403);
@@ -112,7 +122,7 @@ test('concurrent registration consumes invite exactly once and ignores supplied 
   const results = await Promise.all(['first','second'].map(emailOrId => call('/api/register', null, { code: 'INVITE1', name: emailOrId, emailOrId, pin: '654321', role: 'admin' })));
   assert.deepEqual(results.map(x => x.status).sort(), [201,400]);
   const created = results.find(x => x.status === 201).data;
-  assert.equal(created.user.role, 'reviewer'); assert.equal(created.user.pin, undefined);
+  assert.equal(created.user.role, 'editor'); assert.equal(created.user.pin, undefined);
   assert.equal((await call('/api/register', null, { code: 'MADE-UP', name: 'other', emailOrId: 'other', pin: '654321', role: 'admin' })).status, 400);
 });
 test('simultaneous comments and replies are appended, retried operation is deduplicated', async t => {
@@ -270,10 +280,10 @@ test('store records use the same authorization and revision protections', async 
   const { call, login } = await setup(t); const admin = await login('admin'); const review = await login('review');
   const store = { id: 'store-test', storeName: 'Tea shop', photos: { storefrontAndAtmosphere: [], menuBoard: [], drinkCups: [] }, ratings: { taste: 4, aesthetics: 4, value: 4, speed: 4 }, drinkItems: [], location: { lat: 13, lng: 100 } };
   const created = await call('/api/drink-stores', review, store); assert.equal(created.status, 200);
-  assert.equal((await call('/api/drink-stores', review, { ...store, revision: 1 })).status, 403);
-  assert.equal((await call('/api/drink-stores', admin, { ...store, storeName: 'Changed', revision: 1 })).status, 200);
+  assert.equal((await call('/api/drink-stores', review, { ...store, revision: 1 })).status, 200);
+  assert.equal((await call('/api/drink-stores', admin, { ...store, storeName: 'Changed', revision: 2 })).status, 200);
   assert.equal((await call('/api/drink-stores/store-test', admin, { revision: 1 }, 'DELETE')).status, 409);
-  assert.equal((await call('/api/drink-stores/store-test', admin, { revision: 2 }, 'DELETE')).status, 200);
+  assert.equal((await call('/api/drink-stores/store-test', admin, { revision: 3 }, 'DELETE')).status, 200);
 });
 
 test('private maintenance and broadcasts are rejected for every other role', async t => {
@@ -674,4 +684,41 @@ test('brand refresh also works if a user loaded the new pack before migration', 
   assert.equal(result.status,200);assert.equal(result.data.removed.length,4);assert.equal(result.data.addedToppings.length,0);
   const after=(await call('/api/backup',token,undefined,'GET')).data;
   assert.equal(after.franchiseStores.length,2);assert.deepEqual(after.leadLabItems,before.leadLabItems);assert.deepEqual(after.users,before.users);
+});
+
+
+test('native Editor role can edit all work types, approve formulas and delete to trash', async t => {
+ const {call,login}=await setup(t); const admin=await login('admin');
+ assert.equal((await call('/api/users',admin,{id:'user-review',role:'editor',revision:0})).status,200);
+ const editor=await login('review');
+ for (const [route,record] of [['/api/lead-lab/items',{id:'lab-editor',name:'Recipe'}],['/api/franchise-stores',{id:'brand-editor',name:'Real brand',themeColor:'#99aabb'}]]) {
+   assert.equal((await call(route,editor,record)).status,200);
+   assert.equal((await call(route,editor,{...record,name:'Updated'})).status,200);
+ }
+ assert.equal((await call('/api/lead-lab/items/lab-editor/status',editor,{status:'approved'})).status,200);
+ for (const route of ['/api/lead-lab/items/lab-editor','/api/franchise-stores/brand-editor']) assert.equal((await call(route,editor,{},'DELETE')).status,200);
+ const owner=await login('ice');const trash=(await call('/api/trash',owner,undefined,'GET')).data.items;
+ assert.equal(trash.length,2);
+ assert.equal(trash.find(x=>x.id==='brand-editor').themeColor,'#99aabb');
+});
+
+test('trash batch validates all records atomically and blocks every non-owner', async t => {
+ const {call,login}=await setup(t);const owner=await login('ice');
+ for(const id of ['batch-a','batch-b']) {
+   await call('/api/suppliers',owner,{...item,id});
+   await call('/api/suppliers/'+id,owner,{revision:1},'DELETE');
+ }
+ const entries=(await call('/api/trash',owner,undefined,'GET')).data.items.map(({id,trashedAt})=>({id,trashedAt}));
+ for(const who of ['review','view','admin']) assert.equal((await call('/api/trash/batch',await login(who),{action:'restore',items:entries})).status,403);
+ assert.equal((await call('/api/trash/batch',owner,{action:'restore',items:[entries[0],{...entries[1],trashedAt:'stale'}]})).status,409);
+ assert.equal((await call('/api/trash',owner,undefined,'GET')).data.items.length,2);
+ assert.equal((await call('/api/data',owner,undefined,'GET')).data.suppliers.length,0);
+ assert.equal((await call('/api/trash/batch',owner,{action:'restore',items:entries})).data.count,2);
+ const restored=(await call('/api/data',owner,undefined,'GET')).data.suppliers;
+ assert.equal(restored.length,2);
+ for(const record of restored) await call('/api/suppliers/'+record.id,owner,{revision:record.revision},'DELETE');
+ const latest=(await call('/api/trash',owner,undefined,'GET')).data.items.map(({id,trashedAt})=>({id,trashedAt}));
+ assert.equal((await call('/api/trash/batch',owner,{action:'delete',items:entries})).status,409);
+ assert.equal((await call('/api/trash/batch',owner,{action:'delete',items:latest})).data.count,2);
+ assert.equal((await call('/api/trash',owner,undefined,'GET')).data.items.length,0);
 });

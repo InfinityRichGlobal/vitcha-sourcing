@@ -16,7 +16,7 @@ import { inviteMessage } from "../utils/inviteMessage";
 const control =
   "w-full rounded-xl border border-slate-200/90 bg-slate-50 px-3 py-2 text-xs font-medium text-slate-900 outline-none focus:bg-white focus:border-emerald-500";
 const roles = [
-  ["reviewer", "Reviewer"],
+  ["editor", "Editor — ผู้แก้ไขข้อมูล"],
   ["viewer", "Viewer"],
   ["admin", "Admin"],
 ];
@@ -32,7 +32,7 @@ export function MembersManagementView() {
     refreshCentralData,
   } = useApp();
   const [name, setName] = useState("");
-  const [role, setRole] = useState<UserRole>("reviewer");
+  const [role, setRole] = useState<UserRole>("editor");
   const [query, setQuery] = useState("");
   const [busy, setBusy] = useState(false);
   const creating = useRef(false);

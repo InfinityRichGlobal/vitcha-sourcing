@@ -37,7 +37,7 @@ export const RegisterWithInviteModal: React.FC<RegisterWithInviteModalProps> = (
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [verifiedInvite, setVerifiedInvite] = useState<{ role: UserRole; prefilledAlias?: string } | null>(null);
-  const initialRole = verifiedInvite?.role || 'reviewer';
+  const initialRole = verifiedInvite?.role || 'editor';
   const [name, setName] = useState('');
   const [usernameOrId, setUsernameOrId] = useState('');
   const [password, setPassword] = useState('');

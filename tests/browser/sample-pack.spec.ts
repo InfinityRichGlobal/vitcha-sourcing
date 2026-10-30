@@ -8,7 +8,7 @@ test.use({ viewport: { width: 390, height: 844 }, launchOptions: { args: ['--dis
 let server: any, dir: string, base: string, token: string;
 test.beforeEach(async ({ page }) => {
   dir = fs.mkdtempSync(path.join(os.tmpdir(), 'vitcha-pack-browser-'));
-  const defaults = { users: [{ id: 'user-ice', emailOrId: 'ice', name: 'QA owner', alias: 'QA', role: 'admin', pin: 'qa-only-876543' }], suppliers: [], drinkStores: [], locations: [], leadLabItems: [], franchiseStores: [], invites: [], notifications: [] };
+  const defaults = { users: [{id:'user-editor',emailOrId:'editor',name:'QA Editor',alias:'QA Editor',role:'reviewer',pin:'qa-only-876543'}, { id: 'user-ice', emailOrId: 'ice', name: 'QA owner', alias: 'QA', role: 'admin', pin: 'qa-only-876543' }], suppliers: [], drinkStores: [], locations: [], leadLabItems: [], franchiseStores: [], invites: [], notifications: [] };
   server = createApp({ dataDir: dir, defaults }).listen(0, '127.0.0.1');
   await new Promise(resolve => server.once('listening', resolve));
   base = `http://127.0.0.1:${server.address().port}`;
@@ -167,4 +167,73 @@ test('store photos open in a closable gallery with buttons, keyboard and swipe',
   await expect(gallery.getByRole('status')).toHaveText('1 / 1');
   await expect(gallery.getByRole('button',{name:'ภาพถัดไป'})).toBeDisabled();
   await gallery.getByRole('button',{name:'ปิดภาพ',exact:true}).click();
+});
+
+
+test('real brand photo has no dark overlay or mock labels and custom color persists', async ({page}) => {
+ const headers={Authorization:`Bearer ${token}`};
+ expect((await page.request.post(base+'/api/franchise-stores',{headers,data:{id:'real-brand',name:'Real Brand',logoUrl:'./brand-mockups/vitcha-logo.png',menuCategories:['Tea'],themeColor:'emerald',branch:'',menuItems:[]}})).ok()).toBeTruthy();
+ await page.reload();
+ await page.getByRole('button',{name:/แพลตฟอร์ม/}).click();
+ await page.locator('[data-no-pull-refresh]').getByRole('button',{name:/แบรนด์และหน้าร้าน/}).click();
+ await expect(page.locator('main')).not.toContainText(/หน้าร้านจำลอง|แบรนด์จำลอง|Mockup/);
+ const cover=page.getByRole('img',{name:'Real Brand',exact:true}).locator('..');
+ await expect(cover.locator('[class*="from-black"]')).toHaveCount(0);
+ await expect(cover.getByRole('heading')).toHaveCount(0);
+ await page.screenshot({path:'test-results/real-brand-card.png',fullPage:true});
+ await page.getByRole('button',{name:/เข้าร้าน/}).click();
+ await expect(page.locator('main')).toContainText('ข้อมูลแบรนด์ · เมนูและสูตร');
+ await page.getByRole('button',{name:/แก้ไขร้าน/}).click();
+ await page.getByLabel('เลือกสีแบรนด์เอง').fill('#2468ac');
+ await expect(page.getByLabel('รหัสสีแบรนด์ HEX')).toHaveValue('#2468ac');
+ await page.getByLabel('รหัสสีแบรนด์ HEX').fill('#903c75');
+ await expect(page.getByLabel('เลือกสีแบรนด์เอง')).toHaveValue('#903c75');
+ await page.screenshot({path:'test-results/custom-brand-color.png'});
+ await page.getByRole('button',{name:'บันทึกการแก้ไข',exact:true}).click();
+ await expect(page.getByLabel('รหัสสีแบรนด์ HEX')).toHaveCount(0);
+ await page.reload();
+ const saved=(await (await page.request.get(base+'/api/franchise-stores',{headers})).json()).stores.find((x:any)=>x.id==='real-brand');
+ expect(saved.themeColor).toBe('#903c75'); expect(saved.name).toBe('Real Brand'); expect(saved.isMock).not.toBe(true);
+});
+
+test('owner selects filtered trash in bulk, cancels permanent deletion, restores and deletes selected only', async ({page}) => {
+ const headers={Authorization:`Bearer ${token}`};
+ for(const name of ['Batch A','Batch B','Keep C']) {
+   const id=name.replaceAll(' ','-');
+   expect((await page.request.post(base+'/api/franchise-stores',{headers,data:{id,name}})).ok()).toBeTruthy();
+   expect((await page.request.delete(base+'/api/franchise-stores/'+id,{headers})).ok()).toBeTruthy();
+ }
+ await page.reload();
+ await page.getByRole('button',{name:/แพลตฟอร์ม/}).click();
+ await page.locator('[data-no-pull-refresh]').getByRole('button',{name:/ถังขยะ/}).click();
+ const search=page.getByPlaceholder('ค้นหาตามชื่อรายการ, หมวดหมู่, หรือผู้ลบ...');
+ await search.fill('Batch');
+ await page.getByLabel('เลือกทั้งหมดที่แสดง').check();
+ await expect(page.getByText('เลือก 2 รายการ',{exact:true})).toBeVisible();
+ page.once('dialog',d=>d.dismiss());
+ await page.getByRole('button',{name:'ลบรายการที่เลือกถาวร'}).click();
+ await expect(page.getByText('เลือก 2 รายการ',{exact:true})).toBeVisible();
+ await page.getByRole('button',{name:'กู้คืนรายการที่เลือก'}).click();
+ await expect(page.getByText('กู้คืน 2 รายการเรียบร้อยแล้ว',{exact:true})).toBeVisible();
+ await search.fill('');
+ await expect(page.getByRole('heading',{name:'Keep C',exact:true})).toBeVisible();
+ await page.getByLabel('เลือก Keep C',{exact:true}).check();
+ page.once('dialog',d=>d.accept());
+ await page.getByRole('button',{name:'ลบรายการที่เลือกถาวร'}).click();
+ await expect(page.getByText('ถังขยะว่างเปล่า ไม่มีรายการที่ถูกลบ',{exact:true})).toBeVisible();
+ const stores=(await (await page.request.get(base+'/api/franchise-stores',{headers})).json()).stores;
+ expect(stores.map((x:any)=>x.name).sort()).toEqual(['Batch A','Batch B']);
+});
+
+test('legacy reviewer becomes Editor with edit controls but no trash, member or system menu', async ({page}) => {
+ const login=await page.request.post(base+'/api/login',{data:{idOrEmail:'editor',pin:'qa-only-876543'}});
+ const session=await login.json(); expect(session.user.role).toBe('editor');
+ await page.addInitScript(t=>sessionStorage.setItem('vitcha_session_token',t),session.token);
+ await page.reload();
+ await page.getByRole('button',{name:/แพลตฟอร์ม/}).click();
+ const drawer=page.locator('[data-no-pull-refresh]');
+ for(const name of [/ถังขยะ/,/สมาชิก/,/ตั้งค่าเนื้อหา/,/โหลดข้อมูล Mockup/]) await expect(drawer.getByRole('button',{name})).toHaveCount(0);
+ await page.goto('/?tab=trash');
+ await expect(page.getByRole('heading',{name:/ถังขยะและประวัติ/})).toHaveCount(0);
+ expect((await page.request.get(base+'/api/trash',{headers:{Authorization:`Bearer ${session.token}`}})).status()).toBe(403);
 });

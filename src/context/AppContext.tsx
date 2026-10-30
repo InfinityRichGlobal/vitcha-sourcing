@@ -94,6 +94,7 @@ interface AppContextType {
   ) => Promise<boolean>;
 
   trashItems: TrashedItem[];
+  batchTrash: (action: 'restore' | 'delete', items: TrashedItem[]) => Promise<boolean>;
   fetchTrash: () => Promise<void>;
   restoreTrashItem: (id: string) => Promise<boolean>;
   permanentDeleteTrashItem: (id: string) => Promise<boolean>;
@@ -277,9 +278,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const notificationsInitialized = useRef(false);
   const seenNotifications = useRef(new Set<string>());
   const mounted = useRef(true);
-  const canEditItems = isAuthenticated && currentUser.role === 'admin';
+  const canEditItems = isAuthenticated && ['admin', 'editor', 'reviewer'].includes(currentUser.role);
   const canDeleteItems = canEditItems;
-  const canComment = isAuthenticated && ['admin', 'reviewer'].includes(currentUser.role);
+  const canComment = isAuthenticated && ['admin', 'editor', 'reviewer'].includes(currentUser.role);
   const canAddItems = canComment;
 
   const clearSession = () => {
@@ -447,6 +448,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const permanentDeleteTrashItem = (id: string) => perform(`trash:delete:${id}`, async () => {
     await sendJson(`/api/trash/${encodeURIComponent(id)}`, {}, 'DELETE');
     setTrashItems(prev => prev.filter(x => x.id !== id));
+  });
+  const batchTrash = (action: 'restore' | 'delete', items: TrashedItem[]) => perform('trash:batch', async () => {
+    await sendJson('/api/trash/batch', { action, items: items.map(({id, trashedAt}) => ({id, trashedAt})) });
+    await fetchTrash();
   });
   const addReviewerNote = (id: string, type: 'supplier' | 'drink_store' | 'location', text: string, extra?: { voiceUrl?: string; photoUrl?: string; duration?: number }) => itemAction(id, type, 'comment', { text, ...extra });
   const addReviewReply = (id: string, type: 'supplier' | 'drink_store' | 'location', noteId: string, text: string, replyToAuthor?: string, extra?: { voiceUrl?: string; photoUrl?: string; duration?: number; replyToId?: string }) => itemAction(id, type, 'reply', { noteId, text, replyToAuthor, ...extra });
@@ -961,7 +966,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     addQuickTag, editQuickTag, deleteQuickTag, addQuickMessage, editQuickMessage, deleteQuickMessage, updateUserRole, recordItemView, toggleLikeItem,
     mockLoadMessage, mockLoadStatus, lastRefreshedAt, isMockLoading, isClearing, loadFullMockupData, resetSystemData, clearMockupOnly,
     updateHandoff, addSupplier, updateSupplier, deleteSupplier, addStoreInspo, updateStoreInspo, deleteStoreInspo, addLocation, updateLocation, deleteLocation, canEditItems, canDeleteItems, canComment, canAddItems,
-    trashItems, fetchTrash, restoreTrashItem, permanentDeleteTrashItem,
+    trashItems, batchTrash, fetchTrash, restoreTrashItem, permanentDeleteTrashItem,
     editingSupplier, editingStore, editingLocation, openEditItem, closeEditItem, addReviewerNote, addReviewReply, updatePipelineStatus, updateExchangeRate, toggleCurrencyMode, convertCnyToThb, convertThbToCny,
     updateCurrentUserProfile, updateCurrentUserAvatar, switchUser, simulatedFromAdmin, restoreAdminUser, deleteUser, deleteInvite, refreshCentralData, isAuthenticated, isRestoringSession, logout, loginWithCredentials, loginWithPin,
     createInvite, redeemInvite, registerUserWithInvite, renderStatus, renderServerUrl, setRenderServerUrl, testRenderConnection, syncAllDataToRender,

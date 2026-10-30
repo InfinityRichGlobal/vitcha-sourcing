@@ -21,6 +21,7 @@ export const TrashView: React.FC = () => {
   const {
     currentUser,
     trashItems,
+    batchTrash,
     fetchTrash,
     restoreTrashItem,
     permanentDeleteTrashItem,
@@ -28,6 +29,9 @@ export const TrashView: React.FC = () => {
   } = useApp();
 
   const [searchQuery, setSearchQuery] = useState('');
+  const [selected, setSelected] = useState<TrashedItem[]>([]);
+  const [batchBusy, setBatchBusy] = useState(false);
+  useEffect(() => { setSelected(prev => prev.filter(old => trashItems.some(item => item.id === old.id && item.trashedAt === old.trashedAt))); }, [trashItems]);
   const [filterType, setFilterType] = useState<'all' | 'supplier' | 'drink_store' | 'location' | 'franchise_store' | 'lead_lab'>('all');
   const [restoringId, setRestoringId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
@@ -99,6 +103,18 @@ export const TrashView: React.FC = () => {
     return matchesQuery && matchesType;
   });
 
+  const handleBatch = async (action: 'restore' | 'delete') => {
+    if (!selected.length || batchBusy) return;
+    if (action === 'delete' && !window.confirm(`ลบถาวร ${selected.length} รายการที่เลือก? การกระทำนี้ไม่สามารถย้อนกลับได้`)) return;
+    const count = selected.length;
+    setBatchBusy(true); setSuccessMessage(null);
+    try {
+      const ok = await batchTrash(action, selected);
+      if (ok) { setSelected([]); setSuccessMessage(`${action === 'restore' ? 'กู้คืน' : 'ลบถาวร'} ${count} รายการเรียบร้อยแล้ว`); }
+      else await fetchTrash();
+    } finally { setBatchBusy(false); }
+  };
+
   const getTypeLabel = (type: string) => {
     switch (type) {
       case 'supplier':
@@ -134,7 +150,7 @@ export const TrashView: React.FC = () => {
               </span>
             </div>
             <p className="text-xs text-slate-500 mt-1 max-w-xl">
-              พื้นที่เฉพาะ Owner / Admin — รายการที่ถูกลบจะถูกตัดขาดจากฟีด แผนที่ และหมวดหมู่อย่างสิ้นเชิง
+              พื้นที่เฉพาะเจ้าของระบบ — รายการที่ถูกลบจะถูกตัดขาดจากฟีด แผนที่ และหมวดหมู่อย่างสิ้นเชิง
               สามารถตรวจสอบ กู้คืนกลับสู่ระบบ หรือลบถาวรได้
             </p>
           </div>
@@ -169,7 +185,7 @@ export const TrashView: React.FC = () => {
             <input
               type="text"
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              disabled={batchBusy} onChange={(e) => { setSearchQuery(e.target.value); setSelected([]); }}
               placeholder="ค้นหาตามชื่อรายการ, หมวดหมู่, หรือผู้ลบ..."
               className="w-full pl-9 pr-3 py-2 rounded-xl border border-slate-200 bg-slate-50/50 text-xs font-medium text-slate-900 focus:bg-white focus:border-slate-400 outline-none transition-colors"
             />
@@ -188,7 +204,7 @@ export const TrashView: React.FC = () => {
               <button
                 key={tab.id}
                 type="button"
-                onClick={() => setFilterType(tab.id as any)}
+                disabled={batchBusy} onClick={() => { setFilterType(tab.id as any); setSelected([]); }}
                 className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 ${
                   filterType === tab.id
                     ? 'bg-slate-900 text-white shadow-xs'
@@ -201,6 +217,15 @@ export const TrashView: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {filteredItems.length > 0 && <div className="flex flex-wrap items-center gap-3 rounded-2xl border border-slate-200 bg-white p-4" aria-label="จัดการรายการที่เลือก">
+        <label className="flex items-center gap-2 text-sm font-bold"><input type="checkbox" disabled={batchBusy || isMutating} checked={filteredItems.length > 0 && filteredItems.every(item => selected.some(x => x.id === item.id))} onChange={e => setSelected(e.target.checked ? filteredItems.slice(0,1000) : [])} />เลือกทั้งหมดที่แสดง</label>
+        <span role="status">เลือก {selected.length} รายการ</span>
+        <button type="button" disabled={!selected.length || batchBusy || isMutating} onClick={() => setSelected([])} className="p-2 text-sm disabled:opacity-40">ยกเลิกการเลือก</button>
+        <button type="button" disabled={!selected.length || batchBusy || isMutating} onClick={() => void handleBatch('restore')} className="rounded-xl bg-emerald-600 px-3 py-2 text-sm font-bold text-white disabled:opacity-40">กู้คืนรายการที่เลือก</button>
+        <button type="button" disabled={!selected.length || batchBusy || isMutating} onClick={() => void handleBatch('delete')} className="rounded-xl bg-rose-600 px-3 py-2 text-sm font-bold text-white disabled:opacity-40">ลบรายการที่เลือกถาวร</button>
+        {batchBusy && <span role="status">กำลังดำเนินการ…</span>}
+      </div>}
 
       {/* Item List / Grid */}
       {filteredItems.length === 0 ? (
@@ -231,6 +256,7 @@ export const TrashView: React.FC = () => {
                 className="bg-white rounded-2xl border border-slate-200/90 shadow-xs hover:shadow-md transition-shadow flex flex-col justify-between overflow-hidden"
               >
                 <div className="p-4 space-y-3">
+                  <label className="flex items-center gap-2 text-xs font-bold"><input type="checkbox" aria-label={`เลือก ${itemName(item)}`} disabled={batchBusy || isMutating} checked={selected.some(x => x.id === item.id)} onChange={e => setSelected(prev => e.target.checked ? [...prev, item] : prev.filter(x => x.id !== item.id))} />เลือกรายการ</label>
                   {/* Photo & Basic Info */}
                   <div className="flex items-start gap-3">
                     {firstPhoto ? (
@@ -301,7 +327,7 @@ export const TrashView: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => handleRestore(item)}
-                    disabled={isRestoring || isDeleting || isMutating}
+                    disabled={batchBusy || isRestoring || isDeleting || isMutating}
                     className="flex-1 py-2 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold inline-flex items-center justify-center gap-1.5 transition-colors shadow-xs active:scale-95 disabled:opacity-50"
                   >
                     <RotateCcw className={`w-3.5 h-3.5 ${isRestoring ? 'animate-spin' : ''}`} />
@@ -311,7 +337,7 @@ export const TrashView: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => handlePermanentDelete(item)}
-                    disabled={isRestoring || isDeleting || isMutating}
+                    disabled={batchBusy || isRestoring || isDeleting || isMutating}
                     className="py-2 px-3 rounded-xl bg-white hover:bg-rose-50 text-rose-600 border border-slate-200 hover:border-rose-200 text-xs font-bold inline-flex items-center justify-center gap-1.5 transition-colors active:scale-95 disabled:opacity-50"
                     title="ลบข้อมูลรายการนี้อย่างถาวร"
                   >

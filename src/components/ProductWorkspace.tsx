@@ -52,7 +52,7 @@ export function ProductWorkspace({
     saveProductSet,
     deleteProductSet,
   } = useApp();
-  const canManage = ["admin", "reviewer"].includes(currentUser.role);
+  const canManage = ["admin", "editor", "reviewer"].includes(currentUser.role);
   const [query, setQuery] = useState("");
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [category, setCategory] = useState("all");

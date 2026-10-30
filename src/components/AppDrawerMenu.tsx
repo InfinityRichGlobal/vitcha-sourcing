@@ -611,11 +611,11 @@ export const AppDrawerMenu: React.FC<AppDrawerMenuProps> = ({
                       ? 'bg-slate-900 text-white border-slate-900 shadow-xs'
                       : 'bg-white hover:bg-slate-50 text-slate-800 border-slate-200'
                   }`}
-                  title="ทีมรีวิว: ดูและคอมเมนต์ได้ ห้ามแก้ข้อมูลร้าน/ซัพพลายเออร์ ห้ามลบ"
+                  title="ผู้แก้ไขข้อมูล: เพิ่ม แก้ไข และลบงานได้ ไม่สามารถจัดการสมาชิกหรือระบบ"
                 >
                   <span className="truncate">🔬 ช่างบีม</span>
                   <span className="text-[9px] uppercase font-mono px-1 py-0.5 rounded bg-blue-100 text-blue-800 shrink-0">
-                    Reviewer
+                    Editor
                   </span>
                 </button>
 

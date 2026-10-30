@@ -169,6 +169,12 @@ export function FranchiseStoreView({
 
   // Helper for store colors
   const getThemeClasses = (color?: string) => {
+    if (/^#[0-9a-f]{6}$/i.test(color || '')) return {
+      bg: 'from-[var(--brand-color)] to-slate-950 border-white/20',
+      accent: 'text-white', pill: 'bg-black/30 text-white border-white/30',
+      btn: 'bg-[var(--brand-color)] text-white', border: 'border-white/30', badge: 'bg-slate-100 text-slate-800'
+    };
+
     switch (color) {
       case 'cyan':
         return {
@@ -470,18 +476,7 @@ export function FranchiseStoreView({
                         className="w-full h-auto object-contain block group-hover:scale-102 transition-transform duration-300"
                         loading="lazy"
                       />
-                      {store.recordKind !== 'brand' && <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent pointer-events-none" />}
-
-                      {/* Top Badges */}
-                      <div className="absolute top-2 left-2 flex items-center gap-1 z-10 flex-wrap max-w-[75%]">
-                        <span className="px-1.5 py-0.5 rounded-md text-[9px] font-bold bg-emerald-500/90 text-white shadow-xs backdrop-blur-sm flex items-center gap-0.5">
-                          <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
-                          <span>{store.isMock ? 'Mockup' : 'หน้าร้าน'}</span>
-                        </span>
-                        <span className={`px-1.5 py-0.5 rounded-md text-[9px] font-bold backdrop-blur-sm shadow-xs ${theme.badge} truncate max-w-[85px]`}>
-                          {store.recordKind === 'brand' ? 'ไม่มีสาขา' : store.branch || 'หน้าร้านจำลอง'}
-                        </span>
-                      </div>
+                      {store.isMock && <span className="absolute top-2 left-2 px-2 py-1 rounded-md text-[10px] font-bold bg-white text-slate-700">Mockup</span>}
 
                       {/* Like button on cover */}
                       <button
@@ -500,17 +495,10 @@ export function FranchiseStoreView({
                         <span>{(store.likedBy || []).length}</span>
                       </button>
 
-                      {/* Brand Title Overlay */}
-                      <div className={`absolute bottom-2 left-2 right-2 z-10 ${store.recordKind === 'brand' ? 'text-slate-900' : 'text-white'}`}>
-                        <h3 className="text-sm sm:text-base font-black tracking-tight leading-tight flex items-center gap-1.5 drop-shadow-md truncate">
-                          <span>{store.name}</span>
-                        </h3>
-                        {store.brandTagline && (
-                          <p className={`text-[10px] sm:text-xs truncate mt-0.5 italic ${store.recordKind === 'brand' ? 'text-slate-600' : 'text-slate-200 drop-shadow-sm'}`}>
-                            "{store.brandTagline}"
-                          </p>
-                        )}
-                      </div>
+                    </div>
+                    <div className="px-3 pt-3 text-slate-900 dark:text-white">
+                      <h3 className="text-sm sm:text-base font-black break-words">{store.name}</h3>
+                      {store.brandTagline && <p className="text-xs text-slate-500 mt-1">{store.brandTagline}</p>}
                     </div>
 
                     {/* Card Body Info */}
@@ -710,7 +698,7 @@ export function FranchiseStoreView({
           <button
             type="button"
             onClick={() => printFranchiseStoreReport(activeStore, enrichedMenuItems)}
-            className={`inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl font-bold text-xs shadow-xs transition-all ${theme.btn}`}
+            style={/^#[0-9a-f]{6}$/i.test(activeStore.themeColor || '') ? {backgroundColor: activeStore.themeColor, color: '#fff'} : undefined} className={`inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl font-bold text-xs shadow-xs transition-all ${theme.btn}`}
           >
             <Printer className="w-4 h-4" />
             <span className="hidden sm:inline">ปริ้นท์ป้ายเมนู & SOP</span>
@@ -720,20 +708,20 @@ export function FranchiseStoreView({
       </div>
 
       {/* 🏪 STORE HERO BANNER (Print friendly) */}
-      <div className={`relative overflow-hidden rounded-2xl sm:rounded-3xl bg-gradient-to-br ${theme.bg} text-white p-4 sm:p-6 md:p-8 shadow-xl border print:hidden`}>
+      <div style={/^#[0-9a-f]{6}$/i.test(activeStore.themeColor || '') ? {'--brand-color': activeStore.themeColor} as React.CSSProperties : undefined} className={`relative overflow-hidden rounded-2xl sm:rounded-3xl bg-gradient-to-br ${theme.bg} text-white p-4 sm:p-6 md:p-8 shadow-xl border print:hidden`}>
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="space-y-2 max-w-2xl">
             {activeStore.logoUrl && <img src={activeStore.logoUrl} alt={activeStore.name} className="h-24 w-24 rounded-2xl bg-white object-contain" />}
             <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wider border ${theme.pill}`}>
               <Store className="w-3.5 h-3.5" />
-              <span>แบรนด์จำลอง · เมนูบอร์ดสำหรับทดลอง</span>
+              <span>ข้อมูลแบรนด์ · เมนูและสูตร</span>
             </div>
             <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight flex items-center gap-3">
               <span>{activeStore.name}</span>
               {activeStore.branch && <span className={`text-base font-normal ${theme.accent}`}>({activeStore.branch})</span>}
             </h1>
             <p className="text-slate-300 text-sm italic">
-              "{activeStore.brandTagline}"
+              {activeStore.brandTagline}
             </p>
             <div className="flex flex-wrap items-center gap-4 text-xs text-slate-400 pt-1">
               <span className="flex items-center gap-1">
@@ -1548,7 +1536,7 @@ function StoreFormModal({
               required
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="เช่น VITCHA, VITCHAMINZAAR..."
+              placeholder="ระบุชื่อแบรนด์"
               className="w-full p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 font-bold"
             />
           </div>
@@ -1579,6 +1567,16 @@ function StoreFormModal({
                 );
               })}
             </div>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-3 rounded-xl border border-slate-200 p-3">
+            <label className="flex items-center gap-2 font-bold">เลือกสีเอง
+              <input aria-label="เลือกสีแบรนด์เอง" type="color" value={/^#[0-9a-f]{6}$/i.test(themeColor) ? themeColor : '#10b981'} onChange={e => setThemeColor(e.target.value)} className="h-10 w-14 cursor-pointer" />
+            </label>
+            <label className="flex items-center gap-2">HEX
+              <input aria-label="รหัสสีแบรนด์ HEX" value={themeColor.startsWith('#') ? themeColor : ''} placeholder="#10b981" pattern="#[0-9a-fA-F]{6}" maxLength={7} onChange={e => setThemeColor(e.target.value)} className="w-28 rounded-lg border border-slate-300 p-2 font-mono" />
+            </label>
+            <span className="rounded-xl px-4 py-2 border border-slate-200" style={{backgroundColor: /^#[0-9a-f]{6}$/i.test(themeColor) ? themeColor : '#10b981', color:'#fff', textShadow:'0 1px 3px #000'}}>ตัวอย่างสี</span>
           </div>
 
           {/* 3. หมวดหมู่เมนูของร้านนี้ (Store Menu Categories) */}
@@ -1780,7 +1778,7 @@ function StoreFormModal({
             {/* Gallery Thumbnails */}
             {galleryPhotos.length > 0 && (
               <div className="space-y-1">
-                <span className="text-[10px] font-bold text-slate-400">ภาพหน้าร้านจำลอง ({galleryPhotos.length} รูป)</span>
+                <span className="text-[10px] font-bold text-slate-400">ภาพประกอบแบรนด์ ({galleryPhotos.length} รูป)</span>
                 <div className="flex gap-2 overflow-x-auto pb-1">
                   {galleryPhotos.map((photo, pIdx) => (
                     <div key={pIdx} className="relative w-14 h-14 rounded-lg overflow-hidden shrink-0 border border-slate-200 dark:border-slate-700 shadow-xs group">

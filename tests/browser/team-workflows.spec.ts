@@ -61,9 +61,9 @@ test("other admins cannot see private tools, Render settings or private wording;
   await expect(iceRow).toContainText("Admin");
   await expect(iceRow).not.toContainText(/ผู้ก่อตั้ง|เจ้าของระบบ|👑/);
   await expect(iceRow.locator("select")).toHaveCount(0);
-  await page.getByLabel("ระดับสมาชิก QA viewer").selectOption("reviewer");
+  await page.getByLabel("ระดับสมาชิก QA viewer").selectOption("editor");
   await expect(page.getByLabel("ระดับสมาชิก QA viewer")).toHaveValue(
-    "reviewer",
+    "editor",
   );
   await page.getByLabel("ระดับสมาชิก QA viewer").selectOption("viewer");
   await capture(page, {
