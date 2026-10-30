@@ -83,9 +83,9 @@ export function LeadLabView({
   }, [leadLabItems]);
 
   return (
-    <div className="space-y-6 pb-20 animate-fade-in">
+    <div className="max-w-6xl mx-auto px-3 sm:px-5 py-3.5 space-y-4 sm:space-y-5 pb-24 animate-in fade-in">
       {/* 🧪 HERO BANNER */}
-      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-indigo-950 via-slate-900 to-purple-950 text-white p-6 sm:p-8 shadow-xl border border-indigo-800/40">
+      <div className="relative overflow-hidden rounded-2xl sm:rounded-3xl bg-gradient-to-br from-indigo-950 via-slate-900 to-purple-950 text-white p-4 sm:p-6 md:p-8 shadow-xl border border-indigo-800/40">
         <div className="absolute -right-16 -top-16 w-72 h-72 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
         <div className="absolute right-20 -bottom-16 w-80 h-80 bg-purple-500/10 rounded-full blur-3xl pointer-events-none" />
 
@@ -280,15 +280,16 @@ export function LeadLabView({
           <p className="text-xs text-slate-400 mt-1">ลองเปลี่ยนคำค้นหา หรือกดสร้างสูตรใหม่เข้าระบบ R&D</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+        <div className="columns-2 sm:columns-2 md:columns-3 lg:columns-4 gap-3 sm:gap-4 [column-fill:_balance]">
           {filteredItems.map((item) => (
-            <LabItemCard
-              key={item.id}
-              item={item}
-              currentUserId={currentUser.id}
-              onSelect={() => setSelectedItem(item)}
-              onToggleLike={() => toggleLikeLeadLabItem(item.id)}
-            />
+            <div key={item.id} className="break-inside-avoid mb-3 sm:mb-4">
+              <LabItemCard
+                item={item}
+                currentUserId={currentUser.id}
+                onSelect={() => setSelectedItem(item)}
+                onToggleLike={() => toggleLikeLeadLabItem(item.id)}
+              />
+            </div>
           ))}
         </div>
       )}
@@ -361,16 +362,19 @@ function LabItemCard({
     approved: {
       bg: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30',
       label: 'ผ่านอนุมัติ · พร้อมบรรจุร้าน',
+      shortLabel: 'ผ่านอนุมัติ',
       icon: CheckCircle2,
     },
     testing: {
       bg: 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/30',
       label: 'กำลังทดลอง & ปรับสูตร',
+      shortLabel: 'กำลังทดลอง',
       icon: Clock,
     },
     shelved: {
       bg: 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/30',
       label: 'พักสูตร / ชะลอไว้',
+      shortLabel: 'พักสูตร',
       icon: Archive,
     },
   }[item.status];
@@ -382,23 +386,25 @@ function LabItemCard({
       : 0;
 
   return (
-    <div className="group flex flex-col rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden">
-      {/* Top Media Banner */}
-      <div className="relative h-48 w-full bg-slate-100 dark:bg-slate-800 overflow-hidden cursor-pointer" onClick={onSelect}>
+    <div className="group flex flex-col rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 shadow-2xs hover:shadow-md transition-all duration-200 overflow-hidden break-inside-avoid">
+      {/* Top Media Banner: Fit image with natural aspect ratio (varying height for landscape/portrait) */}
+      <div
+        className="relative w-full bg-slate-100 dark:bg-slate-800/70 overflow-hidden cursor-pointer flex items-center justify-center"
+        onClick={onSelect}
+      >
         <img
           src={item.photoUrl}
           alt={item.name}
-          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+          className="w-full h-auto object-contain block group-hover:scale-102 transition-transform duration-300"
           loading="lazy"
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
 
         {/* Code & Type Badge */}
-        <div className="absolute top-3 left-3 flex items-center gap-1.5">
-          <span className="px-2.5 py-1 rounded-lg bg-black/60 backdrop-blur-md text-white font-mono text-xs font-bold border border-white/20">
+        <div className="absolute top-2 left-2 flex items-center gap-1 max-w-[80%] flex-wrap">
+          <span className="px-1.5 py-0.5 rounded-md bg-black/65 backdrop-blur-md text-white font-mono text-[9px] font-bold border border-white/20">
             {item.code}
           </span>
-          <span className="px-2 py-1 rounded-lg bg-indigo-600/80 backdrop-blur-md text-white text-[11px] font-bold">
+          <span className="px-1.5 py-0.5 rounded-md bg-indigo-600/85 backdrop-blur-md text-white text-[9px] font-bold">
             {item.type === 'drink' ? 'เครื่องดื่ม' : 'ท็อปปิ้ง'}
           </span>
         </div>
@@ -410,44 +416,50 @@ function LabItemCard({
             e.stopPropagation();
             onToggleLike();
           }}
-          className={`absolute top-3 right-3 w-8 h-8 rounded-full flex items-center justify-center backdrop-blur-md transition-transform active:scale-90 ${
+          className={`absolute top-2 right-2 w-7 h-7 rounded-full flex items-center justify-center backdrop-blur-md transition-transform active:scale-90 ${
             isLiked
               ? 'bg-rose-500 text-white shadow-md shadow-rose-500/30'
-              : 'bg-black/40 text-white/90 hover:bg-black/60'
+              : 'bg-black/45 text-white/95 hover:bg-black/65'
           }`}
           title="กดถูกใจสูตรนี้"
         >
-          <Heart className={`w-4 h-4 ${isLiked ? 'fill-current' : ''}`} />
+          <Heart className={`w-3.5 h-3.5 ${isLiked ? 'fill-current' : ''}`} />
         </button>
-
-        {/* Bottom Title on Image */}
-        <div className="absolute bottom-3 left-3 right-3 text-white">
-          <div className="text-[11px] font-medium text-indigo-300">{item.category}</div>
-          <h3 className="font-extrabold text-base leading-tight truncate text-white drop-shadow-sm">{item.name}</h3>
-          <div className="text-[11px] text-slate-300 font-mono truncate">{item.nameEn}</div>
-        </div>
       </div>
 
-      {/* Card Content */}
-      <div className="p-4 flex-1 flex flex-col justify-between space-y-4">
-        {/* Status Badge */}
-        <div className="flex items-center justify-between text-xs">
-          <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border font-semibold ${statusBadge.bg}`}>
-            <StatusIcon className="w-3.5 h-3.5" />
-            <span>{statusBadge.label}</span>
+      {/* Card Content Below Image */}
+      <div className="p-3 sm:p-3.5 flex-1 flex flex-col justify-between space-y-2.5">
+        {/* Category & Title */}
+        <div className="cursor-pointer" onClick={onSelect}>
+          <div className="text-[10px] font-semibold text-indigo-600 dark:text-indigo-400 truncate">
+            {item.category}
+          </div>
+          <h3 className="font-extrabold text-xs sm:text-sm text-slate-900 dark:text-white leading-snug group-hover:text-indigo-600 transition-colors line-clamp-2 mt-0.5">
+            {item.name}
+          </h3>
+          <div className="text-[10px] text-slate-400 font-mono truncate mt-0.5">
+            {item.nameEn}
+          </div>
+        </div>
+
+        {/* Status Badge & GP */}
+        <div className="flex items-center justify-between text-[10px] pt-1 border-t border-slate-100 dark:border-slate-800">
+          <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md border font-bold text-[10px] ${statusBadge.bg}`}>
+            <StatusIcon className="w-3 h-3" />
+            <span>{statusBadge.shortLabel}</span>
           </span>
           <div className="text-right">
-            <span className="text-[10px] text-slate-400">กำไร GP</span>
-            <span className="ml-1 font-mono font-bold text-emerald-600 dark:text-emerald-400">{grossProfitPercent}%</span>
+            <span className="text-[9px] text-slate-400">GP </span>
+            <span className="font-mono font-bold text-emerald-600 dark:text-emerald-400 text-[11px]">{grossProfitPercent}%</span>
           </div>
         </div>
 
         {/* 🍬 Sweetness Matrix Quick Selector */}
-        <div className="bg-slate-50 dark:bg-slate-800/60 p-2.5 rounded-xl border border-slate-100 dark:border-slate-800 space-y-2">
-          <div className="flex items-center justify-between text-[11px]">
+        <div className="bg-slate-50 dark:bg-slate-800/60 p-2 rounded-xl border border-slate-100 dark:border-slate-800/80 space-y-1.5">
+          <div className="flex items-center justify-between text-[10px]">
             <span className="font-bold text-slate-600 dark:text-slate-300 flex items-center gap-1">
-              <Droplet className="w-3 h-3 text-indigo-500" />
-              <span>ระดับความหวาน & Brix:</span>
+              <Droplet className="w-2.5 h-2.5 text-indigo-500" />
+              <span>หวาน:</span>
             </span>
             <div className="flex gap-1">
               {(['0', '50', '100'] as const).map((lvl) => (
@@ -455,7 +467,7 @@ function LabItemCard({
                   key={lvl}
                   type="button"
                   onClick={() => setSelectedSweetness(lvl)}
-                  className={`px-2 py-0.5 rounded-md font-bold text-[10px] transition-colors ${
+                  className={`px-1.5 py-0.5 rounded font-mono font-bold text-[9px] transition-colors ${
                     selectedSweetness === lvl
                       ? 'bg-indigo-600 text-white shadow-xs'
                       : 'bg-white dark:bg-slate-700 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-600 hover:bg-slate-100'
@@ -468,60 +480,52 @@ function LabItemCard({
           </div>
 
           {/* Active sweetness summary */}
-          <div className="text-[11px] text-slate-600 dark:text-slate-300 space-y-1">
-            <div className="flex items-center justify-between font-mono">
-              <span className="text-slate-500 dark:text-slate-400">
-                ไซรัป: <strong className="text-slate-800 dark:text-white">{activeSweetness.syrupMl} ml</strong>
-              </span>
-              <span className="text-amber-600 dark:text-amber-400 font-bold">
-                {activeSweetness.brix} °Bx
-              </span>
-              <span className="text-slate-500 dark:text-slate-400">
-                {activeSweetness.caloriesKcal} kcal
-              </span>
-            </div>
-            <p className="text-[10px] text-slate-500 dark:text-slate-400 italic line-clamp-1">
-              "{activeSweetness.tasteNotes}"
-            </p>
+          <div className="text-[10px] font-mono flex items-center justify-between text-slate-600 dark:text-slate-300 pt-0.5">
+            <span>{activeSweetness.syrupMl}ml</span>
+            <span className="text-amber-600 dark:text-amber-400 font-bold">{activeSweetness.brix}°Bx</span>
+            <span>{activeSweetness.caloriesKcal}kcal</span>
           </div>
+          <p className="text-[9px] text-slate-500 dark:text-slate-400 italic truncate">
+            "{activeSweetness.tasteNotes}"
+          </p>
         </div>
 
         {/* Cost & Price Row */}
-        <div className="flex items-center justify-between pt-2 border-t border-slate-100 dark:border-slate-800 text-xs">
+        <div className="flex items-center justify-between pt-1 border-t border-slate-100 dark:border-slate-800 text-[11px]">
           <div>
-            <div className="text-[10px] text-slate-400 font-medium">ต้นทุน/แก้ว</div>
+            <div className="text-[9px] text-slate-400 font-medium">ทุน/แก้ว</div>
             <div className="font-mono font-bold text-slate-700 dark:text-slate-300">
-              ฿{item.costTotalThb.toFixed(2)}
+              ฿{item.costTotalThb.toFixed(0)}
             </div>
           </div>
           <div className="text-right">
-            <div className="text-[10px] text-slate-400 font-medium">ราคาขายแนะนำ</div>
-            <div className="font-mono font-extrabold text-base text-indigo-600 dark:text-indigo-400">
-              ฿{item.suggestedPriceThb.toFixed(2)}
+            <div className="text-[9px] text-slate-400 font-medium">ราคาขาย</div>
+            <div className="font-mono font-black text-sm text-indigo-600 dark:text-indigo-400">
+              ฿{item.suggestedPriceThb.toFixed(0)}
             </div>
           </div>
         </div>
 
         {/* Footer Actions & Comments Count */}
-        <div className="flex items-center justify-between pt-2 border-t border-slate-100 dark:border-slate-800 text-xs">
-          <div className="flex items-center gap-3 text-slate-400">
-            <span className="inline-flex items-center gap-1">
-              <Heart className={`w-3.5 h-3.5 ${isLiked ? 'text-rose-500 fill-current' : ''}`} />
-              <span className="font-mono text-[11px] font-bold">{(item.likedBy || []).length}</span>
+        <div className="flex items-center justify-between pt-1 border-t border-slate-100 dark:border-slate-800 text-[10px]">
+          <div className="flex items-center gap-2 text-slate-400">
+            <span className="inline-flex items-center gap-0.5" title="ยอดถูกใจ">
+              <Heart className={`w-3 h-3 ${isLiked ? 'text-rose-500 fill-current' : ''}`} />
+              <span className="font-mono text-[10px] font-bold">{(item.likedBy || []).length}</span>
             </span>
-            <span className="inline-flex items-center gap-1">
-              <MessageSquare className="w-3.5 h-3.5" />
-              <span className="font-mono text-[11px] font-bold">{totalComments}</span>
+            <span className="inline-flex items-center gap-0.5" title="ความคิดเห็นและรอบทดลอง">
+              <MessageSquare className="w-3 h-3" />
+              <span className="font-mono text-[10px] font-bold">{totalComments}</span>
             </span>
           </div>
 
           <button
             type="button"
             onClick={onSelect}
-            className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-indigo-50 dark:bg-indigo-950/40 hover:bg-indigo-100 text-indigo-700 dark:text-indigo-300 text-xs font-bold transition-colors"
+            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-indigo-50 dark:bg-indigo-950/40 hover:bg-indigo-100 text-indigo-700 dark:text-indigo-300 text-[10px] font-bold transition-colors"
           >
-            <span>ดูสูตร & โต้ตอบ</span>
-            <ArrowRight className="w-3.5 h-3.5" />
+            <span>ดูสูตร</span>
+            <ArrowRight className="w-3 h-3" />
           </button>
         </div>
       </div>

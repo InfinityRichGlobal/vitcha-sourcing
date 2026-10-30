@@ -90,9 +90,9 @@ export function FranchiseStoreView({
   const themeBtn = isEmerald ? 'bg-emerald-600 hover:bg-emerald-500' : 'bg-cyan-600 hover:bg-cyan-500';
 
   return (
-    <div className="space-y-6 pb-24 animate-fade-in print:p-0 print:space-y-4">
+    <div className="max-w-6xl mx-auto px-3 sm:px-5 py-3.5 space-y-4 sm:space-y-6 pb-24 animate-in fade-in print:p-0 print:space-y-4">
       {/* 🏪 STORE SWITCHER & HERO BANNER (Hidden during print) */}
-      <div className={`relative overflow-hidden rounded-3xl bg-gradient-to-br ${themeBg} text-white p-6 sm:p-8 shadow-xl border print:hidden`}>
+      <div className={`relative overflow-hidden rounded-2xl sm:rounded-3xl bg-gradient-to-br ${themeBg} text-white p-4 sm:p-6 md:p-8 shadow-xl border print:hidden`}>
         {/* Top Store Selector Tabs */}
         <div className="flex flex-wrap items-center justify-between gap-3 pb-6 border-b border-white/10">
           <div className="flex items-center gap-2">
@@ -168,14 +168,14 @@ export function FranchiseStoreView({
       </div>
 
       {/* 📋 MENU BOARD SIMULATOR (Screen & Print) */}
-      <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-md p-6 sm:p-8 space-y-8 print:border-none print:shadow-none print:p-0">
+      <div className="bg-white dark:bg-slate-900 rounded-2xl sm:rounded-3xl border border-slate-200 dark:border-slate-800 shadow-md p-4 sm:p-6 md:p-8 space-y-6 print:border-none print:shadow-none print:p-0">
         {/* Menu Board Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-6 border-b border-slate-200 dark:border-slate-800 gap-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-4 sm:pb-6 border-b border-slate-200 dark:border-slate-800 gap-3">
           <div>
-            <div className="text-[11px] font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-widest">
+            <div className="text-[10px] sm:text-[11px] font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-widest">
               DIGITAL MENU BOARD SIMULATOR
             </div>
-            <h2 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight flex items-center gap-2">
+            <h2 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white tracking-tight flex items-center gap-2 mt-0.5">
               <span>กระดานป้ายเมนูหน้าร้าน: {activeStore.name}</span>
             </h2>
             <p className="text-xs text-slate-500 mt-1">
@@ -194,14 +194,14 @@ export function FranchiseStoreView({
         </div>
 
         {/* 🥤 SECTION 1: DRINKS CATEGORY */}
-        <div className="space-y-4">
-          <div className="flex items-center gap-2 text-sm font-extrabold text-slate-800 dark:text-white uppercase tracking-wider">
+        <div className="space-y-3.5">
+          <div className="flex items-center gap-2 text-xs sm:text-sm font-extrabold text-slate-800 dark:text-white uppercase tracking-wider">
             <Coffee className="w-4 h-4 text-indigo-600" />
             <span>รายการเครื่องดื่ม (Handcrafted Beverages)</span>
             <span className="text-xs text-slate-400 font-normal">({drinksList.length} รายการ)</span>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+          <div className="columns-2 sm:columns-2 md:columns-3 lg:columns-4 gap-3 sm:gap-4 [column-fill:_balance]">
             {drinksList.map(({ menuItem, labItem }) => {
               const badgeStyle = {
                 'Best Seller': 'bg-amber-500 text-white',
@@ -213,62 +213,62 @@ export function FranchiseStoreView({
               }[menuItem.badge || 'None'];
 
               return (
-                <div
-                  key={menuItem.id}
-                  onClick={() => setSelectedQuickSopItem({ menuItem, labItem })}
-                  className="group relative rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/80 p-3.5 hover:shadow-lg transition-all duration-200 cursor-pointer flex flex-col justify-between hover:-translate-y-0.5 print:border-slate-300 print:bg-white"
-                >
-                  {/* Photo Container */}
-                  <div className="relative aspect-4/3 w-full rounded-xl overflow-hidden bg-slate-200 dark:bg-slate-700 mb-3">
-                    <img
-                      src={labItem.photoUrl}
-                      alt={menuItem.customName || labItem.name}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                    />
-                    {menuItem.badge && menuItem.badge !== 'None' && (
-                      <span className={`absolute top-2 left-2 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold shadow-md ${badgeStyle}`}>
-                        {menuItem.badge}
+                <div key={menuItem.id} className="break-inside-avoid mb-3 sm:mb-4">
+                  <div
+                    onClick={() => setSelectedQuickSopItem({ menuItem, labItem })}
+                    className="group relative rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/80 p-2.5 sm:p-3 hover:shadow-md transition-all duration-200 cursor-pointer flex flex-col justify-between hover:-translate-y-0.5 print:border-slate-300 print:bg-white"
+                  >
+                    {/* Photo Container: Fit image with natural aspect ratio */}
+                    <div className="relative w-full rounded-xl overflow-hidden bg-slate-100 dark:bg-slate-700/60 mb-2 flex items-center justify-center">
+                      <img
+                        src={labItem.photoUrl}
+                        alt={menuItem.customName || labItem.name}
+                        className="w-full h-auto object-contain block group-hover:scale-102 transition-transform duration-300"
+                        loading="lazy"
+                      />
+                      {menuItem.badge && menuItem.badge !== 'None' && (
+                        <span className={`absolute top-2 left-2 px-2 py-0.5 rounded-full text-[9px] font-extrabold shadow-md ${badgeStyle}`}>
+                          {menuItem.badge}
+                        </span>
+                      )}
+                      <span className="absolute bottom-2 right-2 px-1.5 py-0.5 rounded-md bg-black/60 backdrop-blur-sm text-white font-mono text-[9px]">
+                        {labItem.code}
                       </span>
-                    )}
-                    <span className="absolute bottom-2 right-2 px-2 py-0.5 rounded-md bg-black/60 backdrop-blur-sm text-white font-mono text-[10px]">
-                      {labItem.code}
-                    </span>
-                  </div>
+                    </div>
 
-                  {/* Title & Price */}
-                  <div className="space-y-1.5 flex-1">
-                    <div className="flex items-start justify-between gap-2">
-                      <h4 className="font-extrabold text-sm text-slate-900 dark:text-white leading-snug group-hover:text-indigo-600 transition-colors">
-                        {menuItem.customName || labItem.name}
-                      </h4>
-                      <div className="text-right">
-                        <span className="font-mono font-black text-base text-indigo-600 dark:text-indigo-400">
+                    {/* Title & Price */}
+                    <div className="space-y-1 flex-1">
+                      <div className="flex items-start justify-between gap-1.5">
+                        <h4 className="font-extrabold text-xs sm:text-sm text-slate-900 dark:text-white leading-snug group-hover:text-indigo-600 transition-colors line-clamp-2">
+                          {menuItem.customName || labItem.name}
+                        </h4>
+                        <span className="font-mono font-black text-sm sm:text-base text-indigo-600 dark:text-indigo-400 shrink-0">
                           ฿{menuItem.retailPriceThb}
                         </span>
                       </div>
-                    </div>
-                    <div className="text-[11px] text-slate-400 font-mono truncate">
-                      {labItem.nameEn}
+                      <div className="text-[10px] text-slate-400 font-mono truncate">
+                        {labItem.nameEn}
+                      </div>
+
+                      {/* Sweetness Quick Chips */}
+                      <div className="flex flex-wrap items-center gap-1 pt-1 text-[9px] text-slate-500 font-mono">
+                        <span className="px-1.5 py-0.5 rounded bg-slate-200/70 dark:bg-slate-700 font-semibold">
+                          0% ({labItem.sweetnessLevels.zero.brix}°)
+                        </span>
+                        <span className="px-1.5 py-0.5 rounded bg-indigo-100 dark:bg-indigo-900/60 text-indigo-700 dark:text-indigo-300 font-semibold">
+                          50% ({labItem.sweetnessLevels.half.brix}°)
+                        </span>
+                        <span className="px-1.5 py-0.5 rounded bg-slate-200/70 dark:bg-slate-700 font-semibold">
+                          100% ({labItem.sweetnessLevels.full.brix}°)
+                        </span>
+                      </div>
                     </div>
 
-                    {/* Sweetness Quick Chips */}
-                    <div className="flex items-center gap-1 pt-1.5 text-[10px] text-slate-500">
-                      <span className="px-1.5 py-0.5 rounded bg-slate-200/80 dark:bg-slate-700 font-mono font-semibold">
-                        0% ({labItem.sweetnessLevels.zero.brix}°Bx)
-                      </span>
-                      <span className="px-1.5 py-0.5 rounded bg-indigo-100 dark:bg-indigo-900/60 text-indigo-700 dark:text-indigo-300 font-mono font-semibold">
-                        50% ({labItem.sweetnessLevels.half.brix}°Bx)
-                      </span>
-                      <span className="px-1.5 py-0.5 rounded bg-slate-200/80 dark:bg-slate-700 font-mono font-semibold">
-                        100% ({labItem.sweetnessLevels.full.brix}°Bx)
-                      </span>
+                    {/* Action Link */}
+                    <div className="pt-2 mt-2 border-t border-slate-200/60 dark:border-slate-700 flex items-center justify-between text-[10px] text-slate-400 group-hover:text-indigo-600 transition-colors print:hidden">
+                      <span>สูตรชง SOP</span>
+                      <span className="font-bold">➔</span>
                     </div>
-                  </div>
-
-                  {/* Action Link */}
-                  <div className="pt-2 mt-2 border-t border-slate-200/60 dark:border-slate-700 flex items-center justify-between text-[11px] text-slate-400 group-hover:text-indigo-600 transition-colors print:hidden">
-                    <span>ดูสูตรชง SOP</span>
-                    <span className="font-bold">➔</span>
                   </div>
                 </div>
               );
@@ -278,29 +278,32 @@ export function FranchiseStoreView({
 
         {/* 🍮 SECTION 2: TOPPINGS CATEGORY */}
         {toppingsList.length > 0 && (
-          <div className="space-y-4 pt-4 border-t border-slate-200 dark:border-slate-800">
-            <div className="flex items-center gap-2 text-sm font-extrabold text-slate-800 dark:text-white uppercase tracking-wider">
+          <div className="space-y-3.5 pt-4 border-t border-slate-200 dark:border-slate-800">
+            <div className="flex items-center gap-2 text-xs sm:text-sm font-extrabold text-slate-800 dark:text-white uppercase tracking-wider">
               <Sparkles className="w-4 h-4 text-purple-600" />
               <span>ท็อปปิ้งพรีเมียม (Add-on Toppings)</span>
               <span className="text-xs text-slate-400 font-normal">({toppingsList.length} รายการ)</span>
             </div>
 
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2.5 sm:gap-3">
               {toppingsList.map(({ menuItem, labItem }) => (
                 <div
                   key={menuItem.id}
                   onClick={() => setSelectedQuickSopItem({ menuItem, labItem })}
-                  className="rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200/70 dark:border-slate-700 p-2.5 flex flex-col items-center text-center cursor-pointer hover:shadow-md transition-all"
+                  className="rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200/70 dark:border-slate-700 p-2 sm:p-2.5 flex flex-col items-center text-center cursor-pointer hover:shadow-md transition-all group"
                 >
-                  <img
-                    src={labItem.photoUrl}
-                    alt={menuItem.customName || labItem.name}
-                    className="w-16 h-16 rounded-lg object-cover mb-2"
-                  />
+                  <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-lg overflow-hidden bg-white dark:bg-slate-700 mb-1.5 flex items-center justify-center p-1">
+                    <img
+                      src={labItem.photoUrl}
+                      alt={menuItem.customName || labItem.name}
+                      className="w-full h-full object-contain group-hover:scale-105 transition-transform"
+                      loading="lazy"
+                    />
+                  </div>
                   <div className="font-bold text-xs text-slate-800 dark:text-white line-clamp-1">
                     {menuItem.customName || labItem.name}
                   </div>
-                  <div className="font-mono font-extrabold text-sm text-purple-600 dark:text-purple-400 mt-1">
+                  <div className="font-mono font-extrabold text-xs sm:text-sm text-purple-600 dark:text-purple-400 mt-0.5">
                     +฿{menuItem.retailPriceThb}
                   </div>
                 </div>
