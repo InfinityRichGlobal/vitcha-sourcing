@@ -21,12 +21,18 @@ test('China basemap loads with English labels and keeps its zoom across polling'
   await expect(map).toHaveAttribute('data-map-status', 'ready', { timeout: 60000 });
   await expect(map.locator('.leaflet-tile-loaded').first()).toBeVisible();
   await expect(map.getByText('Map language: English')).toBeVisible();
-  // Compare two pins' screen separation: a single pin can stay at the zoom center.
+  // Compare the widest pin separation: records can share GPS coordinates,
+  // so the first two pins need not be distinct locations.
   const markers = map.locator('.leaflet-marker-icon');
   const separation = () => markers.evaluateAll(nodes => {
-    const a = nodes[0].getBoundingClientRect();
-    const b = nodes[1].getBoundingClientRect();
-    return Math.hypot(a.x - b.x, a.y - b.y);
+    const points = nodes.map(node => node.getBoundingClientRect());
+    let widest = 0;
+    for (let i = 0; i < points.length; i++) {
+      for (let j = i + 1; j < points.length; j++) {
+        widest = Math.max(widest, Math.hypot(points[i].x - points[j].x, points[i].y - points[j].y));
+      }
+    }
+    return widest;
   });
   const before = await separation();
   expect(before).toBeGreaterThan(0);
