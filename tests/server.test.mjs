@@ -843,3 +843,50 @@ test('stale R&D and franchise edit forms cannot recreate records after another u
     assert.ok(JSON.stringify(trash).includes('Keep in trash'));
   }
 });
+
+test('R&D cycle retries close only the intended round and never close a newly opened round', async t => {
+  const {call,login}=await setup(t); const token=await login('review');
+  const created=await call('/api/lead-lab/items',token,{id:'cycle-retry',name:'Cycle retry'});
+  const first=created.data.item.revisionCycles[0].cycleNumber;
+  const command={action:'close',summary:'ผลทดลองรอบแรก',nextTitle:'รอบถัดไป',expectedCycleNumber:first,operationId:'close-once'};
+  assert.equal((await call('/api/lead-lab/items/cycle-retry/cycle',token,command)).status,200);
+  const replay=await call('/api/lead-lab/items/cycle-retry/cycle',token,command);
+  assert.equal(replay.status,200); assert.equal(replay.data.item.revisionCycles.length,2);
+  assert.equal(replay.data.item.revisionCycles[1].status,'active');
+  const stale=await call('/api/lead-lab/items/cycle-retry/cycle',token,{...command,operationId:'different-client'});
+  assert.equal(stale.status,409);
+});
+
+test('R&D and brand deletion reject a stale record and repeated acknowledged deletion is safe', async t => {
+  const {call,login}=await setup(t); const token=await login('review');
+  for(const [route,key,id] of [['/api/lead-lab/items','item','delete-lab'],['/api/franchise-stores','store','delete-brand']]) {
+    const old=(await call(route,token,{id,name:'ก่อนแก้ไข'})).data[key];
+    const fresh=(await call(route,token,{id,name:'ข้อมูลล่าสุดของเพื่อน',expectedUpdatedAt:old.updatedAt})).data[key];
+    assert.equal((await call(`${route}/${id}`,token,{expectedUpdatedAt:old.updatedAt,operationId:`stale-${id}`},'DELETE')).status,409);
+    const command={expectedUpdatedAt:fresh.updatedAt,operationId:`delete-${id}`};
+    assert.equal((await call(`${route}/${id}`,token,command,'DELETE')).status,200);
+    assert.equal((await call(`${route}/${id}`,token,command,'DELETE')).status,200);
+    assert.equal((await call(`/api/trash/${id}/restore`,await login('ice'),{})).status,200);
+    assert.equal((await call(`${route}/${id}`,token,command,'DELETE')).status,200);
+    const list=(await call(route,token,undefined,'GET')).data[key==='item'?'items':'stores'];
+    assert.ok(list.some(x=>x.id===id),'late retry must not delete a restored record');
+  }
+});
+
+test('R&D explicit like retries keep intent and stale status changes are rejected', async t => {
+  const {call,login}=await setup(t);const token=await login('review');
+  const created=(await call('/api/lead-lab/items',token,{id:'audit-status',name:'Status',status:'testing'})).data.item;
+  const route='/api/lead-lab/items/audit-status';
+  await call(route+'/comments',token,{operationId:'audit-like-comment',content:'Test'});
+  for(const suffix of ['/like','/comments/audit-like-comment/like']) {
+    for(const liked of [true,true,false,false]) {
+      const response=await call(route+suffix,token,{liked});assert.equal(response.status,200);
+      const likes=response.data.likedBy || response.data.likes;
+      assert.equal(likes.includes('user-review'),liked);assert.equal(likes.filter(x=>x==='user-review').length,liked?1:0);
+    }
+  }
+  assert.equal((await call(route+'/status',token,{status:'approved',expectedUpdatedAt:created.updatedAt})).status,409);
+  const item=(await call('/api/lead-lab/items',token,undefined,'GET')).data.items[0];
+  assert.equal(item.status,'testing');
+  assert.equal((await call(route+'/status',token,{status:'approved',expectedUpdatedAt:item.updatedAt})).status,200);
+});

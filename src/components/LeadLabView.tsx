@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
+import { usePendingMedia } from '../hooks/usePendingMedia';
 import {
   FlaskConical,
   Edit2,
@@ -348,6 +349,7 @@ export function LeadLabView({
             <div key={item.id} className="break-inside-avoid mb-3 sm:mb-4">
               <LabItemCard
                 item={item}
+                canWrite={canEditLab}
                 currentUserId={currentUser.id}
                 users={users}
                 onSelect={() => setSelectedItem(item)}
@@ -368,13 +370,13 @@ export function LeadLabView({
           onToggleLike={() => toggleLikeLeadLabItem(activeDetailItem.id)}
           onAddComment={(content, target, extra) => addLeadLabComment(activeDetailItem.id, content, target, extra)}
           onToggleCommentLike={(commentId) => toggleLikeLeadLabComment(activeDetailItem.id, commentId)}
-          onCycleRevision={(summary, nextTitle) => cycleLeadLabRevision(activeDetailItem.id, summary, nextTitle)}
+          onCycleRevision={(summary, nextTitle, cycleNumber) => cycleLeadLabRevision(activeDetailItem.id, summary, nextTitle, cycleNumber)}
           onSetStatus={(status) => setLeadLabStatus(activeDetailItem.id, status)}
           onRecordView={() => recordLeadLabItemView(activeDetailItem.id)}
           onEdit={canEditLab ? () => setEditingLab(structuredClone(activeDetailItem)) : undefined}
           onDelete={async () => {
             if (window.confirm(`ยืนยันการลบสูตร "${activeDetailItem.name}" หรือไม่?`)) {
-              if (!await deleteLeadLabItem(activeDetailItem.id)) return;
+              if (!await deleteLeadLabItem(activeDetailItem.id, activeDetailItem.updatedAt)) return;
               setSelectedItem(null);
             }
           }}
@@ -405,12 +407,14 @@ export function LeadLabView({
 function LabItemCard({
   item,
   currentUserId,
+  canWrite,
   users = [],
   onSelect,
   onToggleLike,
 }: {
   item: LabItem;
   currentUserId: string;
+  canWrite: boolean;
   users?: any[];
   onSelect: () => void;
   onToggleLike: () => void;
@@ -469,11 +473,11 @@ function LabItemCard({
         </div>
 
         {/* Like Button on Image */}
-        <button
+        <button disabled={!canWrite}
           type="button"
           onClick={(e) => {
             e.stopPropagation();
-            onToggleLike();
+            if (canWrite) onToggleLike();
           }}
           className={`absolute top-2 right-2 w-7 h-7 rounded-full flex items-center justify-center backdrop-blur-md transition-transform active:scale-90 ${
             isLiked
@@ -579,7 +583,7 @@ function LabDetailModal({
     extra?: { photoUrl?: string; voiceUrl?: string; duration?: number }
   ) => Promise<boolean>;
   onToggleCommentLike: (commentId: string) => void;
-  onCycleRevision: (summary: string, nextTitle?: string) => Promise<boolean>;
+  onCycleRevision: (summary: string, nextTitle?: string, cycleNumber?: number) => Promise<boolean>;
   onSetStatus: (status: LabFormulaStatus) => void;
   onRecordView?: () => void;
   onDelete: () => void;
@@ -587,6 +591,10 @@ function LabDetailModal({
 }) {
   const [commentText, setCommentText] = useState('');
   const [sweetnessTarget, setSweetnessTarget] = useState<'all' | '0' | '50' | '100'>('all');
+  const canWrite = Boolean(onEdit);
+  const [isSubmittingComment, setIsSubmittingComment] = useState(false);
+  const [isSavingCycle, setIsSavingCycle] = useState(false);
+  const [closingCycleNumber, setClosingCycleNumber] = useState<number>();
   const [isClosingCycle, setIsClosingCycle] = useState(false);
   const [cycleSummary, setCycleSummary] = useState('');
   const [nextCycleTitle, setNextCycleTitle] = useState('');
@@ -671,6 +679,8 @@ function LabDetailModal({
       return;
     }
 
+    if (isUploadingAttachment) return;
+    setIsUploadingAttachment(true);
     try {
       if (!navigator.mediaDevices?.getUserMedia || typeof MediaRecorder === 'undefined') {
         alert('เบราว์เซอร์นี้ไม่รองรับการอัดเสียงสด หรือไม่ได้เปิดผ่าน HTTPS');
@@ -740,35 +750,42 @@ function LabDetailModal({
       streamRef.current?.getTracks().forEach((t) => t.stop());
       setIsRecording(false);
       alert('ไม่ได้รับสิทธิ์ใช้ไมโครโฟน กรุณากดอนุญาตไมโครโฟนในเบราว์เซอร์');
-    }
+    } finally { setIsUploadingAttachment(false); }
   };
 
   const handlePostComment = async (e: React.FormEvent) => {
     e.preventDefault();
     const text = commentText.trim();
-    if (!text && !commentPhotoUrl && !commentVoiceUrl) return;
+    if (!canWrite || isSubmittingComment || isUploadingAttachment || isRecording || (!text && !commentPhotoUrl && !commentVoiceUrl)) return;
+    setIsSubmittingComment(true);
+    try {
 
-    if (!await onAddComment(text, sweetnessTarget, {
-      photoUrl: commentPhotoUrl || undefined,
-      voiceUrl: commentVoiceUrl || undefined,
-      duration: commentVoiceDuration,
-    })) return;
+      if (!await onAddComment(text, sweetnessTarget, {
+        photoUrl: commentPhotoUrl || undefined,
+        voiceUrl: commentVoiceUrl || undefined,
+        duration: commentVoiceDuration,
+      })) return;
 
-    setCommentText('');
-    setCommentPhotoUrl(null);
-    setCommentVoiceUrl(null);
-    setCommentVoiceDuration(undefined);
+      setCommentText('');
+      setCommentPhotoUrl(null);
+      setCommentVoiceUrl(null);
+      setCommentVoiceDuration(undefined);
+    } finally { setIsSubmittingComment(false); }
   };
 
   const handleConfirmCloseCycle = async () => {
+    if (!canWrite || isSavingCycle || closingCycleNumber === undefined) return;
     if (!cycleSummary.trim()) {
       alert('กรุณากรอกข้อสรุปการอ่านคอมเมนต์รอบนี้');
       return;
     }
-    if (!await onCycleRevision(cycleSummary.trim(), nextCycleTitle.trim() || undefined)) return;
-    setIsClosingCycle(false);
-    setCycleSummary('');
-    setNextCycleTitle('');
+    setIsSavingCycle(true);
+    try {
+      if (!await onCycleRevision(cycleSummary.trim(), nextCycleTitle.trim() || undefined, closingCycleNumber)) return;
+      setIsClosingCycle(false);
+      setCycleSummary('');
+      setNextCycleTitle('');
+    } finally { setIsSavingCycle(false); }
   };
 
   return createPortal(
@@ -825,6 +842,7 @@ function LabDetailModal({
             {/* Like Button with avatars preview */}
             <button
               type="button"
+              disabled={!canWrite}
               onClick={onToggleLike}
               className={`h-7 sm:h-8 px-2.5 rounded-xl border text-xs font-bold active:scale-95 transition-all inline-flex items-center gap-1.5 shrink-0 shadow-xs ${
                 isLiked
@@ -919,6 +937,8 @@ function LabDetailModal({
                   ปรับสถานะการพัฒนาสูตร:
                 </label>
                 <select
+                  aria-label="สถานะการพัฒนาสูตร"
+                  disabled={!canWrite}
                   value={item.status}
                   onChange={(e) => onSetStatus(e.target.value as LabFormulaStatus)}
                   className="w-full text-xs font-bold p-2 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 text-slate-800 dark:text-white focus:outline-none"
@@ -1120,14 +1140,14 @@ function LabDetailModal({
                   <span>สมุดบันทึก R&D โต้ตอบปรับปรุงสูตร (Revision History & Team Feedback)</span>
                 </h3>
                 <p className="text-xs text-slate-400">
-                  ทีมงานทุกคนคอมเมนต์ได้ พร้อมแนบรูปถ่าย อัดเสียงสด และเจาะจงระดับความหวาน 0/50/100
+                  ผู้แก้ไขข้อมูลคอมเมนต์ได้ พร้อมแนบรูปถ่าย อัดเสียงสด และเจาะจงระดับความหวาน 0/50/100
                 </p>
               </div>
 
-              {activeCycle && (
+              {canWrite && activeCycle && (
                 <button
                   type="button"
-                  onClick={() => setIsClosingCycle(true)}
+                  onClick={() => { setClosingCycleNumber(activeCycle.cycleNumber); setIsClosingCycle(true); }}
                   className="px-3 py-1.5 rounded-xl bg-purple-100 hover:bg-purple-200 text-purple-700 dark:bg-purple-950/60 dark:text-purple-300 text-xs font-bold transition-colors flex items-center gap-1.5"
                 >
                   <Check className="w-3.5 h-3.5" />
@@ -1143,11 +1163,12 @@ function LabDetailModal({
                   <span className="text-xs font-bold text-purple-900 dark:text-purple-200">
                     ประกาศผลการอ่านคอมเมนต์รอบนี้ และเปิดรอบพัฒนาใหม่
                   </span>
-                  <button type="button" onClick={() => setIsClosingCycle(false)} className="text-xs text-slate-400 hover:text-slate-600">
+                  <button type="button" disabled={isSavingCycle} onClick={() => setIsClosingCycle(false)} className="text-xs text-slate-400 hover:text-slate-600">
                     ยกเลิก
                   </button>
                 </div>
                 <textarea
+                  disabled={isSavingCycle}
                   value={cycleSummary}
                   onChange={(e) => setCycleSummary(e.target.value)}
                   placeholder="เขียนข้อสรุปผลการเทสต์ (เช่น: เคาะเปลี่ยนจากน้ำตาลทรายเป็นน้ำเชื่อมดอกมะพร้าว GI ต่ำ และลดความฝาดลง 15%)..."
@@ -1156,6 +1177,7 @@ function LabDetailModal({
                 />
                 <input
                   type="text"
+                  disabled={isSavingCycle}
                   value={nextCycleTitle}
                   onChange={(e) => setNextCycleTitle(e.target.value)}
                   placeholder="หัวข้อรอบพัฒนาถัดไป (เช่น: รอบที่ 2: ปรับความเย็นแก้ว 22oz หรือเว้นว่างหากจบสมบูรณ์)"
@@ -1163,6 +1185,7 @@ function LabDetailModal({
                 />
                 <button
                   type="button"
+                  disabled={isSavingCycle}
                   onClick={handleConfirmCloseCycle}
                   className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs rounded-xl shadow-xs transition-colors"
                 >
@@ -1308,6 +1331,7 @@ function LabDetailModal({
                             <div className="flex items-center gap-3 pt-1">
                               <button
                                 type="button"
+                                disabled={!canWrite}
                                 onClick={() => onToggleCommentLike(comm.id)}
                                 className={`text-[11px] font-semibold flex items-center gap-1 transition-colors ${
                                   commentLiked ? 'text-indigo-600 font-bold' : 'text-slate-400 hover:text-slate-600'
@@ -1325,7 +1349,7 @@ function LabDetailModal({
                 </div>
 
                 {/* Add Comment Input Form with Photo & Live Voice Recording */}
-                <form onSubmit={handlePostComment} className="pt-3 border-t border-slate-100 dark:border-slate-800 space-y-2.5">
+                {canWrite && <form onSubmit={handlePostComment} className="pt-3 border-t border-slate-100 dark:border-slate-800 space-y-2.5"><fieldset disabled={isSubmittingComment} className="space-y-2.5">
                   <div className="flex items-center justify-between gap-2 flex-wrap">
                     <div className="flex items-center gap-2">
                       <span className="text-[11px] text-slate-500 font-medium">ระดับความหวาน:</span>
@@ -1354,7 +1378,7 @@ function LabDetailModal({
                       <button
                         type="button"
                         onClick={() => photoInputRef.current?.click()}
-                        disabled={isUploadingAttachment}
+                        disabled={isUploadingAttachment || isRecording}
                         className="h-7 px-2 rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold transition-colors inline-flex items-center gap-1"
                         title="แนบรูปถ่ายประกอบคอมเมนต์"
                       >
@@ -1365,6 +1389,7 @@ function LabDetailModal({
                       {/* Live Voice Recording Button */}
                       <button
                         type="button"
+                        disabled={isUploadingAttachment}
                         onClick={toggleLiveVoiceRecording}
                         className={`h-7 px-2.5 rounded-lg text-xs font-bold transition-all inline-flex items-center gap-1.5 ${
                           isRecording
@@ -1443,14 +1468,14 @@ function LabDetailModal({
                     />
                     <button
                       type="submit"
-                      disabled={!commentText.trim() && !commentPhotoUrl && !commentVoiceUrl}
+                      disabled={isSubmittingComment || isUploadingAttachment || isRecording || (!commentText.trim() && !commentPhotoUrl && !commentVoiceUrl)}
                       className="px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 disabled:opacity-40 text-white font-bold text-xs transition-colors flex items-center gap-1.5 shrink-0"
                     >
                       <Send className="w-3.5 h-3.5" />
                       <span>ส่งคอมเมนต์</span>
                     </button>
                   </div>
-                </form>
+                </fieldset></form>}
               </div>
             )}
           </div>
@@ -1544,11 +1569,13 @@ export function LabItemFormModal({
   const [ingredients, setIngredients] = useState<LabItem['ingredients']>(item?.ingredients || []);
   const [sweetnessExtra, setSweetnessExtra] = useState(item?.sweetnessLevels);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const pendingMedia = usePendingMedia();
 
   const handlePrimaryUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     try {
+      pendingMedia.begin();
       setIsCompressingPrimary(true);
       const compressed = await compressImageFile(file, 960, 0.75);
       setPhotoUrl(compressed);
@@ -1556,26 +1583,30 @@ export function LabItemFormModal({
       alert(err.message || 'ไม่สามารถประมวลผลรูปภาพได้');
     } finally {
       setIsCompressingPrimary(false);
+      pendingMedia.end();
     }
   };
 
   const handleGalleryUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (!files || files.length === 0) return;
-    for (let i = 0; i < files.length; i++) {
-      try {
-        const compressed = await compressImageFile(files[i], 960, 0.75);
-        setGalleryPhotos((prev) => [...prev, compressed]);
-      } catch (err) {
-        console.warn('Gallery compress fail:', err);
+    const files = Array.from(e.target.files || []);
+    e.target.value = '';
+    if (!files.length) return;
+    pendingMedia.begin();
+    const failed: string[] = [];
+    try {
+      for (const file of files) {
+        try { const compressed = await compressImageFile(file, 960, 0.75); setGalleryPhotos(prev => [...prev, compressed]); }
+        catch { failed.push(file.name); }
       }
-    }
+      if (failed.length) alert(`รูปเหล่านี้ยังไม่ได้เพิ่ม กรุณาเลือกใหม่: ${failed.join(', ')}`);
+    } finally { pendingMedia.end(); }
   };
 
   const handleVideoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
     try {
+      pendingMedia.begin();
       setIsVideoLoading(true);
       for (const file of Array.from(files)) {
         const videoData = await saveVideoFile(file, {
@@ -1590,6 +1621,7 @@ export function LabItemFormModal({
       alert(err.message || 'ไม่สามารถอัปโหลดวิดีโอได้');
     } finally {
       setIsVideoLoading(false);
+      pendingMedia.end();
     }
   };
 
@@ -1606,8 +1638,7 @@ export function LabItemFormModal({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
-    if (isSubmitting) return;
+    if (isSubmitting || pendingMedia.hasPending()) return;
     // Strict validation
     if (!type) {
       alert('กรุณาเลือกประเภทสูตร *');
@@ -1962,6 +1993,7 @@ export function LabItemFormModal({
               </span>
               <AudioRecorder
                 voiceNotes={voiceNotes}
+                onBusyChange={pendingMedia.audioChanged}
                 onVoiceNotesChange={(notes) => setVoiceNotes(notes)}
                 onAudioSaved={(url, dur) => {
                   setVoiceNotes((prev) => [
@@ -2163,6 +2195,7 @@ export function LabItemFormModal({
             <div className="flex justify-between items-center"><b>วัตถุดิบและสัดส่วน</b><button type="button" onClick={() => setIngredients(p => [...p,{name:'',quantity:0,unit:'g',costThb:0}])} className="text-indigo-700 font-bold">+ เพิ่มวัตถุดิบ</button></div>
             {ingredients.map((ing,index) => <div key={index} className="grid grid-cols-2 sm:grid-cols-4 gap-2 border-t pt-2"><label>วัตถุดิบ<input aria-label={`วัตถุดิบ ${index+1}`} required value={ing.name} onChange={e => setIngredients(p => p.map((v,i) => i === index ? {...v,name:e.target.value} : v))} className="w-full border p-2 rounded-lg" /></label><label>ปริมาณ<input type="number" min="0" step="any" value={ing.quantity} onChange={e => setIngredients(p => p.map((v,i) => i === index ? {...v,quantity:Number(e.target.value)} : v))} className="w-full border p-2 rounded-lg" /></label><label>หน่วย<input value={ing.unit} onChange={e => setIngredients(p => p.map((v,i) => i === index ? {...v,unit:e.target.value} : v))} className="w-full border p-2 rounded-lg" /></label><label>ต้นทุน (฿)<input type="number" min="0" step="any" value={ing.costThb} onChange={e => setIngredients(p => p.map((v,i) => i === index ? {...v,costThb:Number(e.target.value)} : v))} className="w-full border p-2 rounded-lg" /></label><button type="button" onClick={() => setIngredients(p => p.filter((_,i) => i !== index))} className="text-rose-600 text-left">นำวัตถุดิบออก</button></div>)}
           </fieldset>
+          {pendingMedia.busy && <p role="status" className="text-sm font-bold text-amber-700">กำลังเตรียมไฟล์ กรุณารอให้ครบก่อนบันทึก</p>}
           <div className="flex justify-end gap-3 pt-3 border-t border-slate-100 dark:border-slate-800">
             <button
               type="button"
@@ -2173,7 +2206,7 @@ export function LabItemFormModal({
             </button>
             <button
               type="submit"
-              disabled={isSubmitting}
+              disabled={isSubmitting || pendingMedia.busy}
               className="px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold shadow-md shadow-indigo-500/20"
             >
               {isSubmitting ? 'กำลังบันทึก...' : item ? 'บันทึกการแก้ไขสูตร' : 'บันทึกสูตรเข้า R&D'}

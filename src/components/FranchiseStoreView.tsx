@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
+import { usePendingMedia } from '../hooks/usePendingMedia';
 import {
   Store,
   Plus,
@@ -108,6 +109,7 @@ export function FranchiseStoreView({
   const [isAddingCategory, setIsAddingCategory] = useState(false);
 
   // Comment input state for store discussion
+  const [isSubmittingStoreComment, setIsSubmittingStoreComment] = useState(false);
   const [storeCommentText, setStoreCommentText] = useState('');
   const [storeSweetnessTarget, setStoreSweetnessTarget] = useState<'all' | '0' | '50' | '100'>('all');
   const [storeCommentPhotoUrl, setStoreCommentPhotoUrl] = useState<string | null>(null);
@@ -132,12 +134,13 @@ export function FranchiseStoreView({
   // Synchronize selected Quick SOP item with latest leadLabItems
   const synchronizedQuickSopItem = useMemo(() => {
     if (!selectedQuickSopItem) return null;
-    const latestLabItem = leadLabItems.find((x) => x.id === selectedQuickSopItem.labItem.id);
-    return latestLabItem ? {
-      menuItem: selectedQuickSopItem.menuItem,
+    const latestMenuItem = activeStore?.menuItems.find(x => x.id === selectedQuickSopItem.menuItem.id);
+    const latestLabItem = leadLabItems.find((x) => x.id === latestMenuItem?.labItemId);
+    return latestLabItem && latestMenuItem ? {
+      menuItem: latestMenuItem,
       labItem: latestLabItem,
     } : null;
-  }, [leadLabItems, selectedQuickSopItem]);
+  }, [leadLabItems, selectedQuickSopItem, activeStore]);
 
   // Record view on opening store
   useEffect(() => {
@@ -280,6 +283,8 @@ export function FranchiseStoreView({
       return;
     }
 
+    if (isUploadingStoreAttachment) return;
+    setIsUploadingStoreAttachment(true);
     try {
       if (!navigator.mediaDevices?.getUserMedia || typeof MediaRecorder === 'undefined') {
         alert('เบราว์เซอร์นี้ไม่รองรับการอัดเสียงสด หรือไม่ได้เปิดผ่าน HTTPS');
@@ -349,25 +354,28 @@ export function FranchiseStoreView({
       storeStreamRef.current?.getTracks().forEach((t) => t.stop());
       setIsRecordingStore(false);
       alert('ไม่ได้รับสิทธิ์ใช้ไมโครโฟน กรุณากดอนุญาตไมโครโฟนในเบราว์เซอร์');
-    }
+    } finally { setIsUploadingStoreAttachment(false); }
   };
 
   const handlePostStoreComment = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!activeStore) return;
+    if (!activeStore || !canEditMenus || isSubmittingStoreComment || isUploadingStoreAttachment || isRecordingStore) return;
     const text = storeCommentText.trim();
     if (!text && !storeCommentPhotoUrl && !storeCommentVoiceUrl) return;
 
-    if (!await addFranchiseStoreComment(activeStore.id, text, storeSweetnessTarget, {
-      photoUrl: storeCommentPhotoUrl || undefined,
-      voiceUrl: storeCommentVoiceUrl || undefined,
-      duration: storeCommentVoiceDuration,
-    })) return;
+    setIsSubmittingStoreComment(true);
+    try {
+      if (!await addFranchiseStoreComment(activeStore.id, text, storeSweetnessTarget, {
+        photoUrl: storeCommentPhotoUrl || undefined,
+        voiceUrl: storeCommentVoiceUrl || undefined,
+        duration: storeCommentVoiceDuration,
+      })) return;
 
-    setStoreCommentText('');
-    setStoreCommentPhotoUrl(null);
-    setStoreCommentVoiceUrl(null);
-    setStoreCommentVoiceDuration(undefined);
+      setStoreCommentText('');
+      setStoreCommentPhotoUrl(null);
+      setStoreCommentVoiceUrl(null);
+      setStoreCommentVoiceDuration(undefined);
+    } finally { setIsSubmittingStoreComment(false); }
   };
 
   const handleAddCategoryToStore = async () => {
@@ -385,7 +393,7 @@ export function FranchiseStoreView({
 
   const handleDeleteStore = async (store: FranchiseStore) => {
     if (window.confirm(`ยืนยันการลบร้าน "${store.name}" ออกจากระบบหรือไม่?`)) {
-      if (!await deleteFranchiseStore(store.id)) return;
+      if (!await deleteFranchiseStore(store.id, store.updatedAt)) return;
       if (selectedStoreId === store.id) {
         setSelectedStoreId(null);
       }
@@ -490,7 +498,7 @@ export function FranchiseStoreView({
                         type="button"
                         onClick={(e) => {
                           e.stopPropagation();
-                          void toggleLikeFranchiseStore(store.id);
+                          if (canEditMenus) void toggleLikeFranchiseStore(store.id);
                         }}
                         className={`absolute top-2 right-2 px-2 py-0.5 rounded-full text-[10px] font-bold shadow-md backdrop-blur-sm flex items-center gap-1 transition-transform active:scale-90 z-10 ${
                           isLiked
@@ -751,7 +759,7 @@ export function FranchiseStoreView({
             <div className="flex items-center gap-1.5">
               <button
                 type="button"
-                onClick={() => void toggleLikeFranchiseStore(activeStore.id)}
+                disabled={!canEditMenus} onClick={() => void toggleLikeFranchiseStore(activeStore.id)}
                 className={`px-3 py-2 rounded-xl flex items-center gap-1.5 text-xs font-bold shadow-md transition-all ${
                   isLikedStore
                     ? 'bg-rose-500 text-white'
@@ -1121,7 +1129,7 @@ export function FranchiseStoreView({
                   </div>
                   <button
                     type="button"
-                    onClick={() => void toggleLikeFranchiseStoreComment(activeStore.id, comm.id)}
+                    disabled={!canEditMenus} onClick={() => void toggleLikeFranchiseStoreComment(activeStore.id, comm.id)}
                     className={`inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-lg transition-colors ${
                       hasLikedComm ? 'bg-indigo-100 text-indigo-700 font-bold' : 'text-slate-400 hover:text-slate-600'
                     }`}
@@ -1164,7 +1172,7 @@ export function FranchiseStoreView({
         </div>
 
         {/* Comment Input Form with Photo & Live Voice Recording */}
-        <form onSubmit={handlePostStoreComment} className="pt-2 space-y-2.5">
+        {canEditMenus && <form onSubmit={handlePostStoreComment} className="pt-2 space-y-2.5"><fieldset disabled={isSubmittingStoreComment} className="space-y-2.5">
           <div className="flex items-center justify-between gap-2 flex-wrap">
             <select
               value={storeSweetnessTarget}
@@ -1188,7 +1196,7 @@ export function FranchiseStoreView({
               <button
                 type="button"
                 onClick={() => storePhotoInputRef.current?.click()}
-                disabled={isUploadingStoreAttachment}
+                disabled={isUploadingStoreAttachment || isRecordingStore}
                 className="h-8 px-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold transition-colors inline-flex items-center gap-1"
                 title="แนบรูปถ่ายประกอบความเห็นหน้าร้าน"
               >
@@ -1198,6 +1206,7 @@ export function FranchiseStoreView({
 
               <button
                 type="button"
+                disabled={isUploadingStoreAttachment}
                 onClick={toggleLiveVoiceRecordingStore}
                 className={`h-8 px-2.5 rounded-xl text-xs font-bold transition-all inline-flex items-center gap-1.5 ${
                   isRecordingStore
@@ -1276,14 +1285,14 @@ export function FranchiseStoreView({
             />
             <button
               type="submit"
-              disabled={!storeCommentText.trim() && !storeCommentPhotoUrl && !storeCommentVoiceUrl}
+              disabled={isSubmittingStoreComment || isUploadingStoreAttachment || isRecordingStore || (!storeCommentText.trim() && !storeCommentPhotoUrl && !storeCommentVoiceUrl)}
               className="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 disabled:opacity-40 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-sm shrink-0"
             >
               <Send className="w-3.5 h-3.5" />
               <span>ส่งความเห็น</span>
             </button>
           </div>
-        </form>
+        </fieldset></form>}
       </div>
 
       {/* 🍵 QUICK SOP MODAL FOR BARISTAS */}
@@ -1297,7 +1306,7 @@ export function FranchiseStoreView({
           onEdit={canEditMenus ? () => { setEditingLab(structuredClone(synchronizedQuickSopItem.labItem)); setSelectedQuickSopItem(null); } : undefined}
           onDelete={canEditMenus ? async () => {
             if (!window.confirm(`ลบสูตร "${synchronizedQuickSopItem.labItem.name}" ไปถังขยะ? เมนูที่เชื่อมสูตรนี้จะยังไม่มีสูตรใช้งานจนกว่าจะกู้คืน`)) return;
-            if (await deleteLeadLabItem(synchronizedQuickSopItem.labItem.id)) setSelectedQuickSopItem(null);
+            if (await deleteLeadLabItem(synchronizedQuickSopItem.labItem.id, synchronizedQuickSopItem.labItem.updatedAt)) setSelectedQuickSopItem(null);
           } : undefined}
           onToggleLikeLabItem={toggleLikeLeadLabItem}
           onAddLabComment={addLeadLabComment}
@@ -1420,6 +1429,7 @@ function StoreFormModal({
   const [isVideoLoading, setIsVideoLoading] = useState(false);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const pendingMedia = usePendingMedia();
 
   const COLOR_PALETTES = [
     { id: 'emerald', label: 'เขียวมรกต', dot: 'bg-emerald-500', ring: 'ring-emerald-500' },
@@ -1435,6 +1445,7 @@ function StoreFormModal({
     const file = e.target.files?.[0];
     if (!file) return;
     try {
+      pendingMedia.begin();
       setIsCompressing(true);
       const compressed = await compressImageFile(file, 960, 0.75);
       setLogoUrl(compressed);
@@ -1442,26 +1453,30 @@ function StoreFormModal({
       alert(err.message || 'ไม่สามารถอัปโหลดรูปภาพได้');
     } finally {
       setIsCompressing(false);
+      pendingMedia.end();
     }
   };
 
   const handleGalleryUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (!files || files.length === 0) return;
-    for (let i = 0; i < files.length; i++) {
-      try {
-        const compressed = await compressImageFile(files[i], 960, 0.75);
-        setGalleryPhotos((prev) => [...prev, compressed]);
-      } catch (err) {
-        console.warn('Gallery compress fail:', err);
+    const files = Array.from(e.target.files || []);
+    e.target.value = '';
+    if (!files.length) return;
+    pendingMedia.begin();
+    const failed: string[] = [];
+    try {
+      for (const file of files) {
+        try { const compressed = await compressImageFile(file, 960, 0.75); setGalleryPhotos(prev => [...prev, compressed]); }
+        catch { failed.push(file.name); }
       }
-    }
+      if (failed.length) alert(`รูปเหล่านี้ยังไม่ได้เพิ่ม กรุณาเลือกใหม่: ${failed.join(', ')}`);
+    } finally { pendingMedia.end(); }
   };
 
   const handleVideoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
     try {
+      pendingMedia.begin();
       setIsVideoLoading(true);
       for (const file of Array.from(files)) {
         const videoData = await saveVideoFile(file, {
@@ -1476,11 +1491,13 @@ function StoreFormModal({
       alert(err.message || 'อัปโหลดคลิปไม่สำเร็จ');
     } finally {
       setIsVideoLoading(false);
+      pendingMedia.end();
     }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isSubmitting || pendingMedia.hasPending()) return;
 
     // Strict validation
     if (!name.trim()) {
@@ -1506,7 +1523,7 @@ function StoreFormModal({
       .map((c) => c.trim())
       .filter(Boolean);
 
-    const audioNotesFormatted = voiceNotes.map((vn, idx) => ({
+    const audioNotesFormatted = voiceNotes.map((vn, idx) => store?.audioNotes?.find(a => a.id === vn.id) || ({
       id: vn.id || `audio-${idx}-${crypto.randomUUID()}`,
       url: vn.url,
       duration: vn.durationSec,
@@ -1517,7 +1534,7 @@ function StoreFormModal({
 
     const nowIso = new Date().toISOString();
 
-    await onSave({
+    try { await onSave({
       id: recordId.current,
       expectedUpdatedAt: store?.updatedAt,
       name: name.trim(),
@@ -1551,7 +1568,7 @@ function StoreFormModal({
       ],
       likedBy: store?.likedBy || [currentUser.id],
     });
-    setIsSubmitting(false);
+    } finally { setIsSubmitting(false); }
   };
 
   return createPortal(
@@ -1849,6 +1866,7 @@ function StoreFormModal({
               </span>
               <AudioRecorder
                 voiceNotes={voiceNotes}
+                onBusyChange={pendingMedia.audioChanged}
                 onVoiceNotesChange={(notes) => setVoiceNotes(notes)}
                 onAudioSaved={(url, dur) => {
                   setVoiceNotes((prev) => [
@@ -1907,6 +1925,7 @@ function StoreFormModal({
             </div>
           </div>
 
+          {pendingMedia.busy && <p role="status" className="text-sm font-bold text-amber-700">กำลังเตรียมไฟล์ กรุณารอให้ครบก่อนบันทึก</p>}
           <div className="flex justify-end gap-2 pt-3 border-t">
             <button
               type="button"
@@ -1917,7 +1936,7 @@ function StoreFormModal({
             </button>
             <button
               type="submit"
-              disabled={isSubmitting}
+              disabled={isSubmitting || pendingMedia.busy}
               className="px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold shadow-md shadow-emerald-600/20"
             >
               {isSubmitting ? 'กำลังบันทึก...' : store ? 'บันทึกการแก้ไข' : 'สร้างแบรนด์ / หน้าร้าน'}
@@ -2133,6 +2152,7 @@ function QuickSopModal({
   onRecordView?: (id: string) => void;
 }) {
   const { labItem, menuItem } = item;
+  const canWrite = Boolean(onEdit);
   const [activeLevel, setActiveLevel] = useState<'zero' | 'half' | 'full'>('half');
   const [commentText, setCommentText] = useState('');
   const [sweetnessTarget, setSweetnessTarget] = useState<'all' | '0' | '50' | '100'>('all');
@@ -2214,6 +2234,8 @@ function QuickSopModal({
       return;
     }
 
+    if (isUploadingAttachment) return;
+    setIsUploadingAttachment(true);
     try {
       if (!navigator.mediaDevices?.getUserMedia || typeof MediaRecorder === 'undefined') {
         alert('เบราว์เซอร์นี้ไม่รองรับการอัดเสียงสด หรือไม่ได้เปิดผ่าน HTTPS');
@@ -2283,13 +2305,13 @@ function QuickSopModal({
       streamRef.current?.getTracks().forEach((t) => t.stop());
       setIsRecording(false);
       alert('ไม่ได้รับสิทธิ์ใช้ไมโครโฟน กรุณากดอนุญาตไมโครโฟนในเบราว์เซอร์');
-    }
+    } finally { setIsUploadingAttachment(false); }
   };
 
   const handlePostComment = async (e: React.FormEvent) => {
     e.preventDefault();
     const text = commentText.trim();
-    if (!text && !commentPhotoUrl && !commentVoiceUrl) return;
+    if (!canWrite || isSubmittingComment || isUploadingAttachment || isRecording || (!text && !commentPhotoUrl && !commentVoiceUrl)) return;
 
     setIsSubmittingComment(true);
     const ok = await onAddLabComment(labItem.id, text, sweetnessTarget, {
@@ -2347,7 +2369,7 @@ function QuickSopModal({
             {/* Like recipe button */}
             <button
               type="button"
-              onClick={() => void onToggleLikeLabItem(labItem.id)}
+              disabled={!canWrite} onClick={() => void onToggleLikeLabItem(labItem.id)}
               className={`px-3 py-1.5 rounded-xl text-xs font-bold inline-flex items-center gap-1.5 transition-all shadow-xs ${
                 isLikedRecipe
                   ? 'bg-rose-500 text-white'
@@ -2541,7 +2563,7 @@ function QuickSopModal({
                         </div>
                         <button
                           type="button"
-                          onClick={() => void onToggleLabCommentLike(labItem.id, comm.id)}
+                          disabled={!canWrite} onClick={() => void onToggleLabCommentLike(labItem.id, comm.id)}
                           className={`inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-lg transition-colors ${
                             hasLikedComm ? 'bg-indigo-100 text-indigo-700 font-bold' : 'text-slate-400 hover:text-slate-600'
                           }`}
@@ -2647,7 +2669,7 @@ function QuickSopModal({
             )}
 
             {/* Add comment form with Photo upload & Live voice record */}
-            <form onSubmit={handlePostComment} className="space-y-2 pt-1">
+            {canWrite && <form onSubmit={handlePostComment} className="space-y-2 pt-1"><fieldset disabled={isSubmittingComment} className="space-y-2">
               <div className="flex items-center justify-between gap-2 flex-wrap">
                 <div className="flex items-center gap-2">
                   <span className="text-[11px] text-slate-500 font-medium">ระดับความหวาน:</span>
@@ -2675,7 +2697,7 @@ function QuickSopModal({
                   <button
                     type="button"
                     onClick={() => photoInputRef.current?.click()}
-                    disabled={isUploadingAttachment}
+                    disabled={isUploadingAttachment || isRecording}
                     className="h-7 px-2.5 rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold transition-colors inline-flex items-center gap-1"
                     title="แนบรูปถ่ายประกอบคอมเมนต์"
                   >
@@ -2711,7 +2733,7 @@ function QuickSopModal({
                 />
                 <button
                   type="submit"
-                  disabled={isSubmittingComment || isUploadingAttachment || (!commentText.trim() && !commentPhotoUrl && !commentVoiceUrl)}
+                  disabled={isSubmittingComment || isUploadingAttachment || isRecording || (!commentText.trim() && !commentPhotoUrl && !commentVoiceUrl)}
                   className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white font-bold text-xs flex items-center justify-center gap-1 shrink-0 transition-colors"
                 >
                   {isSubmittingComment || isUploadingAttachment ? (
@@ -2722,7 +2744,7 @@ function QuickSopModal({
                   <span>ส่ง</span>
                 </button>
               </div>
-            </form>
+            </fieldset></form>}
           </div>
         </div>
 

@@ -124,16 +124,16 @@ export const saveDriveConfigApi = (config: { clientId: string; clientSecret: str
   sendJson('/api/drive/config', config);
 
 export const postLeadLabItemApi = (value: Partial<LabItem>) => sendJson('/api/lead-lab/items', value);
-export const deleteLeadLabItemApi = (id: string) => sendJson(`/api/lead-lab/items/${encodeURIComponent(id)}`, {}, 'DELETE');
-export const likeLeadLabItemApi = (id: string) => sendJson(`/api/lead-lab/items/${encodeURIComponent(id)}/like`, {});
+export const deleteLeadLabItemApi = (id: string, expectedUpdatedAt?: string, operationId?: string) => sendJson(`/api/lead-lab/items/${encodeURIComponent(id)}`, { expectedUpdatedAt, operationId }, 'DELETE');
+export const likeLeadLabItemApi = (id: string, liked: boolean) => sendJson(`/api/lead-lab/items/${encodeURIComponent(id)}/like`, { liked });
 export const commentLeadLabItemApi = (id: string, payload: { content: string; sweetnessTarget?: string; photoUrl?: string; voiceUrl?: string; duration?: number }) => sendJson(`/api/lead-lab/items/${encodeURIComponent(id)}/comments`, payload);
-export const likeLeadLabCommentApi = (id: string, commentId: string) => sendJson(`/api/lead-lab/items/${encodeURIComponent(id)}/comments/${encodeURIComponent(commentId)}/like`, {});
-export const cycleLeadLabItemApi = (id: string, payload: { action: 'close'; summary?: string; nextTitle?: string }) => sendJson(`/api/lead-lab/items/${encodeURIComponent(id)}/cycle`, payload);
-export const updateLeadLabStatusApi = (id: string, status: LabFormulaStatus) => sendJson(`/api/lead-lab/items/${encodeURIComponent(id)}/status`, { status });
+export const likeLeadLabCommentApi = (id: string, commentId: string, liked: boolean) => sendJson(`/api/lead-lab/items/${encodeURIComponent(id)}/comments/${encodeURIComponent(commentId)}/like`, { liked });
+export const cycleLeadLabItemApi = (id: string, payload: { action: 'close'; summary?: string; nextTitle?: string; expectedCycleNumber?: number; operationId: string }) => sendJson(`/api/lead-lab/items/${encodeURIComponent(id)}/cycle`, payload);
+export const updateLeadLabStatusApi = (id: string, status: LabFormulaStatus, expectedUpdatedAt?: string) => sendJson(`/api/lead-lab/items/${encodeURIComponent(id)}/status`, { status, expectedUpdatedAt });
 export const viewLeadLabItemApi = (id: string) => sendJson(`/api/lead-lab/items/${encodeURIComponent(id)}/view`, {});
 
 export const postFranchiseStoreApi = (value: Partial<FranchiseStore>) => sendJson('/api/franchise-stores', value);
-export const deleteFranchiseStoreApi = (id: string) => sendJson(`/api/franchise-stores/${encodeURIComponent(id)}`, {}, 'DELETE');
+export const deleteFranchiseStoreApi = (id: string, expectedUpdatedAt?: string, operationId?: string) => sendJson(`/api/franchise-stores/${encodeURIComponent(id)}`, { expectedUpdatedAt, operationId }, 'DELETE');
 export const viewFranchiseStoreApi = (id: string) => sendJson(`/api/franchise-stores/${encodeURIComponent(id)}/view`, {});
 
 export async function uploadMediaToServer(

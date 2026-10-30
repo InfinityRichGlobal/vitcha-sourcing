@@ -1,4 +1,5 @@
 import { recordActivity } from './activity-history.js';
+import { resolveMapLink } from './map-links.js';
 import { packSnapshot } from './snapshot-wire.js';
 import express from 'express';
 import { SAMPLE_PACK_ID, sampleCatalog, mergeSamples } from './sample-pack.js';
@@ -107,6 +108,11 @@ export function createApp({ dataDir, defaults = DEFAULT_DATABASE, sessionTtlMs =
     db.notifications = [{ id: randomUUID(), actorId: user.id, actorAlias: user.alias, avatar: user.avatar, type, title, message, targetId, timestamp: now(), read: false, readBy: [user.id], clearedBy: [] }, ...(db.notifications || [])].slice(0, 80);
   };
   const touch = item => { item.revision = revision(item) + 1; item.updatedAt = now(); };
+  const expectUpdatedAt = (item, expected) => {
+    if (expected !== undefined && expected !== item.updatedAt) fail(409, 'ข้อมูลเปลี่ยนแล้ว กรุณาเปิดข้อมูลล่าสุดก่อนดำเนินการ');
+  };
+  const deletionReceipt = req => clean(req.body?.operationId) ? `delete:${req.user.id}:${clean(req.body.operationId)}` : null;
+  const deletedAlready = (db, list, id, receipt) => receipt && [...list, ...(db.trash || [])].some(x => x.id === id && (x.appliedOperations || []).includes(receipt));
   // One-time migration of legacy plaintext credentials before serving requests.
   const initial = read();
   let migrated = false;
@@ -735,9 +741,13 @@ export function createApp({ dataDir, defaults = DEFAULT_DATABASE, sessionTtlMs =
     requireWriter(req);
     const db = read();
     const list = db.leadLabItems ||= [];
+    const receipt = deletionReceipt(req);
+    if (deletedAlready(db, list, req.params.id, receipt)) return res.json({ success: true });
     const idx = list.findIndex(x => x.id === req.params.id);
     if (idx < 0) fail(404, 'ไม่พบรายการสูตร');
+    expectUpdatedAt(list[idx], req.body?.expectedUpdatedAt);
     const removed = list.splice(idx, 1)[0];
+    if (receipt) removed.appliedOperations = [...(removed.appliedOperations || []), receipt].slice(-1000);
     db.trash ||= [];
     db.trash.unshift({
       ...removed,
@@ -758,9 +768,10 @@ export function createApp({ dataDir, defaults = DEFAULT_DATABASE, sessionTtlMs =
     if (!item) fail(404, 'ไม่พบสูตร');
     item.likedBy ||= [];
     const userId = req.user.id;
-    if (item.likedBy.includes(userId)) {
+    const liked = typeof req.body.liked === 'boolean' ? req.body.liked : !item.likedBy.includes(userId);
+    if (!liked) {
       item.likedBy = item.likedBy.filter(id => id !== userId);
-    } else {
+    } else if (!item.likedBy.includes(userId)) {
       item.likedBy.push(userId);
     }
     item.updatedAt = now();
@@ -827,9 +838,10 @@ export function createApp({ dataDir, defaults = DEFAULT_DATABASE, sessionTtlMs =
     if (!targetComment) fail(404, 'ไม่พบคอมเมนต์');
     targetComment.likes ||= [];
     const userId = req.user.id;
-    if (targetComment.likes.includes(userId)) {
+    const liked = typeof req.body.liked === 'boolean' ? req.body.liked : !targetComment.likes.includes(userId);
+    if (!liked) {
       targetComment.likes = targetComment.likes.filter(id => id !== userId);
-    } else {
+    } else if (!targetComment.likes.includes(userId)) {
       targetComment.likes.push(userId);
     }
     item.updatedAt = now();
@@ -842,8 +854,16 @@ export function createApp({ dataDir, defaults = DEFAULT_DATABASE, sessionTtlMs =
     const db = read();
     const item = findOrSeedLeadLabItem(db, req.params.id);
     if (!item) fail(404, 'ไม่พบสูตร');
-    const { action, summary, nextTitle } = req.body;
+    const { action, expectedCycleNumber } = req.body;
+    const summary = clean(req.body.summary), nextTitle = clean(req.body.nextTitle);
+    const operationId = clean(req.body.operationId);
+    if (action !== 'close' || !operationId || !Number.isInteger(expectedCycleNumber)) fail(400, 'กรุณาเปิดข้อมูลสูตรล่าสุดก่อนปิดรอบ');
+    const receipt = `cycle:${req.user.id}:${operationId}`;
+    if ((item.appliedOperations || []).includes(receipt)) return res.json({ success: true, item });
+    if (!summary || summary.length > 10000 || nextTitle.length > 500) fail(400, 'กรุณาระบุข้อสรุปไม่เกิน 10000 ตัวอักษร และหัวข้อไม่เกิน 500 ตัวอักษร');
     item.revisionCycles ||= [];
+    const expectedCycle = item.revisionCycles.find(c => c.status === 'active');
+    if (!expectedCycle || expectedCycle.cycleNumber !== expectedCycleNumber) fail(409, 'รอบพัฒนานี้ถูกปิดหรือเปลี่ยนแล้ว กรุณาตรวจสอบรอบล่าสุด ข้อความที่กรอกยังอยู่');
     const nowIso = now();
     if (action === 'close') {
       const active = item.revisionCycles.find(c => c.status === 'active');
@@ -865,6 +885,7 @@ export function createApp({ dataDir, defaults = DEFAULT_DATABASE, sessionTtlMs =
       }
     }
     item.updatedAt = nowIso;
+    item.appliedOperations = [...(item.appliedOperations || []), receipt].slice(-1000);
     notify(db, req.user, 'lead_lab', 'สรุปปิดประเด็นและประกาศรอบใหม่', item.name, item.id);
     save(db);
     res.json({ success: true, item });
@@ -875,6 +896,7 @@ export function createApp({ dataDir, defaults = DEFAULT_DATABASE, sessionTtlMs =
     const db = read();
     const item = findOrSeedLeadLabItem(db, req.params.id);
     if (!item) fail(404, 'ไม่พบสูตร');
+    expectUpdatedAt(item, req.body.expectedUpdatedAt);
     const { status } = req.body;
     if (!['approved', 'testing', 'shelved'].includes(status)) fail(400, 'สถานะไม่ถูกต้อง');
     item.status = status;
@@ -984,9 +1006,13 @@ export function createApp({ dataDir, defaults = DEFAULT_DATABASE, sessionTtlMs =
     requireWriter(req);
     const db = read();
     const list = db.franchiseStores ||= [];
+    const receipt = deletionReceipt(req);
+    if (deletedAlready(db, list, req.params.id, receipt)) return res.json({ success: true });
     const idx = list.findIndex(x => x.id === req.params.id);
     if (idx < 0) fail(404, 'ไม่พบร้าน');
+    expectUpdatedAt(list[idx], req.body?.expectedUpdatedAt);
     const removed = list.splice(idx, 1)[0];
+    if (receipt) removed.appliedOperations = [...(removed.appliedOperations || []), receipt].slice(-1000);
     db.trash ||= [];
     db.trash.unshift({
       ...removed,
@@ -1265,32 +1291,9 @@ export function createApp({ dataDir, defaults = DEFAULT_DATABASE, sessionTtlMs =
     const targetUrl = clean(req.query.url);
     if (!targetUrl) return res.status(400).json({ ok: false, error: 'Missing url parameter' });
     try {
-      let currentUrl = targetUrl;
-      for (let i = 0; i < 6; i++) {
-        const resp = await fetch(currentUrl, {
-          method: 'HEAD',
-          redirect: 'manual',
-          signal: AbortSignal.timeout(6000),
-          headers: { 'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X)' },
-        });
-        const location = resp.headers.get('location');
-        if (!location) break;
-        currentUrl = location;
-      }
-      // Extract coordinates from resolved URL
-      const qMatch = currentUrl.match(/[?&]q=(-?\d+\.\d+),(-?\d+\.\d+)/);
-      const atMatch = currentUrl.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/);
-      const dMatch = currentUrl.match(/!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)/);
-      const llMatch = currentUrl.match(/[?&]ll=(-?\d+\.\d+),(-?\d+\.\d+)/);
-      const match = qMatch || atMatch || dMatch || llMatch;
-      if (match) {
-        const lat = parseFloat(match[1]);
-        const lng = parseFloat(match[2]);
-        return res.json({ ok: true, lat, lng, resolvedUrl: currentUrl });
-      }
-      res.json({ ok: false, error: 'ไม่พบพิกัดในลิงก์ที่ระบุ', resolvedUrl: currentUrl });
+      res.json(await resolveMapLink(targetUrl));
     } catch (err) {
-      res.status(502).json({ ok: false, error: String(err?.message || err) });
+      res.status(err.status === 400 ? 400 : 502).json({ ok: false, error: err.status === 400 ? err.message : 'เปิดลิงก์แผนที่ไม่สำเร็จ กรุณาลองใหม่หรือวางพิกัดโดยตรง' });
     }
   });
 

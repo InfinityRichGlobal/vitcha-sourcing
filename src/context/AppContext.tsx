@@ -16,7 +16,7 @@ interface AppContextType {
   leadLabItems: LabItem[];
   franchiseStores: FranchiseStore[];
   saveLeadLabItem: (item: Partial<LabItem>) => Promise<boolean>;
-  deleteLeadLabItem: (id: string) => Promise<boolean>;
+  deleteLeadLabItem: (id: string, expectedUpdatedAt?: string) => Promise<boolean>;
   toggleLikeLeadLabItem: (id: string) => Promise<boolean>;
   addLeadLabComment: (
     id: string,
@@ -25,10 +25,10 @@ interface AppContextType {
     extra?: { photoUrl?: string; voiceUrl?: string; duration?: number }
   ) => Promise<boolean>;
   toggleLikeLeadLabComment: (id: string, commentId: string) => Promise<boolean>;
-  cycleLeadLabRevision: (id: string, summary: string, nextTitle?: string) => Promise<boolean>;
+  cycleLeadLabRevision: (id: string, summary: string, nextTitle?: string, expectedCycleNumber?: number) => Promise<boolean>;
   setLeadLabStatus: (id: string, status: LabFormulaStatus) => Promise<boolean>;
   saveFranchiseStore: (store: Partial<FranchiseStore>) => Promise<boolean>;
-  deleteFranchiseStore: (id: string) => Promise<boolean>;
+  deleteFranchiseStore: (id: string, expectedUpdatedAt?: string) => Promise<boolean>;
   toggleLikeFranchiseStore: (id: string) => Promise<boolean>;
   addFranchiseStoreComment: (
     id: string,
@@ -288,6 +288,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setLastRefreshedAt(null); latestSnapshot.current = null; setMockLoadMessage(''); setMockLoadStatus('idle');
     setSessionToken(null); setIsAuthenticated(false); setIsRestoringSession(false); setCurrentUser(GUEST); setSimulatedFromAdmin(false);
     setProducts([]); setProductCategories([]); setProductTags([]); setProductSets([]);
+    setLeadLabItems([]); setFranchiseStores([]);
+    commandIds.current.clear();
     setUsers([]); setSuppliers([]); setDrinkStores([]); setLocations([]); setInvites([]); setNotifications([]); setActiveToast(null); setTrashItems([]);
     setEditingSupplier(null); setEditingStore(null); setEditingLocation(null); seenNotifications.current.clear(); notificationsInitialized.current = false;
   };
@@ -691,23 +693,23 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     });
   };
 
-  const deleteLeadLabItem = async (id: string) => {
+  const deleteLeadLabItem = async (id: string, expectedUpdatedAt?: string) => {
     return perform('delete-lead-lab', async () => {
-      await deleteLeadLabItemApi(id);
+      const key = `delete-lab:${id}:${expectedUpdatedAt}`;
+      await deleteLeadLabItemApi(id, expectedUpdatedAt ?? leadLabItems.find(x => x.id === id)?.updatedAt, commandId(key));
+      commandIds.current.delete(key);
       setLeadLabItems(p => p.filter(x => x.id !== id));
     });
   };
 
   const toggleLikeLeadLabItem = async (id: string) => {
-    try {
-      const res = await likeLeadLabItemApi(id);
+    if (!canComment) return false;
+    return perform(`like-lab:${id}`, async () => {
+      const res = await likeLeadLabItemApi(id, !(leadLabItems.find(x => x.id === id)?.likedBy || []).includes(currentUser.id));
       if (res?.likedBy) {
         setLeadLabItems(p => p.map(x => x.id === id ? { ...x, likedBy: res.likedBy } : x));
       }
-      return true;
-    } catch {
-      return false;
-    }
+    });
   };
 
   const addLeadLabComment = async (
@@ -732,8 +734,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const toggleLikeLeadLabComment = async (id: string, commentId: string) => {
-    try {
-      const res = await likeLeadLabCommentApi(id, commentId);
+    if (!canComment) return false;
+    return perform(`like-lab-comment:${id}:${commentId}`, async () => {
+      const res = await likeLeadLabCommentApi(id, commentId, !(leadLabItems.find(x => x.id === id)?.revisionCycles.flatMap(c => c.comments || []).find(c => c.id === commentId)?.likes || []).includes(currentUser.id));
       if (res?.likes) {
         setLeadLabItems(p => p.map(item => {
           if (item.id !== id) return item;
@@ -744,15 +747,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           return { ...item, revisionCycles: nextCycles };
         }));
       }
-      return true;
-    } catch {
-      return false;
-    }
+    });
   };
 
-  const cycleLeadLabRevision = async (id: string, summary: string, nextTitle?: string) => {
+  const cycleLeadLabRevision = async (id: string, summary: string, nextTitle?: string, expectedCycleNumber?: number) => {
     return perform('cycle-lead-lab', async () => {
-      const res = await cycleLeadLabItemApi(id, { action: 'close', summary, nextTitle });
+      const key = `cycle:${id}:${expectedCycleNumber}:${summary}:${nextTitle || ''}`;
+      const res = await cycleLeadLabItemApi(id, { action: 'close', summary, nextTitle, expectedCycleNumber, operationId: commandId(key) });
+      commandIds.current.delete(key);
       if (res?.item) {
         setLeadLabItems(p => p.map(x => x.id === id ? res.item : x));
       }
@@ -761,7 +763,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const setLeadLabStatus = async (id: string, status: LabFormulaStatus) => {
     return perform('status-lead-lab', async () => {
-      const res = await updateLeadLabStatusApi(id, status);
+      const res = await updateLeadLabStatusApi(id, status, leadLabItems.find(x => x.id === id)?.updatedAt);
       if (res?.item) {
         setLeadLabItems(p => p.map(x => x.id === id ? res.item : x));
       }
@@ -781,9 +783,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     });
   };
 
-  const deleteFranchiseStore = async (id: string) => {
+  const deleteFranchiseStore = async (id: string, expectedUpdatedAt?: string) => {
     return perform('delete-franchise-store', async () => {
-      await deleteFranchiseStoreApi(id);
+      const key = `delete-store:${id}:${expectedUpdatedAt}`;
+      await deleteFranchiseStoreApi(id, expectedUpdatedAt ?? franchiseStores.find(x => x.id === id)?.updatedAt, commandId(key));
+      commandIds.current.delete(key);
       setFranchiseStores(p => p.filter(x => x.id !== id));
     });
   };
