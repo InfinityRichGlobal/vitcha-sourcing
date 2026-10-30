@@ -148,12 +148,12 @@ export function createApp({ dataDir, defaults = DEFAULT_DATABASE, sessionTtlMs =
     initial.locationTypes = DEFAULT_LOCATION_TYPES;
     migrated = true;
   }
-  if (!initial.leadLabItems || !initial.leadLabItems.length) {
-    initial.leadLabItems = JSON.parse(JSON.stringify(DEFAULT_LEAD_LAB_ITEMS));
+  if (!Array.isArray(initial.leadLabItems)) {
+    initial.leadLabItems = [];
     migrated = true;
   }
-  if (!initial.franchiseStores || !initial.franchiseStores.length) {
-    initial.franchiseStores = JSON.parse(JSON.stringify(DEFAULT_FRANCHISE_STORES));
+  if (!Array.isArray(initial.franchiseStores)) {
+    initial.franchiseStores = [];
     migrated = true;
   }
   if (migrated) save(initial);
@@ -345,14 +345,6 @@ export function createApp({ dataDir, defaults = DEFAULT_DATABASE, sessionTtlMs =
           read: isRead,
         };
       });
-    if (!db.leadLabItems || !db.leadLabItems.length) {
-      db.leadLabItems = JSON.parse(JSON.stringify(DEFAULT_LEAD_LAB_ITEMS));
-      save(db);
-    }
-    if (!db.franchiseStores || !db.franchiseStores.length) {
-      db.franchiseStores = JSON.parse(JSON.stringify(DEFAULT_FRANCHISE_STORES));
-      save(db);
-    }
     res.json({ version, ...productData(db), ...pick(db, ['suppliers', 'drinkStores', 'locations', 'leadLabItems', 'franchiseStores', 'categories', 'storeCategories', 'locationTypes', 'quickTagsList', 'quickMessages', 'updatedAt', 'revision']), suppliers: (db.suppliers || []).map(item => currentRecord(db, item)), drinkStores: (db.drinkStores || []).map(item => currentRecord(db, item)), locations: (db.locations || []).map(item => currentRecord(db, item)), leadLabItems: db.leadLabItems || [], franchiseStores: db.franchiseStores || [], users: db.users.filter(u => !MOCK_IDS.has(u.id)).map(publicUser), invites: req.user.role === 'admin' ? db.invites : [], notifications: userNotifications, ...sessionResult(req.session, db) });
   });
   app.get('/api/backup', (req, res) => { requireFounder(req); res.json(read()); });
