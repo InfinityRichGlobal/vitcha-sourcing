@@ -1,4 +1,4 @@
-import{c as b}from"./index-CVSDhOsj.js";/**
+import{c as b,$ as M}from"./index-DrjsgaMQ.js";/**
  * @license lucide-react v1.62.0 - ISC
  *
  * This source code is licensed under the ISC license.
@@ -8,12 +8,12 @@ import{c as b}from"./index-CVSDhOsj.js";/**
  *
  * This source code is licensed under the ISC license.
  * See the LICENSE file in the root directory of this source tree.
- */const P={name:"heart",size:24,node:[["path",{d:"M2 9.5a5.5 5.5 0 0 1 9.591-3.676.56.56 0 0 0 .818 0A5.49 5.49 0 0 1 22 9.5c0 2.29-1.5 4-3 5.5l-5.492 5.313a2 2 0 0 1-3 .019L5 15c-1.5-1.5-3-3.2-3-5.5",key:"mvr1a0"}]]};P.node;const R=b(P);/**
+ */const P={name:"heart",size:24,node:[["path",{d:"M2 9.5a5.5 5.5 0 0 1 9.591-3.676.56.56 0 0 0 .818 0A5.49 5.49 0 0 1 22 9.5c0 2.29-1.5 4-3 5.5l-5.492 5.313a2 2 0 0 1-3 .019L5 15c-1.5-1.5-3-3.2-3-5.5",key:"mvr1a0"}]]};P.node;const E=b(P);/**
  * @license lucide-react v1.62.0 - ISC
  *
  * This source code is licensed under the ISC license.
  * See the LICENSE file in the root directory of this source tree.
- */const I={name:"video",size:24,node:[["path",{d:"m16 13 5.223 3.482a.5.5 0 0 0 .777-.416V7.87a.5.5 0 0 0-.752-.432L16 10.5",key:"ftymec"}],["rect",{x:"2",y:"6",width:"14",height:"12",rx:"2",key:"158x01"}]]};I.node;const N=b(I);function t(e){return e==null?"":String(e).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;")}function j(e){const o=window.open("","_blank");if(!o){window.print();return}const l=e.suggestedPriceThb>0?((e.suggestedPriceThb-e.costTotalThb)/e.suggestedPriceThb*100).toFixed(1):"0.0",a={approved:"✅ ผ่านเกณฑ์อนุมัติ (Approved)",testing:"⏳ กำลังทดลอง & วิจัย (Testing)",shelved:"📦 พักสูตร (Shelved)"}[e.status]||e.status,r=(e.revisionCycles||[]).flatMap(s=>(s.comments||[]).map(n=>({...n,cycleTitle:s.title}))),p=`<!DOCTYPE html>
+ */const I={name:"video",size:24,node:[["path",{d:"m16 13 5.223 3.482a.5.5 0 0 0 .777-.416V7.87a.5.5 0 0 0-.752-.432L16 10.5",key:"ftymec"}],["rect",{x:"2",y:"6",width:"14",height:"12",rx:"2",key:"158x01"}]]};I.node;const N=b(I);var j=M();function t(e){return e==null?"":String(e).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;")}function _(e){const o=window.open("","_blank");if(!o){window.print();return}const l=e.suggestedPriceThb>0?((e.suggestedPriceThb-e.costTotalThb)/e.suggestedPriceThb*100).toFixed(1):"0.0",a={approved:"✅ ผ่านเกณฑ์อนุมัติ (Approved)",testing:"⏳ กำลังทดลอง & วิจัย (Testing)",shelved:"📦 พักสูตร (Shelved)"}[e.status]||e.status,r=(e.revisionCycles||[]).flatMap(s=>(s.comments||[]).map(n=>({...n,cycleTitle:s.title}))),p=`<!DOCTYPE html>
 <html lang="th">
 <head>
   <meta charset="UTF-8">
@@ -217,7 +217,7 @@ import{c as b}from"./index-CVSDhOsj.js";/**
     </div>
   </div>
 </body>
-</html>`;o.document.write(p),o.document.close()}function E(e,o){const l=window.open("","_blank");if(!l){window.print();return}const a=o.filter(n=>{var i;return((i=n.labItem)==null?void 0:i.type)==="drink"}),r=o.filter(n=>{var i;return((i=n.labItem)==null?void 0:i.type)==="topping"}),p=(e.revisionCycles||[]).flatMap(n=>(n.comments||[]).map(i=>i)),s=`<!DOCTYPE html>
+</html>`;o.document.write(p),o.document.close()}function A(e,o){const l=window.open("","_blank");if(!l){window.print();return}const a=o.filter(n=>{var i;return((i=n.labItem)==null?void 0:i.type)==="drink"}),r=o.filter(n=>{var i;return((i=n.labItem)==null?void 0:i.type)==="topping"}),p=(e.revisionCycles||[]).flatMap(n=>(n.comments||[]).map(i=>i)),s=`<!DOCTYPE html>
 <html lang="th">
 <head>
   <meta charset="UTF-8">
@@ -311,7 +311,7 @@ import{c as b}from"./index-CVSDhOsj.js";/**
             100%: ไซรัป ${((T=(L=d.sweetnessLevels)==null?void 0:L.full)==null?void 0:T.syrupMl)||30}ml (${((S=(z=d.sweetnessLevels)==null?void 0:z.full)==null?void 0:S.brix)||13.5}°Bx)
           </td>
           <td>
-            ${(c.recommendedToppingIds||[]).map(F=>{const g=o.find(D=>D.menuItem.labItemId===F);return g?`<span class="badge" style="margin-right: 3px;">+ ${t(g.menuItem.customName||g.labItem.name)}</span>`:""}).join("")||"-"}
+            ${(c.recommendedToppingIds||[]).map(D=>{const g=o.find(F=>F.menuItem.labItemId===D);return g?`<span class="badge" style="margin-right: 3px;">+ ${t(g.menuItem.customName||g.labItem.name)}</span>`:""}).join("")||"-"}
           </td>
         </tr>`}).join("")}
     </tbody>
@@ -350,7 +350,7 @@ import{c as b}from"./index-CVSDhOsj.js";/**
     <span>📋 รหัสสาขา: <strong>${t(e.id)}</strong></span>
   </div>
 </body>
-</html>`;l.document.write(s),l.document.close()}async function _(e){const o=e.suggestedPriceThb>0?((e.suggestedPriceThb-e.costTotalThb)/e.suggestedPriceThb*100).toFixed(1):"0.0",l=typeof window<"u"?`${window.location.origin}${window.location.pathname}?tab=lead_lab&view=${encodeURIComponent(e.id)}`:"",a=`🧪 [LEAD LAB R&D] สรุปสูตรเครื่องดื่มมาตรฐาน
+</html>`;l.document.write(s),l.document.close()}async function H(e){const o=e.suggestedPriceThb>0?((e.suggestedPriceThb-e.costTotalThb)/e.suggestedPriceThb*100).toFixed(1):"0.0",l=typeof window<"u"?`${window.location.origin}${window.location.pathname}?tab=lead_lab&view=${encodeURIComponent(e.id)}`:"",a=`🧪 [LEAD LAB R&D] สรุปสูตรเครื่องดื่มมาตรฐาน
 ━━━━━━━━━━━━━━━━━━━━
 📌 รหัสสูตร: ${e.code}
 🥤 ชื่อสูตร: ${e.name} (${e.nameEn})
@@ -363,7 +363,7 @@ import{c as b}from"./index-CVSDhOsj.js";/**
 • หวาน 100%: ไซรัป ${e.sweetnessLevels.full.syrupMl}ml (Brix ${e.sweetnessLevels.full.brix}°Bx)
 ━━━━━━━━━━━━━━━━━━━━
 ❤️ ไลก์: ${(e.likedBy||[]).length} คน | 💬 รอบพัฒนา: ${(e.revisionCycles||[]).length} รอบ
-🔗 กดดูสูตรทันที: ${l}`;try{navigator.clipboard&&await navigator.clipboard.writeText(a)}catch(p){console.warn("Failed to copy text",p)}const r=`https://line.me/R/msg/text/?${encodeURIComponent(a)}`;return window.open(r,"_blank"),!0}async function A(e,o){const l=typeof window<"u"?`${window.location.origin}${window.location.pathname}?tab=franchise_stores&view=${encodeURIComponent(e.id)}`:"",a=`🏪 [FRANCHISE STORE] ข้อมูลสาขาและเมนูบอร์ด
+🔗 กดดูสูตรทันที: ${l}`;try{navigator.clipboard&&await navigator.clipboard.writeText(a)}catch(p){console.warn("Failed to copy text",p)}const r=`https://line.me/R/msg/text/?${encodeURIComponent(a)}`;return window.open(r,"_blank"),!0}async function U(e,o){const l=typeof window<"u"?`${window.location.origin}${window.location.pathname}?tab=franchise_stores&view=${encodeURIComponent(e.id)}`:"",a=`🏪 [FRANCHISE STORE] ข้อมูลสาขาและเมนูบอร์ด
 ━━━━━━━━━━━━━━━━━━━━
 📌 แบรนด์: ${e.name}
 📍 สาขา: ${e.branch}
@@ -373,4 +373,4 @@ import{c as b}from"./index-CVSDhOsj.js";/**
 ━━━━━━━━━━━━━━━━━━━━
 🥤 จำนวนเมนูพร้อมจำหน่าย: ${o} รายการ
 ❤️ ทีมงานไลก์: ${(e.likedBy||[]).length} คน
-🔗 กดดูข้อมูลสาขาทันที: ${l}`;try{navigator.clipboard&&await navigator.clipboard.writeText(a)}catch(p){console.warn("Failed to copy text",p)}const r=`https://line.me/R/msg/text/?${encodeURIComponent(a)}`;return window.open(r,"_blank"),!0}export{C as D,R as H,N as V,A as a,E as b,j as p,_ as s};
+🔗 กดดูข้อมูลสาขาทันที: ${l}`;try{navigator.clipboard&&await navigator.clipboard.writeText(a)}catch(p){console.warn("Failed to copy text",p)}const r=`https://line.me/R/msg/text/?${encodeURIComponent(a)}`;return window.open(r,"_blank"),!0}export{C as D,E as H,N as V,U as a,A as b,_ as p,j as r,H as s};

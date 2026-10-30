@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import {
   Store,
   Plus,
@@ -1908,12 +1909,9 @@ function QuickSopModal({
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const recordingStartRef = useRef<number>(0);
 
-  // 1. Prevent background scrolling while modal is open
+  // 1. Audio and media cleanup when modal unmounts
   useEffect(() => {
-    const originalStyle = window.getComputedStyle(document.body).overflow;
-    document.body.style.overflow = 'hidden';
     return () => {
-      document.body.style.overflow = originalStyle;
       if (timerRef.current) clearInterval(timerRef.current);
       if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
         mediaRecorderRef.current.stop();
@@ -2062,9 +2060,9 @@ function QuickSopModal({
     setIsSubmittingComment(false);
   };
 
-  return (
-    <div className="fixed inset-0 z-[90] bg-black/70 backdrop-blur-md flex flex-col sm:items-center sm:justify-center p-0 sm:p-4 overflow-hidden">
-      <div className="bg-white dark:bg-slate-900 rounded-none sm:rounded-3xl max-w-xl w-full h-[100dvh] sm:h-[92vh] sm:max-h-[92vh] flex flex-col shadow-2xl border-0 sm:border border-slate-200 dark:border-slate-800 overflow-hidden animate-scale-up">
+  return createPortal(
+    <div className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm flex flex-col sm:items-center sm:justify-center p-0 sm:p-4 overflow-hidden">
+      <div className="bg-white dark:bg-slate-900 rounded-none sm:rounded-3xl max-w-xl w-full h-full sm:h-[92vh] sm:max-h-[92vh] flex flex-col shadow-2xl border-0 sm:border border-slate-200 dark:border-slate-800 overflow-hidden">
         {/* Sticky 2-Row Header */}
         <div className="shrink-0 pt-[calc(env(safe-area-inset-top,0px)+0.75rem)] pb-3 px-3 sm:px-4 sm:pt-4 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 space-y-2">
           {/* Row 1: Code + Title + Close */}
@@ -2496,6 +2494,7 @@ function QuickSopModal({
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
