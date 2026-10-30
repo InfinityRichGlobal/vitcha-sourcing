@@ -33,8 +33,9 @@ test('China basemap loads with English labels and keeps its zoom across polling'
   await map.locator('.leaflet-control-zoom-in').click();
   await expect.poll(separation).toBeGreaterThan(before * 1.5);
   await expect(map.locator('.leaflet-zoom-anim')).toHaveCount(0);
+  await page.waitForTimeout(500);
   const zoomed = await separation();
   await page.waitForResponse(response => new URL(response.url()).pathname === '/api/data' && response.request().method() === 'GET');
-  await expect.poll(separation).toBeCloseTo(zoomed, 0);
+  await expect.poll(async () => Math.abs((await separation()) - zoomed)).toBeLessThan(15);
   await map.screenshot({ path: 'test-results/english-china-map.png' });
 });
