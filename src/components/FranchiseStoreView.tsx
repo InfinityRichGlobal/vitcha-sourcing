@@ -345,17 +345,17 @@ export function FranchiseStoreView({
     }
   };
 
-  const handlePostStoreComment = (e: React.FormEvent) => {
+  const handlePostStoreComment = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!activeStore) return;
     const text = storeCommentText.trim();
     if (!text && !storeCommentPhotoUrl && !storeCommentVoiceUrl) return;
 
-    void addFranchiseStoreComment(activeStore.id, text, storeSweetnessTarget, {
+    if (!await addFranchiseStoreComment(activeStore.id, text, storeSweetnessTarget, {
       photoUrl: storeCommentPhotoUrl || undefined,
       voiceUrl: storeCommentVoiceUrl || undefined,
       duration: storeCommentVoiceDuration,
-    });
+    })) return;
 
     setStoreCommentText('');
     setStoreCommentPhotoUrl(null);
@@ -368,17 +368,17 @@ export function FranchiseStoreView({
     const existing = activeStore.menuCategories || [];
     if (existing.includes(newCategoryName.trim())) return;
     const nextCats = [...existing, newCategoryName.trim()];
-    await saveFranchiseStore({
+    if (!await saveFranchiseStore({
       ...activeStore,
       menuCategories: nextCats,
-    });
+    })) return;
     setNewCategoryName('');
     setIsAddingCategory(false);
   };
 
   const handleDeleteStore = async (store: FranchiseStore) => {
     if (window.confirm(`ยืนยันการลบร้าน "${store.name}" ออกจากระบบหรือไม่?`)) {
-      await deleteFranchiseStore(store.id);
+      if (!await deleteFranchiseStore(store.id)) return;
       if (selectedStoreId === store.id) {
         setSelectedStoreId(null);
       }
@@ -625,7 +625,7 @@ export function FranchiseStoreView({
               setEditingStore(null);
             }}
             onSave={async (storeData) => {
-              await saveFranchiseStore(storeData);
+              if (!await saveFranchiseStore(storeData)) return;
               setIsStoreFormOpen(false);
               setEditingStore(null);
             }}
@@ -1070,7 +1070,7 @@ export function FranchiseStoreView({
 
         {/* Comments List with Rich Media */}
         <div className="space-y-2.5">
-          {((activeStore.revisionCycles?.[0]?.comments) || []).map((comm) => {
+          {((activeStore.revisionCycles || []).slice().reverse().flatMap(c => c.comments || [])).map((comm) => {
             const hasLikedComm = (comm.likes || []).includes(currentUser.id);
             return (
               <div
@@ -1281,10 +1281,10 @@ export function FranchiseStoreView({
           onClose={() => setIsAddMenuModalOpen(false)}
           onSave={async (newMenuItem) => {
             const nextMenuItems = [...activeStore.menuItems, newMenuItem];
-            await saveFranchiseStore({
+            if (!await saveFranchiseStore({
               ...activeStore,
               menuItems: nextMenuItems,
-            });
+            })) return;
             setIsAddMenuModalOpen(false);
           }}
         />
@@ -1300,7 +1300,7 @@ export function FranchiseStoreView({
             setEditingStore(null);
           }}
           onSave={async (storeData) => {
-            await saveFranchiseStore(storeData);
+            if (!await saveFranchiseStore(storeData)) return;
             setIsStoreFormOpen(false);
             setEditingStore(null);
           }}
@@ -1324,6 +1324,7 @@ function StoreFormModal({
   onClose: () => void;
   onSave: (storeData: Partial<FranchiseStore>) => Promise<void>;
 }) {
+  const recordId = useRef(store?.id || `store-${crypto.randomUUID()}`);
   const [name, setName] = useState(store?.name || '');
   const [themeColor, setThemeColor] = useState(store?.themeColor || 'emerald');
   const [categoriesInput, setCategoriesInput] = useState(
@@ -1475,7 +1476,8 @@ function StoreFormModal({
     const nowIso = new Date().toISOString();
 
     await onSave({
-      id: store?.id || `store-${crypto.randomUUID()}`,
+      id: recordId.current,
+      expectedUpdatedAt: store?.updatedAt,
       name: name.trim(),
       branch: store?.recordKind === 'brand' ? '' : branch.trim(),
       recordKind: store?.recordKind, sharedConcept: store?.sharedConcept,
@@ -1511,7 +1513,7 @@ function StoreFormModal({
   };
 
   return createPortal(
-    <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-3 sm:p-5 overflow-y-auto">
+    <div role="dialog" aria-modal="true" aria-label="แบบฟอร์มข้อมูลแบรนด์" data-no-pull-refresh className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-3 sm:p-5 overflow-y-auto">
       <div className="bg-white dark:bg-slate-900 rounded-3xl max-w-xl w-full p-5 sm:p-6 shadow-2xl border border-slate-200 dark:border-slate-800 space-y-4 animate-scale-up max-h-[92vh] overflow-y-auto">
         <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
           <div className="flex items-center gap-2">
@@ -2120,7 +2122,7 @@ function QuickSopModal({
 
   const currentLevelData = labItem.sweetnessLevels[activeLevel];
   const isLikedRecipe = (labItem.likedBy || []).includes(currentUser.id);
-  const commentsList = (labItem.revisionCycles?.[0]?.comments) || [];
+  const commentsList = (labItem.revisionCycles || []).slice().reverse().flatMap(c => c.comments || []);
 
   // Attachment upload handler
   const handleUploadPhoto = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -2232,11 +2234,13 @@ function QuickSopModal({
     if (!text && !commentPhotoUrl && !commentVoiceUrl) return;
 
     setIsSubmittingComment(true);
-    await onAddLabComment(labItem.id, text, sweetnessTarget, {
+    const ok = await onAddLabComment(labItem.id, text, sweetnessTarget, {
       photoUrl: commentPhotoUrl || undefined,
       voiceUrl: commentVoiceUrl || undefined,
       duration: commentVoiceDuration,
     });
+    setIsSubmittingComment(false);
+    if (!ok) return;
     setCommentText('');
     setCommentPhotoUrl(null);
     setCommentVoiceUrl(null);
@@ -2245,7 +2249,7 @@ function QuickSopModal({
   };
 
   return createPortal(
-    <div className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm flex flex-col sm:items-center sm:justify-center p-0 sm:p-4 overflow-hidden">
+    <div data-no-pull-refresh className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm flex flex-col sm:items-center sm:justify-center p-0 sm:p-4 overflow-hidden">
       <div className="bg-white dark:bg-slate-900 rounded-none sm:rounded-3xl max-w-xl w-full h-full sm:h-[92vh] sm:max-h-[92vh] flex flex-col shadow-2xl border-0 sm:border border-slate-200 dark:border-slate-800 overflow-hidden">
         {/* Sticky 2-Row Header */}
         <div className="shrink-0 pt-[calc(env(safe-area-inset-top,0px)+0.75rem)] pb-3 px-3 sm:px-4 sm:pt-4 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 space-y-2">

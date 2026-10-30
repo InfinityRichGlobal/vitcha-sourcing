@@ -154,3 +154,27 @@ test('a 401 for the current authenticated session still clears it', async t => {
   await assert.rejects(api.requestJson('/api/data'), e => e.status === 401);
   assert.equal(api.getSessionToken(), null); assert.equal(session.expired(), 1);
 });
+
+test('blocked Google upload times out and relays the original file through the server', async t => {
+ t.mock.method(console,'warn',()=>{});
+ const realSetTimeout=globalThis.setTimeout;
+ t.mock.method(globalThis,'setTimeout',(fn,ms,...args)=>realSetTimeout(fn,ms===45000?5:ms,...args));
+ const oldReader=globalThis.FileReader;
+ globalThis.FileReader=class { readAsDataURL(blob){blob.arrayBuffer().then(bytes=>{this.result=`data:${blob.type};base64,${Buffer.from(bytes).toString('base64')}`;this.onload();});} };
+ t.after(()=>{if(oldReader)globalThis.FileReader=oldReader;else delete globalThis.FileReader;});
+ const calls=[];
+ t.mock.method(globalThis,'fetch',async (url,init)=>{
+  calls.push(url);
+  if(url.endsWith('/api/drive/session'))return new Response(JSON.stringify({directAvailable:true,sessionUrl:'https://www.googleapis.com/upload/test'}));
+  if(url.startsWith('https://www.googleapis.com/'))return new Promise((resolve,reject)=>init.signal.addEventListener('abort',()=>reject(new Error('Google blocked'))));
+  assert.ok(url.endsWith('/api/upload'));assert.equal(JSON.parse(init.body).base64,'data:image/png;base64,aW1hZ2U=');
+  return new Response(JSON.stringify({url:'/media/relay'}));
+ });
+ const result=await api.uploadMediaToServer(new File(['image'],'photo.png',{type:'image/png'}));
+ assert.ok(result.endsWith('/media/relay'));assert.equal(calls.length,3);
+});
+
+test('HTTP 200 with a captive portal or malformed JSON never acknowledges a save', async t => {
+ t.mock.method(globalThis,'fetch',async()=>new Response('<html>Please log in to Wi-Fi</html>',{status:200}));
+ await assert.rejects(api.postSupplierToCentral({id:'captured'}),error=>error instanceof api.ApiError && error.status===502);
+});

@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { User, SupplierRecord, StoreInspoRecord, LocationRecord, ExchangeRateConfig, InviteLink, PipelineStatus, UserRole, AppNotification, HandoffStage, AppViewTab, QuickMessageTemplate, CuratedProduct, ProductTaxon, ProductSet, ProductChanges, TrashedItem, LabItem, LabFormulaStatus, FranchiseStore, ViewLogEntry } from '../types';
 import { INITIAL_CATEGORIES, INITIAL_STORE_CATEGORIES, INITIAL_LOCATION_TYPES, INITIAL_QUICK_TAGS, INITIAL_QUICK_MESSAGES } from '../utils/defaultSettings';
-import { getRenderServerUrl, saveRenderServerUrl, checkServerHealth, fetchCentralData, sendJson, requestJson, getSessionToken, setSessionToken, loginUserApi, ApiError, markNotificationsReadApi, clearNotificationsApi, postLeadLabItemApi, deleteLeadLabItemApi, likeLeadLabItemApi, commentLeadLabItemApi, likeLeadLabCommentApi, cycleLeadLabItemApi, updateLeadLabStatusApi, postFranchiseStoreApi, deleteFranchiseStoreApi } from '../services/api';
+import { getRenderServerUrl, saveRenderServerUrl, checkServerHealth, fetchCentralData, sendJson, requestJson, getSessionToken, setSessionToken, loginUserApi, ApiError, markNotificationsReadApi, clearNotificationsApi, postLeadLabItemApi, deleteLeadLabItemApi, likeLeadLabItemApi, likeLeadLabCommentApi, cycleLeadLabItemApi, updateLeadLabStatusApi, postFranchiseStoreApi, deleteFranchiseStoreApi } from '../services/api';
 
 interface AppContextType {
   products: CuratedProduct[];
@@ -680,7 +680,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
   const saveLeadLabItem = async (item: Partial<LabItem>) => {
     return perform('save-lead-lab', async () => {
-      const res = await postLeadLabItemApi(item);
+      const res = await postLeadLabItemApi({ ...item, expectedUpdatedAt: item.expectedUpdatedAt ?? leadLabItems.find(x => x.id === item.id)?.updatedAt });
       if (res?.item) {
         setLeadLabItems(p => {
           const idx = p.findIndex(x => x.id === res.item.id);
@@ -699,13 +699,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const toggleLikeLeadLabItem = async (id: string) => {
-    const userId = currentUser.id;
-    setLeadLabItems(p => p.map(item => {
-      if (item.id !== id) return item;
-      const liked = item.likedBy?.includes(userId);
-      const nextLiked = liked ? item.likedBy.filter(x => x !== userId) : [...(item.likedBy || []), userId];
-      return { ...item, likedBy: nextLiked };
-    }));
     try {
       const res = await likeLeadLabItemApi(id);
       if (res?.likedBy) {
@@ -727,40 +720,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (!text && (extra?.photoUrl || extra?.voiceUrl)) {
       text = extra?.photoUrl && extra?.voiceUrl ? '📷 แนบรูปภาพและเสียง' : extra?.photoUrl ? '📷 แนบรูปภาพ' : '🎙️ ข้อความเสียง';
     }
-    const optimisticComment: any = {
-      id: `comm-${Date.now()}`,
-      authorId: currentUser.id,
-      authorName: currentUser.alias || currentUser.name,
-      authorAvatar: currentUser.avatar,
-      createdAt: new Date().toISOString(),
-      content: text,
-      sweetnessTarget: sweetnessTarget || 'all',
-      photoUrl: extra?.photoUrl,
-      voiceUrl: extra?.voiceUrl,
-      duration: extra?.duration,
-      likes: [],
-    };
-    setLeadLabItems(prev => prev.map(item => {
-      if (item.id !== id) return item;
-      const cycles = [...(item.revisionCycles || [])];
-      let active = cycles.find(c => c.status === 'active');
-      if (!active) {
-        active = {
-          cycleNumber: cycles.length + 1,
-          title: `รอบที่ ${cycles.length + 1}: เปิดรอบพัฒนาต่อ`,
-          status: 'active',
-          createdAt: new Date().toISOString(),
-          createdBy: currentUser.alias || currentUser.name,
-          comments: []
-        };
-        cycles.push(active);
-      }
-      active.comments = [...(active.comments || []), optimisticComment];
-      return { ...item, revisionCycles: cycles };
-    }));
-
     return perform('comment-lead-lab', async () => {
-      const res = await commentLeadLabItemApi(id, { content: text, sweetnessTarget, ...extra });
+      const payload = { content: text, sweetnessTarget, ...extra };
+      const key = `lab-comment:${id}:${JSON.stringify(payload)}`;
+      const res = await sendJson(`/api/lead-lab/items/${encodeURIComponent(id)}/comments`, { ...payload, operationId: commandId(key) });
+      commandIds.current.delete(key);
       if (res?.item) {
         setLeadLabItems(p => p.map(x => x.id === id ? res.item : x));
       }
@@ -806,7 +770,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const saveFranchiseStore = async (store: Partial<FranchiseStore>) => {
     return perform('save-franchise-store', async () => {
-      const res = await postFranchiseStoreApi(store);
+      const res = await postFranchiseStoreApi({ ...store, expectedUpdatedAt: store.expectedUpdatedAt ?? franchiseStores.find(x => x.id === store.id)?.updatedAt });
       if (res?.store) {
         setFranchiseStores(p => {
           const idx = p.findIndex(x => x.id === res.store.id);
@@ -824,70 +788,22 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     });
   };
 
-  const toggleLikeFranchiseStore = async (id: string) => {
-    const userId = currentUser.id;
-    const store = franchiseStores.find(x => x.id === id);
-    if (!store) return false;
-    const liked = (store.likedBy || []).includes(userId);
-    const nextLiked = liked ? store.likedBy!.filter(x => x !== userId) : [...(store.likedBy || []), userId];
-    const updated = { ...store, likedBy: nextLiked };
-    setFranchiseStores(p => p.map(s => s.id === id ? updated : s));
-    return saveFranchiseStore({ id, likedBy: nextLiked });
-  };
-
-  const addFranchiseStoreComment = async (
-    id: string,
-    content: string,
-    sweetnessTarget?: 'all' | '0' | '50' | '100',
-    extra?: { photoUrl?: string; voiceUrl?: string; duration?: number }
-  ) => {
-    const store = franchiseStores.find(x => x.id === id);
-    if (!store) return false;
-    const cycles = store.revisionCycles || [
-      { cycleNumber: 1, title: 'รอบเปิดตัวสาขา & เมนูบอร์ด', status: 'active', createdAt: new Date().toISOString(), createdBy: currentUser.alias, comments: [] }
-    ];
-    let text = content ? String(content).trim() : '';
-    if (!text && (extra?.photoUrl || extra?.voiceUrl)) {
-      text = extra?.photoUrl && extra?.voiceUrl ? '📷 แนบรูปภาพและเสียง' : extra?.photoUrl ? '📷 แนบรูปภาพ' : '🎙️ ข้อความเสียง';
-    }
-    const newComment = {
-      id: `comm-${crypto.randomUUID()}`,
-      authorId: currentUser.id,
-      authorName: currentUser.alias || currentUser.name,
-      authorAvatar: currentUser.avatar,
-      createdAt: new Date().toISOString(),
-      content: text,
-      sweetnessTarget: sweetnessTarget || 'all',
-      photoUrl: extra?.photoUrl,
-      voiceUrl: extra?.voiceUrl,
-      duration: extra?.duration,
-      likes: []
-    };
-    const activeCycleIndex = cycles.findIndex(c => c.status === 'active');
-    const targetIdx = activeCycleIndex >= 0 ? activeCycleIndex : 0;
-    const nextCycles = cycles.map((c, idx) => {
-      if (idx !== targetIdx) return c;
-      return { ...c, comments: [newComment, ...(c.comments || [])] };
+  const storeAction = (id: string, action: string, data: unknown) => {
+    const key = `store:${id}:${action}:${JSON.stringify(data)}`;
+    return perform(`store:${id}:${action}`, async () => {
+      await sendJson(`/api/franchise-stores/${encodeURIComponent(id)}/actions`, { action, data, operationId: commandId(key) });
+      commandIds.current.delete(key);
     });
-    setFranchiseStores(p => p.map(s => s.id === id ? { ...s, revisionCycles: nextCycles } : s));
-    return saveFranchiseStore({ id, revisionCycles: nextCycles });
   };
-
-  const toggleLikeFranchiseStoreComment = async (id: string, commentId: string) => {
+  const toggleLikeFranchiseStore = (id: string) => {
     const store = franchiseStores.find(x => x.id === id);
-    if (!store) return false;
-    const userId = currentUser.id;
-    const nextCycles = (store.revisionCycles || []).map(cycle => ({
-      ...cycle,
-      comments: (cycle.comments || []).map(comm => {
-        if (comm.id !== commentId) return comm;
-        const liked = (comm.likes || []).includes(userId);
-        const nextLikes = liked ? comm.likes.filter(x => x !== userId) : [...(comm.likes || []), userId];
-        return { ...comm, likes: nextLikes };
-      })
-    }));
-    setFranchiseStores(p => p.map(s => s.id === id ? { ...s, revisionCycles: nextCycles } : s));
-    return saveFranchiseStore({ id, revisionCycles: nextCycles });
+    return storeAction(id, 'like', { liked: !(store?.likedBy || []).includes(currentUser.id) });
+  };
+  const addFranchiseStoreComment = (id: string, content: string, sweetnessTarget?: 'all' | '0' | '50' | '100', extra?: { photoUrl?: string; voiceUrl?: string; duration?: number }) =>
+    storeAction(id, 'comment', { content, sweetnessTarget, ...extra });
+  const toggleLikeFranchiseStoreComment = (id: string, commentId: string) => {
+    const comment = franchiseStores.find(x => x.id === id)?.revisionCycles?.flatMap(c => c.comments || []).find(c => c.id === commentId);
+    return storeAction(id, 'comment-like', { commentId, liked: !(comment?.likes || []).includes(currentUser.id) });
   };
 
   const recordFranchiseStoreView = (id: string) => {

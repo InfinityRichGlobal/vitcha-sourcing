@@ -459,6 +459,7 @@ export interface RecipeIngredient {
 }
 
 export interface LabItem {
+  expectedUpdatedAt?: string;
   id: string;
   type: LabItemType;
   code: string;
@@ -519,6 +520,7 @@ export interface StoreMenuItem {
 }
 
 export interface FranchiseStore {
+  expectedUpdatedAt?: string;
   recordKind?: 'brand';
   sharedConcept?: string;
   conceptDescription?: string;

@@ -77,6 +77,7 @@ test('Google Drive CENTER direct resumable upload and runtime configuration pers
       if (target.startsWith('https://www.googleapis.com/upload/drive/v3/files?uploadType=resumable')) {
         return new Response('', { status: 200, headers: { location: 'https://www.googleapis.com/upload/drive/v3/files?upload_id=session-xyz' } });
       }
+      if (target.startsWith('https://www.googleapis.com/drive/v3/files/drive-file-999?')) return new Response(JSON.stringify({id:'drive-file-999',size:'12345',mimeType:'image/jpeg',md5Checksum:'abc123md5',trashed:false,parents:['folder-abc']}));
       throw new Error(`Unexpected fetch: ${target}`);
     },
     request: async (route, options) => {
@@ -126,4 +127,14 @@ test('Google Drive CENTER direct resumable upload and runtime configuration pers
   assert.equal(insertedMedia[0].provider, 'drive');
   assert.equal(insertedMedia[0].file_id, 'drive-file-999');
   assert.equal(insertedMedia[0].bytes, 12345);
+});
+
+
+test('direct upload completion cannot acknowledge a missing, truncated or trashed Drive file', async () => {
+ for(const metadata of [null,{size:'1',mimeType:'image/png',md5Checksum:'x'}, {size:'10',mimeType:'image/png',md5Checksum:'x',trashed:true}]) {
+  let writes=0;
+  const media=createCloudMedia({url,key,drive:{clientId:'c',refreshToken:'r',folderId:'f'},request:async()=>{writes++;},fetchImpl:async target=>target.includes('oauth2')?new Response(JSON.stringify({access_token:'t',expires_in:3600})):new Response(JSON.stringify(metadata||{}),{status:metadata?200:404})});
+  await assert.rejects(media.completeDirectUpload({fileId:'file',fileSize:10,mimeType:'image/png',md5Checksum:'x'}));
+  assert.equal(writes,0);
+ }
 });

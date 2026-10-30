@@ -47,7 +47,7 @@ test('empty dashboard shows zero; loading reads back 42 records and repeat click
   await expect(page.getByTestId('mockup-result')).toContainText('เพิ่ม 42 รายการ');
   expect(bytes).toBeLessThan(500);
   await expect(page.getByTestId('mockup-result')).toContainText('สูตร R&D 10');
-  await page.reload();
+  await page.reload({waitUntil:'domcontentloaded'});
   await load(page);
   await expect(page.getByTestId('mockup-result')).toContainText('เพิ่ม 0 รายการ');
   await expect(page.getByTestId('mockup-result')).toContainText('ข้ามรายการเดิม 42');
@@ -96,7 +96,7 @@ test('another client write appears through polling without reload or signing out
 
 test('two brands share one concept, preserve supplied logos, and both show the two toppings', async ({page}) => {
   const seeded=await page.request.post(base+'/api/system/sample-pack',{headers:{Authorization:`Bearer ${token}`},data:{packId:'vitcha-demo-v2',operationId:'brand-ui'}});expect(seeded.ok()).toBeTruthy();
-  await page.reload();
+  await page.reload({waitUntil:'domcontentloaded'});
   await page.getByRole('button',{name:/แพลตฟอร์ม/}).click();
   await page.locator('[data-no-pull-refresh]').getByRole('button',{name:/แบรนด์และหน้าร้าน/}).click();
   await expect(page.getByRole('heading',{name:/แบรนด์และหน้าร้าน/})).toBeVisible();
@@ -126,7 +126,7 @@ test('store photos open in a closable gallery with buttons, keyboard and swipe',
   await page.request.post(base+'/api/system/sample-pack',{headers:{Authorization:`Bearer ${token}`},data:{packId:'vitcha-demo-v2',operationId:'gallery-ui'}});
   const updated = await page.request.post(base+'/api/franchise-stores',{headers:{Authorization:`Bearer ${token}`},data:{id:'brand-vitcha',galleryPhotos:['./brand-mockups/shared-storefront.jpg','./brand-mockups/vitcha-logo.png','./brand-mockups/vitza-logo.png']}});
   expect(updated.ok()).toBeTruthy();
-  await page.reload();
+  await page.reload({waitUntil:'domcontentloaded'});
   await page.getByRole('button',{name:/แพลตฟอร์ม/}).click();
   await page.locator('[data-no-pull-refresh]').getByRole('button',{name:/แบรนด์และหน้าร้าน/}).click();
   await page.getByRole('button',{name:/เข้าร้าน/}).first().click();
@@ -173,7 +173,7 @@ test('store photos open in a closable gallery with buttons, keyboard and swipe',
 test('real brand photo has no dark overlay or mock labels and custom color persists', async ({page}) => {
  const headers={Authorization:`Bearer ${token}`};
  expect((await page.request.post(base+'/api/franchise-stores',{headers,data:{id:'real-brand',name:'Real Brand',logoUrl:'./brand-mockups/vitcha-logo.png',menuCategories:['Tea'],themeColor:'emerald',branch:'',menuItems:[]}})).ok()).toBeTruthy();
- await page.reload();
+ await page.reload({waitUntil:'domcontentloaded'});
  await page.getByRole('button',{name:/แพลตฟอร์ม/}).click();
  await page.locator('[data-no-pull-refresh]').getByRole('button',{name:/แบรนด์และหน้าร้าน/}).click();
  await expect(page.locator('main')).not.toContainText(/หน้าร้านจำลอง|แบรนด์จำลอง|Mockup/);
@@ -191,7 +191,7 @@ test('real brand photo has no dark overlay or mock labels and custom color persi
  await page.screenshot({path:'test-results/custom-brand-color.png'});
  await page.getByRole('button',{name:'บันทึกการแก้ไข',exact:true}).click();
  await expect(page.getByLabel('รหัสสีแบรนด์ HEX')).toHaveCount(0);
- await page.reload();
+ await page.reload({waitUntil:'domcontentloaded'});
  const saved=(await (await page.request.get(base+'/api/franchise-stores',{headers})).json()).stores.find((x:any)=>x.id==='real-brand');
  expect(saved.themeColor).toBe('#903c75'); expect(saved.name).toBe('Real Brand'); expect(saved.isMock).not.toBe(true);
 });
@@ -203,7 +203,7 @@ test('owner selects filtered trash in bulk, cancels permanent deletion, restores
    expect((await page.request.post(base+'/api/franchise-stores',{headers,data:{id,name}})).ok()).toBeTruthy();
    expect((await page.request.delete(base+'/api/franchise-stores/'+id,{headers})).ok()).toBeTruthy();
  }
- await page.reload();
+ await page.reload({waitUntil:'domcontentloaded'});
  await page.getByRole('button',{name:/แพลตฟอร์ม/}).click();
  await page.locator('[data-no-pull-refresh]').getByRole('button',{name:/ถังขยะ/}).click();
  const search=page.getByPlaceholder('ค้นหาตามชื่อรายการ, หมวดหมู่, หรือผู้ลบ...');
@@ -229,11 +229,73 @@ test('legacy reviewer becomes Editor with edit controls but no trash, member or 
  const login=await page.request.post(base+'/api/login',{data:{idOrEmail:'editor',pin:'qa-only-876543'}});
  const session=await login.json(); expect(session.user.role).toBe('editor');
  await page.addInitScript(t=>sessionStorage.setItem('vitcha_session_token',t),session.token);
- await page.reload();
+ await page.reload({waitUntil:'domcontentloaded'});
  await page.getByRole('button',{name:/แพลตฟอร์ม/}).click();
  const drawer=page.locator('[data-no-pull-refresh]');
  for(const name of [/ถังขยะ/,/สมาชิก/,/ตั้งค่าเนื้อหา/,/โหลดข้อมูล Mockup/]) await expect(drawer.getByRole('button',{name})).toHaveCount(0);
  await page.goto('/?tab=trash');
  await expect(page.getByRole('heading',{name:/ถังขยะและประวัติ/})).toHaveCount(0);
  expect((await page.request.get(base+'/api/trash',{headers:{Authorization:`Bearer ${session.token}`}})).status()).toBe(403);
+});
+
+test('failed brand save and comment preserve input until server confirms a retry', async ({page}) => {
+ const headers={Authorization:`Bearer ${token}`};
+ await page.request.post(base+'/api/franchise-stores',{headers,data:{id:'audit-brand',name:'Audit Brand',revisionCycles:[{cycleNumber:1,title:'Closed round',status:'closed',createdAt:'2026-01-01',createdBy:'QA',comments:[]}],logoUrl:'./brand-mockups/vitcha-logo.png',menuCategories:['Tea'],menuItems:[]}});
+ await page.reload({waitUntil:'domcontentloaded'});await page.getByRole('button',{name:/แพลตฟอร์ม/}).click();
+ await page.locator('[data-no-pull-refresh]').getByRole('button',{name:/แบรนด์และหน้าร้าน/}).click();
+ await page.getByRole('button',{name:/เข้าร้าน/}).click();
+ await page.getByRole('button',{name:/แก้ไขร้าน/}).click();
+ const name=page.getByPlaceholder('ระบุชื่อแบรนด์');await name.fill('Audit Saved Brand');
+ let fail=true;
+ await page.route('**/api/franchise-stores',async route=>{
+   if(route.request().method()==='POST' && fail)return route.fulfill({status:503,json:{error:'QA server unavailable'}});
+   const u=new URL(route.request().url());await route.fulfill({response:await route.fetch({url:base+u.pathname})});
+ });
+ await page.getByRole('button',{name:'บันทึกการแก้ไข',exact:true}).click();
+ await expect(page.getByText('QA server unavailable',{exact:true})).toBeVisible();
+ await expect(name).toBeVisible();await expect(name).toHaveValue('Audit Saved Brand');
+ fail=false;await page.getByRole('button',{name:'บันทึกการแก้ไข',exact:true}).click();
+ await expect(name).toHaveCount(0);
+ const input=page.getByPlaceholder('เขียนความคิดเห็น หรือฟีดแบ็กสำหรับร้าน Audit Saved Brand...');
+ await input.fill('ข้อมูลส่งต่อทีมไทย');
+ let commentFail=true;
+ await page.route('**/api/franchise-stores/audit-brand/actions',async route=>{
+  if(commentFail)return route.abort('failed');
+  await route.fulfill({response:await route.fetch({url:base+'/api/franchise-stores/audit-brand/actions'})});
+ });
+ await page.getByRole('button',{name:'ส่งความเห็น',exact:true}).click();
+ await expect(input).toHaveValue('ข้อมูลส่งต่อทีมไทย');
+ await expect(page.locator('main').getByText('"ข้อมูลส่งต่อทีมไทย"',{exact:true})).toHaveCount(0);
+ commentFail=false;await page.getByRole('button',{name:'ส่งความเห็น',exact:true}).click();
+ await expect(input).toHaveValue('');
+ await expect(page.locator('main').getByText('"ข้อมูลส่งต่อทีมไทย"',{exact:true})).toHaveCount(1);
+});
+
+test('two independent accounts receive handoff updates without reload, including slow polling', async ({page,browser}) => {
+ const headers={Authorization:`Bearer ${token}`};
+ await page.request.post(base+'/api/suppliers',{headers,data:{id:'china-thai',name:'China Thai handoff',category:'Machine',rating:4,quickTags:[],photos:{storefrontAndAtmosphere:[],contactCards:[]},catalogItems:[],location:{lat:13.7,lng:100.5},status:'scouted'}});
+ const login=await page.request.post(base+'/api/login',{data:{idOrEmail:'editor',pin:'qa-only-876543'}});
+ const secondToken=(await login.json()).token;
+ const context=await browser.newContext({viewport:{width:390,height:844}});
+ const thai=await context.newPage();
+ try {
+  await thai.route('**/api/**',async route=>{const u=new URL(route.request().url());if(u.pathname==='/api/data')await new Promise(r=>setTimeout(r,4000));await route.fulfill({response:await route.fetch({url:base+u.pathname+u.search})});});
+  await thai.route('https://tiles.openfreemap.org/**',r=>r.abort());
+  await thai.addInitScript(t=>sessionStorage.setItem('vitcha_session_token',t),secondToken);
+  await thai.goto('http://127.0.0.1:4173/');await expect(thai.getByRole('banner')).toBeVisible({timeout:20000});
+  await thai.getByRole('button',{name:/แพลตฟอร์ม/}).click();
+  await thai.locator('[data-no-pull-refresh]').getByRole('button',{name:/ส่งต่องาน/}).click();
+  const started=Date.now();
+  expect((await page.request.post(base+'/api/suppliers/china-thai/actions',{headers,data:{action:'handoff',operationId:'china-sends',revision:1,data:{assignedTo:'user-editor',handoffNotes:'รับช่วงทดสอบเครื่องชาจากจีน',handoffStage:'awaiting'}}})).ok()).toBeTruthy();
+  await expect(thai.getByText('รับช่วงทดสอบเครื่องชาจากจีน',{exact:true})).toBeVisible({timeout:20000});
+  console.log('QA slow-network cross-account handoff latency ms:',Date.now()-started);
+  const response=await thai.request.get(base+'/api/data',{headers:{Authorization:`Bearer ${secondToken}`}});
+  const record=(await response.json()).suppliers.find((x:any)=>x.id==='china-thai');
+  expect(record.assignedTo).toBe('user-editor');
+  expect((await thai.request.post(base+'/api/suppliers/china-thai/actions',{headers:{Authorization:`Bearer ${secondToken}`},data:{action:'handoff',operationId:'thai-accepts',revision:record.revision,data:{handoffNotes:'ทีมไทยรับงานแล้ว',handoffStage:'sample_test'}}})).ok()).toBeTruthy();
+  await page.getByRole('button',{name:/แพลตฟอร์ม/}).click();
+  await page.locator('[data-no-pull-refresh]').getByRole('button',{name:/ส่งต่องาน/}).click();
+  await page.getByRole('button',{name:/3\. ทดสอบตัวอย่าง Lab/}).click();
+  await expect(page.getByText('ทีมไทยรับงานแล้ว',{exact:true})).toBeVisible({timeout:15000});
+ } finally {await thai.unrouteAll({behavior:'wait'});await context.close();}
 });

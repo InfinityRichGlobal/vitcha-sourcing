@@ -85,7 +85,17 @@ export function createCloudMedia({ request, url, key, drive = null, fetchImpl = 
     return { directAvailable: true, sessionUrl, folderId };
   }
 
-  async function completeDirectUpload({ fileId, mimeType, fileSize, md5Checksum }) {
+  async function completeDirectUpload({ fileId, folderId, mimeType, fileSize, md5Checksum }) {
+    const token = await googleToken();
+    if (!token || !/^[a-zA-Z0-9_-]+$/.test(fileId || '') || !Number.isFinite(fileSize) || fileSize <= 0) throw new Error('ข้อมูลไฟล์ที่อัปโหลดไม่ถูกต้อง');
+    const response = await fetchImpl(`https://www.googleapis.com/drive/v3/files/${encodeURIComponent(fileId)}?fields=id,size,mimeType,md5Checksum,trashed,parents`, {
+      headers: {Authorization:`Bearer ${token}`}, signal:AbortSignal.timeout(20000),
+    });
+    if (!response.ok) throw new Error('ยังยืนยันไฟล์บน Google Drive ไม่ได้');
+    const verified = await response.json();
+    if (verified.trashed || Number(verified.size) !== fileSize || verified.mimeType !== mimeType || !verified.md5Checksum || (md5Checksum && verified.md5Checksum !== md5Checksum) || (folderId && !(verified.parents || []).includes(folderId))) throw new Error('ไฟล์บน Google Drive ไม่ตรงกับที่อัปโหลด');
+    md5Checksum = verified.md5Checksum;
+
     const id = randomBytes(24).toString('hex');
     await request('/rest/v1/vitcha_media', {
       method: 'POST',

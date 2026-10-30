@@ -722,3 +722,30 @@ test('trash batch validates all records atomically and blocks every non-owner', 
  assert.equal((await call('/api/trash/batch',owner,{action:'delete',items:latest})).data.count,2);
  assert.equal((await call('/api/trash',owner,undefined,'GET')).data.items.length,0);
 });
+
+test('store discussion appends concurrent messages, deduplicates retries, and rejects Viewer writes', async t => {
+ const {call,login}=await setup(t); const editor=await login('review'),viewer=await login('view');
+ await call('/api/franchise-stores',editor,{id:'audit-store',name:'Audit Store'});
+ const send=i=>call('/api/franchise-stores/audit-store/actions',editor,{action:'comment',operationId:'audit-'+i,data:{content:'message '+i}});
+ assert.ok((await Promise.all(Array.from({length:8},(_,i)=>send(i)))).every(r=>r.status===200));
+ await send(0);
+ assert.equal((await call('/api/franchise-stores/audit-store/actions',viewer,{action:'comment',operationId:'forged',data:{content:'no'}})).status,403);
+ let record=(await call('/api/franchise-stores',editor,undefined,'GET')).data.stores[0];
+ assert.equal(record.revisionCycles[0].comments.length,8);
+ assert.equal((await call('/api/franchise-stores',editor,{id:record.id,revisionCycles:[]})).status,409);
+ const updated=await call('/api/franchise-stores',editor,{id:record.id,name:'Renamed',expectedUpdatedAt:record.updatedAt,revisionCycles:[],likedBy:[]});assert.equal(updated.status,200);
+ assert.equal(updated.data.store.revisionCycles[0].comments.length,8);
+ assert.equal((await call('/api/franchise-stores',editor,{id:record.id,name:'Stale overwrite',expectedUpdatedAt:record.updatedAt})).status,409);
+});
+test('lab failed/retried comments cannot appear twice and Viewer cannot write interactions', async t => {
+ const {call,login}=await setup(t);const editor=await login('review'),viewer=await login('view');
+ const created=await call('/api/lead-lab/items',editor,{id:'audit-lab',name:'Audit Lab'});
+ const stale=created.data.item.updatedAt;
+ const payload={operationId:'once',content:'Confirmed team message'};
+ for(let i=0;i<2;i++) assert.equal((await call('/api/lead-lab/items/audit-lab/comments',editor,payload)).status,200);
+ for(const route of ['/comments','/like','/comments/once/like']) assert.equal((await call('/api/lead-lab/items/audit-lab'+route,viewer,payload)).status,403);
+ const item=(await call('/api/lead-lab/items',editor,undefined,'GET')).data.items[0];
+ assert.equal(item.revisionCycles[0].comments.length,1);
+ assert.equal((await call('/api/lead-lab/items',editor,{id:item.id,name:'Old edit',expectedUpdatedAt:stale})).status,409);
+ assert.equal((await call('/api/lead-lab/items',editor,{id:item.id,name:'New edit',expectedUpdatedAt:item.updatedAt,revisionCycles:[]})).data.item.revisionCycles[0].comments.length,1);
+});

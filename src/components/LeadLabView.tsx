@@ -368,9 +368,9 @@ export function LeadLabView({
           onCycleRevision={(summary, nextTitle) => cycleLeadLabRevision(activeDetailItem.id, summary, nextTitle)}
           onSetStatus={(status) => setLeadLabStatus(activeDetailItem.id, status)}
           onRecordView={() => recordLeadLabItemView(activeDetailItem.id)}
-          onDelete={() => {
+          onDelete={async () => {
             if (window.confirm(`ยืนยันการลบสูตร "${activeDetailItem.name}" หรือไม่?`)) {
-              deleteLeadLabItem(activeDetailItem.id);
+              if (!await deleteLeadLabItem(activeDetailItem.id)) return;
               setSelectedItem(null);
             }
           }}
@@ -383,7 +383,7 @@ export function LeadLabView({
           currentUser={currentUser}
           onClose={() => setIsNewModalOpen(false)}
           onSave={async (itemData) => {
-            await saveLeadLabItem(itemData);
+            if (!await saveLeadLabItem(itemData)) return;
             setIsNewModalOpen(false);
           }}
         />
@@ -569,9 +569,9 @@ function LabDetailModal({
     content: string,
     target?: 'all' | '0' | '50' | '100',
     extra?: { photoUrl?: string; voiceUrl?: string; duration?: number }
-  ) => void;
+  ) => Promise<boolean>;
   onToggleCommentLike: (commentId: string) => void;
-  onCycleRevision: (summary: string, nextTitle?: string) => void;
+  onCycleRevision: (summary: string, nextTitle?: string) => Promise<boolean>;
   onSetStatus: (status: LabFormulaStatus) => void;
   onRecordView?: () => void;
   onDelete: () => void;
@@ -734,16 +734,16 @@ function LabDetailModal({
     }
   };
 
-  const handlePostComment = (e: React.FormEvent) => {
+  const handlePostComment = async (e: React.FormEvent) => {
     e.preventDefault();
     const text = commentText.trim();
     if (!text && !commentPhotoUrl && !commentVoiceUrl) return;
 
-    onAddComment(text, sweetnessTarget, {
+    if (!await onAddComment(text, sweetnessTarget, {
       photoUrl: commentPhotoUrl || undefined,
       voiceUrl: commentVoiceUrl || undefined,
       duration: commentVoiceDuration,
-    });
+    })) return;
 
     setCommentText('');
     setCommentPhotoUrl(null);
@@ -751,19 +751,19 @@ function LabDetailModal({
     setCommentVoiceDuration(undefined);
   };
 
-  const handleConfirmCloseCycle = () => {
+  const handleConfirmCloseCycle = async () => {
     if (!cycleSummary.trim()) {
       alert('กรุณากรอกข้อสรุปการอ่านคอมเมนต์รอบนี้');
       return;
     }
-    onCycleRevision(cycleSummary.trim(), nextCycleTitle.trim() || undefined);
+    if (!await onCycleRevision(cycleSummary.trim(), nextCycleTitle.trim() || undefined)) return;
     setIsClosingCycle(false);
     setCycleSummary('');
     setNextCycleTitle('');
   };
 
   return createPortal(
-    <div className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm flex flex-col sm:items-center sm:justify-center p-0 sm:p-4 overflow-hidden">
+    <div data-no-pull-refresh className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm flex flex-col sm:items-center sm:justify-center p-0 sm:p-4 overflow-hidden">
       <div className="bg-white dark:bg-slate-900 rounded-none sm:rounded-3xl max-w-4xl w-full h-full sm:h-[92vh] sm:max-h-[92vh] flex flex-col shadow-2xl border-0 sm:border border-slate-200 dark:border-slate-800 overflow-hidden">
         {/* Sticky Header — 2 Rows (Row 1: Title + Close; Row 2: Action Toolbar) */}
         <div className="pt-[calc(env(safe-area-inset-top,0px)+0.75rem)] pb-3 px-3.5 sm:px-4 sm:pt-4 border-b border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 sticky top-0 z-20 space-y-2.5 shrink-0 shadow-xs">
@@ -1484,6 +1484,7 @@ function NewLabItemModal({
   onClose: () => void;
   onSave: (item: Partial<LabItem>) => Promise<void>;
 }) {
+  const recordId = useRef(`lab-${crypto.randomUUID()}`);
   const [type, setType] = useState<LabItemType>('drink');
   const [code, setCode] = useState(`RD-${Math.floor(100 + Math.random() * 900)}`);
   const [name, setName] = useState('');
@@ -1634,6 +1635,7 @@ function NewLabItemModal({
     const nowIso = new Date().toISOString();
 
     await onSave({
+      id: recordId.current,
       type,
       code: code.trim(),
       name: name.trim(),
@@ -1712,7 +1714,7 @@ function NewLabItemModal({
   };
 
   return createPortal(
-    <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-3 sm:p-5 overflow-y-auto">
+    <div role="dialog" aria-modal="true" aria-label="แบบฟอร์มสูตร" data-no-pull-refresh className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-3 sm:p-5 overflow-y-auto">
       <div className="bg-white dark:bg-slate-900 rounded-3xl max-w-2xl w-full p-5 sm:p-6 shadow-2xl border border-slate-200 dark:border-slate-800 space-y-4 animate-scale-up max-h-[92vh] overflow-y-auto">
         <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
           <div className="flex items-center gap-2">

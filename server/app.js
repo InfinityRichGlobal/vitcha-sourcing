@@ -647,7 +647,9 @@ export function createApp({ dataDir, defaults = DEFAULT_DATABASE, sessionTtlMs =
     const nowIso = now();
     let saved;
     if (idx >= 0) {
-      saved = { ...list[idx], ...item, updatedAt: nowIso };
+      const { expectedUpdatedAt, revisionCycles, likedBy, viewLogs, appliedOperations, createdById, createdByName, createdByAvatar, createdAt, ...fields } = item;
+      if (expectedUpdatedAt !== undefined && expectedUpdatedAt !== list[idx].updatedAt) fail(409, 'ข้อมูลสูตรเปลี่ยนแล้ว กรุณาเปิดข้อมูลล่าสุดก่อนแก้ไข ข้อมูลที่กรอกยังอยู่ในฟอร์ม');
+      saved = { ...list[idx], ...fields, updatedAt: nowIso };
       list[idx] = saved;
     } else {
       const id = item.id || `lab-${randomUUID()}`;
@@ -723,7 +725,7 @@ export function createApp({ dataDir, defaults = DEFAULT_DATABASE, sessionTtlMs =
   });
 
   app.post('/api/lead-lab/items/:id/like', (req, res) => {
-    requireReader(req);
+    requireWriter(req);
     const db = read();
     const item = findOrSeedLeadLabItem(db, req.params.id);
     if (!item) fail(404, 'ไม่พบสูตร');
@@ -740,10 +742,12 @@ export function createApp({ dataDir, defaults = DEFAULT_DATABASE, sessionTtlMs =
   });
 
   app.post('/api/lead-lab/items/:id/comments', (req, res) => {
-    requireReader(req);
+    requireWriter(req);
     const db = read();
     const item = findOrSeedLeadLabItem(db, req.params.id);
     if (!item) fail(404, 'ไม่พบสูตร');
+    const operationId = clean(req.body.operationId);
+    if (operationId && (item.revisionCycles || []).some(c => (c.comments || []).some(n => n.id === operationId))) return res.json({ success: true, item });
     const { content, sweetnessTarget, photoUrl, voiceUrl, duration } = req.body;
     let text = content ? String(content).trim() : '';
     if (!text && (photoUrl || voiceUrl)) {
@@ -764,7 +768,7 @@ export function createApp({ dataDir, defaults = DEFAULT_DATABASE, sessionTtlMs =
       item.revisionCycles.push(activeCycle);
     }
     const newComment = {
-      id: `comm-${randomUUID()}`,
+      id: operationId || `comm-${randomUUID()}`,
       authorId: req.user.id,
       authorName: req.user.alias || req.user.name,
       authorAvatar: req.user.avatar,
@@ -784,7 +788,7 @@ export function createApp({ dataDir, defaults = DEFAULT_DATABASE, sessionTtlMs =
   });
 
   app.post('/api/lead-lab/items/:id/comments/:commentId/like', (req, res) => {
-    requireReader(req);
+    requireWriter(req);
     const db = read();
     const item = findOrSeedLeadLabItem(db, req.params.id);
     if (!item) fail(404, 'ไม่พบสูตร');
@@ -868,10 +872,15 @@ export function createApp({ dataDir, defaults = DEFAULT_DATABASE, sessionTtlMs =
     const list = db.franchiseStores ||= [];
     const idx = list.findIndex(x => x.id === store.id);
     if (idx < 0 && !store.name) fail(400, 'Missing store name');
+    if (idx >= 0 && Object.keys(store).every(key => ['id','revisionCycles','likedBy'].includes(key))) {
+      fail(409, 'กรุณาเปิดเว็บแอปเวอร์ชันล่าสุดก่อนส่งความเห็นหรือกดถูกใจ ยังไม่ได้บันทึกคำสั่งนี้');
+    }
     const nowIso = now();
     let saved;
     if (idx >= 0) {
-      saved = { ...list[idx], ...store, updatedAt: nowIso };
+      const { expectedUpdatedAt, revisionCycles, likedBy, viewLogs, appliedOperations, createdById, createdByName, createdByAvatar, createdAt, ...fields } = store;
+      if (expectedUpdatedAt !== undefined && expectedUpdatedAt !== list[idx].updatedAt) fail(409, 'ข้อมูลแบรนด์เปลี่ยนแล้ว กรุณาเปิดข้อมูลล่าสุดก่อนแก้ไข ข้อมูลที่กรอกยังอยู่ในฟอร์ม');
+      saved = { ...list[idx], ...fields, updatedAt: nowIso };
       list[idx] = saved;
     } else {
       const id = store.id || `store-${randomUUID()}`;
@@ -879,6 +888,7 @@ export function createApp({ dataDir, defaults = DEFAULT_DATABASE, sessionTtlMs =
         ...store,
         id,
         menuItems: store.menuItems || [],
+        createdById: req.user.id, createdByName: req.user.alias || req.user.name, createdByAvatar: req.user.avatar,
         createdAt: nowIso,
         updatedAt: nowIso,
       };
@@ -887,6 +897,33 @@ export function createApp({ dataDir, defaults = DEFAULT_DATABASE, sessionTtlMs =
     notify(db, req.user, 'franchise_store', idx >= 0 ? 'อัปเดตแบรนด์และหน้าร้าน' : 'เพิ่มแบรนด์และหน้าร้าน', saved.name, saved.id);
     save(db);
     res.json({ success: true, store: saved });
+  });
+
+  app.post('/api/franchise-stores/:id/actions', (req, res) => {
+    requireWriter(req);
+    const {action, data = {}, operationId} = req.body;
+    if (!clean(operationId)) fail(400, 'Missing operation ID');
+    const db = read(); const store = (db.franchiseStores || []).find(x => x.id === req.params.id);
+    if (!store) fail(404, 'ไม่พบแบรนด์');
+    if ((store.appliedOperations || []).includes(operationId)) return res.json({success:true, store});
+    if (action === 'comment') {
+      const content = clean(data.content) || (data.photoUrl ? '📷 แนบรูปภาพ' : data.voiceUrl ? '🎙️ ข้อความเสียง' : '');
+      if (!content || content.length > 10000) fail(400, 'ความคิดเห็นต้องมี 1–10000 ตัวอักษร');
+      store.revisionCycles ||= [];
+      let cycle = store.revisionCycles.find(c => c.status === 'active');
+      if (!cycle) { cycle = {cycleNumber:store.revisionCycles.length + 1,title:'รอบการทำงาน',status:'active',createdAt:now(),createdBy:req.user.alias,comments:[]}; store.revisionCycles.push(cycle); }
+      cycle.comments ||= [];
+      cycle.comments.unshift({id:operationId,authorId:req.user.id,authorName:req.user.alias || req.user.name,authorAvatar:req.user.avatar,createdAt:now(),content,...pick(data,['sweetnessTarget','photoUrl','voiceUrl','duration']),likes:[]});
+      notify(db,req.user,'franchise_store','ความคิดเห็นใหม่',store.name,store.id);
+    } else if (action === 'like' || action === 'comment-like') {
+      const target = action === 'like' ? store : (store.revisionCycles || []).flatMap(c => c.comments || []).find(c => c.id === data.commentId);
+      if (!target) fail(404, 'ไม่พบความคิดเห็น');
+      const field = action === 'like' ? 'likedBy' : 'likes';
+      target[field] = (target[field] || []).filter(id => id !== req.user.id);
+      if (data.liked === true) target[field].push(req.user.id);
+    } else fail(400, 'Unknown action');
+    store.appliedOperations = [...(store.appliedOperations || []), operationId].slice(-1000);
+    store.updatedAt = now(); save(db); res.json({success:true,store});
   });
 
   app.post('/api/franchise-stores/:id/view', (req, res) => {

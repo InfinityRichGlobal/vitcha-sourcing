@@ -75,6 +75,7 @@ export async function requestJson(path: string, init: RequestInit = {}, timeoutM
       data = await response.json();
     } catch (e: any) {
       if (controller.signal.aborted || init.signal?.aborted) throw e;
+      if (response.ok) throw new ApiError(502, 'เซิร์ฟเวอร์ตอบกลับไม่สมบูรณ์ ยังยืนยันการบันทึกไม่ได้ กรุณาลองใหม่');
       data = { error: `HTTP ${response.status}` };
     }
     if (!response.ok) {
@@ -188,17 +189,20 @@ export async function uploadMediaToServer(
     });
 
     if (sessionRes?.directAvailable && sessionRes?.sessionUrl) {
-      const uploadRes = await fetch(sessionRes.sessionUrl, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': mimeType,
-          'Content-Length': String(file.size),
-        },
-        body: file,
-      });
+      // A blocked Google connection must yield to the server relay, not hang forever.
+      const uploadController = new AbortController();
+      const uploadTimer = setTimeout(() => uploadController.abort(), 45000);
+      let driveData: any;
+      try {
+        const uploadRes = await fetch(sessionRes.sessionUrl, {
+          method: 'PUT', headers: { 'Content-Type': mimeType }, body: file,
+          signal: uploadController.signal,
+        });
+        if (!uploadRes.ok) throw new Error(`Google Drive HTTP ${uploadRes.status}`);
+        driveData = await uploadRes.json();
+      } finally { clearTimeout(uploadTimer); }
 
-      if (uploadRes.ok) {
-        const driveData = await uploadRes.json();
+      if (driveData) {
         if (driveData?.id) {
           const completeRes = await sendJson('/api/drive/complete', {
             fileId: driveData.id,
