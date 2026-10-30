@@ -46,6 +46,7 @@ export function LeadLabView({
   const {
     leadLabItems,
     currentUser,
+    users,
     saveLeadLabItem,
     deleteLeadLabItem,
     toggleLikeLeadLabItem,
@@ -302,6 +303,7 @@ export function LeadLabView({
               <LabItemCard
                 item={item}
                 currentUserId={currentUser.id}
+                users={users}
                 onSelect={() => setSelectedItem(item)}
                 onToggleLike={() => toggleLikeLeadLabItem(item.id)}
               />
@@ -315,6 +317,7 @@ export function LeadLabView({
         <LabDetailModal
           item={activeDetailItem}
           currentUser={currentUser}
+          users={users}
           onClose={() => setSelectedItem(null)}
           onToggleLike={() => toggleLikeLeadLabItem(activeDetailItem.id)}
           onAddComment={(content, target) => addLeadLabComment(activeDetailItem.id, content, target)}
@@ -352,11 +355,13 @@ export function LeadLabView({
 function LabItemCard({
   item,
   currentUserId,
+  users = [],
   onSelect,
   onToggleLike,
 }: {
   item: LabItem;
   currentUserId: string;
+  users?: any[];
   onSelect: () => void;
   onToggleLike: () => void;
 }) {
@@ -526,9 +531,24 @@ function LabItemCard({
         {/* Footer Actions & Comments Count */}
         <div className="flex items-center justify-between pt-1 border-t border-slate-100 dark:border-slate-800 text-[10px]">
           <div className="flex items-center gap-2 text-slate-400">
-            <span className="inline-flex items-center gap-0.5" title="ยอดถูกใจ">
+            <span className="inline-flex items-center gap-1" title="ยอดถูกใจ">
               <Heart className={`w-3 h-3 ${isLiked ? 'text-rose-500 fill-current' : ''}`} />
               <span className="font-mono text-[10px] font-bold">{(item.likedBy || []).length}</span>
+              {item.likedBy && item.likedBy.length > 0 && (
+                <span className="flex -space-x-1 overflow-hidden ml-0.5">
+                  {item.likedBy.slice(0, 3).map((uid, idx) => {
+                    const u = users.find((x) => x.id === uid);
+                    return (
+                      <img
+                        key={idx}
+                        src={u?.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=60&auto=format&fit=crop&q=80'}
+                        alt={u?.name || uid}
+                        className="w-3.5 h-3.5 rounded-full border border-white dark:border-slate-900 object-cover"
+                      />
+                    );
+                  })}
+                </span>
+              )}
             </span>
             <span className="inline-flex items-center gap-0.5" title="ความคิดเห็นและรอบทดลอง">
               <MessageSquare className="w-3 h-3" />
@@ -556,6 +576,7 @@ function LabItemCard({
 function LabDetailModal({
   item,
   currentUser,
+  users = [],
   onClose,
   onToggleLike,
   onAddComment,
@@ -567,6 +588,7 @@ function LabDetailModal({
 }: {
   item: LabItem;
   currentUser: any;
+  users?: any[];
   onClose: () => void;
   onToggleLike: () => void;
   onAddComment: (content: string, target?: 'all' | '0' | '50' | '100') => void;
@@ -694,6 +716,28 @@ function LabDetailModal({
                     {item.viewLogs.slice(0, 5).map((v, vIdx) => (
                       <img key={vIdx} src={v.avatar} alt={v.alias} title={`${v.alias} (${v.viewCount || 1} ครั้ง)`} className="w-4 h-4 rounded-full border border-white dark:border-slate-800 object-cover" />
                     ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Likers List with Avatars */}
+              {item.likedBy && item.likedBy.length > 0 && (
+                <div className="flex items-center gap-1.5 text-[11px] text-slate-500 bg-rose-50/60 dark:bg-rose-950/20 px-2.5 py-1.5 rounded-xl border border-rose-100 dark:border-rose-900/30">
+                  <Heart className="w-3.5 h-3.5 text-rose-500 fill-rose-500 shrink-0" />
+                  <span>ถูกใจโดย {item.likedBy.length} คน:</span>
+                  <div className="flex -space-x-1.5 overflow-hidden ml-auto">
+                    {item.likedBy.slice(0, 5).map((uid, uIdx) => {
+                      const u = users.find((x) => x.id === uid);
+                      return (
+                        <img
+                          key={uIdx}
+                          src={u?.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&auto=format&fit=crop&q=80'}
+                          alt={u?.name || uid}
+                          title={u?.name || uid}
+                          className="w-4 h-4 rounded-full border border-white dark:border-slate-800 object-cover"
+                        />
+                      );
+                    })}
                   </div>
                 </div>
               )}

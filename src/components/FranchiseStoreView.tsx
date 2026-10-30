@@ -34,7 +34,7 @@ import {
 import { useApp } from '../context/AppContext';
 import { FranchiseStore, StoreMenuItem, LabItem } from '../types';
 import { compressImageFile } from '../utils/imageCompressor';
-import { printFranchiseStoreReport, shareFranchiseStore } from '../utils/labAndStoreExport';
+import { printFranchiseStoreReport, shareFranchiseStore, printLeadLabSpecReport } from '../utils/labAndStoreExport';
 
 export function FranchiseStoreView({
   onNavigateToLab,
@@ -45,12 +45,16 @@ export function FranchiseStoreView({
     franchiseStores,
     leadLabItems,
     currentUser,
+    users,
     saveFranchiseStore,
     deleteFranchiseStore,
     toggleLikeFranchiseStore,
     addFranchiseStoreComment,
     toggleLikeFranchiseStoreComment,
     recordFranchiseStoreView,
+    toggleLikeLeadLabItem,
+    addLeadLabComment,
+    toggleLikeLeadLabComment,
   } = useApp();
 
   // Navigation mode: null = Franchise Hub (Directory), string = Specific Store Detail
@@ -78,6 +82,16 @@ export function FranchiseStoreView({
     if (!selectedStoreId) return null;
     return franchiseStores.find((s) => s.id === selectedStoreId) || null;
   }, [franchiseStores, selectedStoreId]);
+
+  // Synchronize selected Quick SOP item with latest leadLabItems
+  const synchronizedQuickSopItem = useMemo(() => {
+    if (!selectedQuickSopItem) return null;
+    const latestLabItem = leadLabItems.find((x) => x.id === selectedQuickSopItem.labItem.id);
+    return {
+      menuItem: selectedQuickSopItem.menuItem,
+      labItem: latestLabItem || selectedQuickSopItem.labItem,
+    };
+  }, [leadLabItems, selectedQuickSopItem]);
 
   // Record view on opening store
   useEffect(() => {
@@ -365,6 +379,28 @@ export function FranchiseStoreView({
                         </div>
                       )}
 
+                      {/* Likers avatars */}
+                      {store.likedBy && store.likedBy.length > 0 && (
+                        <div className="flex items-center gap-1.5 pt-1 text-[10px] text-slate-500">
+                          <Heart className="w-3 h-3 text-rose-500 fill-rose-500 shrink-0" />
+                          <span>ถูกใจโดย:</span>
+                          <div className="flex -space-x-1.5 overflow-hidden">
+                            {store.likedBy.slice(0, 4).map((uid, uIdx) => {
+                              const u = users.find((x) => x.id === uid);
+                              return (
+                                <img
+                                  key={uIdx}
+                                  src={u?.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=80&auto=format&fit=crop&q=80'}
+                                  alt={u?.name || uid}
+                                  title={u?.name || uid}
+                                  className="w-4 h-4 rounded-full border border-white dark:border-slate-800 object-cover"
+                                />
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
+
                       {/* Social & Collaboration footer on card */}
                       <div className="flex items-center justify-between text-[11px] text-slate-400 pt-2 border-t border-slate-100 dark:border-slate-800">
                         <div className="flex items-center gap-3">
@@ -551,19 +587,37 @@ export function FranchiseStoreView({
           </div>
 
           <div className="flex items-center gap-2 self-start md:self-center">
-            {/* Like button */}
-            <button
-              type="button"
-              onClick={() => void toggleLikeFranchiseStore(activeStore.id)}
-              className={`px-3 py-2 rounded-xl flex items-center gap-1.5 text-xs font-bold shadow-md transition-all ${
-                isLikedStore
-                  ? 'bg-rose-500 text-white'
-                  : 'bg-white/10 hover:bg-white/20 text-white backdrop-blur-sm'
-              }`}
-            >
-              <Heart className={`w-4 h-4 ${isLikedStore ? 'fill-current' : ''}`} />
-              <span>{(activeStore.likedBy || []).length} ไลก์</span>
-            </button>
+            {/* Like button with avatars */}
+            <div className="flex items-center gap-1.5">
+              <button
+                type="button"
+                onClick={() => void toggleLikeFranchiseStore(activeStore.id)}
+                className={`px-3 py-2 rounded-xl flex items-center gap-1.5 text-xs font-bold shadow-md transition-all ${
+                  isLikedStore
+                    ? 'bg-rose-500 text-white'
+                    : 'bg-white/10 hover:bg-white/20 text-white backdrop-blur-sm'
+                }`}
+              >
+                <Heart className={`w-4 h-4 ${isLikedStore ? 'fill-current' : ''}`} />
+                <span>{(activeStore.likedBy || []).length} ไลก์</span>
+              </button>
+              {activeStore.likedBy && activeStore.likedBy.length > 0 && (
+                <div className="flex -space-x-1.5 overflow-hidden">
+                  {activeStore.likedBy.slice(0, 4).map((uid, uIdx) => {
+                    const u = users.find((x) => x.id === uid);
+                    return (
+                      <img
+                        key={uIdx}
+                        src={u?.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&auto=format&fit=crop&q=80'}
+                        alt={u?.name || uid}
+                        title={u?.name || uid}
+                        className="w-6 h-6 rounded-full border-2 border-slate-900 object-cover"
+                      />
+                    );
+                  })}
+                </div>
+              )}
+            </div>
 
             {/* Edit button */}
             <button
@@ -875,10 +929,16 @@ export function FranchiseStoreView({
       </div>
 
       {/* 🍵 QUICK SOP MODAL FOR BARISTAS */}
-      {selectedQuickSopItem && (
+      {synchronizedQuickSopItem && (
         <QuickSopModal
-          item={selectedQuickSopItem}
+          item={synchronizedQuickSopItem}
+          currentUser={currentUser}
+          users={users}
           onClose={() => setSelectedQuickSopItem(null)}
+          onNavigateToLab={onNavigateToLab}
+          onToggleLikeLabItem={toggleLikeLeadLabItem}
+          onAddLabComment={addLeadLabComment}
+          onToggleLabCommentLike={toggleLikeLeadLabComment}
         />
       )}
 
@@ -1359,46 +1419,117 @@ function AddMenuItemModal({
 }
 
 // =========================================================================
-// 🍵 QUICK SOP MODAL FOR BARISTAS
+// 🍵 QUICK SOP MODAL FOR BARISTAS & COLLABORATION
 // =========================================================================
 function QuickSopModal({
   item,
+  currentUser,
+  users = [],
   onClose,
+  onNavigateToLab,
+  onToggleLikeLabItem,
+  onAddLabComment,
+  onToggleLabCommentLike,
 }: {
   item: { menuItem: StoreMenuItem; labItem: LabItem };
+  currentUser: any;
+  users?: any[];
   onClose: () => void;
+  onNavigateToLab?: () => void;
+  onToggleLikeLabItem: (labItemId: string) => Promise<any>;
+  onAddLabComment: (labItemId: string, content: string, target?: 'all' | '0' | '50' | '100') => Promise<any>;
+  onToggleLabCommentLike: (labItemId: string, commentId: string) => Promise<any>;
 }) {
   const { labItem, menuItem } = item;
   const [activeLevel, setActiveLevel] = useState<'zero' | 'half' | 'full'>('half');
+  const [commentText, setCommentText] = useState('');
+  const [sweetnessTarget, setSweetnessTarget] = useState<'all' | '0' | '50' | '100'>('all');
+  const [isSubmittingComment, setIsSubmittingComment] = useState(false);
 
   const currentLevelData = labItem.sweetnessLevels[activeLevel];
+  const isLikedRecipe = (labItem.likedBy || []).includes(currentUser.id);
+  const commentsList = (labItem.revisionCycles?.[0]?.comments) || [];
+
+  const handlePostComment = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!commentText.trim()) return;
+    setIsSubmittingComment(true);
+    await onAddLabComment(labItem.id, commentText.trim(), sweetnessTarget);
+    setCommentText('');
+    setIsSubmittingComment(false);
+  };
 
   return (
     <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-3 sm:p-5 overflow-y-auto">
-      <div className="bg-white dark:bg-slate-900 rounded-3xl max-w-xl w-full p-5 sm:p-6 shadow-2xl border border-slate-200 dark:border-slate-800 space-y-4 animate-scale-up">
+      <div className="bg-white dark:bg-slate-900 rounded-3xl max-w-xl w-full p-4 sm:p-6 shadow-2xl border border-slate-200 dark:border-slate-800 space-y-4 animate-scale-up max-h-[92vh] overflow-y-auto">
         {/* Header */}
-        <div className="flex items-start justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
-          <div className="flex items-center gap-3">
+        <div className="flex items-start justify-between border-b border-slate-100 dark:border-slate-800 pb-3 gap-2">
+          <div className="flex items-center gap-3 min-w-0">
             <img
               src={labItem.photoUrl}
               alt={labItem.name}
-              className="w-12 h-12 rounded-xl object-cover border border-slate-200 shrink-0"
+              className="w-12 h-12 rounded-xl object-cover border border-slate-200 dark:border-slate-700 shrink-0"
             />
-            <div>
+            <div className="min-w-0">
               <div className="flex items-center gap-2">
-                <span className="px-2 py-0.5 rounded bg-indigo-100 text-indigo-700 font-mono text-[10px] font-bold">
+                <span className="px-2 py-0.5 rounded bg-indigo-100 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 font-mono text-[10px] font-bold">
                   {labItem.code}
                 </span>
                 <span className="text-[11px] font-bold text-slate-400">BARISTA QUICK SOP</span>
               </div>
-              <h3 className="font-extrabold text-base text-slate-900 dark:text-white leading-tight">
+              <h3 className="font-extrabold text-base text-slate-900 dark:text-white leading-tight truncate">
                 {menuItem.customName || labItem.name}
               </h3>
             </div>
           </div>
-          <button type="button" onClick={onClose} className="text-slate-400 hover:text-slate-600">
-            <X className="w-5 h-5" />
-          </button>
+          <div className="flex items-center gap-2 shrink-0">
+            {/* Like recipe button */}
+            <button
+              type="button"
+              onClick={() => void onToggleLikeLabItem(labItem.id)}
+              className={`px-2.5 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all shadow-xs ${
+                isLikedRecipe
+                  ? 'bg-rose-500 text-white'
+                  : 'bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-900'
+              }`}
+              title="ถูกใจสูตรนี้"
+            >
+              <Heart className={`w-3.5 h-3.5 ${isLikedRecipe ? 'fill-current' : ''}`} />
+              <span>{(labItem.likedBy || []).length}</span>
+            </button>
+            <button type="button" onClick={onClose} className="p-1 rounded-lg text-slate-400 hover:text-slate-600">
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+        </div>
+
+        {/* Likers & Viewers Info Bar */}
+        <div className="flex flex-wrap items-center justify-between gap-2 p-2 bg-slate-50 dark:bg-slate-800/60 rounded-xl text-[11px] text-slate-500 border border-slate-100 dark:border-slate-800">
+          <div className="flex items-center gap-1.5">
+            <Heart className="w-3.5 h-3.5 text-rose-500 fill-rose-500 shrink-0" />
+            <span>{(labItem.likedBy || []).length} คนถูกใจสูตร:</span>
+            {labItem.likedBy && labItem.likedBy.length > 0 && (
+              <div className="flex -space-x-1.5 overflow-hidden ml-1">
+                {labItem.likedBy.slice(0, 4).map((uid, uIdx) => {
+                  const u = users.find((x) => x.id === uid);
+                  return (
+                    <img
+                      key={uIdx}
+                      src={u?.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=80&auto=format&fit=crop&q=80'}
+                      alt={u?.name || uid}
+                      title={u?.name || uid}
+                      className="w-4 h-4 rounded-full border border-white dark:border-slate-800 object-cover"
+                    />
+                  );
+                })}
+              </div>
+            )}
+          </div>
+          <div className="flex items-center gap-2 text-[10px] text-slate-400">
+            <span>รอบพัฒนา #{labItem.revisionCycles?.length || 1}</span>
+            <span>·</span>
+            <span>เข้าดู {(labItem.viewLogs || []).length} ครั้ง</span>
+          </div>
         </div>
 
         {/* Sweetness Selector Tabs */}
@@ -1472,13 +1603,129 @@ function QuickSopModal({
           </div>
         )}
 
-        <button
-          type="button"
-          onClick={onClose}
-          className="w-full py-2.5 rounded-xl bg-slate-900 text-white font-bold text-xs"
-        >
-          เข้าใจสูตรแล้ว (ปิดหน้าต่าง)
-        </button>
+        {/* 💬 RECIPE COLLABORATION & SOP COMMENTS */}
+        <div className="space-y-2.5 pt-2 border-t border-slate-100 dark:border-slate-800">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-1.5 text-xs font-bold text-slate-800 dark:text-white">
+              <MessageSquare className="w-3.5 h-3.5 text-indigo-600" />
+              <span>ฟีดแบ็ก & ประเด็นรสชาติหน้าร้าน ({commentsList.length} ข้อความ)</span>
+            </div>
+            <span className="text-[10px] text-slate-400 font-medium">บันทึกร่วมระหว่างหน้าร้าน & R&D</span>
+          </div>
+
+          {/* Comments list */}
+          <div className="space-y-1.5 max-h-40 overflow-y-auto pr-1">
+            {commentsList.length === 0 ? (
+              <div className="text-[11px] text-slate-400 italic p-2 bg-slate-50 dark:bg-slate-800/40 rounded-xl text-center">
+                ยังไม่มีข้อคิดเห็นสำหรับสูตรนี้ สามารถพิมพ์ฟีดแบ็กจากหน้าร้านด้านล่างได้เลย
+              </div>
+            ) : (
+              commentsList.map((comm) => {
+                const hasLikedComm = (comm.likes || []).includes(currentUser.id);
+                return (
+                  <div
+                    key={comm.id}
+                    className="p-2 rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-800 space-y-1 text-xs"
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-1.5">
+                        <img
+                          src={comm.authorAvatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&auto=format&fit=crop&q=80'}
+                          alt={comm.authorName}
+                          className="w-4 h-4 rounded-full object-cover"
+                        />
+                        <strong className="text-[11px] text-slate-800 dark:text-white">{comm.authorName}</strong>
+                        {comm.sweetnessTarget && comm.sweetnessTarget !== 'all' && (
+                          <span className="px-1.5 py-0.5 rounded bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 text-[9px] font-bold">
+                            หวาน {comm.sweetnessTarget}%
+                          </span>
+                        )}
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => void onToggleLabCommentLike(labItem.id, comm.id)}
+                        className={`inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded transition-colors ${
+                          hasLikedComm ? 'bg-indigo-100 text-indigo-700 font-bold' : 'text-slate-400 hover:text-slate-600'
+                        }`}
+                      >
+                        <ThumbsUp className="w-2.5 h-2.5" />
+                        <span>{(comm.likes || []).length}</span>
+                      </button>
+                    </div>
+                    <p className="text-[11px] text-slate-700 dark:text-slate-300 pl-5">
+                      "{comm.content}"
+                    </p>
+                  </div>
+                );
+              })
+            )}
+          </div>
+
+          {/* Add comment to recipe */}
+          <form onSubmit={handlePostComment} className="flex gap-1.5 pt-1">
+            <select
+              value={sweetnessTarget}
+              onChange={(e) => setSweetnessTarget(e.target.value as any)}
+              className="text-[11px] p-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 font-bold shrink-0"
+            >
+              <option value="all">ความเห็นทั่วไป</option>
+              <option value="0">หวาน 0%</option>
+              <option value="50">หวาน 50%</option>
+              <option value="100">หวาน 100%</option>
+            </select>
+            <input
+              type="text"
+              value={commentText}
+              onChange={(e) => setCommentText(e.target.value)}
+              placeholder="คอมเมนต์รสชาติ หรือโน้ตสูตรชง..."
+              className="flex-1 text-[11px] p-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 focus:bg-white dark:focus:bg-slate-900 outline-none"
+            />
+            <button
+              type="submit"
+              disabled={isSubmittingComment}
+              className="px-3 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs flex items-center justify-center gap-1 shrink-0"
+            >
+              <Send className="w-3 h-3" />
+              <span>ส่ง</span>
+            </button>
+          </form>
+        </div>
+
+        {/* Action Buttons Footer */}
+        <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => printLeadLabSpecReport(labItem)}
+              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 text-slate-700 dark:text-slate-200 text-xs font-bold shadow-xs transition-all"
+              title="พิมพ์เอกสารสเปกสูตรฉบับเต็ม"
+            >
+              <Printer className="w-3.5 h-3.5 text-indigo-600" />
+              <span>พิมพ์สเปกสูตร (PDF)</span>
+            </button>
+            {onNavigateToLab && (
+              <button
+                type="button"
+                onClick={() => {
+                  onClose();
+                  onNavigateToLab();
+                }}
+                className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-700 dark:bg-indigo-950/40 dark:text-indigo-300 text-xs font-bold transition-all"
+              >
+                <Coffee className="w-3.5 h-3.5" />
+                <span>เปิดใน LEAD LAB 🧪</span>
+              </button>
+            )}
+          </div>
+
+          <button
+            type="button"
+            onClick={onClose}
+            className="px-4 py-2 rounded-xl bg-slate-900 text-white font-bold text-xs"
+          >
+            ปิดหน้าต่าง
+          </button>
+        </div>
       </div>
     </div>
   );
