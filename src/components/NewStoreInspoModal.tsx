@@ -2,13 +2,14 @@ import { AvatarImage } from './AvatarImage';
 import React, { useState, useEffect, useRef } from 'react';
 import { useDialog } from '../hooks/useDialog';
 import { useApp } from '../context/AppContext';
-import { DrinkDetailItem, VoiceNoteEntry } from '../types';
+import { DrinkDetailItem, VoiceNoteEntry, AttachedFile } from '../types';
 import { AudioRecorder } from './AudioRecorder';
 import { getItemVoiceNotes } from '../utils/audioHelper';
 import { uploadImageFile as compressImageFile } from '../utils/mediaStorage';
 import { saveVideoFile, deleteVideoFile } from '../utils/mediaStorage';
 import { VideoPlayer } from './VideoPlayer';
 import { UploadablePhotoGrid } from './UploadablePhotoGrid';
+import { AttachedFilesSection } from './AttachedFilesSection';
 import {
   X,
   Camera,
@@ -66,12 +67,13 @@ export const NewStoreInspoModal: React.FC<NewStoreInspoModalProps> = ({ isOpen, 
   const [mainVoiceSec, setMainVoiceSec] = useState<number>(0);
   const [mainVoiceNotes, setMainVoiceNotes] = useState<VoiceNoteEntry[]>([]);
 
-  // Photos & Videos
+  // Photos & Videos & Attached Files
   const [storefrontAndAtmosphere, setStorefrontAndAtmosphere] = useState<string[]>([]);
   const [menuBoardPhotos, setMenuBoardPhotos] = useState<string[]>([]);
   const [drinkCupPhotos, setDrinkCupPhotos] = useState<string[]>([]);
   const [videos, setVideos] = useState<string[]>([]);
   const [isVideoLoading, setIsVideoLoading] = useState(false);
+  const [attachedFiles, setAttachedFiles] = useState<AttachedFile[]>([]);
 
   // Drink Items
   const [drinkItems, setDrinkItems] = useState<DrinkDetailItem[]>([]);
@@ -117,6 +119,7 @@ export const NewStoreInspoModal: React.FC<NewStoreInspoModalProps> = ({ isOpen, 
       setMenuBoardPhotos(editingStore.photos?.menuBoard || []);
       setDrinkCupPhotos(editingStore.photos?.drinkCups || []);
       setVideos(editingStore.videos || []);
+      setAttachedFiles(editingStore.attachedFiles || []);
       setDrinkItems(editingStore.drinkItems || []);
       setLat(editingStore.location?.lat && editingStore.location.lat !== 0 ? editingStore.location.lat : '');
       setLng(editingStore.location?.lng && editingStore.location.lng !== 0 ? editingStore.location.lng : '');
@@ -143,6 +146,7 @@ export const NewStoreInspoModal: React.FC<NewStoreInspoModalProps> = ({ isOpen, 
       setMenuBoardPhotos([]);
       setDrinkCupPhotos([]);
       setVideos([]);
+      setAttachedFiles([]);
       setDrinkItems([]);
       setLat('');
       setLng('');
@@ -332,6 +336,7 @@ export const NewStoreInspoModal: React.FC<NewStoreInspoModalProps> = ({ isOpen, 
             drinkCups: drinkCupPhotos,
           },
           videos,
+          attachedFiles,
           ratings: {
             taste: tasteRating,
             aesthetics: aestheticsRating,
@@ -366,6 +371,7 @@ export const NewStoreInspoModal: React.FC<NewStoreInspoModalProps> = ({ isOpen, 
             drinkCups: drinkCupPhotos,
           },
           videos,
+          attachedFiles,
           ratings: {
             taste: tasteRating,
             aesthetics: aestheticsRating,
@@ -816,6 +822,18 @@ export const NewStoreInspoModal: React.FC<NewStoreInspoModalProps> = ({ isOpen, 
               />
             </label>
           </div>
+
+          {/* Section: Attached Documents & Files */}
+          <AttachedFilesSection
+            files={attachedFiles}
+            onChange={setAttachedFiles}
+            recordType="drink_stores"
+            recordTitle={storeName || 'ร้านน้ำเรฟ'}
+            recordId={editingStore?.id}
+            title="เอกสาร & ไฟล์แนบเพิ่มเติม (PDF, โบรชัวร์, สเปก)"
+            subtitle="อัปโหลดไฟล์เก็บเข้า Google Drive และสามารถกดเปิดดูหรือสแกนผ่าน QR Code ใน PDF ได้"
+            themeColor="amber"
+          />
 
           {/* Section 4: Mass Drink Upload */}
           <div className="bg-slate-50/80 p-4 rounded-2xl border border-slate-100 space-y-3">

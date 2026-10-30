@@ -18,6 +18,7 @@ import {
   X,
   Pencil,
   Camera,
+  Paperclip,
 } from 'lucide-react';
 
 interface StoreInspoCardProps {
@@ -150,6 +151,12 @@ export const StoreInspoCard: React.FC<StoreInspoCardProps> = ({
                   <span className="px-2 py-0.5 rounded-md bg-purple-50 text-purple-700 border border-purple-200 text-[10px] font-bold inline-flex items-center gap-1">
                     <i className="fa-solid fa-video text-[9px]" />
                     <span>{store.videos.length} คลิป</span>
+                  </span>
+                )}
+                {store.attachedFiles && store.attachedFiles.length > 0 && (
+                  <span className="px-2 py-0.5 rounded-md bg-amber-50 text-amber-800 border border-amber-200 text-[10px] font-bold inline-flex items-center gap-1">
+                    <Paperclip className="w-2.5 h-2.5" />
+                    <span>{store.attachedFiles.length} ไฟล์แนบ</span>
                   </span>
                 )}
               </div>

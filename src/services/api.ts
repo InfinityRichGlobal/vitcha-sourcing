@@ -307,3 +307,60 @@ export async function reverseGeocodeApi(lat: number, lng: number, signal?: Abort
 
   return '';
 }
+
+export interface ParsedLocationInput {
+  type: 'coords' | 'direct_url' | 'short_url';
+  lat?: number;
+  lng?: number;
+  url?: string;
+  raw?: string;
+}
+
+export function parseCoordinatesOrMapUrl(input: string): ParsedLocationInput | null {
+  if (!input) return null;
+  const str = input.trim();
+
+  // Pattern 1: Raw coordinates with optional parentheses
+  // e.g. "(13.9848152, 100.4729654)", "13.9848152, 100.4729654", "13.9848152 100.4729654"
+  const coordRegex = /(?:\(|\b)([+-]?\d{1,2}\.\d+)[,\s]+([+-]?\d{1,3}\.\d+)(?:\)|\b)/;
+  const coordMatch = str.match(coordRegex);
+  if (coordMatch) {
+    const lat = parseFloat(coordMatch[1]);
+    const lng = parseFloat(coordMatch[2]);
+    if (!isNaN(lat) && !isNaN(lng) && lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180) {
+      return { type: 'coords', lat, lng, raw: `${lat.toFixed(7)}, ${lng.toFixed(7)}` };
+    }
+  }
+
+  // Pattern 2: Google Maps direct link with coordinates in query or path
+  const urlMatch = str.match(/https?:\/\/[^\s]+/i);
+  if (urlMatch) {
+    const url = urlMatch[0];
+    const qMatch = url.match(/[?&]q=(-?\d+\.\d+),(-?\d+\.\d+)/);
+    const atMatch = url.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/);
+    const dMatch = url.match(/!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)/);
+    const llMatch = url.match(/[?&]ll=(-?\d+\.\d+),(-?\d+\.\d+)/);
+    const match = qMatch || atMatch || dMatch || llMatch;
+    if (match) {
+      const lat = parseFloat(match[1]);
+      const lng = parseFloat(match[2]);
+      if (!isNaN(lat) && !isNaN(lng) && lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180) {
+        return { type: 'direct_url', lat, lng, url, raw: `${lat.toFixed(7)}, ${lng.toFixed(7)}` };
+      }
+    }
+    // Pattern 3: Shortened Google Maps link
+    if (/maps\.app\.goo\.gl|goo\.gl\/maps/i.test(url)) {
+      return { type: 'short_url', url };
+    }
+  }
+  return null;
+}
+
+export async function resolveMapUrlApi(url: string, signal?: AbortSignal): Promise<{ ok: boolean; lat?: number; lng?: number; resolvedUrl?: string; error?: string }> {
+  try {
+    const data = await requestJson(`/api/geocode/resolve-url?url=${encodeURIComponent(url)}`, { signal }, 8000);
+    return data;
+  } catch (err: any) {
+    return { ok: false, error: err?.message || 'เชื่อมต่อเซิร์ฟเวอร์ไม่ได้' };
+  }
+}

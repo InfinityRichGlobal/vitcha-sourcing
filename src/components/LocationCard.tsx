@@ -26,6 +26,7 @@ import {
   Maximize2,
   Ruler,
   Camera,
+  Paperclip,
 } from 'lucide-react';
 
 interface LocationCardProps {
@@ -205,7 +206,7 @@ export const LocationCard: React.FC<LocationCardProps> = ({
               </div>
             </div>
 
-            {/* Badges: Location Type & Format */}
+            {/* Badges: Location Type & Format & Files */}
             <div className="flex flex-wrap items-center gap-1.5 pt-1">
               <span className="text-[11px] font-bold px-2 py-0.5 rounded-lg bg-sky-50 text-sky-700 border border-sky-200 flex items-center gap-1">
                 <Building2 className="w-3 h-3 text-sky-600" />
@@ -214,6 +215,18 @@ export const LocationCard: React.FC<LocationCardProps> = ({
               <span className="text-[11px] font-bold px-2 py-0.5 rounded-lg bg-slate-100 text-slate-700 border border-slate-200">
                 {layoutFormatLabel[location.spaceSpecs?.layoutFormat] || location.spaceSpecs?.layoutFormat || 'Inline'}
               </span>
+              {location.videos && location.videos.length > 0 && (
+                <span className="text-[11px] font-bold px-2 py-0.5 rounded-lg bg-purple-50 text-purple-700 border border-purple-200 flex items-center gap-1">
+                  <i className="fa-solid fa-video text-[9px]" />
+                  <span>{location.videos.length} คลิป</span>
+                </span>
+              )}
+              {location.attachedFiles && location.attachedFiles.length > 0 && (
+                <span className="text-[11px] font-bold px-2 py-0.5 rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-200 flex items-center gap-1">
+                  <Paperclip className="w-2.5 h-2.5" />
+                  <span>{location.attachedFiles.length} ไฟล์แนบ</span>
+                </span>
+              )}
             </div>
 
             {/* Key Specs Pill Bar (พื้นที่, หน้ากว้าง, เพดาน, ค่าเช่า) */}

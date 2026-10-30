@@ -2,13 +2,14 @@ import { AvatarImage } from './AvatarImage';
 import React, { useState, useEffect, useRef } from 'react';
 import { useDialog } from '../hooks/useDialog';
 import { useApp } from '../context/AppContext';
-import { CatalogItem, VoiceNoteEntry } from '../types';
+import { CatalogItem, VoiceNoteEntry, AttachedFile } from '../types';
 import { AudioRecorder } from './AudioRecorder';
 import { getItemVoiceNotes } from '../utils/audioHelper';
 import { uploadImageFile as compressImageFile } from '../utils/mediaStorage';
 import { saveVideoFile, deleteVideoFile } from '../utils/mediaStorage';
 import { VideoPlayer } from './VideoPlayer';
 import { UploadablePhotoGrid } from './UploadablePhotoGrid';
+import { AttachedFilesSection } from './AttachedFilesSection';
 import {
   X,
   Camera,
@@ -68,11 +69,12 @@ export const NewSupplierModal: React.FC<NewSupplierModalProps> = ({ isOpen, onCl
   const [mainVoiceSec, setMainVoiceSec] = useState<number>(0);
   const [mainVoiceNotes, setMainVoiceNotes] = useState<VoiceNoteEntry[]>([]);
 
-  // Photos & Videos
+  // Photos & Videos & Attached Files
   const [storefrontAndAtmosphere, setStorefrontAndAtmosphere] = useState<string[]>([]);
   const [contactCards, setContactCards] = useState<string[]>([]);
   const [videos, setVideos] = useState<string[]>([]);
   const [isVideoLoading, setIsVideoLoading] = useState(false);
+  const [attachedFiles, setAttachedFiles] = useState<AttachedFile[]>([]);
 
   // Batch Catalog Items
   const [catalogItems, setCatalogItems] = useState<CatalogItem[]>([]);
@@ -115,6 +117,7 @@ export const NewSupplierModal: React.FC<NewSupplierModalProps> = ({ isOpen, onCl
       setStorefrontAndAtmosphere(editingSupplier.photos?.storefrontAndAtmosphere || []);
       setContactCards(editingSupplier.photos?.contactCards || []);
       setVideos(editingSupplier.videos || []);
+      setAttachedFiles(editingSupplier.attachedFiles || []);
       setCatalogItems(editingSupplier.catalogItems || []);
       setLat(editingSupplier.location?.lat && editingSupplier.location.lat !== 0 ? editingSupplier.location.lat : '');
       setLng(editingSupplier.location?.lng && editingSupplier.location.lng !== 0 ? editingSupplier.location.lng : '');
@@ -138,6 +141,7 @@ export const NewSupplierModal: React.FC<NewSupplierModalProps> = ({ isOpen, onCl
       setStorefrontAndAtmosphere([]);
       setContactCards([]);
       setVideos([]);
+      setAttachedFiles([]);
       setCatalogItems([]);
       setLat('');
       setLng('');
@@ -346,6 +350,7 @@ export const NewSupplierModal: React.FC<NewSupplierModalProps> = ({ isOpen, onCl
             contactCards,
           },
           videos,
+          attachedFiles,
           catalogItems,
           memo: memo.trim() || undefined,
           voiceNoteUrl: mainVoiceNotes[0]?.url || mainVoiceUrl,
@@ -375,6 +380,7 @@ export const NewSupplierModal: React.FC<NewSupplierModalProps> = ({ isOpen, onCl
             contactCards,
           },
           videos,
+          attachedFiles,
           catalogItems,
           memo: memo.trim() || undefined,
           voiceNoteUrl: mainVoiceNotes[0]?.url || mainVoiceUrl,
@@ -827,6 +833,18 @@ export const NewSupplierModal: React.FC<NewSupplierModalProps> = ({ isOpen, onCl
               />
             </label>
           </div>
+
+          {/* Section: Attached Documents & Files (PDF, Quotations, Spec sheets) */}
+          <AttachedFilesSection
+            files={attachedFiles}
+            onChange={setAttachedFiles}
+            recordType="suppliers"
+            recordTitle={name || 'ซัพพลายเออร์'}
+            recordId={editingSupplier?.id}
+            title="เอกสาร & ไฟล์แนบเพิ่มเติม (PDF, ใบเสนอราคา, สเปก)"
+            subtitle="อัปโหลดไฟล์เก็บเข้า Google Drive และสามารถกดเปิดดูหรือสแกนผ่าน QR Code ใน PDF ได้"
+            themeColor="emerald"
+          />
 
           {/* Section 3: Mass Batch Catalog Upload */}
           <div className="bg-slate-50/80 p-4 rounded-2xl border border-slate-100 space-y-3">

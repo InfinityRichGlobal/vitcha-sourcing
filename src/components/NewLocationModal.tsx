@@ -2,12 +2,13 @@ import { AvatarImage } from './AvatarImage';
 import React, { useState, useEffect, useRef } from 'react';
 import { useDialog } from '../hooks/useDialog';
 import { useApp } from '../context/AppContext';
-import { LocationRecord, LocationType, LayoutFormat, RentModel, VoiceNoteEntry } from '../types';
+import { LocationRecord, LocationType, LayoutFormat, RentModel, VoiceNoteEntry, AttachedFile } from '../types';
 import { AudioRecorder } from './AudioRecorder';
 import { uploadImageFile as compressImageFile } from '../utils/mediaStorage';
 import { saveVideoFile, deleteVideoFile } from '../utils/mediaStorage';
 import { VideoPlayer } from './VideoPlayer';
 import { UploadablePhotoGrid } from './UploadablePhotoGrid';
+import { AttachedFilesSection } from './AttachedFilesSection';
 import {
   X,
   Camera,
@@ -114,6 +115,7 @@ export const NewLocationModal: React.FC<NewLocationModalProps> = ({ isOpen, onCl
   const [contactCards, setContactCards] = useState<string[]>([]);
   const [videos, setVideos] = useState<string[]>([]);
   const [isVideoLoading, setIsVideoLoading] = useState(false);
+  const [attachedFiles, setAttachedFiles] = useState<AttachedFile[]>([]);
   const [mainVoiceUrl, setMainVoiceUrl] = useState<string | undefined>();
   const [mainVoiceSec, setMainVoiceSec] = useState<number>(0);
   const [mainVoiceNotes, setMainVoiceNotes] = useState<VoiceNoteEntry[]>([]);
@@ -196,6 +198,7 @@ export const NewLocationModal: React.FC<NewLocationModalProps> = ({ isOpen, onCl
       setSurroundingNeighbors(editingLocation.photos?.surroundingNeighbors || []);
       setContactCards(editingLocation.photos?.contactCards || []);
       setVideos(editingLocation.videos || []);
+      setAttachedFiles(editingLocation.attachedFiles || []);
       setMainVoiceUrl(editingLocation.voiceNoteUrl);
       setMainVoiceSec(editingLocation.voiceDurationSec || 0);
       setMainVoiceNotes(editingLocation.voiceNotes || []);
@@ -244,6 +247,7 @@ export const NewLocationModal: React.FC<NewLocationModalProps> = ({ isOpen, onCl
       setSurroundingNeighbors([]);
       setContactCards([]);
       setVideos([]);
+      setAttachedFiles([]);
       setMainVoiceUrl(undefined);
       setMainVoiceSec(0);
       setMainVoiceNotes([]);
@@ -377,6 +381,7 @@ export const NewLocationModal: React.FC<NewLocationModalProps> = ({ isOpen, onCl
           contactCards,
         },
         videos: videos.length > 0 ? videos : undefined,
+        attachedFiles: attachedFiles.length > 0 ? attachedFiles : undefined,
         voiceNoteUrl: mainVoiceUrl,
         voiceDurationSec: mainVoiceSec,
         voiceNotes: mainVoiceNotes,
@@ -1217,6 +1222,18 @@ export const NewLocationModal: React.FC<NewLocationModalProps> = ({ isOpen, onCl
                 </div>
               )}
             </div>
+
+            {/* Document Attachments (PDF ผังห้อง, สัญญาเช่า, เอกสารเสนอพื้นที่) */}
+            <AttachedFilesSection
+              files={attachedFiles}
+              onChange={setAttachedFiles}
+              recordType="locations"
+              recordTitle={name || 'ทำเลที่ตั้ง'}
+              recordId={editingLocation?.id}
+              title="เอกสาร & ไฟล์แนบเพิ่มเติม (PDF ผังห้อง, สัญญาเช่า, ใบเสนอราคา)"
+              subtitle="อัปโหลดไฟล์เก็บเข้า Google Drive และสามารถกดเปิดดูหรือสแกนผ่าน QR Code ใน PDF ได้"
+              themeColor="sky"
+            />
           </div>
 
           {/* Section 8: Quick Tags (ปุ่มแท็กทางลัด) */}

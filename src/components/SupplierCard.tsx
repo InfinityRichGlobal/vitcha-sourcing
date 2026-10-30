@@ -18,6 +18,7 @@ import {
   X,
   Pencil,
   Camera,
+  Paperclip,
 } from 'lucide-react';
 
 interface SupplierCardProps {
@@ -155,6 +156,12 @@ export const SupplierCard: React.FC<SupplierCardProps> = ({
                   <span className="px-2 py-0.5 rounded-md bg-purple-50 text-purple-700 border border-purple-200 text-[10px] font-bold inline-flex items-center gap-1">
                     <i className="fa-solid fa-video text-[9px]" />
                     <span>{supplier.videos.length} คลิป</span>
+                  </span>
+                )}
+                {supplier.attachedFiles && supplier.attachedFiles.length > 0 && (
+                  <span className="px-2 py-0.5 rounded-md bg-sky-50 text-sky-700 border border-sky-200 text-[10px] font-bold inline-flex items-center gap-1">
+                    <Paperclip className="w-2.5 h-2.5" />
+                    <span>{supplier.attachedFiles.length} ไฟล์แนบ</span>
                   </span>
                 )}
               </div>

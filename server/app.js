@@ -1033,7 +1033,33 @@ export function createApp({ dataDir, defaults = DEFAULT_DATABASE, sessionTtlMs =
   app.post('/api/upload', async (req, res) => {
     requireWriter(req);
     const { base64, mimeType, recordType, recordId, recordTitle } = req.body;
-    const types = { 'video/mp4': '.mp4', 'video/quicktime': '.mov', 'video/webm': '.webm', 'audio/webm': '.webm', 'audio/mp4': '.m4a', 'audio/mpeg': '.mp3', 'audio/wav': '.wav', 'audio/x-wav': '.wav', 'audio/ogg': '.ogg', 'audio/aac': '.aac', 'image/jpeg': '.jpg', 'image/png': '.png', 'image/webp': '.webp' };
+    const types = {
+      'video/mp4': '.mp4',
+      'video/quicktime': '.mov',
+      'video/webm': '.webm',
+      'audio/webm': '.webm',
+      'audio/mp4': '.m4a',
+      'audio/mpeg': '.mp3',
+      'audio/wav': '.wav',
+      'audio/x-wav': '.wav',
+      'audio/ogg': '.ogg',
+      'audio/aac': '.aac',
+      'image/jpeg': '.jpg',
+      'image/png': '.png',
+      'image/webp': '.webp',
+      'image/gif': '.gif',
+      'application/pdf': '.pdf',
+      'application/msword': '.doc',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document': '.docx',
+      'application/vnd.ms-excel': '.xls',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': '.xlsx',
+      'application/vnd.ms-powerpoint': '.ppt',
+      'application/vnd.openxmlformats-officedocument.presentationml.presentation': '.pptx',
+      'text/plain': '.txt',
+      'text/csv': '.csv',
+      'application/zip': '.zip',
+      'application/x-zip-compressed': '.zip',
+    };
     if (!types[mimeType] || typeof base64 !== 'string' || !base64.startsWith(`data:${mimeType};base64,`)) fail(400, 'ชนิดไฟล์ไม่รองรับ');
     const bytes = Buffer.from(base64.split(',')[1], 'base64');
     if (!bytes.length || bytes.length > 50 * 1024 * 1024) fail(413, 'ไฟล์ต้องไม่เกิน 50 MB');
@@ -1158,6 +1184,41 @@ export function createApp({ dataDir, defaults = DEFAULT_DATABASE, sessionTtlMs =
       res.json(data || {});
     } catch {
       res.json({});
+    }
+  });
+
+  // GEOCODE: Resolve shortened or full map URLs (e.g. maps.app.goo.gl, goo.gl/maps)
+  app.get('/api/geocode/resolve-url', async (req, res) => {
+    requireReader(req);
+    const targetUrl = clean(req.query.url);
+    if (!targetUrl) return res.status(400).json({ ok: false, error: 'Missing url parameter' });
+    try {
+      let currentUrl = targetUrl;
+      for (let i = 0; i < 6; i++) {
+        const resp = await fetch(currentUrl, {
+          method: 'HEAD',
+          redirect: 'manual',
+          signal: AbortSignal.timeout(6000),
+          headers: { 'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X)' },
+        });
+        const location = resp.headers.get('location');
+        if (!location) break;
+        currentUrl = location;
+      }
+      // Extract coordinates from resolved URL
+      const qMatch = currentUrl.match(/[?&]q=(-?\d+\.\d+),(-?\d+\.\d+)/);
+      const atMatch = currentUrl.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/);
+      const dMatch = currentUrl.match(/!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)/);
+      const llMatch = currentUrl.match(/[?&]ll=(-?\d+\.\d+),(-?\d+\.\d+)/);
+      const match = qMatch || atMatch || dMatch || llMatch;
+      if (match) {
+        const lat = parseFloat(match[1]);
+        const lng = parseFloat(match[2]);
+        return res.json({ ok: true, lat, lng, resolvedUrl: currentUrl });
+      }
+      res.json({ ok: false, error: 'ไม่พบพิกัดในลิงก์ที่ระบุ', resolvedUrl: currentUrl });
+    } catch (err) {
+      res.status(502).json({ ok: false, error: String(err?.message || err) });
     }
   });
 

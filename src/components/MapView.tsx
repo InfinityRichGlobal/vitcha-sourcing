@@ -5,8 +5,8 @@ import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 
 const GOOGLE_TILE_URL = 'https://{s}.google.com/vt/lyrs=m&hl=en&gl=US&x={x}&y={y}&z={z}';
-import { Factory, Coffee, Layers, MapPin, ChevronRight, X, Navigation, Search, Crosshair, Loader2, Sparkles } from 'lucide-react';
-import { searchPlacesApi } from '../services/api';
+import { Factory, Coffee, Layers, MapPin, ChevronRight, X, Navigation, Search, Crosshair, Loader2, Sparkles, ClipboardPaste } from 'lucide-react';
+import { searchPlacesApi, parseCoordinatesOrMapUrl, resolveMapUrlApi } from '../services/api';
 
 interface MapViewProps {
   onSelectSupplier: (supplier: SupplierRecord) => void;
@@ -102,8 +102,38 @@ export const MapView: React.FC<MapViewProps> = ({
       return;
     }
 
+    // Check for raw coordinates or Google Maps link
+    const parsed = parseCoordinatesOrMapUrl(searchQuery);
+    const detectedMatches: Array<{ id: string; name: string; displayName: string; lat: number; lng: number; type: string }> = [];
+
+    if (parsed && (parsed.type === 'coords' || parsed.type === 'direct_url') && parsed.lat && parsed.lng) {
+      detectedMatches.push({
+        id: 'detected-coords',
+        name: `📍 ตรวจพบพิกัด (${parsed.lat.toFixed(5)}, ${parsed.lng.toFixed(5)})`,
+        displayName: `พิกัดละติจูด ${parsed.lat}, ลองจิจูด ${parsed.lng} · แตะเพื่อบินไปยังพิกัด`,
+        lat: parsed.lat,
+        lng: parsed.lng,
+        type: 'place',
+      });
+    } else if (parsed && parsed.type === 'short_url' && parsed.url) {
+      resolveMapUrlApi(parsed.url).then((res) => {
+        if (res.ok && res.lat && res.lng) {
+          const item = {
+            id: 'detected-short-url',
+            name: `🔗 พิกัดจาก Google Maps (${res.lat.toFixed(5)}, ${res.lng.toFixed(5)})`,
+            displayName: `ถอดพิกัดสำเร็จ · แตะเพื่อบินไปยังพิกัด`,
+            lat: res.lat,
+            lng: res.lng,
+            type: 'place',
+          };
+          setSearchResults((prev) => [item, ...prev.filter((p) => p.id !== 'detected-short-url')]);
+          setShowDropdown(true);
+        }
+      }).catch(() => {});
+    }
+
     // 1. Instant local matching from database pins
-    const localPins: Array<{ id: string; name: string; displayName: string; lat: number; lng: number; type: string }> = [];
+    const localPins: Array<{ id: string; name: string; displayName: string; lat: number; lng: number; type: string }> = [...detectedMatches];
     suppliers.forEach((s) => {
       if (s.location?.lat && s.location?.lng && (s.name.toLowerCase().includes(q) || (s.address && s.address.toLowerCase().includes(q)))) {
         localPins.push({ id: s.id, name: s.name, displayName: s.address || 'ซัพพลายเออร์', lat: s.location.lat, lng: s.location.lng, type: 'supplier' });
@@ -494,22 +524,47 @@ export const MapView: React.FC<MapViewProps> = ({
             onFocus={() => {
               if (searchResults.length > 0 || searchQuery.trim()) setShowDropdown(true);
             }}
-            placeholder="🔍 ค้นหาพิกัด / สถานที่ปลายทาง เช่น เซ็นทรัล, สยาม, ปตท. ราชพฤกษ์, กวางโจว..."
-            className="w-full pl-9 pr-8 py-2 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white text-xs font-semibold text-slate-800 placeholder:text-slate-400 outline-none focus:border-sky-500 transition-colors"
+            placeholder="🔍 ค้นหาสถานที่ หรือ วางพิกัด (lat, lng) หรือ วางลิงก์ Google Maps..."
+            className="w-full pl-9 pr-14 py-2 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white text-xs font-semibold text-slate-800 placeholder:text-slate-400 outline-none focus:border-sky-500 transition-colors"
           />
-          {searchQuery && (
-            <button
-              type="button"
-              onClick={() => {
-                setSearchQuery('');
-                setSearchResults([]);
-                setShowDropdown(false);
-              }}
-              className="absolute right-2 top-1/2 -translate-y-1/2 p-0.5 text-slate-400 hover:text-slate-600"
-            >
-              <X className="w-3.5 h-3.5" />
-            </button>
-          )}
+          <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
+            {searchQuery ? (
+              <button
+                type="button"
+                onClick={() => {
+                  setSearchQuery('');
+                  setSearchResults([]);
+                  setShowDropdown(false);
+                }}
+                className="p-0.5 text-slate-400 hover:text-slate-600"
+                title="ล้างข้อความ"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={async () => {
+                  let text = '';
+                  try {
+                    if (navigator.clipboard?.readText) text = await navigator.clipboard.readText();
+                  } catch {}
+                  if (!text?.trim()) {
+                    const promptVal = window.prompt('วางพิกัด หรือ ลิงก์ Google Maps:');
+                    if (promptVal) text = promptVal;
+                  }
+                  if (text?.trim()) {
+                    setSearchQuery(text.trim());
+                    setShowDropdown(true);
+                  }
+                }}
+                className="p-1 rounded-md text-slate-400 hover:text-sky-600 hover:bg-slate-100 transition-colors"
+                title="วางพิกัดหรือลิงก์"
+              >
+                <ClipboardPaste className="w-3.5 h-3.5" />
+              </button>
+            )}
+          </div>
         </div>
 
         <button

@@ -13,8 +13,16 @@ import {
   Sparkles,
   ChevronRight,
   Compass,
+  ClipboardPaste,
+  Link2,
 } from 'lucide-react';
-import { searchPlacesApi, reverseGeocodeApi, GeocodePlaceItem } from '../services/api';
+import {
+  searchPlacesApi,
+  reverseGeocodeApi,
+  GeocodePlaceItem,
+  parseCoordinatesOrMapUrl,
+  resolveMapUrlApi,
+} from '../services/api';
 
 export interface LocationPickerResult {
   lat: number;
@@ -274,13 +282,49 @@ export const LocationPickerModal: React.FC<LocationPickerModalProps> = ({
     };
   }, [isOpen]);
 
-  // METHOD 1: Search Places & Auto-Pin (like LINE MAN / Google Maps)
+  // METHOD 1: Search Places & Auto-Pin (like LINE MAN / Google Maps / Raw Coordinates / Google Maps Links)
   const runSearch = useCallback(async (query: string) => {
     const q = query.trim().toLowerCase();
     if (!q) {
       setSearchResults([]);
       setIsSearching(false);
       return;
+    }
+
+    // Check for raw coordinates e.g. "(13.9848152, 100.4729654)" or Google Maps URL
+    const parsed = parseCoordinatesOrMapUrl(query);
+    const detectedMatches: GeocodePlaceItem[] = [];
+
+    if (parsed && (parsed.type === 'coords' || parsed.type === 'direct_url') && parsed.lat && parsed.lng) {
+      detectedMatches.push({
+        id: 'detected-coords',
+        name: `📍 ตรวจพบพิกัด (${parsed.lat.toFixed(5)}, ${parsed.lng.toFixed(5)})`,
+        displayName: `พิกัดละติจูด ${parsed.lat}, ลองจิจูด ${parsed.lng} · แตะเพื่อปักหมุดทันที`,
+        lat: parsed.lat,
+        lng: parsed.lng,
+        type: 'preset',
+        country: 'TH',
+      });
+    } else if (parsed && parsed.type === 'short_url' && parsed.url) {
+      setIsSearching(true);
+      resolveMapUrlApi(parsed.url).then((res) => {
+        setIsSearching(false);
+        if (res.ok && res.lat && res.lng) {
+          const item: GeocodePlaceItem = {
+            id: 'detected-short-url',
+            name: `🔗 พิกัดจาก Google Maps (${res.lat.toFixed(5)}, ${res.lng.toFixed(5)})`,
+            displayName: `ถอดพิกัดสำเร็จ · แตะเพื่อปักหมุดทันที`,
+            lat: res.lat,
+            lng: res.lng,
+            type: 'preset',
+            country: 'TH',
+          };
+          setSearchResults((prev) => [item, ...prev.filter((p) => p.id !== 'detected-short-url')]);
+          setShowDropdown(true);
+        }
+      }).catch(() => {
+        setIsSearching(false);
+      });
     }
 
     // Immediate local matches from PRESET_ZONES
@@ -296,8 +340,9 @@ export const LocationPickerModal: React.FC<LocationPickerModalProps> = ({
       country: z.country,
     }));
 
-    if (localMatches.length > 0) {
-      setSearchResults(localMatches);
+    const initialResults = [...detectedMatches, ...localMatches];
+    if (initialResults.length > 0) {
+      setSearchResults(initialResults);
       setShowDropdown(true);
     }
 
@@ -311,7 +356,7 @@ export const LocationPickerModal: React.FC<LocationPickerModalProps> = ({
     try {
       const remoteResults = await searchPlacesApi(query, abortController.signal);
       if (!abortController.signal.aborted) {
-        const combined = [...localMatches];
+        const combined = [...initialResults];
         for (const item of remoteResults) {
           const isDup = combined.some(
             (c) => Math.abs(c.lat - item.lat) < 0.001 && Math.abs(c.lng - item.lng) < 0.001
@@ -351,10 +396,91 @@ export const LocationPickerModal: React.FC<LocationPickerModalProps> = ({
     };
   }, [searchQuery, runSearch]);
 
-  const executeSearchNow = () => {
+  const executeSearchNow = async () => {
     if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
-    if (searchQuery.trim()) {
-      runSearch(searchQuery);
+    if (!searchQuery.trim()) return;
+
+    // Check for instant coordinate or map URL match on Enter / click Search
+    const parsed = parseCoordinatesOrMapUrl(searchQuery);
+    if (parsed && (parsed.type === 'coords' || parsed.type === 'direct_url') && parsed.lat && parsed.lng) {
+      handleFlyToCoord(parsed.lat, parsed.lng, 17);
+      triggerReverseGeocode(parsed.lat, parsed.lng);
+      setShowDropdown(false);
+      return;
+    }
+    if (parsed && parsed.type === 'short_url' && parsed.url) {
+      setIsSearching(true);
+      try {
+        const res = await resolveMapUrlApi(parsed.url);
+        setIsSearching(false);
+        if (res.ok && res.lat && res.lng) {
+          handleFlyToCoord(res.lat, res.lng, 17);
+          triggerReverseGeocode(res.lat, res.lng);
+          setShowDropdown(false);
+          return;
+        } else {
+          alert('ไม่พบพิกัดในลิงก์ Google Maps ที่ระบุ');
+        }
+      } catch {
+        setIsSearching(false);
+      }
+    }
+
+    runSearch(searchQuery);
+  };
+
+  // Quick Paste from Clipboard (สำหรับคนที่ก๊อบปี้พิกัดหรือลิงก์มา)
+  const handlePasteFromClipboard = async () => {
+    let text = '';
+    try {
+      if (navigator.clipboard?.readText) {
+        text = await navigator.clipboard.readText();
+      }
+    } catch {
+      // Permission blocked or not supported
+    }
+
+    if (!text?.trim()) {
+      const prompted = window.prompt(
+        'วางพิกัด เช่น (13.9848152, 100.4729654) หรือ ลิงก์ Google Maps (เช่น https://maps.app.goo.gl/...):'
+      );
+      if (prompted) text = prompted;
+    }
+
+    if (text?.trim()) {
+      const clean = text.trim();
+      setSearchQuery(clean);
+      setShowDropdown(true);
+      const parsed = parseCoordinatesOrMapUrl(clean);
+      if (parsed && (parsed.type === 'coords' || parsed.type === 'direct_url') && parsed.lat && parsed.lng) {
+        handleFlyToCoord(parsed.lat, parsed.lng, 17);
+        triggerReverseGeocode(parsed.lat, parsed.lng);
+        setShowDropdown(false);
+        return;
+      } else if (parsed && parsed.type === 'short_url' && parsed.url) {
+        setIsSearching(true);
+        try {
+          const res = await resolveMapUrlApi(parsed.url);
+          setIsSearching(false);
+          if (res.ok && res.lat && res.lng) {
+            handleFlyToCoord(res.lat, res.lng, 17);
+            triggerReverseGeocode(res.lat, res.lng);
+            setShowDropdown(false);
+            return;
+          } else {
+            alert('ไม่พบพิกัดในลิงก์ Google Maps ที่ระบุ');
+          }
+        } catch {
+          setIsSearching(false);
+        }
+        return;
+      }
+      runSearch(clean);
+      return;
+    }
+    if (searchInputRef.current) {
+      searchInputRef.current.focus();
+      searchInputRef.current.select();
     }
   };
 
@@ -476,8 +602,8 @@ export const LocationPickerModal: React.FC<LocationPickerModalProps> = ({
                 {title}
               </h2>
               <div className="flex items-center gap-1.5 text-[11px] text-slate-500 truncate mt-0.5">
-                <span className="font-semibold text-sky-700">3 วิธีเลือกพิกัด:</span>
-                <span>1. ค้นหาชื่อ · 2. ปักพิกัด GPS · 3. เลื่อนหมุดบนแผนที่</span>
+                <span className="font-semibold text-sky-700">เลือก 1 ใน 4 วิธีปักหมุด</span>
+                <span>(วิธีใดวิธีหนึ่ง ไม่ต้องทำทุกปุ่ม)</span>
               </div>
             </div>
           </div>
@@ -491,7 +617,82 @@ export const LocationPickerModal: React.FC<LocationPickerModalProps> = ({
           </button>
         </div>
 
-        {/* METHOD 1: PROMINENT PLACE SEARCH BAR (Like LINE MAN / Google Maps) */}
+        {/* 4 CLEAR METHODS SELECTOR (วิธีใดวิธีหนึ่ง ไม่ต้องทำทุกปุ่ม) */}
+        <div className="bg-gradient-to-r from-sky-50 via-slate-50 to-indigo-50 border-b border-slate-200/80 px-3 py-2 text-xs shrink-0">
+          <div className="flex items-center justify-between gap-1 mb-1.5">
+            <span className="font-bold text-slate-700 text-[11px] flex items-center gap-1">
+              <Sparkles className="w-3.5 h-3.5 text-sky-600" />
+              <span>เลือก 1 ใน 4 วิธีปักหมุด (วิธีใดวิธีหนึ่ง ไม่ต้องทำทุกปุ่ม):</span>
+            </span>
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
+            <button
+              type="button"
+              onClick={handlePasteFromClipboard}
+              className="p-1.5 sm:p-2 rounded-xl border border-sky-300 bg-white hover:bg-sky-50 text-left transition-all shadow-2xs group flex items-start gap-1.5 cursor-pointer active:scale-98"
+            >
+              <span className="p-1 rounded-lg bg-sky-100 text-sky-700 group-hover:bg-sky-600 group-hover:text-white transition-colors shrink-0">
+                <ClipboardPaste className="w-3.5 h-3.5" />
+              </span>
+              <div className="min-w-0">
+                <div className="font-bold text-[11px] text-slate-800">1. วางพิกัด/ลิงก์</div>
+                <div className="text-[10px] text-slate-500 truncate">(lat,lng) / Google Maps</div>
+              </div>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                if (searchInputRef.current) {
+                  searchInputRef.current.focus();
+                  searchInputRef.current.select();
+                }
+              }}
+              className="p-1.5 sm:p-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-left transition-all shadow-2xs group flex items-start gap-1.5 cursor-pointer active:scale-98"
+            >
+              <span className="p-1 rounded-lg bg-indigo-100 text-indigo-700 group-hover:bg-indigo-600 group-hover:text-white transition-colors shrink-0">
+                <Search className="w-3.5 h-3.5" />
+              </span>
+              <div className="min-w-0">
+                <div className="font-bold text-[11px] text-slate-800">2. ค้นหาชื่อ</div>
+                <div className="text-[10px] text-slate-500 truncate">พิมพ์ชื่อห้าง/สถานที่/ซอย</div>
+              </div>
+            </button>
+
+            <button
+              type="button"
+              onClick={handleUseCurrentGps}
+              disabled={isLocatingGps}
+              className="p-1.5 sm:p-2 rounded-xl border border-emerald-300 bg-white hover:bg-emerald-50 text-left transition-all shadow-2xs group flex items-start gap-1.5 cursor-pointer active:scale-98"
+            >
+              <span className="p-1 rounded-lg bg-emerald-100 text-emerald-700 group-hover:bg-emerald-600 group-hover:text-white transition-colors shrink-0">
+                <Crosshair className={`w-3.5 h-3.5 ${isLocatingGps ? 'animate-spin' : ''}`} />
+              </span>
+              <div className="min-w-0">
+                <div className="font-bold text-[11px] text-slate-800">3. ตำแหน่ง GPS</div>
+                <div className="text-[10px] text-slate-500 truncate">พิกัดปัจจุบันมือถือ/คอม</div>
+              </div>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                setSelectedLocationLabel('เลื่อนหมุดบนแผนที่ได้อิสระ');
+              }}
+              className="p-1.5 sm:p-2 rounded-xl border border-amber-300 bg-white hover:bg-amber-50 text-left transition-all shadow-2xs group flex items-start gap-1.5 cursor-pointer active:scale-98"
+            >
+              <span className="p-1 rounded-lg bg-amber-100 text-amber-700 group-hover:bg-amber-600 group-hover:text-white transition-colors shrink-0">
+                <MapPin className="w-3.5 h-3.5" />
+              </span>
+              <div className="min-w-0">
+                <div className="font-bold text-[11px] text-slate-800">4. หมุดบนแผนที่</div>
+                <div className="text-[10px] text-slate-500 truncate">จิ้มลากหมุดบนแผนที่</div>
+              </div>
+            </button>
+          </div>
+        </div>
+
+        {/* METHOD 1 & 2: PROMINENT PLACE SEARCH BAR / COORDINATE & LINK PASTE */}
         <div className="relative p-2.5 sm:p-3 bg-white border-b border-slate-200/80 z-[60] shrink-0">
           <div className="relative flex items-center">
             <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
@@ -514,11 +715,11 @@ export const LocationPickerModal: React.FC<LocationPickerModalProps> = ({
                   executeSearchNow();
                 }
               }}
-              placeholder="🔍 ค้นหาสถานที่ เช่น เซ็นทรัล, สยาม, ปตท. ราชพฤกษ์, กวางโจว (พิมพ์แล้วเลือกหมุดได้เลย)..."
-              className="w-full pl-10 pr-24 py-2.5 rounded-2xl border-2 border-slate-200 focus:border-sky-500 focus:ring-2 focus:ring-sky-100 text-xs sm:text-sm font-semibold text-slate-900 bg-slate-50/90 focus:bg-white placeholder:text-slate-400 transition-all outline-none"
+              placeholder="🔍 ค้นหาสถานที่ หรือ วางพิกัด (lat, lng) หรือ วางลิงก์ Google Maps..."
+              className="w-full pl-10 pr-32 py-2.5 rounded-2xl border-2 border-slate-200 focus:border-sky-500 focus:ring-2 focus:ring-sky-100 text-xs sm:text-sm font-semibold text-slate-900 bg-slate-50/90 focus:bg-white placeholder:text-slate-400 transition-all outline-none"
             />
             <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
-              {searchQuery && (
+              {searchQuery ? (
                 <button
                   type="button"
                   onClick={() => {
@@ -530,6 +731,16 @@ export const LocationPickerModal: React.FC<LocationPickerModalProps> = ({
                   title="ล้างข้อความ"
                 >
                   <X className="w-3.5 h-3.5" />
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={handlePasteFromClipboard}
+                  className="px-2 py-1 rounded-lg bg-sky-50 hover:bg-sky-100 text-sky-700 text-xs font-bold transition-all flex items-center gap-1 border border-sky-200"
+                  title="วางพิกัดหรือลิงก์จากคลิปบอร์ด"
+                >
+                  <ClipboardPaste className="w-3 h-3" />
+                  <span className="hidden sm:inline">วาง</span>
                 </button>
               )}
               <button
@@ -568,50 +779,82 @@ export const LocationPickerModal: React.FC<LocationPickerModalProps> = ({
 
               {searchResults.length > 0 ? (
                 <div className="divide-y divide-slate-100">
-                  {searchResults.map((item) => (
-                    <button
-                      type="button"
-                      key={item.id}
-                      onClick={() => handleSelectPlace(item)}
-                      className="w-full px-3.5 py-2.5 text-left hover:bg-sky-50/80 active:bg-sky-100 flex items-start gap-2.5 transition-colors group cursor-pointer"
-                    >
-                      <div className="w-7 h-7 rounded-xl bg-sky-100 text-sky-700 group-hover:bg-sky-600 group-hover:text-white flex items-center justify-center shrink-0 mt-0.5 transition-colors">
-                        {item.type === 'preset' ? (
-                          <Sparkles className="w-3.5 h-3.5" />
-                        ) : (
-                          <MapPin className="w-3.5 h-3.5" />
-                        )}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-1.5 flex-wrap">
-                          <span className="font-bold text-xs text-slate-800 group-hover:text-sky-700">
-                            {item.name}
-                          </span>
-                          {item.type === 'preset' && (
-                            <span className="px-1.5 py-0.2 rounded text-[10px] bg-amber-50 text-amber-700 font-semibold border border-amber-200">
-                              จุดยอดนิยม
-                            </span>
+                  {searchResults.map((item) => {
+                    const isDetected = item.id.startsWith('detected-');
+                    return (
+                      <button
+                        type="button"
+                        key={item.id}
+                        onClick={() => handleSelectPlace(item)}
+                        className={`w-full px-3.5 py-2.5 text-left flex items-start gap-2.5 transition-colors group cursor-pointer ${
+                          isDetected
+                            ? 'bg-emerald-50/70 hover:bg-emerald-100/80 active:bg-emerald-200/90 border-l-4 border-l-emerald-500'
+                            : 'hover:bg-sky-50/80 active:bg-sky-100'
+                        }`}
+                      >
+                        <div
+                          className={`w-7 h-7 rounded-xl flex items-center justify-center shrink-0 mt-0.5 transition-colors ${
+                            isDetected
+                              ? 'bg-emerald-600 text-white'
+                              : 'bg-sky-100 text-sky-700 group-hover:bg-sky-600 group-hover:text-white'
+                          }`}
+                        >
+                          {isDetected ? (
+                            <Sparkles className="w-4 h-4 animate-pulse" />
+                          ) : item.type === 'preset' ? (
+                            <Sparkles className="w-3.5 h-3.5" />
+                          ) : (
+                            <MapPin className="w-3.5 h-3.5" />
                           )}
-                          {item.country === 'TH' ? (
-                            <span className="px-1.5 py-0.2 rounded text-[10px] bg-slate-100 text-slate-600 font-medium">
-                              🇹🇭 ไทย
-                            </span>
-                          ) : item.country === 'CN' ? (
-                            <span className="px-1.5 py-0.2 rounded text-[10px] bg-rose-50 text-rose-700 font-medium">
-                              🇨🇳 จีน
-                            </span>
-                          ) : null}
                         </div>
-                        <p className="text-[11px] text-slate-500 truncate mt-0.5">
-                          {item.displayName}
-                        </p>
-                      </div>
-                      <div className="text-[11px] text-sky-600 font-bold shrink-0 self-center hidden sm:flex items-center gap-0.5 group-hover:translate-x-0.5 transition-transform">
-                        <span>ปักหมุด</span>
-                        <ChevronRight className="w-3.5 h-3.5" />
-                      </div>
-                    </button>
-                  ))}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <span
+                              className={`font-bold text-xs ${
+                                isDetected ? 'text-emerald-900 font-extrabold' : 'text-slate-800 group-hover:text-sky-700'
+                              }`}
+                            >
+                              {item.name}
+                            </span>
+                            {isDetected && (
+                              <span className="px-1.5 py-0.2 rounded text-[10px] bg-emerald-600 text-white font-extrabold shadow-2xs">
+                                ตรวจพบพิกัดสำเร็จ ✨
+                              </span>
+                            )}
+                            {item.type === 'preset' && !isDetected && (
+                              <span className="px-1.5 py-0.2 rounded text-[10px] bg-amber-50 text-amber-700 font-semibold border border-amber-200">
+                                จุดยอดนิยม
+                              </span>
+                            )}
+                            {item.country === 'TH' ? (
+                              <span className="px-1.5 py-0.2 rounded text-[10px] bg-slate-100 text-slate-600 font-medium">
+                                🇹🇭 ไทย
+                              </span>
+                            ) : item.country === 'CN' ? (
+                              <span className="px-1.5 py-0.2 rounded text-[10px] bg-rose-50 text-rose-700 font-medium">
+                                🇨🇳 จีน
+                              </span>
+                            ) : null}
+                          </div>
+                          <p
+                            className={`text-[11px] truncate mt-0.5 ${
+                              isDetected ? 'text-emerald-700 font-medium' : 'text-slate-500'
+                            }`}
+                          >
+                            {item.displayName}
+                          </p>
+                        </div>
+                        <div
+                          className={`text-[11px] font-bold shrink-0 self-center hidden sm:flex items-center gap-0.5 group-hover:translate-x-0.5 transition-transform ${
+                            isDetected ? 'text-emerald-700' : 'text-sky-600'
+                          }`}
+                        >
+                          <span>ปักหมุดนี้</span>
+                          <ChevronRight className="w-3.5 h-3.5" />
+                        </div>
+                      </button>
+                    );
+                  })}
                 </div>
               ) : isSearching ? (
                 <div className="p-4 text-center text-slate-500 text-xs flex items-center justify-center gap-2">

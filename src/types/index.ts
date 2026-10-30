@@ -140,6 +140,16 @@ export interface AppNotification {
   clearedBy?: string[];
 }
 
+export interface AttachedFile {
+  id: string;
+  name: string;           // e.g. "Quotation_Tea_2026.pdf"
+  url: string;            // Google Drive URL or stored URL
+  size?: number;          // File size in bytes
+  mimeType?: string;      // e.g. "application/pdf"
+  uploadedAt?: string;    // ISO timestamp
+  driveFileId?: string;   // Google Drive File ID if available
+}
+
 export interface SupplierRecord {
   revision?: number;
   id: string;
@@ -162,6 +172,7 @@ export interface SupplierRecord {
     contactCards: string[];
   };
   videos?: string[]; // รองรับการอัปโหลดและเปิดดูคลิปวิดีโอ
+  attachedFiles?: AttachedFile[]; // ไฟล์เอกสารแนบเพิ่มเติม (PDF, ใบเสนอราคา, สเปก) เปิดดูบน Google Drive
   catalogItems: CatalogItem[];
   memo?: string;
   voiceNoteUrl?: string;
@@ -229,6 +240,7 @@ export interface StoreInspoRecord {
     drinkCups: string[];
   };
   videos?: string[]; // รองรับการอัปโหลดและเปิดดูคลิปวิดีโอร้านน้ำ
+  attachedFiles?: AttachedFile[]; // ไฟล์เอกสารแนบเพิ่มเติม (PDF, โบรชัวร์, สเปก) เปิดดูบน Google Drive
   ratings: {
     taste: number;        // 1-5 stars รสชาติ
     aesthetics: number;   // 1-5 stars ความสวยงาม & แพ็กเกจจิ้ง
@@ -330,6 +342,7 @@ export interface LocationRecord {
     contactCards?: string[];
   };
   videos?: string[];
+  attachedFiles?: AttachedFile[]; // ไฟล์เอกสารแนบเพิ่มเติม (PDF ผังห้อง, สัญญาเช่า, ใบเสนอพื้นที่) เปิดดูบน Google Drive
   voiceNoteUrl?: string;
   voiceDurationSec?: number;
   voiceNotes?: VoiceNoteEntry[];

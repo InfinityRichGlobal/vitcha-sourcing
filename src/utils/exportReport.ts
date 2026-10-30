@@ -1,5 +1,5 @@
 import QRCode from 'qrcode';
-import { SupplierRecord, StoreInspoRecord, LocationRecord } from '../types';
+import { SupplierRecord, StoreInspoRecord, LocationRecord, AttachedFile } from '../types';
 import { getItemVoiceNotes } from './audioHelper';
 import { FALLBACK_DEMO_VIDEO_URL } from './mediaStorage';
 
@@ -436,6 +436,48 @@ export function buildExecutiveReportHtml(
     `;
   }
 
+  // Build Attached Files Section
+  const rawAttachedFiles: AttachedFile[] = (item as any).attachedFiles || [];
+  const attachedFilesHtml =
+    rawAttachedFiles.length > 0
+      ? `<div class="section-box">
+          <div class="section-title">${segmentThaiHtml(`เอกสารและไฟล์แนบเพิ่มเติม (Attached Documents) — (${rawAttachedFiles.length} ไฟล์)`)}</div>
+          <div class="media-subhead">${segmentThaiHtml('สแกน QR Code หรือคลิกลิงก์ด้านล่างเพื่อเปิดไฟล์บน Google Drive / เบราว์เซอร์:')}</div>
+          ${rawAttachedFiles
+            .map((f, idx) => {
+              const fileQr = f.url ? generateQrSvgDataUri(f.url) : '';
+              const ext = (f.name.split('.').pop() || 'FILE').toUpperCase();
+              const sizeStr = f.size
+                ? f.size < 1024 * 1024
+                  ? `${(f.size / 1024).toFixed(1)} KB`
+                  : `${(f.size / (1024 * 1024)).toFixed(1)} MB`
+                : '';
+              return `
+              <div class="file-attachment-card">
+                <div class="file-attachment-info">
+                  <div class="file-attachment-name">#${idx + 1} [${escapeHtml(ext)}] ${escapeHtml(f.name)}</div>
+                  <div class="file-attachment-meta">
+                    ${sizeStr ? `ขนาด: ${sizeStr}` : ''}
+                    ${f.uploadedAt ? ` · บันทึกเมื่อ: ${new Date(f.uploadedAt).toLocaleDateString('th-TH')}` : ''}
+                  </div>
+                  <div class="file-attachment-link">
+                    <a href="${escapeHtml(f.url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(f.url)}</a>
+                  </div>
+                </div>
+                ${
+                  fileQr
+                    ? `<div class="file-attachment-qr">
+                        <img src="${fileQr}" alt="QR" />
+                        <div style="font-size:7px;text-align:center;color:#059669;font-weight:700;margin-top:2px;">Scan Open</div>
+                      </div>`
+                    : ''
+                }
+              </div>`;
+            })
+            .join('')}
+        </div>`
+      : '';
+
   // Build All Photos Grid
   const photosGridHtml =
     allPhotos.length > 0
@@ -765,6 +807,59 @@ export function buildExecutiveReportHtml(
       color: #059669;
       font-weight: 700;
       margin-top: 1px;
+    }
+
+    /* Attached Files in Report */
+    .file-attachment-card {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 8px 10px;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      background: #f8fafc;
+      margin-bottom: 6px;
+    }
+    .file-attachment-info {
+      flex: 1;
+      min-width: 0;
+    }
+    .file-attachment-name {
+      font-size: 11.5px;
+      font-weight: 800;
+      color: #0f172a;
+      word-break: break-all;
+    }
+    .file-attachment-meta {
+      font-size: 10px;
+      color: #64748b;
+      margin-top: 2px;
+    }
+    .file-attachment-link {
+      font-size: 9.5px;
+      color: #0284c7;
+      word-break: break-all;
+      margin-top: 3px;
+    }
+    .file-attachment-link a {
+      color: #0284c7;
+      text-decoration: underline;
+    }
+    .file-attachment-qr {
+      width: 70px;
+      flex-shrink: 0;
+      border: 1px solid #cbd5e1;
+      border-radius: 6px;
+      background: #ffffff;
+      padding: 4px;
+      text-align: center;
+    }
+    .file-attachment-qr img {
+      width: 58px;
+      height: 58px;
+      display: block;
+      margin: 0 auto;
     }
 
     /* Sections */
@@ -1324,6 +1419,9 @@ export function buildExecutiveReportHtml(
 
       <!-- Group 3: Catalog / Drink Items -->
       ${itemsSectionHtml}
+
+      <!-- Attached Documents & Files -->
+      ${attachedFilesHtml}
 
       <!-- Group 4: All Photos of This Item -->
       <div class="section-box">
