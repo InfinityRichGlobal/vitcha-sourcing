@@ -510,6 +510,8 @@ export interface FranchiseStore {
   name: string;
   brandTagline: string;
   branch: string;
+  lat?: number;
+  lng?: number;
   themeColor: string;
   logoUrl?: string;
   contactNumber?: string;

@@ -5,7 +5,8 @@ import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 
 const GOOGLE_TILE_URL = 'https://{s}.google.com/vt/lyrs=m&hl=en&gl=US&x={x}&y={y}&z={z}';
-import { Factory, Coffee, Layers, MapPin, ChevronRight, X, Navigation } from 'lucide-react';
+import { Factory, Coffee, Layers, MapPin, ChevronRight, X, Navigation, Search, Crosshair, Loader2, Sparkles } from 'lucide-react';
+import { searchPlacesApi } from '../services/api';
 
 interface MapViewProps {
   onSelectSupplier: (supplier: SupplierRecord) => void;
@@ -62,6 +63,147 @@ export const MapView: React.FC<MapViewProps> = ({
     type: 'supplier' | 'drink_store' | 'location';
     data: SupplierRecord | StoreInspoRecord | LocationRecord;
   } | null>(null);
+
+  // Search & Places jump state (Google Maps / LINE MAN search on MapView)
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState<Array<{ id: string; name: string; displayName: string; lat: number; lng: number; type: string }>>([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [showDropdown, setShowDropdown] = useState(false);
+  const [isLocatingGps, setIsLocatingGps] = useState(false);
+  const searchDebounceRef = useRef<NodeJS.Timeout | null>(null);
+  const searchAbortRef = useRef<AbortController | null>(null);
+  const searchDropdownRef = useRef<HTMLDivElement>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
+
+  // Close dropdown on outside click
+  useEffect(() => {
+    const handleOutsideClick = (e: MouseEvent) => {
+      if (
+        searchDropdownRef.current &&
+        !searchDropdownRef.current.contains(e.target as Node) &&
+        searchInputRef.current &&
+        !searchInputRef.current.contains(e.target as Node)
+      ) {
+        setShowDropdown(false);
+      }
+    };
+    document.addEventListener('mousedown', handleOutsideClick);
+    return () => document.removeEventListener('mousedown', handleOutsideClick);
+  }, []);
+
+  // Run search (matching database pins + OSM places)
+  useEffect(() => {
+    if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
+    const q = searchQuery.trim().toLowerCase();
+    if (!q) {
+      setSearchResults([]);
+      setShowDropdown(false);
+      setIsSearching(false);
+      return;
+    }
+
+    // 1. Instant local matching from database pins
+    const localPins: Array<{ id: string; name: string; displayName: string; lat: number; lng: number; type: string }> = [];
+    suppliers.forEach((s) => {
+      if (s.location?.lat && s.location?.lng && (s.name.toLowerCase().includes(q) || (s.address && s.address.toLowerCase().includes(q)))) {
+        localPins.push({ id: s.id, name: s.name, displayName: s.address || 'ซัพพลายเออร์', lat: s.location.lat, lng: s.location.lng, type: 'supplier' });
+      }
+    });
+    drinkStores.forEach((d) => {
+      if (d.location?.lat && d.location?.lng && (d.storeName.toLowerCase().includes(q) || (d.city && d.city.toLowerCase().includes(q)))) {
+        localPins.push({ id: d.id, name: d.storeName, displayName: d.city || 'ร้านน้ำ/เครื่องดื่ม', lat: d.location.lat, lng: d.location.lng, type: 'drink_store' });
+      }
+    });
+    locations.forEach((l) => {
+      if (l.location?.lat && l.location?.lng && (l.name.toLowerCase().includes(q) || (l.location?.addressText && l.location.addressText.toLowerCase().includes(q)))) {
+        localPins.push({ id: l.id, name: l.name, displayName: l.location?.addressText || l.zoneOrFloor || 'ทำเลที่ตั้งสาขา', lat: l.location.lat, lng: l.location.lng, type: 'location' });
+      }
+    });
+
+    if (localPins.length > 0) {
+      setSearchResults(localPins);
+      setShowDropdown(true);
+    }
+
+    setShowDropdown(true);
+    setIsSearching(true);
+
+    if (searchAbortRef.current) searchAbortRef.current.abort();
+    const abort = new AbortController();
+    searchAbortRef.current = abort;
+
+    searchDebounceRef.current = setTimeout(async () => {
+      try {
+        const remote = await searchPlacesApi(q, abort.signal);
+        if (!abort.signal.aborted) {
+          const combined = [...localPins];
+          for (const item of remote) {
+            if (!combined.some((c) => Math.abs(c.lat - item.lat) < 0.001 && Math.abs(c.lng - item.lng) < 0.001)) {
+              combined.push({
+                id: item.id,
+                name: item.name,
+                displayName: item.displayName,
+                lat: item.lat,
+                lng: item.lng,
+                type: 'place',
+              });
+            }
+          }
+          setSearchResults(combined);
+        }
+      } catch {
+        // Ignore
+      } finally {
+        if (!abort.signal.aborted) setIsSearching(false);
+      }
+    }, 350);
+
+    return () => {
+      if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
+    };
+  }, [searchQuery, suppliers, drinkStores, locations]);
+
+  const handleSelectSearchResult = (item: { id: string; name: string; displayName: string; lat: number; lng: number; type: string }) => {
+    setSearchQuery(item.name);
+    setShowDropdown(false);
+    if (mapInstanceRef.current) {
+      mapInstanceRef.current.flyTo([item.lat, item.lng], 16, { duration: 0.8 });
+    }
+    // If it's an existing item, select it
+    if (item.type === 'supplier') {
+      const s = suppliers.find((x) => x.id === item.id);
+      if (s) setSelectedPin({ type: 'supplier', data: s });
+    } else if (item.type === 'drink_store') {
+      const d = drinkStores.find((x) => x.id === item.id);
+      if (d) setSelectedPin({ type: 'drink_store', data: d });
+    } else if (item.type === 'location') {
+      const l = locations.find((x) => x.id === item.id);
+      if (l) setSelectedPin({ type: 'location', data: l });
+    }
+  };
+
+  const handleUseCurrentGps = () => {
+    if (!navigator.geolocation) {
+      alert('เบราว์เซอร์ไม่รองรับ GPS');
+      return;
+    }
+    setIsLocatingGps(true);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setIsLocatingGps(false);
+        const lat = pos.coords.latitude;
+        const lng = pos.coords.longitude;
+        if (mapInstanceRef.current) {
+          mapInstanceRef.current.flyTo([lat, lng], 16, { duration: 0.8 });
+        }
+      },
+      (err) => {
+        setIsLocatingGps(false);
+        alert('ไม่สามารถดึงตำแหน่งปัจจุบันได้: ' + (err.message || 'โปรดอนุญาตสิทธิ์ GPS'));
+      },
+      { timeout: 10000, enableHighAccuracy: true }
+    );
+  };
 
   // Initialize Map safely without heavy ResizeObserver loops to prevent freezing
   useEffect(() => {
@@ -336,6 +478,105 @@ export const MapView: React.FC<MapViewProps> = ({
   return (
     <div className="space-y-2 min-w-0 max-w-full overflow-hidden" data-testid="english-map" data-map-status={mapStatus} data-map-error={mapFailure}>
       <span className="sr-only">Map language: English</span>
+
+      {/* 🔍 Prominent Search & GPS Jump Bar for MapView */}
+      <div className="relative z-[410] flex items-center gap-1.5 bg-white p-2 rounded-2xl border border-slate-200/90 shadow-2xs">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+          <input
+            ref={searchInputRef}
+            type="text"
+            value={searchQuery}
+            onChange={(e) => {
+              setSearchQuery(e.target.value);
+              setShowDropdown(true);
+            }}
+            onFocus={() => {
+              if (searchResults.length > 0 || searchQuery.trim()) setShowDropdown(true);
+            }}
+            placeholder="🔍 ค้นหาพิกัด / สถานที่ปลายทาง เช่น เซ็นทรัล, สยาม, ปตท. ราชพฤกษ์, กวางโจว..."
+            className="w-full pl-9 pr-8 py-2 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white text-xs font-semibold text-slate-800 placeholder:text-slate-400 outline-none focus:border-sky-500 transition-colors"
+          />
+          {searchQuery && (
+            <button
+              type="button"
+              onClick={() => {
+                setSearchQuery('');
+                setSearchResults([]);
+                setShowDropdown(false);
+              }}
+              className="absolute right-2 top-1/2 -translate-y-1/2 p-0.5 text-slate-400 hover:text-slate-600"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          )}
+        </div>
+
+        <button
+          type="button"
+          onClick={handleUseCurrentGps}
+          disabled={isLocatingGps}
+          className="px-2.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold whitespace-nowrap flex items-center gap-1.5 transition-colors shadow-2xs shrink-0 active:scale-95"
+        >
+          <Crosshair className={`w-3.5 h-3.5 ${isLocatingGps ? 'animate-spin' : ''}`} />
+          <span>{isLocatingGps ? 'ระบุพิกัด...' : '🎯 พิกัดฉัน'}</span>
+        </button>
+
+        {/* Floating Autocomplete Dropdown */}
+        {showDropdown && (
+          <div
+            ref={searchDropdownRef}
+            className="absolute top-full left-0 right-0 mt-1.5 bg-white rounded-2xl shadow-xl border border-slate-200 overflow-hidden z-[500] max-h-60 overflow-y-auto animate-in fade-in"
+          >
+            <div className="px-3 py-1.5 bg-slate-50 border-b border-slate-100 flex items-center justify-between text-[10px] text-slate-500 font-bold">
+              <span>ผลการค้นหา (แตะเพื่อบินไปจุดนั้น)</span>
+              {isSearching && (
+                <span className="flex items-center gap-1 text-sky-600">
+                  <Loader2 className="w-3 h-3 animate-spin" />
+                  <span>กำลังค้นหา...</span>
+                </span>
+              )}
+            </div>
+            {searchResults.length > 0 ? (
+              <div className="divide-y divide-slate-100">
+                {searchResults.map((item) => (
+                  <button
+                    key={`${item.type}-${item.id}`}
+                    type="button"
+                    onClick={() => handleSelectSearchResult(item)}
+                    className="w-full px-3 py-2 text-left hover:bg-sky-50 flex items-center gap-2 transition-colors cursor-pointer"
+                  >
+                    <span className="w-6 h-6 rounded-lg bg-sky-100 text-sky-700 flex items-center justify-center shrink-0">
+                      {item.type === 'supplier' ? (
+                        <Factory className="w-3 h-3" />
+                      ) : item.type === 'drink_store' ? (
+                        <Coffee className="w-3 h-3" />
+                      ) : (
+                        <MapPin className="w-3 h-3" />
+                      )}
+                    </span>
+                    <div className="flex-1 min-w-0">
+                      <div className="font-bold text-xs text-slate-800 truncate">{item.name}</div>
+                      <div className="text-[10px] text-slate-400 truncate">{item.displayName}</div>
+                    </div>
+                    <span className="text-[10px] text-sky-600 font-bold shrink-0">บินไป ➔</span>
+                  </button>
+                ))}
+              </div>
+            ) : isSearching ? (
+              <div className="p-3 text-center text-xs text-slate-400 flex items-center justify-center gap-1.5">
+                <Loader2 className="w-3.5 h-3.5 animate-spin text-sky-600" />
+                <span>กำลังค้นหาสถานที่ &quot;{searchQuery}&quot;...</span>
+              </div>
+            ) : (
+              <div className="p-3 text-center text-xs text-slate-400">
+                ไม่พบสถานที่ ลองใช้คำค้นหาอื่น
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
       <div className="relative isolate w-full h-[380px] sm:h-[430px] overflow-hidden rounded-2xl border border-slate-200/90 shadow-2xs bg-slate-100">
         {/* Top Left Corner: 3 Distinct Colored Buttons with FontAwesome IconFonts */}
         <div className="absolute top-1.5 left-1.5 z-[400] flex items-center gap-1 bg-white/95 backdrop-blur-md p-1 rounded-xl border border-slate-200/90 shadow-2xs max-w-[calc(100%-110px)] overflow-x-auto no-scrollbar">

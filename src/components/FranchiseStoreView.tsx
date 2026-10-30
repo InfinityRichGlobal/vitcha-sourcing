@@ -38,7 +38,9 @@ import {
   Paperclip,
   Image as ImageIcon,
   Video,
-  Check
+  Check,
+  Edit3,
+  Compass,
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { FranchiseStore, StoreMenuItem, LabItem, VoiceNoteEntry } from '../types';
@@ -48,6 +50,7 @@ import { uploadMediaToServer } from '../services/api';
 import { saveVideoFile } from '../utils/mediaStorage';
 import { AudioRecorder } from './AudioRecorder';
 import { VideoPlayer } from './VideoPlayer';
+import { LocationPickerModal } from './LocationPickerModal';
 
 export function FranchiseStoreView({
   initialStoreId,
@@ -435,7 +438,7 @@ export function FranchiseStoreView({
             </h2>
           </div>
 
-          <div className="columns-1 sm:columns-2 gap-4 sm:gap-6 space-y-4 sm:space-y-6 [column-fill:_balance]">
+          <div className="columns-2 sm:columns-2 md:columns-3 lg:columns-4 gap-3 sm:gap-4 [column-fill:_balance]">
             {franchiseStores.map((store) => {
               const theme = getThemeClasses(store.themeColor);
               const isLiked = (store.likedBy || []).includes(currentUser.id);
@@ -455,26 +458,30 @@ export function FranchiseStoreView({
               return (
                 <div
                   key={store.id}
-                  className="break-inside-avoid inline-block w-full rounded-2xl sm:rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 shadow-md hover:shadow-xl transition-all duration-200 overflow-hidden group mb-4 sm:mb-6"
+                  className="break-inside-avoid inline-block w-full rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 shadow-2xs hover:shadow-md transition-all duration-200 overflow-hidden group mb-3 sm:mb-4"
                 >
                   <div>
-                    {/* Brand Cover Photo (Natural Size Fit - no forced 16:9 crop) */}
-                    <div className="relative w-full bg-slate-900/10 dark:bg-slate-950 p-2 sm:p-3 flex items-center justify-center min-h-[160px] max-h-[360px] overflow-hidden">
+                    {/* Brand Cover Photo (Natural Size Fit - full proportion like R&D Lead Lab) */}
+                    <div
+                      className="relative w-full bg-slate-100 dark:bg-slate-950 overflow-hidden cursor-pointer flex items-center justify-center"
+                      onClick={() => setSelectedStoreId(store.id)}
+                    >
                       <img
                         src={store.logoUrl || 'https://images.unsplash.com/photo-1544787219-7f47ccb76574?w=800&auto=format&fit=crop&q=80'}
                         alt={store.name}
-                        className="w-full h-auto max-h-[340px] object-contain rounded-xl group-hover:scale-102 transition-transform duration-300"
+                        className="w-full h-auto object-contain block group-hover:scale-102 transition-transform duration-300"
+                        loading="lazy"
                       />
                       <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent pointer-events-none" />
 
                       {/* Top Badges */}
-                      <div className="absolute top-3 left-3 flex items-center gap-1.5 z-10">
-                        <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-500/90 text-white shadow-xs backdrop-blur-sm flex items-center gap-1">
+                      <div className="absolute top-2 left-2 flex items-center gap-1 z-10 flex-wrap max-w-[75%]">
+                        <span className="px-1.5 py-0.5 rounded-md text-[9px] font-bold bg-emerald-500/90 text-white shadow-xs backdrop-blur-sm flex items-center gap-0.5">
                           <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
-                          <span>เปิดบริการปกติ</span>
+                          <span className="hidden xs:inline">เปิดบริการ</span>
                         </span>
-                        <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold backdrop-blur-sm shadow-xs ${theme.badge}`}>
-                          {store.branch.includes('Flagship') ? '⭐ Flagship Store' : '📍 ' + store.branch.split('(')[0].trim()}
+                        <span className={`px-1.5 py-0.5 rounded-md text-[9px] font-bold backdrop-blur-sm shadow-xs ${theme.badge} truncate max-w-[85px]`}>
+                          {store.branch.includes('Flagship') ? '⭐ Flagship' : '📍 ' + store.branch.split('(')[0].trim()}
                         </span>
                       </div>
 
@@ -485,118 +492,100 @@ export function FranchiseStoreView({
                           e.stopPropagation();
                           void toggleLikeFranchiseStore(store.id);
                         }}
-                        className={`absolute top-3 right-3 px-2.5 py-1 rounded-full text-[11px] font-bold shadow-md backdrop-blur-sm flex items-center gap-1.5 transition-transform active:scale-90 z-10 ${
+                        className={`absolute top-2 right-2 px-2 py-0.5 rounded-full text-[10px] font-bold shadow-md backdrop-blur-sm flex items-center gap-1 transition-transform active:scale-90 z-10 ${
                           isLiked
                             ? 'bg-rose-500 text-white'
                             : 'bg-white/90 text-slate-800 hover:bg-white'
                         }`}
                       >
-                        <Heart className={`w-3.5 h-3.5 ${isLiked ? 'fill-current' : ''}`} />
+                        <Heart className={`w-3 h-3 ${isLiked ? 'fill-current' : ''}`} />
                         <span>{(store.likedBy || []).length}</span>
                       </button>
 
                       {/* Brand Title Overlay */}
-                      <div className="absolute bottom-3 left-3 right-3 text-white z-10">
-                        <h3 className="text-xl sm:text-2xl font-black tracking-tight leading-tight flex items-center gap-2 drop-shadow-md">
+                      <div className="absolute bottom-2 left-2 right-2 text-white z-10">
+                        <h3 className="text-sm sm:text-base font-black tracking-tight leading-tight flex items-center gap-1.5 drop-shadow-md truncate">
                           <span>{store.name}</span>
                         </h3>
-                        <p className="text-xs text-slate-200 truncate mt-0.5 italic drop-shadow-sm">
-                          "{store.brandTagline}"
-                        </p>
+                        {store.brandTagline && (
+                          <p className="text-[10px] sm:text-xs text-slate-200 truncate mt-0.5 italic drop-shadow-sm">
+                            "{store.brandTagline}"
+                          </p>
+                        )}
                       </div>
                     </div>
 
                     {/* Card Body Info */}
-                    <div className="p-4 sm:p-5 space-y-3 text-xs">
-                      <div className="flex flex-wrap items-center justify-between gap-2 text-slate-500 dark:text-slate-400">
-                        <span className="font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1">
-                          <MapPin className="w-3.5 h-3.5 text-rose-500" />
-                          <span>{store.branch}</span>
-                        </span>
-                        <span className="flex items-center gap-1">
-                          <Clock className="w-3.5 h-3.5 text-slate-400" />
-                          <span>{store.openingHours || '10:00 - 21:30 น.'}</span>
-                        </span>
+                    <div className="p-2.5 sm:p-3.5 space-y-2 text-xs">
+                      {/* Branch & Hours */}
+                      <div className="space-y-0.5">
+                        <div className="font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1 text-[11px] sm:text-xs truncate">
+                          <MapPin className="w-3 h-3 text-rose-500 shrink-0" />
+                          <span className="truncate">{store.branch}</span>
+                        </div>
+                        {store.openingHours && (
+                          <div className="flex items-center gap-1 text-[10px] text-slate-400 truncate">
+                            <Clock className="w-3 h-3 text-slate-400 shrink-0" />
+                            <span className="truncate">{store.openingHours}</span>
+                          </div>
+                        )}
                       </div>
 
                       {/* Menu statistics & categories preview */}
-                      <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-800 flex items-center justify-between">
-                        <div className="space-y-0.5">
-                          <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">
-                            เมนูบนป้ายจำหน่าย
+                      <div className="p-2 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-800 flex items-center justify-between text-[10px] sm:text-[11px]">
+                        <div>
+                          <span className="text-[9px] text-slate-400 font-bold uppercase tracking-wider block">
+                            ป้ายเมนู
                           </span>
-                          <span className="text-sm font-extrabold text-slate-800 dark:text-white">
+                          <span className="font-extrabold text-slate-800 dark:text-white">
                             {store.menuItems?.length || 0} รายการ
                           </span>
                         </div>
-                        <div className="text-right text-[11px] text-slate-500 font-medium">
-                          <span>🥤 {storeDrinks} เครื่องดื่ม</span>
-                          <span className="mx-1.5">·</span>
-                          <span>🍮 {storeToppings} ท็อปปิ้ง</span>
+                        <div className="text-right text-slate-500 font-medium">
+                          <div>🥤 {storeDrinks} น้ำ</div>
+                          <div>🍮 {storeToppings} ท็อปปิ้ง</div>
                         </div>
                       </div>
 
                       {/* Categories pills */}
                       {store.menuCategories && store.menuCategories.length > 0 && (
-                        <div className="flex flex-wrap gap-1 pt-1">
-                          {store.menuCategories.slice(0, 3).map((cat, cIdx) => (
+                        <div className="flex flex-wrap gap-1 pt-0.5">
+                          {store.menuCategories.slice(0, 2).map((cat, cIdx) => (
                             <span
                               key={cIdx}
-                              className="px-2 py-0.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-[10px] font-medium"
+                              className="px-1.5 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-[9px] font-medium truncate max-w-[90px]"
                             >
                               {cat}
                             </span>
                           ))}
-                          {store.menuCategories.length > 3 && (
-                            <span className="px-1.5 py-0.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-400 text-[10px]">
-                              +{store.menuCategories.length - 3}
+                          {store.menuCategories.length > 2 && (
+                            <span className="px-1 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-400 text-[9px]">
+                              +{store.menuCategories.length - 2}
                             </span>
                           )}
                         </div>
                       )}
 
-                      {/* Likers avatars */}
-                      {store.likedBy && store.likedBy.length > 0 && (
-                        <div className="flex items-center gap-1.5 pt-1 text-[10px] text-slate-500">
-                          <Heart className="w-3 h-3 text-rose-500 fill-rose-500 shrink-0" />
-                          <span>ถูกใจโดย:</span>
-                          <div className="flex -space-x-1.5 overflow-hidden">
-                            {store.likedBy.slice(0, 4).map((uid, uIdx) => {
-                              const u = users.find((x) => x.id === uid);
-                              return (
-                                <img
-                                  key={uIdx}
-                                  src={u?.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=80&auto=format&fit=crop&q=80'}
-                                  alt={u?.name || uid}
-                                  title={u?.name || uid}
-                                  className="w-4 h-4 rounded-full border border-white dark:border-slate-800 object-cover"
-                                />
-                              );
-                            })}
-                          </div>
-                        </div>
-                      )}
-
                       {/* Social & Collaboration footer on card */}
-                      <div className="flex items-center justify-between text-[11px] text-slate-400 pt-2 border-t border-slate-100 dark:border-slate-800">
-                        <div className="flex items-center gap-3">
-                          <span className="flex items-center gap-1">
-                            <MessageSquare className="w-3.5 h-3.5 text-indigo-500" />
-                            <span>{storeCommentsCount} ความเห็น</span>
+                      <div className="flex items-center justify-between text-[10px] text-slate-400 pt-1.5 border-t border-slate-100 dark:border-slate-800">
+                        <div className="flex items-center gap-2">
+                          <span className="flex items-center gap-0.5">
+                            <MessageSquare className="w-3 h-3 text-indigo-500" />
+                            <span>{storeCommentsCount}</span>
                           </span>
-                          <span className="flex items-center gap-1">
-                            <Eye className="w-3.5 h-3.5 text-slate-400" />
-                            <span>{(store.viewLogs || []).length} เข้าดู</span>
+                          <span className="flex items-center gap-0.5">
+                            <Eye className="w-3 h-3 text-slate-400" />
+                            <span>{(store.viewLogs || []).length}</span>
                           </span>
                         </div>
-                        <div className="flex items-center gap-1">
+                        <div className="flex items-center gap-0.5">
                           <button
                             type="button"
                             onClick={() => void shareFranchiseStore(store, store.menuItems?.length || 0)}
-                            className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 hover:text-slate-800 transition-colors"
+                            className="p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 hover:text-slate-800 transition-colors"
                             title="แชร์ร้านนี้"
                           >
-                            <Share2 className="w-3.5 h-3.5" />
+                            <Share2 className="w-3 h-3" />
                           </button>
                           <button
                             type="button"
@@ -604,18 +593,18 @@ export function FranchiseStoreView({
                               setEditingStore(store);
                               setIsStoreFormOpen(true);
                             }}
-                            className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 hover:text-indigo-600 transition-colors"
+                            className="p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 hover:text-indigo-600 transition-colors"
                             title="แก้ไขข้อมูลร้าน"
                           >
-                            <Edit2 className="w-3.5 h-3.5" />
+                            <Edit2 className="w-3 h-3" />
                           </button>
                           <button
                             type="button"
                             onClick={() => void handleDeleteStore(store)}
-                            className="p-1.5 rounded-lg hover:bg-rose-50 dark:hover:bg-rose-950/20 text-slate-400 hover:text-rose-600 transition-colors"
+                            className="p-1 rounded-lg hover:bg-rose-50 dark:hover:bg-rose-950/20 text-slate-400 hover:text-rose-600 transition-colors"
                             title="ลบร้านนี้"
                           >
-                            <Trash2 className="w-3.5 h-3.5" />
+                            <Trash2 className="w-3 h-3" />
                           </button>
                         </div>
                       </div>
@@ -623,15 +612,15 @@ export function FranchiseStoreView({
                   </div>
 
                   {/* Primary Enter Store Action Button */}
-                  <div className="p-4 sm:p-5 pt-0">
+                  <div className="p-2.5 sm:p-3 pt-0">
                     <button
                       type="button"
                       onClick={() => setSelectedStoreId(store.id)}
-                      className="w-full py-2.5 sm:py-3 rounded-2xl bg-slate-900 hover:bg-indigo-600 dark:bg-slate-800 dark:hover:bg-indigo-600 text-white font-extrabold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-sm transition-all group-hover:shadow-md"
+                      className="w-full py-2 rounded-xl bg-slate-900 hover:bg-indigo-600 dark:bg-slate-800 dark:hover:bg-indigo-600 text-white font-extrabold text-[11px] sm:text-xs flex items-center justify-center gap-1.5 shadow-2xs transition-all group-hover:shadow-xs"
                     >
-                      <Store className="w-4 h-4 text-emerald-400" />
-                      <span>เข้าร้าน (เปิดป้ายเมนู & SOP)</span>
-                      <ChevronRight className="w-4 h-4 text-slate-400 group-hover:translate-x-1 transition-transform" />
+                      <Store className="w-3.5 h-3.5 text-emerald-400" />
+                      <span>เข้าร้าน (ป้ายเมนู & SOP)</span>
+                      <ChevronRight className="w-3.5 h-3.5 text-slate-400 group-hover:translate-x-0.5 transition-transform" />
                     </button>
                   </div>
                 </div>
@@ -1367,9 +1356,35 @@ function StoreFormModal({
 
   // Optional store details - strictly empty by default
   const [branch, setBranch] = useState(store?.branch || '');
+  const [storeLat, setStoreLat] = useState<number | undefined>(store?.lat);
+  const [storeLng, setStoreLng] = useState<number | undefined>(store?.lng);
+  const [isLocationPickerOpen, setIsLocationPickerOpen] = useState(false);
   const [brandTagline, setBrandTagline] = useState(store?.brandTagline || '');
   const [openingHours, setOpeningHours] = useState(store?.openingHours || '');
   const [contactNumber, setContactNumber] = useState(store?.contactNumber || '');
+
+  const SUGGESTED_STORE_CATEGORIES = [
+    'ชานมพรีเมียม & ชาสด',
+    'วิตามินคราฟต์โซดา',
+    'ชาสกัดเย็น 0-Cal',
+    'สเปเชียลดริ้งก์',
+    'ชาผลไม้ & ชีสโฟม',
+    'ท็อปปิ้งซิกเนเจอร์',
+    'กาแฟสด & โกโก้',
+    'เบเกอรี่ & ของทานเล่น',
+  ];
+
+  const handleToggleCategoryChip = (catName: string) => {
+    const currentList = categoriesInput
+      .split(',')
+      .map((c) => c.trim())
+      .filter(Boolean);
+    if (currentList.includes(catName)) {
+      setCategoriesInput(currentList.filter((c) => c !== catName).join(', '));
+    } else {
+      setCategoriesInput([...currentList, catName].join(', '));
+    }
+  };
 
   // Unlimited Gallery & Audio/Video
   const [galleryPhotos, setGalleryPhotos] = useState<string[]>(store?.galleryPhotos || []);
@@ -1456,7 +1471,7 @@ function StoreFormModal({
       return;
     }
     if (!categoriesInput.trim()) {
-      alert('กรุณาระบุ Concept หรือหมวดหมู่เมนูของร้าน *');
+      alert('กรุณาระบุหมวดหมู่เมนูของร้านนี้ *');
       return;
     }
     if (!logoUrl.trim()) {
@@ -1485,6 +1500,8 @@ function StoreFormModal({
       id: store?.id || `store-${crypto.randomUUID()}`,
       name: name.trim(),
       branch: branch.trim() || 'สาขาหลัก',
+      lat: storeLat,
+      lng: storeLng,
       brandTagline: brandTagline.trim(),
       logoUrl: logoUrl.trim(),
       galleryPhotos,
@@ -1574,19 +1591,56 @@ function StoreFormModal({
             </div>
           </div>
 
-          {/* 3. Concept (Formerly หมวดหมู่เมนู, Moved right after Color Palette) */}
-          <div>
-            <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1">
-              Concept <span className="text-rose-500 font-black">*</span>
-            </label>
+          {/* 3. หมวดหมู่เมนูของร้านนี้ (Store Menu Categories) */}
+          <div className="p-3 bg-slate-50 dark:bg-slate-800/60 rounded-2xl border border-slate-200 dark:border-slate-700 space-y-2">
+            <div className="flex items-center justify-between">
+              <label className="font-bold text-slate-800 dark:text-slate-200 block text-xs">
+                หมวดหมู่เมนูของร้านนี้ (Store Menu Categories) <span className="text-rose-500 font-black">*</span>
+              </label>
+              <span className="text-[10px] text-slate-400">คั่นด้วยจุลภาค (,)</span>
+            </div>
+            <p className="text-[11px] text-slate-500 leading-relaxed">
+              หมวดหมู่นี้จะผูกพันกับหน้าร้านโดยอัตโนมัติ ใช้เป็นปุ่มตัวกรองจัดกลุ่มเมนูบนป้ายดิจิทัลหน้าร้าน และเป็นตัวเลือกหมวดหมู่ตอนเพิ่มเมนูเครื่องดื่ม
+            </p>
             <input
               type="text"
               required
               value={categoriesInput}
               onChange={(e) => setCategoriesInput(e.target.value)}
-              placeholder="เช่น ชานมพรีเมียม & ชาสด, คราฟต์โซดา, ท็อปปิ้งซิกเนเจอร์..."
-              className="w-full p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 font-medium"
+              placeholder="เช่น ชานมพรีเมียม & ชาสด, วิตามินคราฟต์โซดา, ท็อปปิ้งซิกเนเจอร์..."
+              className="w-full p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 font-semibold text-xs text-slate-900 dark:text-white"
             />
+
+            {/* Quick Suggestion Chips to Tap & Add/Remove */}
+            <div className="pt-1">
+              <span className="text-[10px] text-slate-400 font-bold block mb-1.5">
+                แตะเพื่อเพิ่ม/ลบหมวดหมู่ของร้าน:
+              </span>
+              <div className="flex flex-wrap gap-1.5">
+                {SUGGESTED_STORE_CATEGORIES.map((cat) => {
+                  const currentList = categoriesInput
+                    .split(',')
+                    .map((c) => c.trim())
+                    .filter(Boolean);
+                  const isSelected = currentList.includes(cat);
+                  return (
+                    <button
+                      type="button"
+                      key={cat}
+                      onClick={() => handleToggleCategoryChip(cat)}
+                      className={`px-2 py-1 rounded-lg text-[10px] font-bold transition-all flex items-center gap-1 active:scale-95 ${
+                        isSelected
+                          ? 'bg-emerald-600 text-white shadow-2xs'
+                          : 'bg-white dark:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-600 hover:bg-slate-100'
+                      }`}
+                    >
+                      {isSelected ? <Check className="w-3 h-3 stroke-[3]" /> : <Plus className="w-3 h-3" />}
+                      <span>{cat}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
           </div>
 
           {/* 4. Logo / Cover Photo (Clean Label without parenthetical text) */}
@@ -1666,17 +1720,42 @@ function StoreFormModal({
             </div>
           </div>
 
-          {/* 5. Additional Optional Fields (Branch, Tagline, Hours, Phone) */}
+          {/* 5. Additional Optional Fields (Branch with Location Picker, Tagline, Hours, Phone) */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1">สาขา</label>
+              <div className="flex items-center justify-between mb-1">
+                <label className="font-bold text-slate-700 dark:text-slate-300 block">
+                  สาขา / ทำเลที่ตั้ง
+                </label>
+                <button
+                  type="button"
+                  onClick={() => setIsLocationPickerOpen(true)}
+                  className="inline-flex items-center gap-1 text-[11px] font-bold text-sky-600 hover:text-sky-700"
+                >
+                  <MapPin className="w-3 h-3" />
+                  <span>{storeLat && storeLng ? '📍 แก้ไขพิกัดแผนที่' : '📍 ปักหมุดพิกัดแผนที่'}</span>
+                </button>
+              </div>
               <input
                 type="text"
                 value={branch}
                 onChange={(e) => setBranch(e.target.value)}
-                placeholder="เช่น สาขา Siam Square One"
+                placeholder="เช่น สาขา Siam Square One, ปตท. ราชพฤกษ์..."
                 className="w-full p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800"
               />
+              {storeLat && storeLng && (
+                <div className="mt-1 flex items-center gap-1.5 text-[10px] text-emerald-700 dark:text-emerald-400 font-bold bg-emerald-50 dark:bg-emerald-950/40 px-2.5 py-1 rounded-xl border border-emerald-200 dark:border-emerald-800">
+                  <MapPin className="w-3 h-3 shrink-0" />
+                  <span className="truncate">พิกัด GPS: {storeLat.toFixed(5)}, {storeLng.toFixed(5)}</span>
+                  <button
+                    type="button"
+                    onClick={() => { setStoreLat(undefined); setStoreLng(undefined); }}
+                    className="ml-auto text-slate-400 hover:text-rose-500 text-[10px]"
+                  >
+                    ล้างพิกัด
+                  </button>
+                </div>
+              )}
             </div>
             <div>
               <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1">สโลแกนประจำแบรนด์ (Tagline)</label>
@@ -1838,6 +1917,28 @@ function StoreFormModal({
             </button>
           </div>
         </form>
+
+        {isLocationPickerOpen && (
+          <LocationPickerModal
+            isOpen={isLocationPickerOpen}
+            onClose={() => setIsLocationPickerOpen(false)}
+            onConfirm={(result) => {
+              if (result.lat && result.lng) {
+                setStoreLat(result.lat);
+                setStoreLng(result.lng);
+              }
+              if (result.addressText) {
+                setBranch(result.addressText);
+              }
+              setIsLocationPickerOpen(false);
+            }}
+            initialLat={storeLat}
+            initialLng={storeLng}
+            initialAddress={branch}
+            themeColor="emerald"
+            title="เลือกตำแหน่งพิกัดร้านสาขาบนแผนที่"
+          />
+        )}
       </div>
     </div>,
     document.body
