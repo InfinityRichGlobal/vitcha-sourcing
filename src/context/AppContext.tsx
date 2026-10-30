@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { User, SupplierRecord, StoreInspoRecord, LocationRecord, ExchangeRateConfig, InviteLink, PipelineStatus, UserRole, AppNotification, HandoffStage, AppViewTab, QuickMessageTemplate, CuratedProduct, ProductTaxon, ProductSet, ProductChanges, TrashedItem, LabItem, LabFormulaStatus, FranchiseStore, ViewLogEntry } from '../types';
-import { INITIAL_SUPPLIERS, INITIAL_DRINK_STORES, INITIAL_LOCATIONS, INITIAL_CATEGORIES, INITIAL_STORE_CATEGORIES, INITIAL_LOCATION_TYPES, INITIAL_QUICK_TAGS, INITIAL_QUICK_MESSAGES, INITIAL_LEAD_LAB_ITEMS, INITIAL_FRANCHISE_STORES } from '../utils/seedData';
+import { INITIAL_CATEGORIES, INITIAL_STORE_CATEGORIES, INITIAL_LOCATION_TYPES, INITIAL_QUICK_TAGS, INITIAL_QUICK_MESSAGES } from '../utils/defaultSettings';
 import { getRenderServerUrl, saveRenderServerUrl, checkServerHealth, fetchCentralData, sendJson, requestJson, getSessionToken, setSessionToken, loginUserApi, ApiError, markNotificationsReadApi, clearNotificationsApi, postLeadLabItemApi, deleteLeadLabItemApi, likeLeadLabItemApi, commentLeadLabItemApi, likeLeadLabCommentApi, cycleLeadLabItemApi, updateLeadLabStatusApi, postFranchiseStoreApi, deleteFranchiseStoreApi } from '../services/api';
 
 interface AppContextType {
@@ -120,6 +120,9 @@ interface AppContextType {
   isMockLoading: boolean;
   isClearing: boolean;
   loadFullMockupData: () => Promise<boolean>;
+  mockLoadMessage: string;
+  mockLoadStatus: 'idle' | 'loading' | 'success' | 'error';
+  lastRefreshedAt: string | null;
   resetSystemData: (password: string) => Promise<boolean>;
   clearMockupOnly: (password: string) => Promise<boolean>;
 
@@ -232,6 +235,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [leadLabItems, setLeadLabItems] = useState<LabItem[]>([]);
   const [franchiseStores, setFranchiseStores] = useState<FranchiseStore[]>([]);
   const [isMockLoading, setIsMockLoading] = useState(false);
+  const [mockLoadMessage, setMockLoadMessage] = useState('');
+  const [mockLoadStatus, setMockLoadStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
+  const [lastRefreshedAt, setLastRefreshedAt] = useState<string | null>(null);
+  const latestSnapshot = useRef<any>(null);
   const [isClearing, setIsClearing] = useState(false);
   const [invites, setInvites] = useState<InviteLink[]>([]);
   const [categories, setCategories] = useState(INITIAL_CATEGORIES);
@@ -277,6 +284,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const clearSession = () => {
     refreshController.current?.abort(); refreshController.current = null;
+    setLastRefreshedAt(null); latestSnapshot.current = null; setMockLoadMessage(''); setMockLoadStatus('idle');
     setSessionToken(null); setIsAuthenticated(false); setIsRestoringSession(false); setCurrentUser(GUEST); setSimulatedFromAdmin(false);
     setProducts([]); setProductCategories([]); setProductTags([]); setProductSets([]);
     setUsers([]); setSuppliers([]); setDrinkStores([]); setLocations([]); setInvites([]); setNotifications([]); setActiveToast(null); setTrashItems([]);
@@ -287,7 +295,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     toastTimer.current = setTimeout(() => setActiveToast(null), 4500);
   }
   const refreshCentralData = async (background = false): Promise<boolean> => {
-    if (background && refreshController.current && renderStatus === 'connected') return false;
+    if (background && refreshController.current) return false;
     refreshController.current?.abort();
     const controller = new AbortController(); refreshController.current = controller;
     try {
@@ -300,6 +308,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const data = await fetchCentralData(controller.signal);
       if (!mounted.current || controller.signal.aborted || refreshController.current !== controller) return false;
       if (!data.user || !Array.isArray(data.suppliers) || !Array.isArray(data.drinkStores)) throw new Error('ข้อมูลเซิร์ฟเวอร์ไม่สมบูรณ์');
+      latestSnapshot.current = data; setLastRefreshedAt(new Date().toISOString());
       setRenderStatus('connected'); setCurrentUser(data.user); setSimulatedFromAdmin(data.simulated); setIsAuthenticated(true); setIsRestoringSession(false);
       setProducts(data.products || []); setProductCategories(data.productCategories || []); setProductTags(data.productTags || []); setProductSets(data.productSets || []); productTaxonomyRevision.current = data.productTaxonomyRevision || 0;
       setUsers(data.users); setInvites(data.invites);
@@ -517,44 +526,55 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const deleteQuickMessage = (id: string) => changeSettings('quickMessages', p => p.filter(q => q.id !== id));
   const loadFullMockupData = async (): Promise<boolean> => {
     if (currentUser.id !== 'user-ice' || simulatedFromAdmin) {
-      setActionError('ไม่สามารถดำเนินการนี้ได้ (เฉพาะผู้ก่อตั้ง: user-ice)');
-      return false;
+      setActionError('ไม่สามารถดำเนินการนี้ได้ (เฉพาะเจ้าของระบบ)'); return false;
     }
-    setIsMockLoading(true);
-    setActionError(null);
+    if (pendingActions.current.has('sample-pack')) return false;
+    pendingActions.current.add('sample-pack');
+    const sessionToken = getSessionToken();
+    const operationId = commandId('sample-pack');
+    setIsMockLoading(true); setMockLoadStatus('loading'); setActionError(null);
+    setMockLoadMessage('กำลังให้เซิร์ฟเวอร์เพิ่มชุดตัวอย่างและบันทึกข้อมูล…');
     try {
-      const freshData = await fetchCentralData();
-      const currentRev = freshData?.revision ?? databaseRevision.current;
-      await sendJson('/api/system/samples', {
-        revision: currentRev,
-        operationId: `sample-load-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
-        snapshot: {
-          suppliers: INITIAL_SUPPLIERS,
-          drinkStores: INITIAL_DRINK_STORES,
-          locations: INITIAL_LOCATIONS,
-          leadLabItems: INITIAL_LEAD_LAB_ITEMS,
-          franchiseStores: INITIAL_FRANCHISE_STORES,
-        },
-      });
-      await latestRefresh.current(true);
-      showToast({
-        id: crypto.randomUUID(),
-        title: '✅ โหลดข้อมูลจำลองสำเร็จ',
-        message: `นำเข้าข้อมูลครบสมบูรณ์ทุกมิติ (${INITIAL_SUPPLIERS.length} ซัพพลายเออร์, ${INITIAL_DRINK_STORES.length} ร้านเครื่องดื่ม, ${INITIAL_LOCATIONS.length} ทำเล, ${INITIAL_LEAD_LAB_ITEMS.length} สูตร R&D, ${INITIAL_FRANCHISE_STORES.length} สาขาแฟรนไชส์)`,
-        timestamp: new Date().toISOString(),
-        type: 'system',
-        actorId: 'system',
-        actorAlias: 'ระบบ VITCHA',
-        read: false,
-      });
+      let result;
+      try {
+        result = await requestJson('/api/system/sample-pack', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ packId: 'vitcha-demo-v1', operationId }),
+        }, 60000);
+      } catch (error) {
+        if (error instanceof ApiError && error.status < 500) throw error;
+        setMockLoadMessage('ยังไม่ได้รับคำตอบ กำลังตรวจสอบว่าเซิร์ฟเวอร์บันทึกสำเร็จหรือยัง…');
+        try { result = await requestJson(`/api/system/sample-operations/${encodeURIComponent(operationId)}`, {}, 15000); }
+        catch { throw new Error('ยังยืนยันผลการโหลดไม่ได้ กรุณาตรวจการเชื่อมต่อแล้วกดโหลดอีกครั้ง ระบบจะไม่เพิ่มรายการซ้ำ'); }
+      }
+      if (sessionToken !== getSessionToken()) return false;
+      if (!result?.success || !result.recordIds || !result.added || !result.skipped) throw new Error('ผลการโหลดจากเซิร์ฟเวอร์ไม่สมบูรณ์');
+      setMockLoadMessage('บันทึกแล้ว กำลังอ่านข้อมูลกลับเพื่อตรวจจำนวนรายการ…');
+      if (!await latestRefresh.current()) throw new Error('เซิร์ฟเวอร์บันทึกแล้ว แต่ยังอ่านข้อมูลกลับไม่ได้ กดรีเฟรชหรือโหลดอีกครั้งเพื่อตรวจผล');
+      const labels: Record<string, string> = { suppliers: 'ซัพพลายเออร์', drinkStores: 'ร้านน้ำ', locations: 'ทำเล', leadLabItems: 'สูตร R&D', franchiseStores: 'สาขา' };
+      for (const key of Object.keys(labels)) {
+        const expected = result.recordIds[key];
+        const ids = new Set((latestSnapshot.current?.[key] || []).map((item: any) => item.id));
+        if (!Array.isArray(expected) || expected.some((id: string) => !ids.has(id))) {
+          commandIds.current.delete('sample-pack');
+          throw new Error('ข้อมูลที่อ่านกลับยังไม่ครบชุด กรุณากดโหลดอีกครั้งเพื่อตรวจและเติมเฉพาะรายการที่ขาด');
+        }
+      }
+      commandIds.current.delete('sample-pack');
+      const added = Object.values(result.added).reduce<number>((sum, n) => sum + Number(n), 0);
+      const skipped = Object.values(result.skipped).reduce<number>((sum, n) => sum + Number(n), 0);
+      const counts = Object.entries(labels).map(([key, label]) => `${label} ${latestSnapshot.current[key]?.length || 0}`).join(' · ');
+      const message = `ตรวจสอบข้อมูลสำเร็จ: เพิ่ม ${added} รายการ · ข้ามรายการเดิม ${skipped} รายการ — ข้อมูลปัจจุบัน: ${counts}`;
+      setMockLoadMessage(message); setMockLoadStatus('success');
+      showToast({ id: crypto.randomUUID(), title: 'โหลดชุดตัวอย่างและตรวจข้อมูลแล้ว', message, timestamp: new Date().toISOString(), type: 'system', actorId: 'system', actorAlias: 'ระบบ VITCHA', read: false });
       return true;
-    } catch (err: any) {
-      console.error('loadFullMockupData error:', err);
-      setActionError(err instanceof Error ? err.message : 'เกิดข้อผิดพลาดในการโหลดข้อมูลจำลอง');
+    } catch (error) {
+      if (sessionToken === getSessionToken()) {
+        const message = error instanceof Error ? error.message : 'โหลดข้อมูลไม่สำเร็จ กรุณาลองอีกครั้ง';
+        setActionError(message); setMockLoadMessage(message); setMockLoadStatus('error');
+      }
       return false;
-    } finally {
-      setIsMockLoading(false);
-    }
+    } finally { pendingActions.current.delete('sample-pack'); setIsMockLoading(false); }
   };
   const resetSystemData = async (password: string): Promise<boolean> => {
     if (currentUser.id !== 'user-ice' || simulatedFromAdmin) {
@@ -568,7 +588,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const currentRev = freshData?.revision ?? databaseRevision.current;
       const ok = await perform('reset', () => sendJson('/api/system/clear', { revision: currentRev, confirm: 'CLEAR_RECORDS', password }));
       if (ok) {
-        await latestRefresh.current(true);
+        setMockLoadStatus('idle'); setMockLoadMessage('');
+        await latestRefresh.current();
         showToast({
           id: crypto.randomUUID(),
           title: '🗑️ ล้างข้อมูลระบบเป็น 0 เรียบร้อย',
@@ -600,7 +621,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const currentRev = freshData?.revision ?? databaseRevision.current;
       const ok = await perform('reset-mockup', () => sendJson('/api/system/clear', { revision: currentRev, confirm: 'CLEAR_MOCKUP', password }));
       if (ok) {
-        await latestRefresh.current(true);
+        setMockLoadStatus('idle'); setMockLoadMessage('');
+        await latestRefresh.current();
         showToast({
           id: crypto.randomUUID(),
           title: '🧹 ล้างเฉพาะข้อมูล Mockup เรียบร้อย',
@@ -930,7 +952,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     dismissToast, markAllNotificationsRead, markNotificationRead, clearAllNotifications, clearNotification, broadcastNotification, addCategory, editCategory, deleteCategory, addStoreCategory, editStoreCategory, deleteStoreCategory,
     addLocationType, editLocationType, deleteLocationType,
     addQuickTag, editQuickTag, deleteQuickTag, addQuickMessage, editQuickMessage, deleteQuickMessage, updateUserRole, recordItemView, toggleLikeItem,
-    isMockLoading, isClearing, loadFullMockupData, resetSystemData, clearMockupOnly,
+    mockLoadMessage, mockLoadStatus, lastRefreshedAt, isMockLoading, isClearing, loadFullMockupData, resetSystemData, clearMockupOnly,
     updateHandoff, addSupplier, updateSupplier, deleteSupplier, addStoreInspo, updateStoreInspo, deleteStoreInspo, addLocation, updateLocation, deleteLocation, canEditItems, canDeleteItems, canComment, canAddItems,
     trashItems, fetchTrash, restoreTrashItem, permanentDeleteTrashItem,
     editingSupplier, editingStore, editingLocation, openEditItem, closeEditItem, addReviewerNote, addReviewReply, updatePipelineStatus, updateExchangeRate, toggleCurrencyMode, convertCnyToThb, convertThbToCny,

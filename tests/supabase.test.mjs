@@ -146,3 +146,19 @@ test('simulation stays read-only across servers and failed exit cannot restore o
   assert.equal((await a.call('/api/simulate', { userId: 'user-ice' }, a.token)).status, 200);
   assert.equal((await b.call('/api/data', undefined, a.token)).data.user.id, 'user-ice');
 });
+
+test('sample pack cannot report success or leave partial records when database commit fails', async t => {
+  const f = await fixture(t); const { call, token } = await f.start();
+  const command = { packId: 'vitcha-demo-v1', operationId: 'pack-db-retry' };
+  f.failWrites(true);
+  assert.equal((await call('/api/system/sample-pack', command, token)).status, 503);
+  assert.equal((await f.read()).suppliers.length, 0);
+  f.failWrites(false);
+  assert.equal((await call('/api/system/sample-operations/pack-db-retry', undefined, token)).status, 404);
+  const retry = await call('/api/system/sample-pack', command, token);
+  assert.equal(retry.status, 200);
+  assert.equal(Object.values(retry.data.added).reduce((a,b)=>a+b,0), 42);
+  const persisted = await f.read();
+  assert.equal(persisted.leadLabItems.length, 8);
+  assert.equal(persisted.franchiseStores.length, 4);
+});

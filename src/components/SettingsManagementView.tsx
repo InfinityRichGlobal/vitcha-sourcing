@@ -333,12 +333,7 @@ export const SettingsManagementView: React.FC = () => {
         <button
           type="button"
           disabled={isMockLoading || isClearing}
-          onClick={async () => {
-            const ok = await loadFullMockupData();
-            if (ok) {
-              window.alert('✅ โหลดชุดข้อมูลจำลองเต็มระบบเสร็จสมบูรณ์เรียบร้อยแล้ว!\n\nประกอบด้วย:\n- โรงงาน & ซัพพลายเออร์ 97 รายการ\n- ร้านเครื่องดื่มตัวอย่าง 74 รายการ\n- ทำเลศักยภาพ 71 รายการ\n- สูตรและแล็บ R&D 19 รายการ\n- สาขาแฟรนไชส์ 25 รายการ\n\nข้อมูลครบถ้วนทุกมิติ พร้อมให้ทีมงานทดสอบ นำเสนอ และใช้งานได้ทันทีครับ');
-            }
-          }}
+          onClick={() => { void loadFullMockupData(); }}
           className={`inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-extrabold shadow-xs transition-all ${
             isMockLoading
               ? 'bg-emerald-700 text-white cursor-wait opacity-85'

@@ -418,7 +418,7 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
             </span>
           </div>
           <div className="text-xl sm:text-2xl font-extrabold text-slate-950 font-mono tracking-tight flex items-baseline gap-1">
-            <span>{leadLabItems?.length || 12}</span>
+            <span>{leadLabItems?.length ?? 0}</span>
             <span className="text-[10px] font-bold text-violet-700 font-sans">สูตร</span>
           </div>
           <div className="text-xs font-extrabold text-violet-950 mt-0.5 whitespace-nowrap flex items-center gap-1">

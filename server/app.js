@@ -1,4 +1,5 @@
 import express from 'express';
+import { SAMPLE_PACK_ID, sampleCatalog, mergeSamples } from './sample-pack.js';
 import cors from 'cors';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -908,54 +909,31 @@ export function createApp({ dataDir, defaults = DEFAULT_DATABASE, sessionTtlMs =
   });
 
   app.post('/api/sync', (_req, _res) => fail(410, 'ปิดการเขียนทับฐานข้อมูลจากเครื่องผู้ใช้แล้ว'));
-  app.post('/api/system/samples', (req, res) => {
-    requireFounder(req); const db = read();
-    const { operationId, snapshot } = req.body;
-    if (!clean(operationId)) fail(400, 'Missing operation ID');
-    if ((db.sampleOperations || []).includes(operationId)) return res.json({ success: true });
-    if (req.body.revision !== undefined && req.body.revision !== null && !Number.isInteger(req.body.revision)) fail(400, 'Invalid revision');
-    if (!snapshot || !Array.isArray(snapshot.suppliers) || !Array.isArray(snapshot.drinkStores)) fail(400, 'ข้อมูลตัวอย่างไม่ถูกต้อง');
-    const totalSamples = snapshot.suppliers.length + snapshot.drinkStores.length + (Array.isArray(snapshot.locations) ? snapshot.locations.length : 0);
-    if (totalSamples > 1000) fail(400, 'ข้อมูลตัวอย่างมีจำนวนมากเกินไป');
-    const collections = ['suppliers', 'drinkStores', ...(Array.isArray(snapshot.locations) ? ['locations'] : [])];
-    for (const collection of collections) {
-      const fields = collection === 'suppliers' ? SUPPLIER : collection === 'drinkStores' ? STORE : LOCATION;
-      const existingIds = new Set((db[collection] || []).map(x => x.id));
-      const additions = (snapshot[collection] || []).map(source => {
-        const nextId = clean(source.id) && !existingIds.has(clean(source.id)) ? clean(source.id) : `demo-${randomUUID()}`;
-        existingIds.add(nextId);
-        const record = {
-          ...pick(source, [...fields, ...HANDOFF, 'isMockup']),
-          id: nextId,
-          isMockup: true,
-          type: collection === 'suppliers' ? 'supplier' : collection === 'drinkStores' ? 'drink_store' : 'location',
-          creator: source.creator?.id ? source.creator : { ...pick(req.user, ['id', 'name', 'alias', 'avatar']), timestamp: now() },
-          reviewerNotes: Array.isArray(source.reviewerNotes) ? source.reviewerNotes : [],
-          likes: Array.isArray(source.likes) ? source.likes : [],
-          viewedBy: Array.isArray(source.viewedBy) ? source.viewedBy : [],
-          history: Array.isArray(source.history) ? source.history : [],
-          revision: 1,
-          updatedAt: source.updatedAt || now(),
-        };
-        validateRecord(record, collection); return record;
-      });
-      db[collection] = [...additions, ...(db[collection] || [])];
-    }
-    if (snapshot.productWorkspace && typeof snapshot.productWorkspace === 'object') {
-      db.productWorkspace = snapshot.productWorkspace;
-    }
-    if (Array.isArray(snapshot.leadLabItems)) {
-      db.leadLabItems = snapshot.leadLabItems;
-    }
-    if (Array.isArray(snapshot.franchiseStores)) {
-      db.franchiseStores = snapshot.franchiseStores;
-    }
-    if (Array.isArray(snapshot.notifications)) {
-      db.notifications = [...snapshot.notifications, ...(db.notifications || [])].slice(0, 80);
-    }
-    db.sampleOperations = [...(db.sampleOperations || []), operationId].slice(-100);
-    save(db); res.json({ success: true });
+  app.get('/api/system/sample-operations/:id', (req, res) => {
+    requireFounder(req);
+    const receipt = (read().sampleReceipts || []).find(entry => entry.operationId === req.params.id);
+    if (!receipt) fail(404, 'ยังไม่พบผลการโหลดชุดข้อมูล');
+    res.json(receipt.result);
   });
+  const loadSamples = (req, res, serverPack) => {
+    requireFounder(req); const db = read();
+    const operationId = clean(req.body.operationId);
+    if (!operationId || operationId.length > 150) fail(400, 'Missing or invalid operation ID');
+    if (serverPack && req.body.packId !== SAMPLE_PACK_ID) fail(400, 'ไม่พบชุดข้อมูลตัวอย่างนี้');
+    const previous = (db.sampleReceipts || []).find(entry => entry.operationId === operationId);
+    if (previous) return res.json(previous.result);
+    if (!serverPack && (db.sampleOperations || []).includes(operationId)) return res.json({ success: true });
+    const snapshot = serverPack ? sampleCatalog() : req.body.snapshot;
+    if (!snapshot || typeof snapshot !== 'object') fail(400, 'ข้อมูลตัวอย่างไม่ถูกต้อง');
+    if (req.body.revision !== undefined && req.body.revision !== null && !Number.isInteger(req.body.revision)) fail(400, 'Invalid revision');
+    const result = mergeSamples(db, snapshot, { validateRecord, actor: req.user, packId: serverPack ? SAMPLE_PACK_ID : null });
+    // Ignore client membership, workspace and notifications: samples only add records.
+    db.sampleOperations = [...(db.sampleOperations || []), operationId].slice(-100);
+    db.sampleReceipts = [...(db.sampleReceipts || []), { operationId, result }].slice(-100);
+    save(db); res.json(result);
+  };
+  app.post('/api/system/sample-pack', (req, res) => loadSamples(req, res, true));
+  app.post('/api/system/samples', (req, res) => loadSamples(req, res, false));
   app.post('/api/system/clear', (req, res) => {
     requireFounder(req); const db = read(); expectRevision(db, req.body.revision);
     const expectedPassword = { CLEAR_RECORDS: '5888', CLEAR_MOCKUP: '5999' }[req.body.confirm];

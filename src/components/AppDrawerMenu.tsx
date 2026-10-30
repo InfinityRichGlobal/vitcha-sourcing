@@ -59,7 +59,7 @@ export const AppDrawerMenu: React.FC<AppDrawerMenuProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[100] bg-black/45 backdrop-blur-xs flex justify-start animate-in fade-in">
+    <div data-no-pull-refresh="true" className="fixed inset-0 z-[100] bg-black/45 backdrop-blur-xs flex justify-start animate-in fade-in">
       <div className="bg-white w-full max-w-xs sm:max-w-sm h-full shadow-2xl flex flex-col text-slate-900 border-r border-slate-200 animate-in slide-in-from-left duration-300 overflow-y-auto">
         {/* Header Branding with Official Logo */}
         <div className="p-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/70 sticky top-0 z-10 backdrop-blur-md">
@@ -435,13 +435,7 @@ export const AppDrawerMenu: React.FC<AppDrawerMenuProps> = ({
             <button
               type="button"
               disabled={isMockLoading || isClearing}
-              onClick={async () => {
-                const ok = await loadFullMockupData();
-                if (ok) {
-                  window.alert('✅ โหลดชุดข้อมูลจำลองเต็มระบบเสร็จสมบูรณ์เรียบร้อยแล้ว!\n\nประกอบด้วย:\n- โรงงาน & ซัพพลายเออร์ 97 รายการ\n- ร้านเครื่องดื่มตัวอย่าง 74 รายการ\n- ทำเลศักยภาพ 71 รายการ\n- สูตรและแล็บ R&D 19 รายการ\n- สาขาแฟรนไชส์ 25 รายการ\n\nข้อมูลครบถ้วนทุกมิติ พร้อมให้ทีมงานทดสอบ นำเสนอ และใช้งานได้ทันทีครับ');
-                  onClose();
-                }
-              }}
+              onClick={() => { onClose(); void loadFullMockupData(); }}
               className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-extrabold border transition-all ${
                 isMockLoading
                   ? 'bg-emerald-100 text-emerald-800 border-emerald-300 cursor-wait'

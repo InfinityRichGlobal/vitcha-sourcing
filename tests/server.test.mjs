@@ -581,3 +581,42 @@ test('attachedFiles are preserved on create and edit of suppliers, drink stores,
   assert.ok(locRes.data.item.attachedFiles);
   assert.equal(locRes.data.item.attachedFiles[0].url, 'https://drive.google.com/file/d/test12345/view');
 });
+
+test('server sample pack persists 42 records, recovers receipts and never duplicates or overwrites', async t => {
+  const { call, login } = await setup(t); const token = await login('ice');
+  const command = { packId: 'vitcha-demo-v1', operationId: 'pack-first' };
+  const first = await call('/api/system/sample-pack', token, command);
+  assert.equal(first.status, 200);
+  assert.deepEqual(first.data.added, { suppliers: 10, drinkStores: 10, locations: 10, leadLabItems: 8, franchiseStores: 4 });
+  const saved = (await call('/api/data', token, undefined, 'GET')).data;
+  for (const [key, ids] of Object.entries(first.data.recordIds)) assert.deepEqual(new Set(saved[key].map(x => x.id)), new Set(ids));
+  assert.ok(JSON.stringify(saved).length < 600000, 'photos must not inflate the snapshot into megabytes');
+  assert.deepEqual((await call('/api/system/sample-operations/pack-first', token, undefined, 'GET')).data, first.data);
+  assert.deepEqual((await call('/api/system/sample-pack', token, command)).data, first.data);
+  const edited = { ...saved.suppliers[0], name: 'Edited sample must survive' };
+  assert.equal((await call('/api/suppliers', token, edited)).status, 200);
+  const repeat = await call('/api/system/sample-pack', token, { ...command, operationId: 'pack-second' });
+  assert.equal(Object.values(repeat.data.added).reduce((a,b)=>a+b,0), 0);
+  assert.equal(Object.values(repeat.data.skipped).reduce((a,b)=>a+b,0), 42);
+  const after = (await call('/api/data', token, undefined, 'GET')).data;
+  assert.equal(after.suppliers.find(x=>x.id===edited.id).name, edited.name);
+  for (const key of ['drinkStores','locations','leadLabItems','franchiseStores']) assert.deepEqual(after[key], saved[key]);
+  const viewer = await login('view');
+  assert.equal((await call('/api/system/sample-pack', viewer, command)).status, 403);
+  assert.equal((await call('/api/system/sample-operations/pack-first', viewer, undefined, 'GET')).status, 403);
+  assert.equal((await call('/api/system/sample-pack', token, { ...command, packId: 'unknown' })).status, 400);
+});
+
+test('sample pack preserves real lab and franchise records even when IDs collide', async t => {
+  const { sampleCatalog } = await import('../server/sample-pack.js');
+  const pack = sampleCatalog();
+  const lab = { ...pack.leadLabItems[0], isMockup: false, name: 'Real formula', revision: 7 };
+  const store = { ...pack.franchiseStores[0], isMockup: false, name: 'Real branch', revision: 9 };
+  const defaults = { users: [{ id: 'user-ice', emailOrId: 'ice', name: 'ice', alias: 'ice', role: 'admin', pin: '876543' }], invites: [], suppliers: [], drinkStores: [], notifications: [], leadLabItems: [lab], franchiseStores: [store] };
+  const { call, login } = await setup(t, { defaults }); const token = await login('ice');
+  const result = await call('/api/system/sample-pack', token, { packId: 'vitcha-demo-v1', operationId: 'preserve-real' });
+  assert.equal(result.status, 200); assert.equal(result.data.added.leadLabItems, 7); assert.equal(result.data.added.franchiseStores, 3);
+  const data = (await call('/api/data', token, undefined, 'GET')).data;
+  assert.deepEqual(data.leadLabItems.find(x=>x.id===lab.id), lab);
+  assert.deepEqual(data.franchiseStores.find(x=>x.id===store.id), store);
+});
