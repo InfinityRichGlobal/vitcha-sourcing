@@ -1,7 +1,8 @@
 import { test, expect } from '@playwright/test';
 import { sampleCatalog } from '../../server/sample-pack.js';
 
-test.use({ viewport: { width: 390, height: 844 }, launchOptions: { args: ['--disable-gpu'] } });
+// Interception tests must observe page requests instead of a service worker.
+test.use({ serviceWorkers: 'block', viewport: { width: 390, height: 844 }, launchOptions: { args: ['--disable-gpu'] } });
 async function setup(page: any, suffix: string) {
   const login = await page.request.post('/api/login', { data: { idOrEmail: 'qa-reviewer', pin: 'qa-only-876543' } });
   const { token } = await login.json(); const headers = { Authorization: `Bearer ${token}` };
