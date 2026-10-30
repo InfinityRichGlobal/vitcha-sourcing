@@ -151,6 +151,7 @@ export function createApp({ dataDir, defaults = DEFAULT_DATABASE, sessionTtlMs =
 
   const requireAdmin = req => { if (req.user.role !== 'admin') fail(403, 'สิทธิ์นี้ใช้ได้เฉพาะผู้ดูแลระบบ'); };
   const requireWriter = req => { if (!['admin', 'reviewer'].includes(req.user.role)) fail(403, 'บัญชีนี้ดูข้อมูลได้เท่านั้น'); };
+  const requireReader = req => { if (!req.user) fail(401, 'กรุณาเข้าสู่ระบบก่อน'); };
   const requireFounder = req => { if (req.user.id !== 'user-ice' || req.session.simulatedId) fail(403, 'ไม่สามารถดำเนินการนี้ได้'); };
   const sessionResult = (s, db) => ({ user: publicUser(db.users.find(u => u.id === (s.simulatedId || s.userId))), simulated: !!s.simulatedId });
   function signSessionToken(userId, expires, credential) {
@@ -585,9 +586,10 @@ export function createApp({ dataDir, defaults = DEFAULT_DATABASE, sessionTtlMs =
     requireWriter(req);
     const db = read();
     const item = req.body;
-    if (!item || !item.name) fail(400, 'Missing name or item data');
+    if (!item) fail(400, 'Missing item data');
     const list = db.leadLabItems ||= [];
     const idx = list.findIndex(x => x.id === item.id);
+    if (idx < 0 && !item.name) fail(400, 'Missing name or item data');
     const nowIso = now();
     let saved;
     if (idx >= 0) {
@@ -618,6 +620,32 @@ export function createApp({ dataDir, defaults = DEFAULT_DATABASE, sessionTtlMs =
     notify(db, req.user, 'lead_lab', idx >= 0 ? 'อัปเดตสูตร R&D' : 'เพิ่มสูตร R&D ใหม่', saved.name, saved.id);
     save(db);
     res.json({ success: true, item: saved });
+  });
+
+  app.post('/api/lead-lab/items/:id/view', (req, res) => {
+    requireReader(req);
+    const db = read();
+    const item = (db.leadLabItems || []).find(x => x.id === req.params.id);
+    if (!item) return res.json({ success: true });
+    item.viewLogs ||= [];
+    const nowIso = now();
+    const existingIdx = item.viewLogs.findIndex(v => v.userId === req.user.id);
+    if (existingIdx >= 0) {
+      item.viewLogs[existingIdx].lastViewedAt = nowIso;
+      item.viewLogs[existingIdx].viewCount = (item.viewLogs[existingIdx].viewCount || 1) + 1;
+    } else {
+      item.viewLogs.unshift({
+        userId: req.user.id,
+        name: req.user.name,
+        alias: req.user.alias,
+        avatar: req.user.avatar,
+        role: req.user.role,
+        lastViewedAt: nowIso,
+        viewCount: 1,
+      });
+    }
+    save(db);
+    res.json({ success: true, viewLogs: item.viewLogs });
   });
 
   app.delete('/api/lead-lab/items/:id', (req, res) => {
@@ -664,8 +692,12 @@ export function createApp({ dataDir, defaults = DEFAULT_DATABASE, sessionTtlMs =
     const list = db.leadLabItems ||= [];
     const item = list.find(x => x.id === req.params.id);
     if (!item) fail(404, 'ไม่พบสูตร');
-    const { content, sweetnessTarget } = req.body;
-    if (!content || !content.trim()) fail(400, 'กรุณาระบุความคิดเห็น');
+    const { content, sweetnessTarget, photoUrl, voiceUrl, duration } = req.body;
+    let text = content ? String(content).trim() : '';
+    if (!text && (photoUrl || voiceUrl)) {
+      text = photoUrl && voiceUrl ? '📷 แนบรูปภาพและเสียง' : photoUrl ? '📷 แนบรูปภาพ' : '🎙️ ข้อความเสียง';
+    }
+    if (!text) fail(400, 'กรุณาระบุความคิดเห็น');
     item.revisionCycles ||= [];
     let activeCycle = item.revisionCycles.find(c => c.status === 'active');
     if (!activeCycle) {
@@ -685,8 +717,11 @@ export function createApp({ dataDir, defaults = DEFAULT_DATABASE, sessionTtlMs =
       authorName: req.user.alias || req.user.name,
       authorAvatar: req.user.avatar,
       createdAt: now(),
-      content: content.trim(),
+      content: text,
       sweetnessTarget: sweetnessTarget || 'all',
+      photoUrl: photoUrl || undefined,
+      voiceUrl: voiceUrl || undefined,
+      duration: typeof duration === 'number' ? duration : undefined,
       likes: [],
     };
     activeCycle.comments.push(newComment);
@@ -780,9 +815,10 @@ export function createApp({ dataDir, defaults = DEFAULT_DATABASE, sessionTtlMs =
     requireWriter(req);
     const db = read();
     const store = req.body;
-    if (!store || !store.name) fail(400, 'Missing store name');
+    if (!store) fail(400, 'Missing store data');
     const list = db.franchiseStores ||= [];
     const idx = list.findIndex(x => x.id === store.id);
+    if (idx < 0 && !store.name) fail(400, 'Missing store name');
     const nowIso = now();
     let saved;
     if (idx >= 0) {
@@ -802,6 +838,32 @@ export function createApp({ dataDir, defaults = DEFAULT_DATABASE, sessionTtlMs =
     notify(db, req.user, 'franchise_store', idx >= 0 ? 'อัปเดตร้านแฟรนไชส์' : 'เปิดร้านแฟรนไชส์ใหม่', saved.name, saved.id);
     save(db);
     res.json({ success: true, store: saved });
+  });
+
+  app.post('/api/franchise-stores/:id/view', (req, res) => {
+    requireReader(req);
+    const db = read();
+    const store = (db.franchiseStores || []).find(x => x.id === req.params.id);
+    if (!store) return res.json({ success: true });
+    store.viewLogs ||= [];
+    const nowIso = now();
+    const existingIdx = store.viewLogs.findIndex(v => v.userId === req.user.id);
+    if (existingIdx >= 0) {
+      store.viewLogs[existingIdx].lastViewedAt = nowIso;
+      store.viewLogs[existingIdx].viewCount = (store.viewLogs[existingIdx].viewCount || 1) + 1;
+    } else {
+      store.viewLogs.unshift({
+        userId: req.user.id,
+        name: req.user.name,
+        alias: req.user.alias,
+        avatar: req.user.avatar,
+        role: req.user.role,
+        lastViewedAt: nowIso,
+        viewCount: 1,
+      });
+    }
+    save(db);
+    res.json({ success: true, viewLogs: store.viewLogs });
   });
 
   app.delete('/api/franchise-stores/:id', (req, res) => {

@@ -2155,6 +2155,9 @@ export const INITIAL_LEAD_LAB_ITEMS: LabItem[] = [
             "createdAt": "2026-10-25T11:30:00Z",
             "content": "หวาน 50% รสชาดียอดเยี่ยมมากค่ะ แต่ต้นทุนน้ำเชื่อมดอกมะพร้าวล็อตนี้ขวดละ 120 บาท เช็กซัพพลายเออร์ล็อต 50 กก. ได้ราคาลดเหลือ 85 บาทค่ะ",
             "sweetnessTarget": "50",
+            "photoUrl": "https://images.unsplash.com/photo-1544787219-7f47ccb76574?w=600&auto=format&fit=crop&q=80",
+            "voiceUrl": "https://actions.google.com/sounds/v1/water/pouring_water.ogg",
+            "duration": 8,
             "likes": [
               "user-ice"
             ]
@@ -2167,6 +2170,8 @@ export const INITIAL_LEAD_LAB_ITEMS: LabItem[] = [
             "createdAt": "2026-10-26T09:15:00Z",
             "content": "การสกัดที่ 92°C 240 วินาที ผ่านเครื่องสกัดชาแรงดันไอน้ำที่เลือกจากโรงงานจีน ได้สีและกลิ่นสม่ำเสมอทุกแก้วครับ",
             "sweetnessTarget": "all",
+            "voiceUrl": "https://actions.google.com/sounds/v1/household/coffee_grinder.ogg",
+            "duration": 12,
             "likes": [
               "user-ice",
               "user-ann"
@@ -2187,8 +2192,9 @@ export const INITIAL_LEAD_LAB_ITEMS: LabItem[] = [
             "authorName": "SuperiCez",
             "authorAvatar": "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80",
             "createdAt": "2026-10-28T14:00:00Z",
-            "content": "สูตรนี้ลงตัว 100% แล้ว อนุมัติบรรจุเป็น Signature Menu ประจำร้าน VITCHA Siam Square One ได้เลย",
+            "content": "สูตรนี้ลงตัว 100% แล้ว อนุมัติบรรจุเป็น Signature Menu ประจำร้าน VITCHA Siam Square One ได้เลยครับ เทสต์กลิ่นหอมชาคั่วเตะจมูกชัดเจน",
             "sweetnessTarget": "50",
+            "photoUrl": "https://images.unsplash.com/photo-1556679343-c7306c1976bc?w=600&auto=format&fit=crop&q=80",
             "likes": [
               "user-beam",
               "user-ann"
@@ -3422,6 +3428,7 @@ export const INITIAL_FRANCHISE_STORES: FranchiseStore[] = [
             "createdAt": "2026-10-28T14:20:00Z",
             "content": "บอร์ดเมนูหน้าร้าน Siam Square One จัดวางสวยงามมากครับ ชาไทยพรีเมียมตัวชูโรงยอดขายทดสอบวันแรกสูงถึง 120 แก้ว",
             "sweetnessTarget": "50",
+            "photoUrl": "https://images.unsplash.com/photo-1544787219-7f47ccb76574?w=600&auto=format&fit=crop&q=80",
             "likes": [
               "user-beam",
               "user-ann"
@@ -3435,6 +3442,8 @@ export const INITIAL_FRANCHISE_STORES: FranchiseStore[] = [
             "createdAt": "2026-10-29T11:00:00Z",
             "content": "สูตรชงด่วน Quick SOP ที่หน้าบาร์ บาริสต้าหยิบดูง่ายและควบคุมค่า Brix หวาน 50% ได้นิ่งมากครับ",
             "sweetnessTarget": "all",
+            "voiceUrl": "https://actions.google.com/sounds/v1/water/pouring_water.ogg",
+            "duration": 7,
             "likes": [
               "user-ice"
             ]

@@ -1,18 +1,23 @@
-import{c as S}from"./index-DVpMCPOc.js";/**
+import{c as b}from"./index-y2U3UBO-.js";/**
  * @license lucide-react v1.62.0 - ISC
  *
  * This source code is licensed under the ISC license.
  * See the LICENSE file in the root directory of this source tree.
- */const B={name:"droplet",size:24,node:[["path",{d:"M12 22a7 7 0 0 0 7-7c0-2-1-3.9-3-5.5s-3.5-4-4-6.5c-.5 2.5-2 4.9-4 6.5C6 11.1 5 13 5 15a7 7 0 0 0 7 7z",key:"c7niix"}]]};B.node;const M=S(B);/**
+ */const B={name:"droplet",size:24,node:[["path",{d:"M12 22a7 7 0 0 0 7-7c0-2-1-3.9-3-5.5s-3.5-4-4-6.5c-.5 2.5-2 4.9-4 6.5C6 11.1 5 13 5 15a7 7 0 0 0 7 7z",key:"c7niix"}]]};B.node;const C=b(B);/**
  * @license lucide-react v1.62.0 - ISC
  *
  * This source code is licensed under the ISC license.
  * See the LICENSE file in the root directory of this source tree.
- */const P={name:"heart",size:24,node:[["path",{d:"M2 9.5a5.5 5.5 0 0 1 9.591-3.676.56.56 0 0 0 .818 0A5.49 5.49 0 0 1 22 9.5c0 2.29-1.5 4-3 5.5l-5.492 5.313a2 2 0 0 1-3 .019L5 15c-1.5-1.5-3-3.2-3-5.5",key:"mvr1a0"}]]};P.node;const C=S(P);function e(t){return t==null?"":String(t).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;")}function N(t){const o=window.open("","_blank");if(!o){window.print();return}const i=t.suggestedPriceThb>0?((t.suggestedPriceThb-t.costTotalThb)/t.suggestedPriceThb*100).toFixed(1):"0.0",r={approved:"✅ ผ่านเกณฑ์อนุมัติ (Approved)",testing:"⏳ กำลังทดลอง & วิจัย (Testing)",shelved:"📦 พักสูตร (Shelved)"}[t.status]||t.status,d=(t.revisionCycles||[]).flatMap(n=>(n.comments||[]).map(s=>({...s,cycleTitle:n.title}))),p=`<!DOCTYPE html>
+ */const P={name:"heart",size:24,node:[["path",{d:"M2 9.5a5.5 5.5 0 0 1 9.591-3.676.56.56 0 0 0 .818 0A5.49 5.49 0 0 1 22 9.5c0 2.29-1.5 4-3 5.5l-5.492 5.313a2 2 0 0 1-3 .019L5 15c-1.5-1.5-3-3.2-3-5.5",key:"mvr1a0"}]]};P.node;const R=b(P);/**
+ * @license lucide-react v1.62.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */const I={name:"video",size:24,node:[["path",{d:"m16 13 5.223 3.482a.5.5 0 0 0 .777-.416V7.87a.5.5 0 0 0-.752-.432L16 10.5",key:"ftymec"}],["rect",{x:"2",y:"6",width:"14",height:"12",rx:"2",key:"158x01"}]]};I.node;const N=b(I);function t(e){return e==null?"":String(e).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;")}function j(e){const o=window.open("","_blank");if(!o){window.print();return}const l=e.suggestedPriceThb>0?((e.suggestedPriceThb-e.costTotalThb)/e.suggestedPriceThb*100).toFixed(1):"0.0",a={approved:"✅ ผ่านเกณฑ์อนุมัติ (Approved)",testing:"⏳ กำลังทดลอง & วิจัย (Testing)",shelved:"📦 พักสูตร (Shelved)"}[e.status]||e.status,r=(e.revisionCycles||[]).flatMap(s=>(s.comments||[]).map(n=>({...n,cycleTitle:s.title}))),p=`<!DOCTYPE html>
 <html lang="th">
 <head>
   <meta charset="UTF-8">
-  <title>LEAD LAB R&D Spec - ${e(t.code)} ${e(t.name)}</title>
+  <title>LEAD LAB R&D Spec - ${t(e.code)} ${t(e.name)}</title>
   <style>
     @page { size: A4; margin: 15mm; }
     body {
@@ -73,20 +78,20 @@ import{c as S}from"./index-DVpMCPOc.js";/**
       <div class="sub">เอกสารสเปกและสูตรวิจัยเครื่องดื่มมาตรฐาน (Standard Beverage R&D Spec Sheet)</div>
     </div>
     <div style="text-align: right;">
-      <span class="meta-badge">${e(t.code)}</span>
+      <span class="meta-badge">${t(e.code)}</span>
       <div style="font-size: 11px; color: #64748b; margin-top: 4px;">วันที่ออกเอกสาร: ${new Date().toLocaleDateString("th-TH")}</div>
     </div>
   </div>
 
   <div class="grid-2">
     <div class="photo-box">
-      <img src="${e(t.photoUrl)}" alt="${e(t.name)}" />
+      <img src="${t(e.photoUrl)}" alt="${t(e.name)}" />
     </div>
     <div class="info-card">
-      <div style="font-size: 18px; font-weight: 900; color: #0f172a;">${e(t.name)}</div>
-      <div style="font-size: 13px; font-family: monospace; color: #475569; margin-bottom: 8px;">${e(t.nameEn)} · ${e(t.category)}</div>
-      <div style="font-size: 12px; font-weight: bold; margin-bottom: 8px;">สถานะ: <span style="color: #4f46e5;">${e(r)}</span></div>
-      <div style="font-size: 12px; color: #334155; line-height: 1.6;">${e(t.description)}</div>
+      <div style="font-size: 18px; font-weight: 900; color: #0f172a;">${t(e.name)}</div>
+      <div style="font-size: 13px; font-family: monospace; color: #475569; margin-bottom: 8px;">${t(e.nameEn)} · ${t(e.category)}</div>
+      <div style="font-size: 12px; font-weight: bold; margin-bottom: 8px;">สถานะ: <span style="color: #4f46e5;">${t(a)}</span></div>
+      <div style="font-size: 12px; color: #334155; line-height: 1.6;">${t(e.description)}</div>
     </div>
   </div>
 
@@ -94,19 +99,19 @@ import{c as S}from"./index-DVpMCPOc.js";/**
   <div class="kpi-row">
     <div class="kpi">
       <div class="lbl">ต้นทุนวัตถุดิบ</div>
-      <div class="num">฿${t.costIngredientThb.toFixed(2)}</div>
+      <div class="num">฿${e.costIngredientThb.toFixed(2)}</div>
     </div>
     <div class="kpi">
       <div class="lbl">ต้นทุนบรรจุภัณฑ์</div>
-      <div class="num">฿${t.costPackagingThb.toFixed(2)}</div>
+      <div class="num">฿${e.costPackagingThb.toFixed(2)}</div>
     </div>
     <div class="kpi">
       <div class="lbl">รวมต้นทุน/แก้ว</div>
-      <div class="num">฿${t.costTotalThb.toFixed(2)}</div>
+      <div class="num">฿${e.costTotalThb.toFixed(2)}</div>
     </div>
     <div class="kpi highlight">
       <div class="lbl">ราคาขายแนะนำ (GP %)</div>
-      <div class="num">฿${t.suggestedPriceThb.toFixed(2)} (${i}%)</div>
+      <div class="num">฿${e.suggestedPriceThb.toFixed(2)} (${l}%)</div>
     </div>
   </div>
 
@@ -126,46 +131,46 @@ import{c as S}from"./index-DVpMCPOc.js";/**
     <tbody>
       <tr>
         <td><strong>หวาน 0% (ไม่หวาน)</strong></td>
-        <td>${e(t.sweetnessLevels.zero.sweetenerType)} (${t.sweetnessLevels.zero.syrupMl} ml)</td>
-        <td>${t.sweetnessLevels.zero.baseLiquidMl} ml</td>
-        <td style="text-align: center; font-weight: bold;">${t.sweetnessLevels.zero.brix} °Bx</td>
-        <td style="text-align: center;">${t.sweetnessLevels.zero.caloriesKcal} kcal</td>
-        <td><em>"${e(t.sweetnessLevels.zero.tasteNotes)}"</em></td>
+        <td>${t(e.sweetnessLevels.zero.sweetenerType)} (${e.sweetnessLevels.zero.syrupMl} ml)</td>
+        <td>${e.sweetnessLevels.zero.baseLiquidMl} ml</td>
+        <td style="text-align: center; font-weight: bold;">${e.sweetnessLevels.zero.brix} °Bx</td>
+        <td style="text-align: center;">${e.sweetnessLevels.zero.caloriesKcal} kcal</td>
+        <td><em>"${t(e.sweetnessLevels.zero.tasteNotes)}"</em></td>
       </tr>
       <tr style="background: #fdf2f8;">
         <td><strong>หวาน 50% (หวานน้อยละมุน) ⭐</strong></td>
-        <td>${e(t.sweetnessLevels.half.sweetenerType)} (${t.sweetnessLevels.half.syrupMl} ml)</td>
-        <td>${t.sweetnessLevels.half.baseLiquidMl} ml</td>
-        <td style="text-align: center; font-weight: bold; color: #db2777;">${t.sweetnessLevels.half.brix} °Bx</td>
-        <td style="text-align: center;">${t.sweetnessLevels.half.caloriesKcal} kcal</td>
-        <td><em>"${e(t.sweetnessLevels.half.tasteNotes)}"</em></td>
+        <td>${t(e.sweetnessLevels.half.sweetenerType)} (${e.sweetnessLevels.half.syrupMl} ml)</td>
+        <td>${e.sweetnessLevels.half.baseLiquidMl} ml</td>
+        <td style="text-align: center; font-weight: bold; color: #db2777;">${e.sweetnessLevels.half.brix} °Bx</td>
+        <td style="text-align: center;">${e.sweetnessLevels.half.caloriesKcal} kcal</td>
+        <td><em>"${t(e.sweetnessLevels.half.tasteNotes)}"</em></td>
       </tr>
       <tr>
         <td><strong>หวาน 100% (หวานปกติ)</strong></td>
-        <td>${e(t.sweetnessLevels.full.sweetenerType)} (${t.sweetnessLevels.full.syrupMl} ml)</td>
-        <td>${t.sweetnessLevels.full.baseLiquidMl} ml</td>
-        <td style="text-align: center; font-weight: bold;">${t.sweetnessLevels.full.brix} °Bx</td>
-        <td style="text-align: center;">${t.sweetnessLevels.full.caloriesKcal} kcal</td>
-        <td><em>"${e(t.sweetnessLevels.full.tasteNotes)}"</em></td>
+        <td>${t(e.sweetnessLevels.full.sweetenerType)} (${e.sweetnessLevels.full.syrupMl} ml)</td>
+        <td>${e.sweetnessLevels.full.baseLiquidMl} ml</td>
+        <td style="text-align: center; font-weight: bold;">${e.sweetnessLevels.full.brix} °Bx</td>
+        <td style="text-align: center;">${e.sweetnessLevels.full.caloriesKcal} kcal</td>
+        <td><em>"${t(e.sweetnessLevels.full.tasteNotes)}"</em></td>
       </tr>
     </tbody>
   </table>
 
   <!-- Technical Specs -->
-  ${t.technicalSpecs?`
+  ${e.technicalSpecs?`
   <div class="sec-title">⚙️ พารามิเตอร์การสกัดมาตรฐาน (Extraction Parameters)</div>
   <table>
     <tr>
       <th>อุณหภูมิน้ำสกัด</th>
-      <td><strong>${t.technicalSpecs.brewingTempC||"-"} °C</strong></td>
+      <td><strong>${e.technicalSpecs.brewingTempC||"-"} °C</strong></td>
       <th>เวลาสกัด (Extraction Time)</th>
-      <td><strong>${t.technicalSpecs.extractionTimeSec||"-"} วินาที</strong></td>
+      <td><strong>${e.technicalSpecs.extractionTimeSec||"-"} วินาที</strong></td>
     </tr>
     <tr>
       <th>ปริมาณใบชา/ผง</th>
-      <td><strong>${t.technicalSpecs.teaLeavesG||"-"} g</strong></td>
+      <td><strong>${e.technicalSpecs.teaLeavesG||"-"} g</strong></td>
       <th>อายุการจัดเก็บน้ำชาพร้อมใช้</th>
-      <td><strong>${t.technicalSpecs.shelfLifeHours||"-"} ชั่วโมง</strong></td>
+      <td><strong>${e.technicalSpecs.shelfLifeHours||"-"} ชั่วโมง</strong></td>
     </tr>
   </table>`:""}
 
@@ -180,11 +185,11 @@ import{c as S}from"./index-DVpMCPOc.js";/**
       </tr>
     </thead>
     <tbody>
-      ${(t.ingredients||[]).map(n=>`
+      ${(e.ingredients||[]).map(s=>`
       <tr>
-        <td>${e(n.name)}</td>
-        <td>${n.quantity} ${e(n.unit)}</td>
-        <td>฿${n.costThb.toFixed(2)}</td>
+        <td>${t(s.name)}</td>
+        <td>${s.quantity} ${t(s.unit)}</td>
+        <td>฿${s.costThb.toFixed(2)}</td>
       </tr>`).join("")}
     </tbody>
   </table>
@@ -192,15 +197,15 @@ import{c as S}from"./index-DVpMCPOc.js";/**
   <!-- Social & Feedback Section -->
   <div class="sec-title">💬 บันทึกการโต้ตอบ & ข้อเสนอแนะจากทีมงาน (Team Collaboration)</div>
   <div style="font-size: 11px; color: #475569; margin-bottom: 8px;">
-    ❤️ ยอดไลก์สูตร: <strong>${(t.likedBy||[]).length} ไลก์</strong> | ประวัติรอบการพัฒนา: <strong>${(t.revisionCycles||[]).length} รอบ</strong>
+    ❤️ ยอดไลก์สูตร: <strong>${(e.likedBy||[]).length} ไลก์</strong> | ประวัติรอบการพัฒนา: <strong>${(e.revisionCycles||[]).length} รอบ</strong>
   </div>
-  ${d.slice(0,4).map(n=>`
+  ${r.slice(0,4).map(s=>`
   <div class="comment-item">
     <div class="comment-meta">
-      <span>👤 ${e(n.authorName)} [เจาะจง: หวาน ${e(n.sweetnessTarget||"ภาพรวม")}%]</span>
-      <span>👍 ${(n.likes||[]).length} ไลก์</span>
+      <span>👤 ${t(s.authorName)} [เจาะจง: หวาน ${t(s.sweetnessTarget||"ภาพรวม")}%]</span>
+      <span>👍 ${(s.likes||[]).length} ไลก์</span>
     </div>
-    <div style="font-size: 12px; color: #1e1b4b;">"${e(n.content)}"</div>
+    <div style="font-size: 12px; color: #1e1b4b;">"${t(s.content)}"</div>
   </div>`).join("")}
 
   <div style="margin-top: 30px; display: grid; grid-template-columns: 1fr 1fr; gap: 40px; text-align: center; font-size: 12px;">
@@ -212,11 +217,11 @@ import{c as S}from"./index-DVpMCPOc.js";/**
     </div>
   </div>
 </body>
-</html>`;o.document.write(p),o.document.close()}function R(t,o){const i=window.open("","_blank");if(!i){window.print();return}const r=o.filter(s=>{var a;return((a=s.labItem)==null?void 0:a.type)==="drink"}),d=o.filter(s=>{var a;return((a=s.labItem)==null?void 0:a.type)==="topping"}),p=(t.revisionCycles||[]).flatMap(s=>(s.comments||[]).map(a=>a)),n=`<!DOCTYPE html>
+</html>`;o.document.write(p),o.document.close()}function E(e,o){const l=window.open("","_blank");if(!l){window.print();return}const a=o.filter(n=>{var i;return((i=n.labItem)==null?void 0:i.type)==="drink"}),r=o.filter(n=>{var i;return((i=n.labItem)==null?void 0:i.type)==="topping"}),p=(e.revisionCycles||[]).flatMap(n=>(n.comments||[]).map(i=>i)),s=`<!DOCTYPE html>
 <html lang="th">
 <head>
   <meta charset="UTF-8">
-  <title>คู่มือเมนูหน้าร้าน & SOP - ${e(t.name)}</title>
+  <title>คู่มือเมนูหน้าร้าน & SOP - ${t(e.name)}</title>
   <style>
     @page { size: A4 landscape; margin: 12mm; }
     body {
@@ -263,8 +268,8 @@ import{c as S}from"./index-DVpMCPOc.js";/**
 
   <div class="header">
     <div class="title-block">
-      <h1>🏪 ${e(t.name)} · ${e(t.branch)}</h1>
-      <div class="sub">"${e(t.brandTagline)}" | เวลาทำการ: ${e(t.openingHours||"10:00 - 21:30 น.")} | โทร: ${e(t.contactNumber||"-")}</div>
+      <h1>🏪 ${t(e.name)} · ${t(e.branch)}</h1>
+      <div class="sub">"${t(e.brandTagline)}" | เวลาทำการ: ${t(e.openingHours||"10:00 - 21:30 น.")} | โทร: ${t(e.contactNumber||"-")}</div>
     </div>
     <div style="text-align: right; font-size: 11px;">
       <span style="background: #ecfdf5; color: #065f46; padding: 4px 8px; border-radius: 6px; font-weight: bold; border: 1px solid #a7f3d0;">
@@ -275,7 +280,7 @@ import{c as S}from"./index-DVpMCPOc.js";/**
   </div>
 
   <!-- Drinks Table -->
-  <div style="font-weight: 800; font-size: 13px; color: #0f172a; margin-bottom: 6px;">🥤 หมวดหมู่เครื่องดื่ม (Handcrafted Beverages) - ${r.length} รายการ</div>
+  <div style="font-weight: 800; font-size: 13px; color: #0f172a; margin-bottom: 6px;">🥤 หมวดหมู่เครื่องดื่ม (Handcrafted Beverages) - ${a.length} รายการ</div>
   <table>
     <thead>
       <tr>
@@ -288,33 +293,33 @@ import{c as S}from"./index-DVpMCPOc.js";/**
       </tr>
     </thead>
     <tbody>
-      ${r.map((s,a)=>{var b,f,h,x,v,m,u,y,w,$,k,T,L,z;const l=s.labItem,c=s.menuItem;return`
+      ${a.map((n,i)=>{var f,h,x,m,v,y,u,w,$,k,L,T,z,S;const d=n.labItem,c=n.menuItem;return`
         <tr>
-          <td style="text-align: center; font-weight: bold;">${a+1}</td>
+          <td style="text-align: center; font-weight: bold;">${i+1}</td>
           <td>
-            <strong>${e(c.customName||l.name)}</strong>
-            <div style="font-size: 10px; color: #64748b;">${e(l.nameEn)} (${e(l.code)})</div>
-            ${c.badge&&c.badge!=="None"?`<span class="badge ${c.badge==="Best Seller"?"badge-seller":c.badge==="Must Try"?"badge-must":""}">${e(c.badge)}</span>`:""}
+            <strong>${t(c.customName||d.name)}</strong>
+            <div style="font-size: 10px; color: #64748b;">${t(d.nameEn)} (${t(d.code)})</div>
+            ${c.badge&&c.badge!=="None"?`<span class="badge ${c.badge==="Best Seller"?"badge-seller":c.badge==="Must Try"?"badge-must":""}">${t(c.badge)}</span>`:""}
           </td>
           <td style="text-align: right;" class="price">฿${c.retailPriceThb}</td>
           <td>
-            ไซรัป: <strong>${((f=(b=l.sweetnessLevels)==null?void 0:b.half)==null?void 0:f.syrupMl)||15} ml</strong> (Brix: ${((x=(h=l.sweetnessLevels)==null?void 0:h.half)==null?void 0:x.brix)||8.5}°Bx)
-            <div style="font-size: 10px; color: #475569;">${e(((m=(v=l.sweetnessLevels)==null?void 0:v.half)==null?void 0:m.tasteNotes)||"")}</div>
+            ไซรัป: <strong>${((h=(f=d.sweetnessLevels)==null?void 0:f.half)==null?void 0:h.syrupMl)||15} ml</strong> (Brix: ${((m=(x=d.sweetnessLevels)==null?void 0:x.half)==null?void 0:m.brix)||8.5}°Bx)
+            <div style="font-size: 10px; color: #475569;">${t(((y=(v=d.sweetnessLevels)==null?void 0:v.half)==null?void 0:y.tasteNotes)||"")}</div>
           </td>
           <td>
-            0%: ไซรัป ${((y=(u=l.sweetnessLevels)==null?void 0:u.zero)==null?void 0:y.syrupMl)||0}ml (${(($=(w=l.sweetnessLevels)==null?void 0:w.zero)==null?void 0:$.brix)||3}°Bx)<br/>
-            100%: ไซรัป ${((T=(k=l.sweetnessLevels)==null?void 0:k.full)==null?void 0:T.syrupMl)||30}ml (${((z=(L=l.sweetnessLevels)==null?void 0:L.full)==null?void 0:z.brix)||13.5}°Bx)
+            0%: ไซรัป ${((w=(u=d.sweetnessLevels)==null?void 0:u.zero)==null?void 0:w.syrupMl)||0}ml (${((k=($=d.sweetnessLevels)==null?void 0:$.zero)==null?void 0:k.brix)||3}°Bx)<br/>
+            100%: ไซรัป ${((T=(L=d.sweetnessLevels)==null?void 0:L.full)==null?void 0:T.syrupMl)||30}ml (${((S=(z=d.sweetnessLevels)==null?void 0:z.full)==null?void 0:S.brix)||13.5}°Bx)
           </td>
           <td>
-            ${(c.recommendedToppingIds||[]).map(I=>{const g=o.find(F=>F.menuItem.labItemId===I);return g?`<span class="badge" style="margin-right: 3px;">+ ${e(g.menuItem.customName||g.labItem.name)}</span>`:""}).join("")||"-"}
+            ${(c.recommendedToppingIds||[]).map(F=>{const g=o.find(D=>D.menuItem.labItemId===F);return g?`<span class="badge" style="margin-right: 3px;">+ ${t(g.menuItem.customName||g.labItem.name)}</span>`:""}).join("")||"-"}
           </td>
         </tr>`}).join("")}
     </tbody>
   </table>
 
   <!-- Toppings Table -->
-  ${d.length>0?`
-  <div style="font-weight: 800; font-size: 13px; color: #0f172a; margin-bottom: 6px;">🍮 หมวดหมู่ท็อปปิ้ง (Specialty Toppings) - ${d.length} รายการ</div>
+  ${r.length>0?`
+  <div style="font-weight: 800; font-size: 13px; color: #0f172a; margin-bottom: 6px;">🍮 หมวดหมู่ท็อปปิ้ง (Specialty Toppings) - ${r.length} รายการ</div>
   <table>
     <thead>
       <tr>
@@ -325,47 +330,47 @@ import{c as S}from"./index-DVpMCPOc.js";/**
       </tr>
     </thead>
     <tbody>
-      ${d.map((s,a)=>`
+      ${r.map((n,i)=>`
       <tr>
-        <td style="text-align: center; font-weight: bold;">${a+1}</td>
+        <td style="text-align: center; font-weight: bold;">${i+1}</td>
         <td>
-          <strong>${e(s.menuItem.customName||s.labItem.name)}</strong>
-          <span class="badge badge-seller" style="margin-left: 6px;">${e(s.menuItem.badge||"Topping")}</span>
+          <strong>${t(n.menuItem.customName||n.labItem.name)}</strong>
+          <span class="badge badge-seller" style="margin-left: 6px;">${t(n.menuItem.badge||"Topping")}</span>
         </td>
-        <td style="text-align: right;" class="price">+฿${s.menuItem.retailPriceThb}</td>
-        <td>${e(s.labItem.description||"-")}</td>
+        <td style="text-align: right;" class="price">+฿${n.menuItem.retailPriceThb}</td>
+        <td>${t(n.labItem.description||"-")}</td>
       </tr>`).join("")}
     </tbody>
   </table>`:""}
 
   <!-- Social feedback note -->
   <div style="margin-top: 10px; padding: 8px 12px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 10px; color: #64748b; display: flex; justify-content: space-between;">
-    <span>❤️ ได้รับความนิยมจากทีมงาน: <strong>${(t.likedBy||[]).length} ไลก์</strong></span>
+    <span>❤️ ได้รับความนิยมจากทีมงาน: <strong>${(e.likedBy||[]).length} ไลก์</strong></span>
     <span>💬 คอมเมนต์ปรับปรุงหน้าร้าน: <strong>${p.length} ข้อความ</strong></span>
-    <span>📋 รหัสสาขา: <strong>${e(t.id)}</strong></span>
+    <span>📋 รหัสสาขา: <strong>${t(e.id)}</strong></span>
   </div>
 </body>
-</html>`;i.document.write(n),i.document.close()}async function A(t){const o=t.suggestedPriceThb>0?((t.suggestedPriceThb-t.costTotalThb)/t.suggestedPriceThb*100).toFixed(1):"0.0",i=`🧪 [LEAD LAB R&D] สรุปสูตรเครื่องดื่มมาตรฐาน
+</html>`;l.document.write(s),l.document.close()}async function _(e){const o=e.suggestedPriceThb>0?((e.suggestedPriceThb-e.costTotalThb)/e.suggestedPriceThb*100).toFixed(1):"0.0",l=typeof window<"u"?`${window.location.origin}${window.location.pathname}?tab=lead_lab&view=${encodeURIComponent(e.id)}`:"",a=`🧪 [LEAD LAB R&D] สรุปสูตรเครื่องดื่มมาตรฐาน
 ━━━━━━━━━━━━━━━━━━━━
-📌 รหัสสูตร: ${t.code}
-🥤 ชื่อสูตร: ${t.name} (${t.nameEn})
-🏷️ หมวดหมู่: ${t.category}
-💰 ต้นทุนรวม: ฿${t.costTotalThb.toFixed(2)} | ราคาขายแนะนำ: ฿${t.suggestedPriceThb.toFixed(2)} (GP ${o}%)
+📌 รหัสสูตร: ${e.code}
+🥤 ชื่อสูตร: ${e.name} (${e.nameEn})
+🏷️ หมวดหมู่: ${e.category}
+💰 ต้นทุนรวม: ฿${e.costTotalThb.toFixed(2)} | ราคาขายแนะนำ: ฿${e.suggestedPriceThb.toFixed(2)} (GP ${o}%)
 ━━━━━━━━━━━━━━━━━━━━
 🍬 เมทริกซ์ความหวาน & Brix:
-• หวาน 0%: ไซรัป ${t.sweetnessLevels.zero.syrupMl}ml (Brix ${t.sweetnessLevels.zero.brix}°Bx)
-• หวาน 50%: ไซรัป ${t.sweetnessLevels.half.syrupMl}ml (Brix ${t.sweetnessLevels.half.brix}°Bx) ⭐ แนะนำ
-• หวาน 100%: ไซรัป ${t.sweetnessLevels.full.syrupMl}ml (Brix ${t.sweetnessLevels.full.brix}°Bx)
+• หวาน 0%: ไซรัป ${e.sweetnessLevels.zero.syrupMl}ml (Brix ${e.sweetnessLevels.zero.brix}°Bx)
+• หวาน 50%: ไซรัป ${e.sweetnessLevels.half.syrupMl}ml (Brix ${e.sweetnessLevels.half.brix}°Bx) ⭐ แนะนำ
+• หวาน 100%: ไซรัป ${e.sweetnessLevels.full.syrupMl}ml (Brix ${e.sweetnessLevels.full.brix}°Bx)
 ━━━━━━━━━━━━━━━━━━━━
-❤️ ไลก์: ${(t.likedBy||[]).length} คน | 💬 รอบพัฒนา: ${(t.revisionCycles||[]).length} รอบ
-🔒 ดูสูตรและขั้นตอนการชงฉบับเต็มได้ที่ระบบ VITCHA SOURCING`;try{navigator.clipboard&&await navigator.clipboard.writeText(i)}catch(d){console.warn("Failed to copy text",d)}const r=`https://line.me/R/msg/text/?${encodeURIComponent(i)}`;return window.open(r,"_blank"),!0}async function j(t,o){const i=`🏪 [FRANCHISE STORE] ข้อมูลสาขาและเมนูบอร์ด
+❤️ ไลก์: ${(e.likedBy||[]).length} คน | 💬 รอบพัฒนา: ${(e.revisionCycles||[]).length} รอบ
+🔗 กดดูสูตรทันที: ${l}`;try{navigator.clipboard&&await navigator.clipboard.writeText(a)}catch(p){console.warn("Failed to copy text",p)}const r=`https://line.me/R/msg/text/?${encodeURIComponent(a)}`;return window.open(r,"_blank"),!0}async function A(e,o){const l=typeof window<"u"?`${window.location.origin}${window.location.pathname}?tab=franchise_stores&view=${encodeURIComponent(e.id)}`:"",a=`🏪 [FRANCHISE STORE] ข้อมูลสาขาและเมนูบอร์ด
 ━━━━━━━━━━━━━━━━━━━━
-📌 แบรนด์: ${t.name}
-📍 สาขา: ${t.branch}
-💬 สโลแกน: "${t.brandTagline}"
-⏰ เวลาทำการ: ${t.openingHours||"10:00 - 21:30 น."}
-📞 โทร: ${t.contactNumber||"-"}
+📌 แบรนด์: ${e.name}
+📍 สาขา: ${e.branch}
+💬 สโลแกน: "${e.brandTagline}"
+⏰ เวลาทำการ: ${e.openingHours||"10:00 - 21:30 น."}
+📞 โทร: ${e.contactNumber||"-"}
 ━━━━━━━━━━━━━━━━━━━━
 🥤 จำนวนเมนูพร้อมจำหน่าย: ${o} รายการ
-❤️ ทีมงานไลก์: ${(t.likedBy||[]).length} คน
-🔒 ดูป้ายเมนูดิจิทัลและ Quick SOP บาริสต้าได้ที่ระบบ VITCHA SOURCING`;try{navigator.clipboard&&await navigator.clipboard.writeText(i)}catch(d){console.warn("Failed to copy text",d)}const r=`https://line.me/R/msg/text/?${encodeURIComponent(i)}`;return window.open(r,"_blank"),!0}export{M as D,C as H,j as a,R as b,N as p,A as s};
+❤️ ทีมงานไลก์: ${(e.likedBy||[]).length} คน
+🔗 กดดูข้อมูลสาขาทันที: ${l}`;try{navigator.clipboard&&await navigator.clipboard.writeText(a)}catch(p){console.warn("Failed to copy text",p)}const r=`https://line.me/R/msg/text/?${encodeURIComponent(a)}`;return window.open(r,"_blank"),!0}export{C as D,R as H,N as V,A as a,E as b,j as p,_ as s};

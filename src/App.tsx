@@ -45,6 +45,14 @@ const MainApp: React.FC = () => {
   const [selectedDetailItem, setSelectedDetailItem] = useState<SupplierRecord | StoreInspoRecord | LocationRecord | null>(null);
   const [shareLineItem, setShareLineItem] = useState<any>(null);
   const [isPinLoginOpen, setIsPinLoginOpen] = useState(false);
+  const [initialLeadLabItemId, setInitialLeadLabItemId] = useState<string | null>(() => {
+    const params = new URLSearchParams(window.location.search);
+    return params.get('tab') === 'lead_lab' ? params.get('view') : null;
+  });
+  const [initialFranchiseStoreId, setInitialFranchiseStoreId] = useState<string | null>(() => {
+    const params = new URLSearchParams(window.location.search);
+    return params.get('tab') === 'franchise_stores' ? params.get('view') : null;
+  });
 
   // Parse invite param from URL immediately
   const [inviteCodeUrl, setInviteCodeUrl] = useState<string | null>(() => {
@@ -69,10 +77,20 @@ const MainApp: React.FC = () => {
     const inviteParam = params.get('invite');
     const viewParam = params.get('view');
     const typeParam = params.get('type');
+    const tabParam = params.get('tab');
 
     if (inviteParam && !isAuthenticated) {
       setInviteCodeUrl(inviteParam);
       setAuthView('invite');
+    }
+
+    if (tabParam && ['dashboard', 'suppliers', 'drink_stores', 'locations', 'handoff', 'products', 'members', 'settings', 'trash', 'lead_lab', 'franchise_stores'].includes(tabParam)) {
+      setActiveTab(tabParam as any);
+      if (tabParam === 'lead_lab' && viewParam) {
+        setInitialLeadLabItemId(viewParam);
+      } else if (tabParam === 'franchise_stores' && viewParam) {
+        setInitialFranchiseStoreId(viewParam);
+      }
     }
 
     if (viewParam) {
@@ -274,11 +292,13 @@ const MainApp: React.FC = () => {
         {activeTab === 'trash' && <TrashView />}
         {activeTab === 'lead_lab' && (
           <LeadLabView
+            initialItemId={initialLeadLabItemId}
             onOpenStoreSimulator={() => setActiveTab('franchise_stores')}
           />
         )}
         {activeTab === 'franchise_stores' && (
           <FranchiseStoreView
+            initialStoreId={initialFranchiseStoreId}
             onNavigateToLab={() => setActiveTab('lead_lab')}
           />
         )}

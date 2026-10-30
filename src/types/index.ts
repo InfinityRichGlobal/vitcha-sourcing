@@ -410,6 +410,19 @@ export interface LabComment {
   createdAt: string;
   content: string;
   sweetnessTarget?: 'all' | '0' | '50' | '100';
+  photoUrl?: string;
+  voiceUrl?: string;
+  duration?: number;
+  replies?: Array<{
+    id: string;
+    authorId: string;
+    authorName: string;
+    authorAvatar?: string;
+    createdAt: string;
+    content: string;
+    photoUrl?: string;
+    voiceUrl?: string;
+  }>;
   likes: string[];
 }
 
@@ -504,6 +517,16 @@ export interface FranchiseStore {
   menuCategories?: string[];
   likedBy?: string[];
   revisionCycles?: LabRevisionCycle[];
+  galleryPhotos?: string[];
+  audioNotes?: Array<{
+    id: string;
+    url: string;
+    duration?: number;
+    title?: string;
+    createdAt?: string;
+    authorName?: string;
+  }>;
+  videos?: string[];
   viewLogs?: ViewLogEntry[];
   menuItems: StoreMenuItem[];
   createdAt: string;

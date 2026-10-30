@@ -1,5 +1,5 @@
 // Cache the application shell only. Team data and uploads stay on the server.
-const CACHE_NAME = 'vitcha-sourcing-v12';
+const CACHE_NAME = 'vitcha-sourcing-v13';
 const STATIC_ASSETS = ['./', './index.html', './manifest.json', './logo.jpg'];
 self.addEventListener('install', event => {
   event.waitUntil(caches.open(CACHE_NAME).then(cache => cache.addAll(STATIC_ASSETS)).catch(() => {}));

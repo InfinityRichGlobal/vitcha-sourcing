@@ -417,6 +417,10 @@ export async function shareLeadLabItem(item: LabItem): Promise<boolean> {
     ? (((item.suggestedPriceThb - item.costTotalThb) / item.suggestedPriceThb) * 100).toFixed(1)
     : '0.0';
 
+  const deepLink = typeof window !== 'undefined'
+    ? `${window.location.origin}${window.location.pathname}?tab=lead_lab&view=${encodeURIComponent(item.id)}`
+    : '';
+
   const text = `🧪 [LEAD LAB R&D] สรุปสูตรเครื่องดื่มมาตรฐาน
 ━━━━━━━━━━━━━━━━━━━━
 📌 รหัสสูตร: ${item.code}
@@ -430,7 +434,7 @@ export async function shareLeadLabItem(item: LabItem): Promise<boolean> {
 • หวาน 100%: ไซรัป ${item.sweetnessLevels.full.syrupMl}ml (Brix ${item.sweetnessLevels.full.brix}°Bx)
 ━━━━━━━━━━━━━━━━━━━━
 ❤️ ไลก์: ${(item.likedBy || []).length} คน | 💬 รอบพัฒนา: ${(item.revisionCycles || []).length} รอบ
-🔒 ดูสูตรและขั้นตอนการชงฉบับเต็มได้ที่ระบบ VITCHA SOURCING`;
+🔗 กดดูสูตรทันที: ${deepLink}`;
 
   try {
     if (navigator.clipboard) {
@@ -450,6 +454,10 @@ export async function shareLeadLabItem(item: LabItem): Promise<boolean> {
  * Format and trigger Share to LINE / copy text for Franchise Store
  */
 export async function shareFranchiseStore(store: FranchiseStore, menuCount: number): Promise<boolean> {
+  const deepLink = typeof window !== 'undefined'
+    ? `${window.location.origin}${window.location.pathname}?tab=franchise_stores&view=${encodeURIComponent(store.id)}`
+    : '';
+
   const text = `🏪 [FRANCHISE STORE] ข้อมูลสาขาและเมนูบอร์ด
 ━━━━━━━━━━━━━━━━━━━━
 📌 แบรนด์: ${store.name}
@@ -460,7 +468,7 @@ export async function shareFranchiseStore(store: FranchiseStore, menuCount: numb
 ━━━━━━━━━━━━━━━━━━━━
 🥤 จำนวนเมนูพร้อมจำหน่าย: ${menuCount} รายการ
 ❤️ ทีมงานไลก์: ${(store.likedBy || []).length} คน
-🔒 ดูป้ายเมนูดิจิทัลและ Quick SOP บาริสต้าได้ที่ระบบ VITCHA SOURCING`;
+🔗 กดดูข้อมูลสาขาทันที: ${deepLink}`;
 
   try {
     if (navigator.clipboard) {

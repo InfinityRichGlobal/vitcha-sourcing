@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import {
   FlaskConical,
   Plus,
@@ -31,16 +31,25 @@ import {
   Video,
   Trash2,
   Eye,
-  Copy
+  Copy,
+  Paperclip,
+  Loader2,
+  Play,
+  Pause,
+  Volume2,
+  Square
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { LabItem, LabFormulaStatus, LabItemType, SweetnessDetail } from '../types';
 import { compressImageFile } from '../utils/imageCompressor';
 import { printLeadLabSpecReport, shareLeadLabItem } from '../utils/labAndStoreExport';
+import { uploadMediaToServer } from '../services/api';
 
 export function LeadLabView({
+  initialItemId,
   onOpenStoreSimulator,
 }: {
+  initialItemId?: string | null;
   onOpenStoreSimulator?: (storeId?: string) => void;
 }) {
   const {
@@ -63,6 +72,14 @@ export function LeadLabView({
   const [statusFilter, setStatusFilter] = useState<'all' | LabFormulaStatus>('all');
   const [selectedItem, setSelectedItem] = useState<LabItem | null>(null);
   const [isNewModalOpen, setIsNewModalOpen] = useState(false);
+
+  // Synchronize deep-linked initialItemId
+  useEffect(() => {
+    if (initialItemId && leadLabItems.length > 0) {
+      const found = leadLabItems.find((x) => x.id === initialItemId);
+      if (found) setSelectedItem(found);
+    }
+  }, [initialItemId, leadLabItems]);
 
   // Filter items
   const filteredItems = useMemo(() => {
@@ -87,13 +104,15 @@ export function LeadLabView({
     return leadLabItems.find((x) => x.id === selectedItem.id) || selectedItem;
   }, [leadLabItems, selectedItem]);
 
-  // Stats count
+  // Stats count with drinks and toppings breakdown
   const stats = useMemo(() => {
     const total = leadLabItems.length;
+    const drinks = leadLabItems.filter((x) => x.type === 'drink').length;
+    const toppings = leadLabItems.filter((x) => x.type === 'topping').length;
     const approved = leadLabItems.filter((x) => x.status === 'approved').length;
     const testing = leadLabItems.filter((x) => x.status === 'testing').length;
     const shelved = leadLabItems.filter((x) => x.status === 'shelved').length;
-    return { total, approved, testing, shelved };
+    return { total, drinks, toppings, approved, testing, shelved };
   }, [leadLabItems]);
 
   return (
@@ -142,45 +161,65 @@ export function LeadLabView({
           </div>
         </div>
 
-        {/* Quick Stat Chips */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-6 pt-6 border-t border-white/10 text-xs">
+        {/* Quick Stat Chips (6 Chips Responsive Grid: 12 สูตร + เครื่องดื่ม + ท็อปปิ้ง + ผ่าน + ทดลอง + พัก) */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5 mt-6 pt-6 border-t border-white/10 text-xs">
           <div className="flex items-center gap-2.5 p-2 rounded-xl bg-white/5 border border-white/5">
-            <div className="w-8 h-8 rounded-lg bg-indigo-500/20 text-indigo-300 flex items-center justify-center font-bold">
+            <div className="w-8 h-8 rounded-lg bg-indigo-500/20 text-indigo-300 flex items-center justify-center font-bold shrink-0">
               {stats.total}
             </div>
-            <div>
-              <div className="text-slate-400 font-medium">สูตรทั้งหมด</div>
-              <div className="text-white font-bold">ในระบบ R&D</div>
+            <div className="min-w-0">
+              <div className="text-slate-400 font-medium truncate">สูตรทั้งหมด</div>
+              <div className="text-white font-bold truncate">ในระบบ R&D</div>
             </div>
           </div>
 
           <div className="flex items-center gap-2.5 p-2 rounded-xl bg-white/5 border border-white/5">
-            <div className="w-8 h-8 rounded-lg bg-emerald-500/20 text-emerald-300 flex items-center justify-center font-bold">
+            <div className="w-8 h-8 rounded-lg bg-sky-500/20 text-sky-300 flex items-center justify-center font-bold shrink-0">
+              {stats.drinks}
+            </div>
+            <div className="min-w-0">
+              <div className="text-slate-400 font-medium truncate">กรอบเครื่องดื่ม</div>
+              <div className="text-sky-300 font-bold truncate">แก้วหลักพร้อมเสิร์ฟ</div>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2.5 p-2 rounded-xl bg-white/5 border border-white/5">
+            <div className="w-8 h-8 rounded-lg bg-purple-500/20 text-purple-300 flex items-center justify-center font-bold shrink-0">
+              {stats.toppings}
+            </div>
+            <div className="min-w-0">
+              <div className="text-slate-400 font-medium truncate">จำนวนท๊อปปิ้ง</div>
+              <div className="text-purple-300 font-bold truncate">ท็อปปิ้งทั้งหมด</div>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2.5 p-2 rounded-xl bg-white/5 border border-white/5">
+            <div className="w-8 h-8 rounded-lg bg-emerald-500/20 text-emerald-300 flex items-center justify-center font-bold shrink-0">
               {stats.approved}
             </div>
-            <div>
-              <div className="text-slate-400 font-medium">ผ่านเกณฑ์อนุมัติ</div>
-              <div className="text-emerald-400 font-bold">พร้อมขายหน้าร้าน</div>
+            <div className="min-w-0">
+              <div className="text-slate-400 font-medium truncate">ผ่านเกณฑ์อนุมัติ</div>
+              <div className="text-emerald-400 font-bold truncate">พร้อมขายหน้าร้าน</div>
             </div>
           </div>
 
           <div className="flex items-center gap-2.5 p-2 rounded-xl bg-white/5 border border-white/5">
-            <div className="w-8 h-8 rounded-lg bg-amber-500/20 text-amber-300 flex items-center justify-center font-bold">
+            <div className="w-8 h-8 rounded-lg bg-amber-500/20 text-amber-300 flex items-center justify-center font-bold shrink-0">
               {stats.testing}
             </div>
-            <div>
-              <div className="text-slate-400 font-medium">กำลังปรับสูตร</div>
-              <div className="text-amber-400 font-bold">เทสต์ & พัฒนา</div>
+            <div className="min-w-0">
+              <div className="text-slate-400 font-medium truncate">กำลังปรับสูตร</div>
+              <div className="text-amber-400 font-bold truncate">เทสต์ & พัฒนา</div>
             </div>
           </div>
 
           <div className="flex items-center gap-2.5 p-2 rounded-xl bg-white/5 border border-white/5">
-            <div className="w-8 h-8 rounded-lg bg-rose-500/20 text-rose-300 flex items-center justify-center font-bold">
+            <div className="w-8 h-8 rounded-lg bg-rose-500/20 text-rose-300 flex items-center justify-center font-bold shrink-0">
               {stats.shelved}
             </div>
-            <div>
-              <div className="text-slate-400 font-medium">พักสูตร / ชะลอไว้</div>
-              <div className="text-rose-400 font-bold">คลังบทเรียน</div>
+            <div className="min-w-0">
+              <div className="text-slate-400 font-medium truncate">พักสูตร / ชะลอไว้</div>
+              <div className="text-rose-400 font-bold truncate">คลังบทเรียน</div>
             </div>
           </div>
         </div>
@@ -213,7 +252,7 @@ export function LeadLabView({
                   : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
               }`}
             >
-              ทั้งหมด
+              ทั้งหมด ({stats.total})
             </button>
             <button
               type="button"
@@ -224,7 +263,7 @@ export function LeadLabView({
                   : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
               }`}
             >
-              🥤 เครื่องดื่ม
+              🥤 เครื่องดื่ม ({stats.drinks})
             </button>
             <button
               type="button"
@@ -235,7 +274,7 @@ export function LeadLabView({
                   : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
               }`}
             >
-              🍮 ท็อปปิ้ง
+              🍮 ท็อปปิ้ง ({stats.toppings})
             </button>
           </div>
 
@@ -250,7 +289,7 @@ export function LeadLabView({
                   : 'text-slate-600 dark:text-slate-400'
               }`}
             >
-              ทุกสถานะ
+              ทุกสถานะ ({stats.total})
             </button>
             <button
               type="button"
@@ -261,7 +300,7 @@ export function LeadLabView({
                   : 'text-emerald-700 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/30'
               }`}
             >
-              ผ่านอนุมัติ
+              ผ่านอนุมัติ ({stats.approved})
             </button>
             <button
               type="button"
@@ -272,7 +311,7 @@ export function LeadLabView({
                   : 'text-amber-700 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950/30'
               }`}
             >
-              กำลังทดลอง
+              กำลังทดลอง ({stats.testing})
             </button>
             <button
               type="button"
@@ -283,7 +322,7 @@ export function LeadLabView({
                   : 'text-rose-700 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/30'
               }`}
             >
-              พักสูตร
+              พักสูตร ({stats.shelved})
             </button>
           </div>
         </div>
@@ -320,7 +359,7 @@ export function LeadLabView({
           users={users}
           onClose={() => setSelectedItem(null)}
           onToggleLike={() => toggleLikeLeadLabItem(activeDetailItem.id)}
-          onAddComment={(content, target) => addLeadLabComment(activeDetailItem.id, content, target)}
+          onAddComment={(content, target, extra) => addLeadLabComment(activeDetailItem.id, content, target, extra)}
           onToggleCommentLike={(commentId) => toggleLikeLeadLabComment(activeDetailItem.id, commentId)}
           onCycleRevision={(summary, nextTitle) => cycleLeadLabRevision(activeDetailItem.id, summary, nextTitle)}
           onSetStatus={(status) => setLeadLabStatus(activeDetailItem.id, status)}
@@ -591,7 +630,11 @@ function LabDetailModal({
   users?: any[];
   onClose: () => void;
   onToggleLike: () => void;
-  onAddComment: (content: string, target?: 'all' | '0' | '50' | '100') => void;
+  onAddComment: (
+    content: string,
+    target?: 'all' | '0' | '50' | '100',
+    extra?: { photoUrl?: string; voiceUrl?: string; duration?: number }
+  ) => void;
   onToggleCommentLike: (commentId: string) => void;
   onCycleRevision: (summary: string, nextTitle?: string) => void;
   onSetStatus: (status: LabFormulaStatus) => void;
@@ -604,11 +647,42 @@ function LabDetailModal({
   const [cycleSummary, setCycleSummary] = useState('');
   const [nextCycleTitle, setNextCycleTitle] = useState('');
 
-  React.useEffect(() => {
+  // Rich attachments for comment
+  const [commentPhotoUrl, setCommentPhotoUrl] = useState<string | null>(null);
+  const [commentVoiceUrl, setCommentVoiceUrl] = useState<string | null>(null);
+  const [commentVoiceDuration, setCommentVoiceDuration] = useState<number | undefined>(undefined);
+  const [isUploadingAttachment, setIsUploadingAttachment] = useState(false);
+  const photoInputRef = useRef<HTMLInputElement | null>(null);
+
+  // Live voice recording
+  const [isRecording, setIsRecording] = useState(false);
+  const [recordingSeconds, setRecordingSeconds] = useState(0);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const recordingStartRef = useRef<number>(0);
+
+  // 1. Prevent background scrolling while modal is open
+  useEffect(() => {
+    const originalStyle = window.getComputedStyle(document.body).overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = originalStyle;
+      if (timerRef.current) clearInterval(timerRef.current);
+      if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
+        mediaRecorderRef.current.stop();
+      }
+      streamRef.current?.getTracks().forEach((t) => t.stop());
+    };
+  }, []);
+
+  // 2. Track view log
+  useEffect(() => {
     onRecordView?.();
   }, []);
 
-  React.useEffect(() => {
+  // 3. Escape key to close
+  useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose();
     };
@@ -617,7 +691,6 @@ function LabDetailModal({
   }, [onClose]);
 
   const isLiked = (item.likedBy || []).includes(currentUser.id);
-
   const activeCycle = (item.revisionCycles || []).find((c) => c.status === 'active');
   const closedCycles = (item.revisionCycles || []).filter((c) => c.status === 'closed');
 
@@ -625,11 +698,125 @@ function LabDetailModal({
     ? (((item.suggestedPriceThb - item.costTotalThb) / item.suggestedPriceThb) * 100).toFixed(1)
     : '0.0';
 
+  // Attachment upload handler
+  const handleUploadPhoto = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      setIsUploadingAttachment(true);
+      const url = await uploadMediaToServer(file, {
+        recordId: item.id,
+        recordType: 'lead_lab',
+        recordTitle: item.name,
+      });
+      setCommentPhotoUrl(url);
+    } catch (err: any) {
+      alert(err.message || 'อัปโหลดรูปภาพไม่สำเร็จ');
+    } finally {
+      setIsUploadingAttachment(false);
+    }
+  };
+
+  // Live voice recording toggle
+  const toggleLiveVoiceRecording = async () => {
+    if (isRecording) {
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+        timerRef.current = null;
+      }
+      if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
+        mediaRecorderRef.current.stop();
+      }
+      return;
+    }
+
+    try {
+      if (!navigator.mediaDevices?.getUserMedia || typeof MediaRecorder === 'undefined') {
+        alert('เบราว์เซอร์นี้ไม่รองรับการอัดเสียงสด หรือไม่ได้เปิดผ่าน HTTPS');
+        return;
+      }
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      streamRef.current = stream;
+      const mime = ['audio/mp4', 'audio/webm;codecs=opus', 'audio/webm', 'audio/ogg'].find((t) =>
+        MediaRecorder.isTypeSupported(t)
+      );
+      const recorder = new MediaRecorder(stream, mime ? { mimeType: mime } : undefined);
+      mediaRecorderRef.current = recorder;
+      const chunks: Blob[] = [];
+
+      recorder.ondataavailable = (e) => {
+        if (e.data.size > 0) chunks.push(e.data);
+      };
+
+      recorder.onstop = async () => {
+        if (timerRef.current) {
+          clearInterval(timerRef.current);
+          timerRef.current = null;
+        }
+        stream.getTracks().forEach((t) => t.stop());
+        streamRef.current = null;
+        setIsRecording(false);
+
+        const duration = Math.round((Date.now() - recordingStartRef.current) / 1000);
+        setCommentVoiceDuration(duration);
+
+        const type = recorder.mimeType?.split(';')[0] || 'audio/webm';
+        const blob = new Blob(chunks, { type });
+        if (!blob.size) return;
+        const ext = type.includes('mp4') ? 'm4a' : type.includes('ogg') ? 'ogg' : 'webm';
+        const file = new File([blob], `เสียงคอมเมนต์-RD-${Date.now()}.${ext}`, { type });
+
+        try {
+          setIsUploadingAttachment(true);
+          const url = await uploadMediaToServer(file, {
+            recordId: item.id,
+            recordType: 'lead_lab',
+            recordTitle: item.name,
+          });
+          setCommentVoiceUrl(url);
+        } catch (err: any) {
+          alert(err.message || 'อัปโหลดเสียงไม่สำเร็จ');
+        } finally {
+          setIsUploadingAttachment(false);
+        }
+      };
+
+      recorder.onerror = () => {
+        if (timerRef.current) clearInterval(timerRef.current);
+        stream.getTracks().forEach((t) => t.stop());
+        setIsRecording(false);
+        alert('การอัดเสียงขัดข้อง กรุณาลองใหม่');
+      };
+
+      recordingStartRef.current = Date.now();
+      setRecordingSeconds(0);
+      setIsRecording(true);
+      recorder.start(250);
+      timerRef.current = setInterval(() => {
+        setRecordingSeconds(Math.round((Date.now() - recordingStartRef.current) / 1000));
+      }, 1000);
+    } catch {
+      streamRef.current?.getTracks().forEach((t) => t.stop());
+      setIsRecording(false);
+      alert('ไม่ได้รับสิทธิ์ใช้ไมโครโฟน กรุณากดอนุญาตไมโครโฟนในเบราว์เซอร์');
+    }
+  };
+
   const handlePostComment = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!commentText.trim()) return;
-    onAddComment(commentText.trim(), sweetnessTarget);
+    const text = commentText.trim();
+    if (!text && !commentPhotoUrl && !commentVoiceUrl) return;
+
+    onAddComment(text, sweetnessTarget, {
+      photoUrl: commentPhotoUrl || undefined,
+      voiceUrl: commentVoiceUrl || undefined,
+      duration: commentVoiceDuration,
+    });
+
     setCommentText('');
+    setCommentPhotoUrl(null);
+    setCommentVoiceUrl(null);
+    setCommentVoiceDuration(undefined);
   };
 
   const handleConfirmCloseCycle = () => {
@@ -644,67 +831,95 @@ function LabDetailModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-3 sm:p-5 overflow-y-auto">
-      <div className="bg-white dark:bg-slate-900 rounded-3xl max-w-4xl w-full max-h-[92vh] flex flex-col shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden animate-scale-up">
-        {/* Header */}
-        <div className="p-4 sm:p-5 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-slate-50/50 dark:bg-slate-800/30">
-          <div className="flex items-center gap-3">
-            <span className="px-2.5 py-1 rounded-lg bg-indigo-600 text-white font-mono text-xs font-bold">
-              {item.code}
-            </span>
-            <div>
-              <h2 className="text-lg sm:text-xl font-extrabold text-slate-800 dark:text-white leading-tight">
-                {item.name}
-              </h2>
-              <div className="text-xs text-slate-500 font-mono">{item.nameEn} · {item.category}</div>
+    <div className="fixed inset-0 z-[90] bg-black/60 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4 overflow-hidden">
+      <div className="bg-white dark:bg-slate-900 rounded-2xl sm:rounded-3xl max-w-4xl w-full h-[94vh] max-h-[94vh] flex flex-col shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden animate-scale-up">
+        {/* Sticky Header — 2 Rows (Row 1: Title + Close; Row 2: Action Toolbar) */}
+        <div className="p-3.5 sm:p-4 border-b border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 sticky top-0 z-20 space-y-2.5 shrink-0">
+          {/* Row 1: Item Title + Close Button */}
+          <div className="flex items-start justify-between gap-2.5">
+            <div className="flex items-start gap-2.5 min-w-0 flex-1">
+              <span className="p-2 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 font-mono text-xs font-bold shrink-0 mt-0.5">
+                {item.code}
+              </span>
+              <div className="min-w-0 flex-1">
+                <h2 className="font-extrabold text-slate-900 dark:text-white text-sm sm:text-base leading-snug break-words">
+                  {item.name}
+                </h2>
+                <p className="text-xs text-slate-400 truncate mt-0.5 font-mono">
+                  {item.nameEn} · {item.category}
+                </p>
+              </div>
             </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={() => shareLeadLabItem(item)}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold transition-all shadow-xs"
-              title="แชร์สูตรไปยัง LINE"
-            >
-              <Share2 className="w-3.5 h-3.5 text-indigo-600" />
-              <span className="hidden sm:inline">แชร์ LINE</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => printLeadLabSpecReport(item)}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold transition-all shadow-xs"
-              title="พิมพ์เอกสารสเปกสูตร R&D หรือบันทึก PDF"
-            >
-              <Printer className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">สเปก R&D (PDF)</span>
-            </button>
+
             <button
               type="button"
               onClick={onClose}
-              className="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-500 flex items-center justify-center transition-colors"
+              className="w-8 h-8 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 transition-all active:scale-95 flex items-center justify-center shrink-0"
+              title="ปิดหน้าต่าง"
             >
               <X className="w-4 h-4" />
             </button>
           </div>
+
+          {/* Row 2: Action Toolbar Row (Like · แชร์ LINE · PDF · ลบ) */}
+          <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pt-1.5 border-t border-slate-100 dark:border-slate-800 select-none">
+            {/* Like Button with avatars preview */}
+            <button
+              type="button"
+              onClick={onToggleLike}
+              className={`h-7 sm:h-8 px-2.5 rounded-xl border text-xs font-bold active:scale-95 transition-all inline-flex items-center gap-1.5 shrink-0 shadow-xs ${
+                isLiked
+                  ? 'bg-rose-50 dark:bg-rose-950/50 text-rose-600 dark:text-rose-400 border-rose-200 dark:border-rose-900'
+                  : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-700 hover:bg-slate-50'
+              }`}
+              title="ถูกใจสูตรนี้"
+            >
+              <Heart className={`w-3.5 h-3.5 ${isLiked ? 'fill-rose-500 text-rose-500' : 'text-slate-400'}`} />
+              <span>{(item.likedBy || []).length} ไลก์</span>
+            </button>
+
+            {/* Share to LINE with clickable deep link */}
+            <button
+              type="button"
+              onClick={() => shareLeadLabItem(item)}
+              className="h-7 sm:h-8 px-2.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/40 dark:hover:bg-emerald-950/70 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 text-xs font-bold active:scale-95 transition-all inline-flex items-center gap-1.5 shrink-0 shadow-xs"
+              title="แชร์สูตรไปยัง LINE พร้อมลิงก์กดเปิดทันที"
+            >
+              <Share2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+              <span>แชร์ LINE</span>
+            </button>
+
+            {/* Print / PDF Spec Sheet */}
+            <button
+              type="button"
+              onClick={() => printLeadLabSpecReport(item)}
+              className="h-7 sm:h-8 px-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold active:scale-95 transition-all inline-flex items-center gap-1.5 shrink-0 shadow-xs"
+              title="พิมพ์เอกสารสเปกสูตร R&D หรือบันทึก PDF"
+            >
+              <Printer className="w-3.5 h-3.5 shrink-0" />
+              <span>สเปก R&D (PDF)</span>
+            </button>
+
+            {/* Delete Formula Button */}
+            <button
+              type="button"
+              onClick={onDelete}
+              className="h-7 sm:h-8 px-2.5 rounded-xl bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/30 dark:hover:bg-rose-950/60 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-900/40 text-xs font-bold active:scale-95 transition-all inline-flex items-center gap-1.5 shrink-0 shadow-xs ml-auto"
+              title="ลบสูตรนี้ออกจากระบบ"
+            >
+              <Trash2 className="w-3.5 h-3.5 text-rose-500 shrink-0" />
+              <span>ลบสูตร</span>
+            </button>
+          </div>
         </div>
 
-        {/* Modal Scrollable Body */}
-        <div className="p-4 sm:p-6 overflow-y-auto space-y-6">
+        {/* Modal Scrollable Body — overscroll-contain prevents background bleed */}
+        <div className="p-4 sm:p-6 overflow-y-auto overscroll-contain flex-1 space-y-6">
           {/* Top Section: Photo + Overview + Status Manager */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="md:col-span-1 space-y-3">
               <div className="rounded-2xl overflow-hidden aspect-square bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 relative shadow-sm">
                 <img src={item.photoUrl} alt={item.name} className="w-full h-full object-cover" />
-                <button
-                  type="button"
-                  onClick={onToggleLike}
-                  className={`absolute top-3 right-3 px-3 py-1.5 rounded-full flex items-center gap-1.5 text-xs font-bold shadow-md transition-transform active:scale-90 ${
-                    isLiked ? 'bg-rose-500 text-white' : 'bg-white/90 text-slate-700 hover:bg-white'
-                  }`}
-                >
-                  <Heart className={`w-3.5 h-3.5 ${isLiked ? 'fill-current' : ''}`} />
-                  <span>{(item.likedBy || []).length} ไลก์</span>
-                </button>
               </div>
 
               {/* Viewers Log */}
@@ -714,7 +929,13 @@ function LabDetailModal({
                   <span>เข้าดู {item.viewLogs.length} คน:</span>
                   <div className="flex -space-x-1.5 overflow-hidden ml-auto">
                     {item.viewLogs.slice(0, 5).map((v, vIdx) => (
-                      <img key={vIdx} src={v.avatar} alt={v.alias} title={`${v.alias} (${v.viewCount || 1} ครั้ง)`} className="w-4 h-4 rounded-full border border-white dark:border-slate-800 object-cover" />
+                      <img
+                        key={vIdx}
+                        src={v.avatar}
+                        alt={v.alias}
+                        title={`${v.alias} (${v.viewCount || 1} ครั้ง)`}
+                        className="w-4 h-4 rounded-full border border-white dark:border-slate-800 object-cover"
+                      />
                     ))}
                   </div>
                 </div>
@@ -757,16 +978,6 @@ function LabDetailModal({
                   <option value="shelved">📦 พักสูตร / ชะลอไว้ (คลังบทเรียน)</option>
                 </select>
               </div>
-
-              {/* Delete button */}
-              <button
-                type="button"
-                onClick={onDelete}
-                className="w-full text-xs text-rose-600 hover:text-rose-700 py-1.5 font-semibold text-center hover:bg-rose-50 dark:hover:bg-rose-950/20 rounded-lg transition-colors flex items-center justify-center gap-1.5"
-              >
-                <Trash2 className="w-3.5 h-3.5" />
-                <span>ลบสูตรนี้ออกจากระบบ</span>
-              </button>
             </div>
 
             {/* Description & Financial Overview */}
@@ -787,9 +998,41 @@ function LabDetailModal({
                   </h4>
                   <div className="flex gap-2 overflow-x-auto pb-1">
                     {item.galleryPhotos.map((photo, pIdx) => (
-                      <a key={pIdx} href={photo} target="_blank" rel="noreferrer" className="w-16 h-16 rounded-xl overflow-hidden shrink-0 border border-slate-200 dark:border-slate-700 hover:opacity-80 transition-opacity">
+                      <a
+                        key={pIdx}
+                        href={photo}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="w-16 h-16 rounded-xl overflow-hidden shrink-0 border border-slate-200 dark:border-slate-700 hover:opacity-80 transition-opacity"
+                      >
                         <img src={photo} alt="" className="w-full h-full object-cover" />
                       </a>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Audio Notes & Video clips */}
+              {(item.audioNotes && item.audioNotes.length > 0) && (
+                <div className="space-y-1.5">
+                  <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+                    <Mic className="w-3.5 h-3.5 text-indigo-600" />
+                    <span>ไฟล์เสียงบรรยายเทคนิคชง R&D</span>
+                  </h4>
+                  <div className="space-y-2">
+                    {item.audioNotes.map((note) => (
+                      <div
+                        key={note.id}
+                        className="p-2.5 rounded-xl bg-indigo-50/50 dark:bg-indigo-950/20 border border-indigo-100 dark:border-indigo-900/40 flex items-center gap-3"
+                      >
+                        <Volume2 className="w-4 h-4 text-indigo-600 shrink-0" />
+                        <div className="flex-1 min-w-0">
+                          <div className="text-xs font-bold text-indigo-900 dark:text-indigo-200 truncate">
+                            {note.title || 'เสียงบรรยายเทคนิคชง'}
+                          </div>
+                          {note.url && <audio controls src={note.url} className="w-full h-8 mt-1" />}
+                        </div>
+                      </div>
                     ))}
                   </div>
                 </div>
@@ -907,7 +1150,7 @@ function LabDetailModal({
                   <span>สมุดบันทึก R&D โต้ตอบปรับปรุงสูตร (Revision History & Team Feedback)</span>
                 </h3>
                 <p className="text-xs text-slate-400">
-                  ทุกไอดีสามารถคอมเมนต์ เจาะจงระดับความหวาน 0/50/100 และกดไลก์ได้
+                  ทีมงานทุกคนคอมเมนต์ได้ พร้อมแนบรูปถ่าย อัดเสียงสด และเจาะจงระดับความหวาน 0/50/100
                 </p>
               </div>
 
@@ -980,13 +1223,25 @@ function LabDetailModal({
                 {/* Closed Cycle Comments */}
                 <div className="pl-4 space-y-2 border-l-2 border-slate-200 dark:border-slate-700">
                   {cycle.comments.map((comm) => (
-                    <div key={comm.id} className="text-xs text-slate-600 dark:text-slate-400 flex items-start gap-2">
-                      <span className="font-bold text-slate-700 dark:text-slate-300">{comm.authorName}:</span>
-                      <span>{comm.content}</span>
-                      {comm.sweetnessTarget && comm.sweetnessTarget !== 'all' && (
-                        <span className="px-1.5 py-0.2 rounded bg-indigo-50 text-indigo-600 text-[10px] font-mono">
-                          หวาน {comm.sweetnessTarget}%
-                        </span>
+                    <div key={comm.id} className="text-xs text-slate-600 dark:text-slate-400 space-y-1">
+                      <div className="flex items-center gap-2">
+                        <span className="font-bold text-slate-700 dark:text-slate-300">{comm.authorName}:</span>
+                        <span>{comm.content}</span>
+                        {comm.sweetnessTarget && comm.sweetnessTarget !== 'all' && (
+                          <span className="px-1.5 py-0.2 rounded bg-indigo-50 text-indigo-600 text-[10px] font-mono">
+                            หวาน {comm.sweetnessTarget}%
+                          </span>
+                        )}
+                      </div>
+                      {comm.photoUrl && (
+                        <a href={comm.photoUrl} target="_blank" rel="noreferrer" className="inline-block mt-1">
+                          <img src={comm.photoUrl} alt="รูปแนบ" className="w-20 h-20 rounded-lg object-cover border border-slate-200" />
+                        </a>
+                      )}
+                      {comm.voiceUrl && (
+                        <div className="p-2 bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 max-w-sm mt-1">
+                          <audio controls src={comm.voiceUrl} className="w-full h-7" />
+                        </div>
                       )}
                     </div>
                   ))}
@@ -1009,11 +1264,11 @@ function LabDetailModal({
                   </span>
                 </div>
 
-                {/* Comments List */}
+                {/* Comments List with Rich Media */}
                 <div className="space-y-3">
                   {activeCycle.comments.length === 0 ? (
                     <div className="text-xs text-slate-400 text-center py-4 italic">
-                      ยังไม่มีความคิดเห็นในรอบนี้ ร่วมชิมแล้วพิมพ์คอมเมนต์เสนอแนะได้เลยครับ
+                      ยังไม่มีความคิดเห็นในรอบนี้ ร่วมชิมแล้วพิมพ์คอมเมนต์ เสนอแนะ หรืออัดเสียงได้เลยครับ
                     </div>
                   ) : (
                     activeCycle.comments.map((comm) => {
@@ -1021,14 +1276,14 @@ function LabDetailModal({
                       return (
                         <div key={comm.id} className="flex items-start gap-3 p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800">
                           {comm.authorAvatar ? (
-                            <img src={comm.authorAvatar} alt={comm.authorName} className="w-7 h-7 rounded-full object-cover" />
+                            <img src={comm.authorAvatar} alt={comm.authorName} className="w-7 h-7 rounded-full object-cover shrink-0" />
                           ) : (
-                            <div className="w-7 h-7 rounded-full bg-indigo-600 text-white font-bold text-xs flex items-center justify-center">
+                            <div className="w-7 h-7 rounded-full bg-indigo-600 text-white font-bold text-xs flex items-center justify-center shrink-0">
                               {comm.authorName.charAt(0)}
                             </div>
                           )}
 
-                          <div className="flex-1 space-y-1">
+                          <div className="flex-1 space-y-1.5 min-w-0">
                             <div className="flex items-center justify-between">
                               <div className="flex items-center gap-2">
                                 <span className="font-bold text-xs text-slate-800 dark:text-white">
@@ -1049,9 +1304,36 @@ function LabDetailModal({
                               </span>
                             </div>
 
-                            <p className="text-xs text-slate-700 dark:text-slate-300 leading-relaxed">
-                              {comm.content}
-                            </p>
+                            {comm.content && (
+                              <p className="text-xs text-slate-700 dark:text-slate-300 leading-relaxed break-words">
+                                {comm.content}
+                              </p>
+                            )}
+
+                            {/* Attached Photo */}
+                            {comm.photoUrl && (
+                              <div className="pt-1">
+                                <a
+                                  href={comm.photoUrl}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  className="inline-block rounded-xl overflow-hidden border border-slate-200 dark:border-slate-700 shadow-xs max-w-[200px] hover:opacity-90 transition-opacity"
+                                >
+                                  <img src={comm.photoUrl} alt="รูปแนบคอมเมนต์" className="w-full h-auto max-h-36 object-cover" />
+                                </a>
+                              </div>
+                            )}
+
+                            {/* Attached Voice Note Audio Player */}
+                            {comm.voiceUrl && (
+                              <div className="p-2.5 rounded-xl bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-100 dark:border-indigo-900/50 space-y-1 max-w-sm">
+                                <div className="flex items-center gap-1.5 text-[10px] font-bold text-indigo-700 dark:text-indigo-300">
+                                  <Mic className="w-3 h-3 text-indigo-600 animate-pulse" />
+                                  <span>เสียงบันทึกข้อคิดเห็น R&D {comm.duration ? `(${comm.duration} วินาที)` : ''}</span>
+                                </div>
+                                <audio controls src={comm.voiceUrl} className="w-full h-7" />
+                              </div>
+                            )}
 
                             <div className="flex items-center gap-3 pt-1">
                               <button
@@ -1072,21 +1354,114 @@ function LabDetailModal({
                   )}
                 </div>
 
-                {/* Add Comment Input Form */}
-                <form onSubmit={handlePostComment} className="pt-2 border-t border-slate-100 dark:border-slate-800 space-y-2">
-                  <div className="flex items-center gap-2">
-                    <span className="text-[11px] text-slate-500 font-medium">ระบุระดับความหวานที่คอมเมนต์:</span>
-                    <select
-                      value={sweetnessTarget}
-                      onChange={(e) => setSweetnessTarget(e.target.value as any)}
-                      className="text-xs p-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 font-medium focus:outline-none"
-                    >
-                      <option value="all">ภาพรวมทั้งสูตร</option>
-                      <option value="0">เฉพาะ หวาน 0% (ไม่หวาน)</option>
-                      <option value="50">เฉพาะ หวาน 50% (หวานน้อย)</option>
-                      <option value="100">เฉพาะ หวาน 100% (หวานปกติ)</option>
-                    </select>
+                {/* Add Comment Input Form with Photo & Live Voice Recording */}
+                <form onSubmit={handlePostComment} className="pt-3 border-t border-slate-100 dark:border-slate-800 space-y-2.5">
+                  <div className="flex items-center justify-between gap-2 flex-wrap">
+                    <div className="flex items-center gap-2">
+                      <span className="text-[11px] text-slate-500 font-medium">ระดับความหวาน:</span>
+                      <select
+                        value={sweetnessTarget}
+                        onChange={(e) => setSweetnessTarget(e.target.value as any)}
+                        className="text-xs p-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 font-medium focus:outline-none"
+                      >
+                        <option value="all">ภาพรวมทั้งสูตร</option>
+                        <option value="0">เฉพาะ หวาน 0% (ไม่หวาน)</option>
+                        <option value="50">เฉพาะ หวาน 50% (หวานน้อย)</option>
+                        <option value="100">เฉพาะ หวาน 100% (หวานปกติ)</option>
+                      </select>
+                    </div>
+
+                    {/* Media Actions: Photo & Live Mic */}
+                    <div className="flex items-center gap-2">
+                      {/* Photo Attachment Input */}
+                      <input
+                        ref={photoInputRef}
+                        type="file"
+                        accept="image/*"
+                        onChange={handleUploadPhoto}
+                        className="hidden"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => photoInputRef.current?.click()}
+                        disabled={isUploadingAttachment}
+                        className="h-7 px-2 rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold transition-colors inline-flex items-center gap-1"
+                        title="แนบรูปถ่ายประกอบคอมเมนต์"
+                      >
+                        <Camera className="w-3.5 h-3.5 text-indigo-600" />
+                        <span>แนบรูป</span>
+                      </button>
+
+                      {/* Live Voice Recording Button */}
+                      <button
+                        type="button"
+                        onClick={toggleLiveVoiceRecording}
+                        className={`h-7 px-2.5 rounded-lg text-xs font-bold transition-all inline-flex items-center gap-1.5 ${
+                          isRecording
+                            ? 'bg-rose-600 text-white animate-pulse shadow-md shadow-rose-500/30'
+                            : 'bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800'
+                        }`}
+                        title={isRecording ? 'กดเพื่อหยุดอัดและแนบเสียง' : 'กดเพื่อเริ่มอัดเสียงสด'}
+                      >
+                        {isRecording ? (
+                          <>
+                            <Square className="w-3 h-3 fill-white" />
+                            <span>หยุดอัด ({recordingSeconds}s)</span>
+                          </>
+                        ) : (
+                          <>
+                            <Mic className="w-3.5 h-3.5 text-indigo-600" />
+                            <span>อัดเสียงสด</span>
+                          </>
+                        )}
+                      </button>
+                    </div>
                   </div>
+
+                  {/* Attachment Preview Chips */}
+                  {(commentPhotoUrl || commentVoiceUrl || isUploadingAttachment) && (
+                    <div className="flex items-center gap-2 flex-wrap p-2 bg-slate-50 dark:bg-slate-800/80 rounded-xl border border-slate-200 dark:border-slate-700 text-xs">
+                      {isUploadingAttachment && (
+                        <div className="flex items-center gap-1.5 text-indigo-600 font-bold">
+                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                          <span>กำลังอัปโหลดไฟล์แนบ...</span>
+                        </div>
+                      )}
+
+                      {commentPhotoUrl && (
+                        <div className="flex items-center gap-2 bg-white dark:bg-slate-700 px-2 py-1 rounded-lg border border-slate-200 dark:border-slate-600">
+                          <img src={commentPhotoUrl} alt="" className="w-5 h-5 rounded object-cover" />
+                          <span className="font-medium text-slate-700 dark:text-slate-200 text-[11px]">รูปถ่ายพร้อมแนบ</span>
+                          <button
+                            type="button"
+                            onClick={() => setCommentPhotoUrl(null)}
+                            className="text-slate-400 hover:text-rose-600"
+                          >
+                            <X className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      )}
+
+                      {commentVoiceUrl && (
+                        <div className="flex items-center gap-2 bg-white dark:bg-slate-700 px-2 py-1 rounded-lg border border-slate-200 dark:border-slate-600">
+                          <Volume2 className="w-3.5 h-3.5 text-indigo-600" />
+                          <span className="font-medium text-slate-700 dark:text-slate-200 text-[11px]">
+                            เสียงที่อัด ({commentVoiceDuration || 0}s)
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setCommentVoiceUrl(null);
+                              setCommentVoiceDuration(undefined);
+                            }}
+                            className="text-slate-400 hover:text-rose-600"
+                          >
+                            <X className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  )}
 
                   <div className="flex gap-2">
                     <input
@@ -1098,8 +1473,8 @@ function LabDetailModal({
                     />
                     <button
                       type="submit"
-                      disabled={!commentText.trim()}
-                      className="px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 disabled:opacity-40 text-white font-bold text-xs transition-colors flex items-center gap-1.5"
+                      disabled={!commentText.trim() && !commentPhotoUrl && !commentVoiceUrl}
+                      className="px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 disabled:opacity-40 text-white font-bold text-xs transition-colors flex items-center gap-1.5 shrink-0"
                     >
                       <Send className="w-3.5 h-3.5" />
                       <span>ส่งคอมเมนต์</span>
@@ -1109,6 +1484,22 @@ function LabDetailModal({
               </div>
             )}
           </div>
+        </div>
+
+        {/* Sticky Footer */}
+        <div className="p-3 sm:p-4 bg-slate-50 dark:bg-slate-800/80 border-t border-slate-200 dark:border-slate-700 flex items-center justify-between sticky bottom-0 z-10 shrink-0 text-xs">
+          <div className="text-slate-500 flex items-center gap-2">
+            <span className="font-mono font-bold text-indigo-600 dark:text-indigo-400">{item.code}</span>
+            <span>·</span>
+            <span>สถานะ: <strong className="text-slate-800 dark:text-white">{item.status}</strong></span>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="px-4 py-1.5 rounded-xl bg-slate-200 hover:bg-slate-300 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 font-bold transition-colors"
+          >
+            ปิดหน้าต่าง
+          </button>
         </div>
       </div>
     </div>
@@ -1142,6 +1533,44 @@ function NewLabItemModal({
   const [galleryPhotos, setGalleryPhotos] = useState<string[]>([]);
   const [audioNoteUrl, setAudioNoteUrl] = useState('');
   const [videoUrl, setVideoUrl] = useState('');
+  const [isUploadingMedia, setIsUploadingMedia] = useState(false);
+
+  const audioFileInputRef = useRef<HTMLInputElement | null>(null);
+  const videoFileInputRef = useRef<HTMLInputElement | null>(null);
+
+  const handleAudioUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      setIsUploadingMedia(true);
+      const url = await uploadMediaToServer(file, {
+        recordType: 'lead_lab_audio',
+        recordTitle: name || 'Audio Note',
+      });
+      setAudioNoteUrl(url);
+    } catch (err: any) {
+      alert(err.message || 'อัปโหลดไฟล์เสียงไม่สำเร็จ');
+    } finally {
+      setIsUploadingMedia(false);
+    }
+  };
+
+  const handleVideoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      setIsUploadingMedia(true);
+      const url = await uploadMediaToServer(file, {
+        recordType: 'lead_lab_video',
+        recordTitle: name || 'Video Clip',
+      });
+      setVideoUrl(url);
+    } catch (err: any) {
+      alert(err.message || 'อัปโหลดไฟล์วิดีโอไม่สำเร็จ');
+    } finally {
+      setIsUploadingMedia(false);
+    }
+  };
 
   const [description, setDescription] = useState('');
   const [costIngredient, setCostIngredient] = useState('15.00');
@@ -1476,31 +1905,68 @@ function NewLabItemModal({
               </div>
             )}
 
-            {/* Audio & Video inputs */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px]">
-              <div>
-                <label className="font-bold text-slate-600 dark:text-slate-400 block mb-1 flex items-center gap-1">
-                  <Mic className="w-3 h-3 text-indigo-600" />
-                  <span>ลิงก์ไฟล์เสียง / Voice Note R&D</span>
-                </label>
+            {/* Audio & Video inputs (URL or Direct Upload) */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-[11px]">
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <label className="font-bold text-slate-600 dark:text-slate-400 flex items-center gap-1">
+                    <Mic className="w-3 h-3 text-indigo-600" />
+                    <span>เสียงบรรยาย Voice Note R&D</span>
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => audioFileInputRef.current?.click()}
+                    disabled={isUploadingMedia}
+                    className="text-[10px] font-bold text-indigo-600 hover:text-indigo-700 inline-flex items-center gap-0.5"
+                  >
+                    <Upload className="w-2.5 h-2.5" />
+                    <span>เลือกไฟล์เสียง</span>
+                  </button>
+                  <input
+                    ref={audioFileInputRef}
+                    type="file"
+                    accept="audio/*"
+                    onChange={handleAudioUpload}
+                    className="hidden"
+                  />
+                </div>
                 <input
                   type="url"
                   value={audioNoteUrl}
                   onChange={(e) => setAudioNoteUrl(e.target.value)}
-                  placeholder="https://... หรือแนบลิงก์เสียง"
+                  placeholder="https://... หรืออัปโหลดไฟล์เสียง"
                   className="w-full p-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-[11px]"
                 />
               </div>
-              <div>
-                <label className="font-bold text-slate-600 dark:text-slate-400 block mb-1 flex items-center gap-1">
-                  <Video className="w-3 h-3 text-indigo-600" />
-                  <span>ลิงก์คลิปวิดีโอสาธิตการชง</span>
-                </label>
+
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <label className="font-bold text-slate-600 dark:text-slate-400 flex items-center gap-1">
+                    <Video className="w-3 h-3 text-indigo-600" />
+                    <span>คลิปวิดีโอสาธิตการชง</span>
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => videoFileInputRef.current?.click()}
+                    disabled={isUploadingMedia}
+                    className="text-[10px] font-bold text-indigo-600 hover:text-indigo-700 inline-flex items-center gap-0.5"
+                  >
+                    <Upload className="w-2.5 h-2.5" />
+                    <span>เลือกไฟล์คลิป</span>
+                  </button>
+                  <input
+                    ref={videoFileInputRef}
+                    type="file"
+                    accept="video/*"
+                    onChange={handleVideoUpload}
+                    className="hidden"
+                  />
+                </div>
                 <input
                   type="url"
                   value={videoUrl}
                   onChange={(e) => setVideoUrl(e.target.value)}
-                  placeholder="https://... ลิงก์คลิปวิดีโอ"
+                  placeholder="https://... หรืออัปโหลดไฟล์วิดีโอ"
                   className="w-full p-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-[11px]"
                 />
               </div>

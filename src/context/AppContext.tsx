@@ -18,14 +18,24 @@ interface AppContextType {
   saveLeadLabItem: (item: Partial<LabItem>) => Promise<boolean>;
   deleteLeadLabItem: (id: string) => Promise<boolean>;
   toggleLikeLeadLabItem: (id: string) => Promise<boolean>;
-  addLeadLabComment: (id: string, content: string, sweetnessTarget?: 'all' | '0' | '50' | '100') => Promise<boolean>;
+  addLeadLabComment: (
+    id: string,
+    content: string,
+    sweetnessTarget?: 'all' | '0' | '50' | '100',
+    extra?: { photoUrl?: string; voiceUrl?: string; duration?: number }
+  ) => Promise<boolean>;
   toggleLikeLeadLabComment: (id: string, commentId: string) => Promise<boolean>;
   cycleLeadLabRevision: (id: string, summary: string, nextTitle?: string) => Promise<boolean>;
   setLeadLabStatus: (id: string, status: LabFormulaStatus) => Promise<boolean>;
   saveFranchiseStore: (store: Partial<FranchiseStore>) => Promise<boolean>;
   deleteFranchiseStore: (id: string) => Promise<boolean>;
   toggleLikeFranchiseStore: (id: string) => Promise<boolean>;
-  addFranchiseStoreComment: (id: string, content: string, sweetnessTarget?: 'all' | '0' | '50' | '100') => Promise<boolean>;
+  addFranchiseStoreComment: (
+    id: string,
+    content: string,
+    sweetnessTarget?: 'all' | '0' | '50' | '100',
+    extra?: { photoUrl?: string; voiceUrl?: string; duration?: number }
+  ) => Promise<boolean>;
   toggleLikeFranchiseStoreComment: (id: string, commentId: string) => Promise<boolean>;
   recordFranchiseStoreView: (id: string) => void;
   recordLeadLabItemView: (id: string) => void;
@@ -588,9 +598,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   };
 
-  const addLeadLabComment = async (id: string, content: string, sweetnessTarget?: 'all' | '0' | '50' | '100') => {
+  const addLeadLabComment = async (
+    id: string,
+    content: string,
+    sweetnessTarget?: 'all' | '0' | '50' | '100',
+    extra?: { photoUrl?: string; voiceUrl?: string; duration?: number }
+  ) => {
     return perform('comment-lead-lab', async () => {
-      const res = await commentLeadLabItemApi(id, { content, sweetnessTarget });
+      const res = await commentLeadLabItemApi(id, { content, sweetnessTarget, ...extra });
       if (res?.item) {
         setLeadLabItems(p => p.map(x => x.id === id ? res.item : x));
       }
@@ -665,20 +680,32 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return saveFranchiseStore({ id, likedBy: nextLiked });
   };
 
-  const addFranchiseStoreComment = async (id: string, content: string, sweetnessTarget?: 'all' | '0' | '50' | '100') => {
+  const addFranchiseStoreComment = async (
+    id: string,
+    content: string,
+    sweetnessTarget?: 'all' | '0' | '50' | '100',
+    extra?: { photoUrl?: string; voiceUrl?: string; duration?: number }
+  ) => {
     const store = franchiseStores.find(x => x.id === id);
     if (!store) return false;
     const cycles = store.revisionCycles || [
       { cycleNumber: 1, title: 'รอบเปิดตัวสาขา & เมนูบอร์ด', status: 'active', createdAt: new Date().toISOString(), createdBy: currentUser.alias, comments: [] }
     ];
+    let text = content ? String(content).trim() : '';
+    if (!text && (extra?.photoUrl || extra?.voiceUrl)) {
+      text = extra?.photoUrl && extra?.voiceUrl ? '📷 แนบรูปภาพและเสียง' : extra?.photoUrl ? '📷 แนบรูปภาพ' : '🎙️ ข้อความเสียง';
+    }
     const newComment = {
       id: `comm-${crypto.randomUUID()}`,
       authorId: currentUser.id,
       authorName: currentUser.alias || currentUser.name,
       authorAvatar: currentUser.avatar,
       createdAt: new Date().toISOString(),
-      content,
+      content: text,
       sweetnessTarget: sweetnessTarget || 'all',
+      photoUrl: extra?.photoUrl,
+      voiceUrl: extra?.voiceUrl,
+      duration: extra?.duration,
       likes: []
     };
     const activeCycleIndex = cycles.findIndex(c => c.status === 'active');
@@ -733,7 +760,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       ];
     }
     setFranchiseStores(p => p.map(s => s.id === id ? { ...s, viewLogs: nextLogs } : s));
-    void saveFranchiseStore({ id, viewLogs: nextLogs });
+    void sendJson(`/api/franchise-stores/${encodeURIComponent(id)}/view`, {}).catch(() => {});
   };
 
   const recordLeadLabItemView = (id: string) => {
@@ -761,7 +788,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       ];
     }
     setLeadLabItems(p => p.map(x => x.id === id ? { ...x, viewLogs: nextLogs } : x));
-    void saveLeadLabItem({ id, viewLogs: nextLogs });
+    void sendJson(`/api/lead-lab/items/${encodeURIComponent(id)}/view`, {}).catch(() => {});
   };
 
   const updateExchangeRate = (rate: number, isAuto = false) => { if (rate > 0 && Number.isFinite(rate)) setExchangeRate(p => ({ ...p, rate, isAuto, lastUpdated: new Date().toLocaleTimeString('th-TH') })); };

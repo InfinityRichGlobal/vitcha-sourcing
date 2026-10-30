@@ -118,13 +118,15 @@ export const saveDriveConfigApi = (config: { clientId: string; clientSecret: str
 export const postLeadLabItemApi = (value: Partial<LabItem>) => sendJson('/api/lead-lab/items', value);
 export const deleteLeadLabItemApi = (id: string) => sendJson(`/api/lead-lab/items/${encodeURIComponent(id)}`, {}, 'DELETE');
 export const likeLeadLabItemApi = (id: string) => sendJson(`/api/lead-lab/items/${encodeURIComponent(id)}/like`, {});
-export const commentLeadLabItemApi = (id: string, payload: { content: string; sweetnessTarget?: string }) => sendJson(`/api/lead-lab/items/${encodeURIComponent(id)}/comments`, payload);
+export const commentLeadLabItemApi = (id: string, payload: { content: string; sweetnessTarget?: string; photoUrl?: string; voiceUrl?: string; duration?: number }) => sendJson(`/api/lead-lab/items/${encodeURIComponent(id)}/comments`, payload);
 export const likeLeadLabCommentApi = (id: string, commentId: string) => sendJson(`/api/lead-lab/items/${encodeURIComponent(id)}/comments/${encodeURIComponent(commentId)}/like`, {});
 export const cycleLeadLabItemApi = (id: string, payload: { action: 'close'; summary?: string; nextTitle?: string }) => sendJson(`/api/lead-lab/items/${encodeURIComponent(id)}/cycle`, payload);
 export const updateLeadLabStatusApi = (id: string, status: LabFormulaStatus) => sendJson(`/api/lead-lab/items/${encodeURIComponent(id)}/status`, { status });
+export const viewLeadLabItemApi = (id: string) => sendJson(`/api/lead-lab/items/${encodeURIComponent(id)}/view`, {});
 
 export const postFranchiseStoreApi = (value: Partial<FranchiseStore>) => sendJson('/api/franchise-stores', value);
 export const deleteFranchiseStoreApi = (id: string) => sendJson(`/api/franchise-stores/${encodeURIComponent(id)}`, {}, 'DELETE');
+export const viewFranchiseStoreApi = (id: string) => sendJson(`/api/franchise-stores/${encodeURIComponent(id)}/view`, {});
 
 export async function uploadMediaToServer(
   file: File,
