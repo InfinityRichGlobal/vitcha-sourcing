@@ -11,6 +11,7 @@ import {
   Radio,
   Volume2,
   ShieldCheck,
+  Loader2,
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { playAlertChime } from '../utils/audioHelper';
@@ -59,22 +60,27 @@ export const InstallPromptModal: React.FC<InstallPromptModalProps> = ({ isOpen, 
 
   const [pushBusy, setPushBusy] = useState(false);
   const [pushError, setPushError] = useState(false);
+  const [pushStatus, setPushStatus] = useState<string | null>(null);
+  const showPushError = (error: unknown) => {
+    setPushError(true);
+    setPushStatus(error instanceof Error && error.name !== 'AbortError' ? error.message : 'การเชื่อมต่อนานเกินไป กรุณาตรวจอินเทอร์เน็ตแล้วกดทดสอบอีกครั้ง');
+  };
   const handleRequestNotification = async () => {
     setPushBusy(true); setPushError(false);
     try {
-      await enablePushNotifications();
+      await enablePushNotifications(true, setPushStatus);
       setNotificationPermission(Notification.permission);
-      setTestStatusMsg('เปิดรับแจ้งเตือนจากเซิร์ฟเวอร์บนเครื่องนี้แล้ว');
-    } catch (error) { setPushError(true); setTestStatusMsg(error instanceof Error ? error.message : 'เปิดแจ้งเตือนไม่สำเร็จ'); }
+      setPushStatus('เปิดรับแจ้งเตือนจากเซิร์ฟเวอร์บนเครื่องนี้แล้ว');
+    } catch (error) { showPushError(error); }
     finally { setPushBusy(false); }
   };
   const handleTestLocalNotification = async () => {
     setPushBusy(true); setPushError(false);
     try {
-      await testPushNotification();
+      await testPushNotification(setPushStatus);
       setNotificationPermission(Notification.permission);
-      setTestStatusMsg('บริการ Push รับข้อความทดสอบแล้ว กรุณาตรวจสอบการแจ้งเตือนบนมือถือ');
-    } catch (error) { setPushError(true); setTestStatusMsg(error instanceof Error ? error.message : 'ส่งแจ้งเตือนไม่สำเร็จ'); }
+      setPushStatus('บริการ Push รับข้อความทดสอบแล้ว กรุณาตรวจสอบการแจ้งเตือนบนมือถือ');
+    } catch (error) { showPushError(error); }
     finally { setPushBusy(false); }
   };
 
@@ -240,7 +246,7 @@ export const InstallPromptModal: React.FC<InstallPromptModalProps> = ({ isOpen, 
             </button>
           </div>
 
-          {/* Section: Notification Permission + Local Test Button */}
+          {/* Device permission and server-to-device test */}
           <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-200/80 space-y-2.5 text-xs">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
@@ -270,12 +276,17 @@ export const InstallPromptModal: React.FC<InstallPromptModalProps> = ({ isOpen, 
 
             <button
               type="button"
-              onClick={handleTestLocalNotification} disabled={pushBusy}
+              onClick={handleTestLocalNotification} disabled={pushBusy} aria-busy={pushBusy}
               className="w-full py-2.5 px-4 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-xs flex items-center justify-center gap-2 shadow-xs active:scale-[0.99] transition-all"
             >
-              <Volume2 className="w-4 h-4" />
-              <span>🔔 ทดสอบแจ้งเตือนจากเซิร์ฟเวอร์เข้ามือถือเครื่องนี้</span>
+              {pushBusy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Volume2 className="w-4 h-4" />}
+              <span>{pushBusy ? 'กำลังทดสอบแจ้งเตือน…' : '🔔 ทดสอบแจ้งเตือนจากเซิร์ฟเวอร์เข้ามือถือเครื่องนี้'}</span>
             </button>
+            {pushStatus && (
+              <div role={pushError ? 'alert' : 'status'} aria-live="polite" className={`p-2.5 rounded-xl border text-xs font-bold ${pushError ? 'bg-rose-50 border-rose-200 text-rose-800' : 'bg-blue-50 border-blue-200 text-blue-900'}`}>
+                {pushStatus}
+              </div>
+            )}
           </div>
 
           {/* Admin-Only Special Broadcast Button ("ปุ่มพิเศษสำหรับผมเทสแจ้งเตือนทุกคน") */}
@@ -311,7 +322,7 @@ export const InstallPromptModal: React.FC<InstallPromptModalProps> = ({ isOpen, 
           )}
 
           {testStatusMsg && (
-            <div className={`p-2.5 rounded-xl border text-xs font-bold text-center ${pushError ? 'bg-rose-50 border-rose-200 text-rose-800' : 'bg-emerald-50 border-emerald-200 text-emerald-800'}`}>
+            <div className="p-2.5 rounded-xl border text-xs font-bold text-center bg-emerald-50 border-emerald-200 text-emerald-800">
               {testStatusMsg}
             </div>
           )}
