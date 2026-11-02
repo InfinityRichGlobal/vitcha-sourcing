@@ -138,3 +138,10 @@ test('direct upload completion cannot acknowledge a missing, truncated or trashe
   assert.equal(writes,0);
  }
 });
+
+test('a folder ID alone never claims that Google Drive OAuth is connected', async () => {
+  const media = createCloudMedia({ url, key, request: async () => [] });
+  const status = await media.getDriveStatus();
+  assert.equal(status.configured, false);
+  assert.equal(status.connected, false);
+});

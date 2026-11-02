@@ -113,6 +113,7 @@ export const SettingsManagementView: React.FC = () => {
   const [driveStatus, setDriveStatus] = useState<{
     configured?: boolean;
     connected?: boolean;
+    oauthError?: string;
     folderId?: string;
     user?: { emailAddress?: string; displayName?: string };
     storageQuota?: { usage?: string; limit?: string };
@@ -135,7 +136,7 @@ export const SettingsManagementView: React.FC = () => {
           setDriveStatus(res);
           if (res?.folderId) setDriveFolderId(res.folderId);
         })
-        .catch(() => {});
+        .catch(() => setDriveStatus({ connected: false, message: 'ตรวจสอบการเชื่อมต่อไม่ได้ กรุณาลองใหม่' }));
     }
   }, [currentUser.id, simulatedFromAdmin]);
 
@@ -414,7 +415,7 @@ export const SettingsManagementView: React.FC = () => {
           <div>
             {renderStatus === 'connected' ? (
               <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-bold">
-                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                <span className={`w-2 h-2 rounded-full ${driveStatus?.connected ? 'bg-emerald-500' : 'bg-amber-500'}`} />
                 <span>🟢 เชื่อมต่อเซิร์ฟเวอร์ Render สำเร็จ</span>
               </span>
             ) : renderStatus === 'connecting' ? (
@@ -532,15 +533,15 @@ export const SettingsManagementView: React.FC = () => {
                 </a>
               </div>
               <p className="text-[11px] text-slate-500 mt-0.5">
-                เชื่อมต่อโฟลเดอร์ CENTER เรียบร้อยแล้ว รองรับการอัปโหลดรูปภาพ เสียงอัดสด และวิดีโอ (สูงสุด 100 MB/ไฟล์) พร้อม Cloud Media สำรองอัตโนมัติ
+                {driveStatus?.connected ? 'เชื่อม Google Drive แล้ว · วิดีโอและไฟล์แนบสูงสุด 2 GB ต่อไฟล์ โดยขึ้นกับพื้นที่ว่าง' : (driveStatus?.oauthError || driveStatus?.message || 'กำลังตรวจสอบการเชื่อมต่อ Google Drive…')}
               </p>
             </div>
           </div>
 
           <div className="flex items-center gap-1.5 shrink-0 flex-wrap">
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-800 text-[11px] font-bold">
-              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-              <span>🟢 เชื่อมต่อ Google Drive CENTER สำเร็จ</span>
+            <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-[11px] font-bold ${driveStatus?.connected ? 'bg-emerald-50 border-emerald-200 text-emerald-800' : 'bg-amber-50 border-amber-200 text-amber-800'}`}>
+              <span className={`w-2 h-2 rounded-full ${driveStatus?.connected ? 'bg-emerald-500' : 'bg-amber-500'}`} />
+              <span>{driveStatus?.connected ? 'เชื่อมต่อ Google Drive สำเร็จ' : 'ยังไม่ยืนยันการเชื่อมต่อ Google Drive'}</span>
             </span>
             <a
               href={`https://drive.google.com/drive/u/0/folders/${driveFolderId}`}

@@ -155,7 +155,7 @@ test('a 401 for the current authenticated session still clears it', async t => {
   assert.equal(api.getSessionToken(), null); assert.equal(session.expired(), 1);
 });
 
-test('blocked Google upload times out and relays the original file through the server', async t => {
+test('small image uploads go through the server without contacting Google from the browser', async t => {
  t.mock.method(console,'warn',()=>{});
  const realSetTimeout=globalThis.setTimeout;
  t.mock.method(globalThis,'setTimeout',(fn,ms,...args)=>realSetTimeout(fn,ms===45000?5:ms,...args));
@@ -171,7 +171,7 @@ test('blocked Google upload times out and relays the original file through the s
   return new Response(JSON.stringify({url:'/media/relay'}));
  });
  const result=await api.uploadMediaToServer(new File(['image'],'photo.png',{type:'image/png'}));
- assert.ok(result.endsWith('/media/relay'));assert.equal(calls.length,3);
+ assert.ok(result.endsWith('/media/relay'));assert.equal(calls.length,1);
 });
 
 test('HTTP 200 with a captive portal or malformed JSON never acknowledges a save', async t => {

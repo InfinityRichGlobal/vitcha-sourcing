@@ -171,3 +171,21 @@ test('brand refresh rolls back fully when PostgreSQL fails and retry preserves m
   f.failWrites(false);assert.equal((await call('/api/system/brand-concept',command,token)).status,200);
   const after=await f.read();assert.deepEqual(after.users,before.users);assert.equal(after.franchiseStores.length,2);assert.equal(after.leadLabItems.filter(x=>x.type==='topping').length,2);
 });
+
+test('push events wait for durable commit; failed writes never send and subscriptions survive restart', async t => {
+  const sent = [];
+  const delivery = { expired: new Set(), broadcast: async (db, n) => { sent.push(n.id); assert.ok(db.pushVapid.privateKey); } };
+  const f = await fixture(t); const a = await f.start({ pushDelivery: delivery });
+  const keys = (await f.read()).pushVapid;
+  const payload = { id: 'commit-push', title: 'Test', message: 'Commit first', type: 'system' };
+  f.failWrites(true);
+  assert.equal((await a.call('/api/notifications', payload, a.token)).status, 503);
+  assert.equal(sent.length, 0);
+  f.failWrites(false);
+  assert.equal((await a.call('/api/notifications', payload, a.token)).status, 200);
+  assert.deepEqual(sent, ['commit-push']);
+  assert.equal((await a.call('/api/notifications', payload, a.token)).status, 200);
+  assert.equal(sent.length, 1);
+  await f.start({ pushDelivery: delivery });
+  assert.deepEqual((await f.read()).pushVapid, keys);
+});

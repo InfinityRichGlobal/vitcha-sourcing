@@ -1,3 +1,5 @@
+import { VideoUploadField } from './VideoUploadField';
+import { MediaImage } from './MediaImage';
 import { AvatarImage } from './AvatarImage';
 import React, { useState, useEffect, useRef } from 'react';
 import { useDialog } from '../hooks/useDialog';
@@ -6,8 +8,6 @@ import { DrinkDetailItem, VoiceNoteEntry, AttachedFile } from '../types';
 import { AudioRecorder } from './AudioRecorder';
 import { getItemVoiceNotes } from '../utils/audioHelper';
 import { uploadImageFile as compressImageFile } from '../utils/mediaStorage';
-import { saveVideoFile, deleteVideoFile } from '../utils/mediaStorage';
-import { VideoPlayer } from './VideoPlayer';
 import { UploadablePhotoGrid } from './UploadablePhotoGrid';
 import { AttachedFilesSection } from './AttachedFilesSection';
 import {
@@ -163,29 +163,6 @@ export const NewStoreInspoModal: React.FC<NewStoreInspoModalProps> = ({ isOpen, 
     onClose();
   };
 
-
-  const handleVideoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (!files || files.length === 0) return;
-    setIsVideoLoading(true);
-    try {
-      for (const file of Array.from(files)) {
-        const videoData = await saveVideoFile(file);
-        if (videoData) {
-          setVideos((prev) => [...prev, videoData]);
-        }
-      }
-    } catch (err: any) {
-      alert(err.message || 'ไม่สามารถอัปโหลดวิดีโอได้');
-    } finally {
-      setIsVideoLoading(false);
-      e.target.value = '';
-    }
-  };
-
-  const handleRemoveVideo = (index: number) => {
-    setVideos(previous => previous.filter((_, i) => i !== index));
-  };
 
   const handleMassDrinkUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
@@ -778,51 +755,9 @@ export const NewStoreInspoModal: React.FC<NewStoreInspoModalProps> = ({ isOpen, 
             </div>
           </div>
 
-          {/* Section: Videos (คลิปวิดีโอบรรยากาศร้าน & การชงเครื่องดื่ม) */}
-          <div className="bg-slate-50/80 p-4 rounded-2xl border border-slate-100 space-y-3">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
-                <i className="fa-solid fa-video text-purple-600" />
-                <span>คลิปวิดีโอบรรยากาศร้าน & การชงเครื่องดื่ม ({videos.length})</span>
-              </span>
-              <span className="text-[10px] text-emerald-700 font-semibold bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
-                ✓ ไม่จำกัดขนาดไฟล์
-              </span>
-            </div>
-
-            {/* Video preview cards */}
-            {videos.length > 0 && (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 py-1">
-                {videos.map((v, i) => (
-                  <VideoPlayer
-                    key={i}
-                    src={v}
-                    className="rounded-xl border border-slate-200 shadow-xs h-36"
-                    badgeLabel={`คลิป #${i + 1}`}
-                    onRemove={() => handleRemoveVideo(i)}
-                  />
-                ))}
-              </div>
-            )}
-
-            {/* Video Upload Button */}
-            <label className="flex items-center justify-center gap-2 py-2.5 px-4 bg-white border border-slate-200 hover:border-purple-500 rounded-xl text-xs font-semibold text-slate-700 cursor-pointer shadow-sm active:scale-[0.99] transition-all">
-              <i className="fa-solid fa-video text-purple-600" />
-              <span>
-                {isVideoLoading
-                  ? 'กำลังประมวลผลคลิปวิดีโอ...'
-                  : '+ เลือกคลิปวิดีโอจากอัลบั้ม / ถ่ายคลิปวิดีโอใหม่ (ไม่จำกัดขนาดไฟล์)'}
-              </span>
-              <input
-                type="file" disabled={isSaving || isVideoLoading}
-                accept="video/*"
-                multiple
-
-                onChange={handleVideoUpload}
-                className="hidden"
-              />
-            </label>
-          </div>
+          <VideoUploadField urls={videos} onChange={setVideos} onBusyChange={setIsVideoLoading}
+            disabled={isSaving} recordType="drink_stores" recordTitle={storeName} recordId={editingStore?.id}
+            label="คลิปวิดีโอหน้างาน" />
 
           {/* Section: Attached Documents & Files */}
           <AttachedFilesSection
@@ -901,7 +836,7 @@ export const NewStoreInspoModal: React.FC<NewStoreInspoModalProps> = ({ isOpen, 
                   <label className="shrink-0 cursor-pointer relative group">
                     {item.photo ? (
                       <div className="relative w-20 h-20 rounded-xl overflow-hidden border border-slate-200 shadow-sm">
-                        <img
+                        <MediaImage
                           src={item.photo}
                           alt="drink"
                           className="w-full h-full object-cover group-hover:opacity-80"

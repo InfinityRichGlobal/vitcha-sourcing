@@ -55,6 +55,7 @@ test('mobile viewer can read comments but cannot compose or change handoff', asy
   await navigateTab(page, 'ซัพพลายเออร์');
   await expect(page.locator('input[placeholder="เขียนความคิดเห็นในโพสต์นี้..."]')).toHaveCount(0);
   await navigateTab(page, 'ส่งต่องาน');
+  await page.getByRole('button', { name: /ดูรวมทุกพาร์ท/ }).click();
   await expect(page.locator('select').filter({ has: page.locator('option[value="awaiting"]') }).first()).toBeDisabled();
   await capture(page, { path: 'test-results/mobile-handoff.png', fullPage: false });
 });

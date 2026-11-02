@@ -1,3 +1,5 @@
+import { VideoUploadField } from './VideoUploadField';
+import { MediaImage } from './MediaImage';
 import { AvatarImage } from './AvatarImage';
 import React, { useState, useEffect, useRef } from 'react';
 import { useDialog } from '../hooks/useDialog';
@@ -5,8 +7,6 @@ import { useApp } from '../context/AppContext';
 import { LocationRecord, LocationType, LayoutFormat, RentModel, VoiceNoteEntry, AttachedFile } from '../types';
 import { AudioRecorder } from './AudioRecorder';
 import { uploadImageFile as compressImageFile } from '../utils/mediaStorage';
-import { saveVideoFile, deleteVideoFile } from '../utils/mediaStorage';
-import { VideoPlayer } from './VideoPlayer';
 import { UploadablePhotoGrid } from './UploadablePhotoGrid';
 import { AttachedFilesSection } from './AttachedFilesSection';
 import {
@@ -279,25 +279,6 @@ export const NewLocationModal: React.FC<NewLocationModalProps> = ({ isOpen, onCl
     );
   };
 
-
-  const handleVideoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!e.target.files?.length) return;
-    const file = e.target.files[0];
-    if (file.size > 200 * 1024 * 1024) {
-      alert('ขนาดวิดีโอต้องไม่เกิน 200MB');
-      return;
-    }
-    setIsVideoLoading(true);
-    try {
-      const url = await saveVideoFile(file);
-      if (url) setVideos((prev) => [...prev, url]);
-    } catch {
-      alert('ไม่สามารถอัปโหลดวิดีโอได้');
-    } finally {
-      setIsVideoLoading(false);
-      e.target.value = '';
-    }
-  };
 
   const handleAddCustomTag = () => {
     const trimmed = customTagInput.trim().replace(/^#/, '');
@@ -1180,49 +1161,9 @@ export const NewLocationModal: React.FC<NewLocationModalProps> = ({ isOpen, onCl
               />
             </div>
 
-            {/* Video Upload */}
-            <div className="p-3 bg-white rounded-xl border border-slate-200 space-y-2">
-              <div className="flex items-center justify-between text-xs font-bold text-slate-700">
-                <span>คลิปวิดีโอเดินสำรวจบรรยากาศ</span>
-                <label className="cursor-pointer text-sky-600 hover:text-sky-700 font-bold flex items-center gap-1">
-                  <Upload className="w-3.5 h-3.5" />
-                  <span>+ อัปโหลดคลิป</span>
-                  <input
-                    type="file"
-                    accept="video/*"
-                    className="hidden"
-                    onChange={handleVideoUpload}
-                    disabled={isVideoLoading}
-                  />
-                </label>
-              </div>
-
-              {isVideoLoading && (
-                <div className="text-xs text-sky-600 animate-pulse font-bold">
-                  กำลังอัปโหลดวิดีโอ...
-                </div>
-              )}
-
-              {videos.length > 0 && (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
-                  {videos.map((vid, vIdx) => (
-                    <div key={vIdx} className="relative rounded-xl overflow-hidden border">
-                      <VideoPlayer src={vid} className="w-full h-36" />
-                      <button
-                        type="button"
-                        onClick={() => {
-                          deleteVideoFile(vid);
-                          setVideos(videos.filter((_, i) => i !== vIdx));
-                        }}
-                        className="absolute top-1 right-1 bg-black/70 text-white p-1 rounded-full text-xs"
-                      >
-                        <Trash2 className="w-3 h-3" />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
+          <VideoUploadField urls={videos} onChange={setVideos} onBusyChange={setIsVideoLoading}
+            disabled={isSaving} recordType="locations" recordTitle={name} recordId={editingLocation?.id}
+            label="คลิปวิดีโอหน้างาน" />
 
             {/* Document Attachments (PDF ผังห้อง, สัญญาเช่า, เอกสารเสนอพื้นที่) */}
             <AttachedFilesSection

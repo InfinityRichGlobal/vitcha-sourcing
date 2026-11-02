@@ -48,7 +48,7 @@ export async function saveVideoFile(
 
 /**
  * Backwards compatibility helper for existing callers.
- * Returns the shared URL after upload (Google Drive direct / 100 MB max).
+ * Returns the shared URL after the server confirms the chunked upload.
  */
 export async function readVideoFile(
   file: File,

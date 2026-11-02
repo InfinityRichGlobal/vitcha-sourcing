@@ -1,3 +1,4 @@
+import { MediaImage } from './MediaImage';
 import { AvatarImage } from './AvatarImage';
 import React, { useState } from 'react';
 import { LocationRecord } from '../types';
@@ -390,7 +391,7 @@ export const LocationCard: React.FC<LocationCardProps> = ({
                       }}
                       className="relative group cursor-pointer overflow-hidden rounded-xl bg-slate-900/5 border border-slate-200/80 h-44 sm:h-48 flex items-center justify-center p-1"
                     >
-                      <img
+                      <MediaImage
                         loading="lazy"
                         decoding="async"
                         src={photo}
@@ -660,7 +661,7 @@ export const LocationCard: React.FC<LocationCardProps> = ({
             <X className="w-6 h-6" />
           </button>
 
-          <img
+          <MediaImage
             src={displayPhotos[lightboxIdx]}
             alt={location.name}
             className="max-w-full max-h-[85vh] object-contain rounded-xl shadow-2xl"

@@ -1,3 +1,4 @@
+import { MediaImage } from './MediaImage';
 import React, { useState, useEffect, useRef } from 'react';
 import { Camera, X, Loader2, AlertCircle, Plus } from 'lucide-react';
 import { uploadImageFile as compressImageFile } from '../utils/mediaStorage';
@@ -50,6 +51,15 @@ export const UploadablePhotoGrid: React.FC<UploadablePhotoGridProps> = ({
     }))
   );
 
+  const [failedPreviews, setFailedPreviews] = useState<Record<string, boolean>>({});
+  const [previewAttempts, setPreviewAttempts] = useState<Record<string, number>>({});
+  const localUrls = useRef(new Set<string>());
+  useEffect(() => {
+    const visible = new Set(items.map(item => item.previewUrl));
+    for (const url of localUrls.current) if (!visible.has(url)) { URL.revokeObjectURL(url); localUrls.current.delete(url); }
+  }, [items]);
+  useEffect(() => () => { for (const url of localUrls.current) URL.revokeObjectURL(url); }, []);
+
   // Keep items in sync if parent updates urls from an external reset/load
   const prevUrlsRef = useRef<string[]>(urls);
   useEffect(() => {
@@ -97,6 +107,7 @@ export const UploadablePhotoGrid: React.FC<UploadablePhotoGridProps> = ({
     const newPhotoItems: PhotoItem[] = fileList.map((file) => {
       const tempId = `temp-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
       const blobUrl = URL.createObjectURL(file);
+      localUrls.current.add(blobUrl);
       return {
         id: tempId,
         previewUrl: blobUrl,
@@ -124,7 +135,7 @@ export const UploadablePhotoGrid: React.FC<UploadablePhotoGridProps> = ({
             }
             const updated = current.map((i) =>
               i.id === targetItem.id
-                ? { ...i, status: 'done' as const, uploadedUrl }
+                ? { ...i, status: 'done' as const, uploadedUrl, previewUrl: uploadedUrl }
                 : i
             );
             const completed = updated
@@ -210,12 +221,20 @@ export const UploadablePhotoGrid: React.FC<UploadablePhotoGridProps> = ({
             key={item.id}
             className="relative w-16 h-16 rounded-xl overflow-hidden border border-slate-200 bg-slate-100 group shadow-sm flex-shrink-0"
           >
-            <img
+            <MediaImage
+              key={`${item.previewUrl}-${previewAttempts[item.id] || 0}`}
               src={item.previewUrl}
+              onError={() => setFailedPreviews(previous => ({ ...previous, [item.id]: true }))}
+              onLoad={() => setFailedPreviews(previous => ({ ...previous, [item.id]: false }))}
               alt="preview"
               className="w-full h-full object-cover"
             />
 
+            {failedPreviews[item.id] && item.status === 'done' && <button type="button"
+              className="absolute inset-x-0 bottom-0 bg-white/95 text-[9px] text-rose-700 p-1"
+              onClick={() => { setFailedPreviews(previous => ({ ...previous, [item.id]: false })); setPreviewAttempts(previous => ({ ...previous, [item.id]: (previous[item.id] || 0) + 1 })); }}>
+              โหลดรูปอีกครั้ง
+            </button>}
             {/* Status Overlay */}
             {item.status === 'uploading' && (
               <div className="absolute inset-0 bg-black/60 backdrop-blur-[1px] flex flex-col items-center justify-center text-white p-1 z-10">

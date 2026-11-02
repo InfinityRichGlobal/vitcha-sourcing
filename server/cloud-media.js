@@ -1,3 +1,4 @@
+import fs from 'node:fs';
 import { createHash, randomBytes } from 'node:crypto';
 import { Readable } from 'node:stream';
 import { pipeline } from 'node:stream/promises';
@@ -147,9 +148,10 @@ export function createCloudMedia({ request, url, key, drive = null, fetchImpl = 
     const folderUrl = `https://drive.google.com/drive/folders/${folderId}`;
     if (!driveConfig?.clientId || !driveConfig?.refreshToken) {
       return {
-        configured: true,
-        connected: true,
+        configured: false,
+        connected: false,
         mode: 'cloud_center',
+        message: 'ยังไม่ได้เชื่อม Google Drive ด้วย OAuth ขณะนี้ใช้พื้นที่ Cloud Media',
         folderId,
         folderUrl,
         user: { displayName: 'Google Drive CENTER + Cloud Media', emailAddress: `Folder ID: ${folderId}` },
@@ -157,7 +159,7 @@ export function createCloudMedia({ request, url, key, drive = null, fetchImpl = 
     }
     try {
       const token = await googleToken();
-      if (!token) return { configured: true, connected: true, mode: 'cloud_center', folderId, folderUrl };
+      if (!token) return { configured: false, connected: false, mode: 'cloud_center', folderId, folderUrl };
       const aboutRes = await fetchImpl('https://www.googleapis.com/drive/v3/about?fields=storageQuota,user', {
         headers: { Authorization: `Bearer ${token}` },
         signal: AbortSignal.timeout(20000),
@@ -204,6 +206,27 @@ export function createCloudMedia({ request, url, key, drive = null, fetchImpl = 
     await request('/rest/v1/vitcha_media', { method: 'POST', headers: { 'Content-Type': 'application/json', Prefer: 'return=minimal' }, body: JSON.stringify({ id, provider, file_id: fileId, mime_type: mimeType, bytes: bytes.length, sha256: createHash('sha256').update(bytes).digest('hex') }) });
     return `/media/${id}`;
   }
+  async function uploadFromFile({ filePath, filename, mimeType, fileSize, recordType, recordId, recordTitle, signal }) {
+    const md5 = createHash('md5'), sha256 = createHash('sha256');
+    for await (const bytes of fs.createReadStream(filePath, { signal })) { md5.update(bytes); sha256.update(bytes); }
+    const checksum = md5.digest('hex');
+    const combined = AbortSignal.any([signal, AbortSignal.timeout(30 * 60 * 1000)]);
+    const session = await createDirectUploadSession({ filename, mimeType, fileSize, recordType, recordId, recordTitle });
+    if (session.directAvailable) {
+      // The phone only contacts our server; Google credentials and traffic stay server-side.
+      const response = await fetchImpl(session.sessionUrl, { method: 'PUT', headers: { 'Content-Type': mimeType, 'Content-Length': String(fileSize) }, body: fs.createReadStream(filePath, { signal: combined }), duplex: 'half', signal: combined });
+      if (!response.ok) throw new Error(`Google Drive รับไฟล์ไม่สำเร็จ (${response.status}) กรุณาลองอีกครั้ง`);
+      const metadata = await response.json();
+      const result = await completeDirectUpload({ fileId: metadata.id, folderId: session.folderId, mimeType, fileSize, md5Checksum: checksum });
+      return result.url;
+    }
+    const id = randomBytes(24).toString('hex');
+    const fileId = `${id}/${filename}`;
+    const response = await fetchImpl(`${url}/storage/v1/object/vitcha-media/${fileId}`, { method: 'POST', headers: { ...headers(), 'Content-Type': mimeType, 'Content-Length': String(fileSize), 'x-upsert': 'false' }, body: fs.createReadStream(filePath, { signal: combined }), duplex: 'half', signal: combined });
+    if (!response.ok) throw new Error(`พื้นที่เก็บไฟล์รับไฟล์ไม่สำเร็จ (${response.status}) ตรวจสอบโควตาหรือเชื่อม Google Drive แล้วลองอีกครั้ง`);
+    await request('/rest/v1/vitcha_media', { method: 'POST', headers: { 'Content-Type': 'application/json', Prefer: 'return=minimal' }, body: JSON.stringify({ id, provider: 'supabase', file_id: fileId, mime_type: mimeType, bytes: fileSize, sha256: sha256.digest('hex') }) });
+    return `/media/${id}`;
+  }
   async function serve(req, res) {
     const id = req.params.id;
     if (!/^[a-f0-9]{48}$/.test(id)) return res.sendStatus(404);
@@ -227,5 +250,5 @@ export function createCloudMedia({ request, url, key, drive = null, fetchImpl = 
     for (const name of ['content-type','content-length','content-range','accept-ranges']) if (response.headers.has(name)) res.set(name, response.headers.get(name));
     if (response.body) await pipeline(Readable.fromWeb(response.body), res); else res.end();
   }
-  return { upload, serve, createDirectUploadSession, completeDirectUpload, configureDrive, getDriveStatus };
+  return { uploadFromFile, upload, serve, createDirectUploadSession, completeDirectUpload, configureDrive, getDriveStatus };
 }

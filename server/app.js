@@ -1,3 +1,5 @@
+import { newPushKeys, createPushDelivery, registerPushRoutes } from './push.js';
+import { registerUploadSessions } from './upload-sessions.js';
 import { recordActivity } from './activity-history.js';
 import { resolveMapLink } from './map-links.js';
 import { packSnapshot } from './snapshot-wire.js';
@@ -93,7 +95,7 @@ function validateRecord(record, collection) {
   }
 }
 
-export function createApp({ dataDir, defaults = DEFAULT_DATABASE, sessionTtlMs = 30 * 24 * 60 * 60 * 1000, recoveryPasswordHash = null, persistence = null, mediaStorage = null } = {}) {
+export function createApp({ dataDir, defaults = DEFAULT_DATABASE, sessionTtlMs = 30 * 24 * 60 * 60 * 1000, recoveryPasswordHash = null, persistence = null, mediaStorage = null, pushDelivery = createPushDelivery() } = {}) {
   const app = express();
   const storage = persistence || createPersistence(path.join(dataDir, 'database.json'), defaults);
   const uploads = path.join(dataDir, 'uploads');
@@ -103,7 +105,16 @@ export function createApp({ dataDir, defaults = DEFAULT_DATABASE, sessionTtlMs =
   const read = () => storage.read();
   // Every read/validate/write transaction below is synchronous (no await between
   // read and save). Run one Node writer per DATA_DIR; revisions protect stale clients.
-  const save = db => { db.updatedAt = now(); db.revision = revision(db) + 1; storage.save(db); };
+  const save = db => {
+    const previous = new Set((read().notifications || []).map(n => n.id));
+    const fresh = (db.notifications || []).filter(n => !previous.has(n.id));
+    db.updatedAt = now(); db.revision = revision(db) + 1; storage.save(db);
+    if (fresh.length) {
+      const snapshot = structuredClone(db);
+      const send = () => { for (const n of fresh) void pushDelivery.broadcast(snapshot, n).catch(() => console.warn('Web Push unavailable')); };
+      if (storage.afterCommit) storage.afterCommit(send); else send();
+    }
+  };
   const notify = (db, user, type, title, message, targetId) => {
     db.notifications = [{ id: randomUUID(), actorId: user.id, actorAlias: user.alias, avatar: user.avatar, type, title, message, targetId, timestamp: now(), read: false, readBy: [user.id], clearedBy: [] }, ...(db.notifications || [])].slice(0, 80);
   };
@@ -116,6 +127,11 @@ export function createApp({ dataDir, defaults = DEFAULT_DATABASE, sessionTtlMs =
   // One-time migration of legacy plaintext credentials before serving requests.
   const initial = read();
   let migrated = false;
+  if (!initial.pushVapid) {
+    initial.pushVapid = process.env.VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY
+      ? { publicKey: process.env.VAPID_PUBLIC_KEY, privateKey: process.env.VAPID_PRIVATE_KEY } : newPushKeys();
+    migrated = true;
+  }
   for (const user of initial.users || []) {
     // Reserved simulation personas had inconsistent roles in legacy exports.
     // Normalize only these non-login identities, preserving every real member.
@@ -308,12 +324,14 @@ export function createApp({ dataDir, defaults = DEFAULT_DATABASE, sessionTtlMs =
     next();
   });
   app.use('/api', express.json({ limit: '75mb' }));
+  registerPushRoutes(app, { read, save, delivery: pushDelivery });
   registerProductRoutes(app, { read, save, requireWriter });
   app.get('/api/session', (req, res) => res.json(sessionResult(req.session, read())));
   app.post('/api/logout', (req, res) => {
     const db = read(); pruneSessionState(db);
     const digest = sessionDigest(req.token);
     db.revokedSessions[digest] = req.session.expires;
+    db.pushSubscriptions = (db.pushSubscriptions || []).filter(subscription => subscription.sessionKey !== digest);
     delete db.sessionOverrides[digest];
     save(db); res.json({ success: true });
   });
@@ -1128,6 +1146,8 @@ export function createApp({ dataDir, defaults = DEFAULT_DATABASE, sessionTtlMs =
     }
     Object.assign(db, next); save(db); res.json({ success: true });
   });
+  registerUploadSessions(app, { uploads, mediaStorage, requireWriter });
+
   app.post('/api/upload', async (req, res) => {
     requireWriter(req);
     const { base64, mimeType, recordType, recordId, recordTitle } = req.body;

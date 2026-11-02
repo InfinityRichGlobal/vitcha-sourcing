@@ -1,3 +1,4 @@
+import { syncPushNotifications, disablePushNotifications } from '../services/pushNotifications';
 import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { User, SupplierRecord, StoreInspoRecord, LocationRecord, ExchangeRateConfig, InviteLink, PipelineStatus, UserRole, AppNotification, HandoffStage, AppViewTab, QuickMessageTemplate, CuratedProduct, ProductTaxon, ProductSet, ProductChanges, TrashedItem, LabItem, LabFormulaStatus, FranchiseStore, ViewLogEntry } from '../types';
 import { INITIAL_CATEGORIES, INITIAL_STORE_CATEGORIES, INITIAL_LOCATION_TYPES, INITIAL_QUICK_TAGS, INITIAL_QUICK_MESSAGES } from '../utils/defaultSettings';
@@ -499,11 +500,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   };
   const loginWithPin = loginWithCredentials;
+  useEffect(() => {
+    if (!isAuthenticated || simulatedFromAdmin) return;
+    void syncPushNotifications().catch(error => console.warn('Push registration:', error.message));
+  }, [isAuthenticated, currentUser.id, simulatedFromAdmin]);
+
   const logout = async () => {
     if (pendingActions.current.has('logout')) return;
     const token = getSessionToken();
     pendingActions.current.add('logout'); setActionError(null);
     try {
+      await disablePushNotifications();
       await sendJson('/api/logout', {});
       if (token === getSessionToken()) clearSession();
     } catch {

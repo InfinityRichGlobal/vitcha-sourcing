@@ -1,3 +1,4 @@
+import { enablePushNotifications, testPushNotification } from '../services/pushNotifications';
 import { useDialog } from '../hooks/useDialog';
 import React, { useState, useEffect } from 'react';
 import {
@@ -56,60 +57,25 @@ export const InstallPromptModal: React.FC<InstallPromptModalProps> = ({ isOpen, 
     window.dispatchEvent(new Event('vitcha-pwa-status-changed'));
   };
 
+  const [pushBusy, setPushBusy] = useState(false);
+  const [pushError, setPushError] = useState(false);
   const handleRequestNotification = async () => {
-    if (typeof window !== 'undefined' && 'Notification' in window) {
-      try {
-        const perm = await Notification.requestPermission();
-        setNotificationPermission(perm);
-        if (perm === 'granted') {
-          playAlertChime();
-          new Notification('ฉันจะเป็นหัวแถว', {
-            body: 'เปิดรับการแจ้งเตือนแบบเรียลไทม์สำเร็จ! ข้อมูลใหม่จากทีมจะเด้งแจ้งเตือนทันที',
-            icon: './logo.jpg',
-          });
-          setTestStatusMsg('✅ เปิดสิทธิ์การแจ้งเตือนบนอุปกรณ์นี้เรียบร้อยแล้ว!');
-        }
-      } catch (err) {
-        console.error('Notification permission error', err);
-      }
-    }
+    setPushBusy(true); setPushError(false);
+    try {
+      await enablePushNotifications();
+      setNotificationPermission(Notification.permission);
+      setTestStatusMsg('เปิดรับแจ้งเตือนจากเซิร์ฟเวอร์บนเครื่องนี้แล้ว');
+    } catch (error) { setPushError(true); setTestStatusMsg(error instanceof Error ? error.message : 'เปิดแจ้งเตือนไม่สำเร็จ'); }
+    finally { setPushBusy(false); }
   };
-
   const handleTestLocalNotification = async () => {
-    playAlertChime();
-
-    if (typeof window !== 'undefined' && 'Notification' in window) {
-      if (Notification.permission !== 'granted') {
-        try {
-          const perm = await Notification.requestPermission();
-          setNotificationPermission(perm);
-        } catch {
-          // ignore
-        }
-      }
-      if (Notification.permission === 'granted') {
-        try {
-          new Notification('🔔 ทดสอบแจ้งเตือน — ฉันจะเป็นหัวแถว', {
-            body: `สวัสดี ${currentUser.alias}! ระบบแจ้งเตือนและเสียงเตือนบนเครื่องของคุณพร้อมใช้งาน`,
-            icon: './logo.jpg',
-          });
-        } catch {
-          // fallback handled by in-app toast below
-        }
-      }
-    }
-
-    broadcastNotification(
-      `🔔 ทดสอบแจ้งเตือนสำเร็จ (${currentUser.alias})`,
-      'ระบบเด้งแจ้งเตือนพร้อมเสียงเตือนเข้าเครื่องของคุณเรียบร้อยแล้ว!',
-      'status',
-      undefined,
-      currentUser.avatar,
-      false,
-      { localOnly: true }
-    );
-
-    setTestStatusMsg('✅ ยิงแจ้งเตือนทดสอบ + เสียงเตือนเข้าเครื่องนี้สำเร็จแล้ว! (สังเกตแถบเด้งด้านบน)');
+    setPushBusy(true); setPushError(false);
+    try {
+      await testPushNotification();
+      setNotificationPermission(Notification.permission);
+      setTestStatusMsg('บริการ Push รับข้อความทดสอบแล้ว กรุณาตรวจสอบการแจ้งเตือนบนมือถือ');
+    } catch (error) { setPushError(true); setTestStatusMsg(error instanceof Error ? error.message : 'ส่งแจ้งเตือนไม่สำเร็จ'); }
+    finally { setPushBusy(false); }
   };
 
   const handleAdminBroadcastToAll = async () => {
@@ -119,17 +85,6 @@ export const InstallPromptModal: React.FC<InstallPromptModalProps> = ({ isOpen, 
     const msg =
       adminBroadcastText.trim() ||
       'รบกวนทีมตรวจเช็กข้อมูลซัพพลายเออร์และร้านน้ำล่าสุด';
-
-    if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
-      try {
-        new Notification(`📢 ประกาศด่วนจาก ${currentUser.alias} · ฉันจะเป็นหัวแถว`, {
-          body: msg,
-          icon: './logo.jpg',
-        });
-      } catch {
-        // ignore
-      }
-    }
 
     const saved = await broadcastNotification(
       `📢 ประกาศด่วนจาก ${currentUser.alias} ถึงทุกคนในระบบ`,
@@ -300,12 +255,12 @@ export const InstallPromptModal: React.FC<InstallPromptModalProps> = ({ isOpen, 
 
               {notificationPermission === 'granted' ? (
                 <span className="flex items-center gap-1 text-emerald-700 font-bold text-[11px] bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200">
-                  <Check className="w-3 h-3" /> เปิดสิทธิ์แล้ว
+                  <Check className="w-3 h-3" /> อนุญาตบนเครื่องแล้ว
                 </span>
               ) : (
                 <button
                   type="button"
-                  onClick={handleRequestNotification}
+                  onClick={handleRequestNotification} disabled={pushBusy}
                   className="px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white font-bold text-[11px]"
                 >
                   ขอสิทธิ์แจ้งเตือน
@@ -315,11 +270,11 @@ export const InstallPromptModal: React.FC<InstallPromptModalProps> = ({ isOpen, 
 
             <button
               type="button"
-              onClick={handleTestLocalNotification}
+              onClick={handleTestLocalNotification} disabled={pushBusy}
               className="w-full py-2.5 px-4 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-xs flex items-center justify-center gap-2 shadow-xs active:scale-[0.99] transition-all"
             >
               <Volume2 className="w-4 h-4" />
-              <span>🔔 กดทดสอบแจ้งเตือน + เสียงเตือนเข้ามือถือเครื่องนี้</span>
+              <span>🔔 ทดสอบแจ้งเตือนจากเซิร์ฟเวอร์เข้ามือถือเครื่องนี้</span>
             </button>
           </div>
 
@@ -356,7 +311,7 @@ export const InstallPromptModal: React.FC<InstallPromptModalProps> = ({ isOpen, 
           )}
 
           {testStatusMsg && (
-            <div className="p-2.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-bold text-center animate-in fade-in">
+            <div className={`p-2.5 rounded-xl border text-xs font-bold text-center ${pushError ? 'bg-rose-50 border-rose-200 text-rose-800' : 'bg-emerald-50 border-emerald-200 text-emerald-800'}`}>
               {testStatusMsg}
             </div>
           )}

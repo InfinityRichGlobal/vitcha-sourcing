@@ -1,3 +1,6 @@
+import { getPhotoGroups } from '../utils/photoGroups';
+import { normalizeMediaUrl } from '../utils/mediaUrl';
+import { MediaImage } from './MediaImage';
 import { ActivityTimeline } from './ActivityTimeline';
 import { AvatarImage } from './AvatarImage';
 import React, { useState, useEffect } from 'react';
@@ -144,60 +147,9 @@ export const DetailModal: React.FC<DetailModalProps> = ({
     };
   }, [isOpen, item?.id]);
 
-  // Collect all photos of this item for gallery & left/right carousel
-  const allPhotos: { url: string; label: string }[] = [];
-  if (currentItem) {
-    if (currentItem.type === 'supplier') {
-      const sup = currentItem as SupplierRecord;
-      sup.photos.storefrontAndAtmosphere?.forEach((p, idx) =>
-        allPhotos.push({ url: p, label: `ป้ายหน้าร้าน/บรรยากาศ #${idx + 1}` })
-      );
-      sup.photos.contactCards?.forEach((p, idx) =>
-        allPhotos.push({ url: p, label: `นามบัตร/WeChat #${idx + 1}` })
-      );
-      sup.catalogItems?.forEach((c, idx) => {
-        if (c.photo) {
-          allPhotos.push({
-            url: c.photo,
-            label: c.name ? `สินค้า: ${c.name}` : `รายการสินค้า #${idx + 1}`,
-          });
-        }
-      });
-    } else if (currentItem.type === 'drink_store') {
-      const st = currentItem as StoreInspoRecord;
-      st.photos.storefrontAndAtmosphere?.forEach((p, idx) =>
-        allPhotos.push({ url: p, label: `หน้าร้าน/บรรยากาศ #${idx + 1}` })
-      );
-      st.photos.menuBoard?.forEach((p, idx) =>
-        allPhotos.push({ url: p, label: `เมนูบอร์ด #${idx + 1}` })
-      );
-      st.photos.drinkCups?.forEach((p, idx) =>
-        allPhotos.push({ url: p, label: `แก้วเครื่องดื่ม #${idx + 1}` })
-      );
-      st.drinkItems?.forEach((d, idx) => {
-        if (d.photo) {
-          allPhotos.push({
-            url: d.photo,
-            label: d.name ? `เมนู: ${d.name}` : `เมนูชิม #${idx + 1}`,
-          });
-        }
-      });
-    } else if (currentItem.type === 'location') {
-      const loc = currentItem as LocationRecord;
-      loc.photos.storefrontAndAtmosphere?.forEach((p, idx) =>
-        allPhotos.push({ url: p, label: `หน้าร้าน/ทางเดิน #${idx + 1}` })
-      );
-      loc.photos.floorPlanAndSpecs?.forEach((p, idx) =>
-        allPhotos.push({ url: p, label: `ผังห้อง/งานระบบ #${idx + 1}` })
-      );
-      loc.photos.surroundingNeighbors?.forEach((p, idx) =>
-        allPhotos.push({ url: p, label: `ร้านข้างเคียง #${idx + 1}` })
-      );
-      loc.photos.contactCards?.forEach((p, idx) =>
-        allPhotos.push({ url: p, label: `นามบัตร/เอกสาร #${idx + 1}` })
-      );
-    }
-  }
+  const [activePhotoGroup, setActivePhotoGroup] = useState('storefront');
+  const photoGroups = getPhotoGroups(currentItem);
+  const allPhotos = photoGroups.find(group => group.id === activePhotoGroup)?.photos || [];
 
   // Keyboard navigation for Left/Right Image Carousel
   useEffect(() => {
@@ -237,9 +189,12 @@ export const DetailModal: React.FC<DetailModalProps> = ({
   const catalogItemsList = isSupplier ? (supplier?.catalogItems || []) : [];
   const drinkItemsList = isDrinkStore ? (store?.drinkItems || []) : [];
 
-  const openPhotoByUrl = (url: string) => {
-    const idx = allPhotos.findIndex((p) => p.url === url);
-    setActiveImageIndex(idx >= 0 ? idx : 0);
+  const openPhotoByUrl = (url: string, groupId: string) => {
+    const photos = photoGroups.find(group => group.id === groupId)?.photos || [];
+    const idx = photos.findIndex(photo => photo.url === normalizeMediaUrl(url));
+    if (idx < 0) return;
+    setActivePhotoGroup(groupId);
+    setActiveImageIndex(idx);
   };
 
   const handleDeleteItem = async () => {
@@ -897,10 +852,10 @@ export const DetailModal: React.FC<DetailModalProps> = ({
                     className="p-3 rounded-xl border border-slate-200 bg-white flex gap-3 shadow-xs"
                   >
                     {catItem.photo ? (
-                      <img
+                      <MediaImage
                         src={catItem.photo}
                         alt=""
-                        onClick={() => openPhotoByUrl(catItem.photo)}
+                        onClick={() => openPhotoByUrl(catItem.photo, 'catalog')}
                         className="w-16 h-16 rounded-lg object-cover cursor-pointer border border-slate-100 hover:opacity-90"
                       />
                     ) : (
@@ -971,10 +926,10 @@ export const DetailModal: React.FC<DetailModalProps> = ({
                     className="p-3 rounded-xl border border-amber-200/80 bg-amber-50/20 flex gap-3 shadow-xs"
                   >
                     {drink.photo && (
-                      <img
+                      <MediaImage
                         src={drink.photo}
                         alt=""
-                        onClick={() => openPhotoByUrl(drink.photo)}
+                        onClick={() => openPhotoByUrl(drink.photo, 'drinks')}
                         className="w-16 h-16 rounded-lg object-cover cursor-pointer border border-amber-200"
                       />
                     )}
@@ -1021,39 +976,22 @@ export const DetailModal: React.FC<DetailModalProps> = ({
             </div>
           )}
 
-          {/* Photo Gallery */}
-          <div className="space-y-2">
-            <span className="text-xs font-bold text-slate-800 block">
-              แกลเลอรีรูปภาพทั้งหมด ({allPhotos.length} รูป{allPhotos.length > 0 ? ' — แตะเพื่อขยายและเลื่อนซ้าย-ขวา' : ''}):
-            </span>
-            {allPhotos.length > 0 ? (
+          {/* Each category has its own gallery and carousel. Product photos stay with products. */}
+          {photoGroups.filter(group => !['catalog', 'drinks'].includes(group.id)).map(group => (
+            <section key={group.id} aria-label={group.label} className="space-y-2">
+              <h3 className="text-xs font-bold text-slate-800">{group.label} ({group.photos.length} รูป)</h3>
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
-                {allPhotos.map((p, idx) => (
-                  <div
-                    key={idx}
-                    onClick={() => setActiveImageIndex(idx)}
-                    className="group relative h-44 sm:h-48 rounded-xl overflow-hidden border border-slate-200 cursor-pointer bg-slate-900/5 shadow-xs flex items-center justify-center p-1"
-                  >
-                    <img
-                      src={p.url}
-                      alt={p.label || ''}
-                      className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-200"
-                    />
-                    <div className="absolute bottom-1 right-1 bg-black/60 text-white text-[9px] font-mono px-1.5 py-0.5 rounded">
-                      {idx + 1}/{allPhotos.length}
-                    </div>
-                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-[10px] text-white p-1 text-center font-medium">
-                      {p.label}
-                    </div>
-                  </div>
+                {group.photos.map((photo, index) => (
+                  <button type="button" key={`${photo.url}-${index}`} onClick={() => { setActivePhotoGroup(group.id); setActiveImageIndex(index); }}
+                    className="relative h-44 rounded-xl overflow-hidden border border-slate-200 bg-slate-50 p-1">
+                    <MediaImage src={photo.url} alt={photo.label} className="w-full h-full object-contain" />
+                    <span className="absolute bottom-1 right-1 bg-black/60 text-white text-[10px] px-2 rounded">{index + 1}/{group.photos.length}</span>
+                  </button>
                 ))}
               </div>
-            ) : (
-              <div className="p-4 rounded-xl bg-slate-50 border border-dashed border-slate-200 text-center text-xs text-slate-400">
-                ยังไม่มีรูปภาพที่แนบไว้ในรายการนี้
-              </div>
-            )}
-          </div>
+              {!group.photos.length && <p className="text-xs text-slate-400">ยังไม่มีรูปในหมวดนี้</p>}
+            </section>
+          ))}
 
           {/* Video Gallery Section */}
           {currentItem.videos && currentItem.videos.length > 0 && (
@@ -1191,7 +1129,7 @@ export const DetailModal: React.FC<DetailModalProps> = ({
 
                           {note.photoUrl && (
                             <div className="mt-1.5">
-                              <img
+                              <MediaImage
                                 src={note.photoUrl}
                                 alt="ภาพแนบ"
                                 className="max-h-48 max-w-xs rounded-xl border border-slate-200 object-cover cursor-pointer hover:opacity-95 shadow-2xs"
@@ -1285,7 +1223,7 @@ export const DetailModal: React.FC<DetailModalProps> = ({
                               <p className="text-slate-700 leading-snug">{reply.text}</p>
                               {reply.photoUrl && (
                                 <div className="mt-1">
-                                  <img
+                                  <MediaImage
                                     src={reply.photoUrl}
                                     alt="ภาพแนบ"
                                     className="max-h-36 max-w-[200px] rounded-lg border border-slate-200 object-cover cursor-pointer hover:opacity-95 shadow-2xs"
@@ -1642,7 +1580,7 @@ export const DetailModal: React.FC<DetailModalProps> = ({
               </button>
             )}
 
-            <img
+            <MediaImage
               src={allPhotos[activeImageIndex].url}
               alt={allPhotos[activeImageIndex].label}
               className="max-w-full max-h-[72vh] object-contain rounded-xl shadow-2xl"
@@ -1679,7 +1617,7 @@ export const DetailModal: React.FC<DetailModalProps> = ({
                       : 'border-white/20 opacity-60 hover:opacity-100'
                   }`}
                 >
-                  <img src={p.url} className="w-full h-full object-cover" />
+                  <MediaImage src={p.url} className="w-full h-full object-cover" />
                 </button>
               ))}
             </div>

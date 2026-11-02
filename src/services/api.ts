@@ -1,3 +1,4 @@
+import { uploadInChunks, UploadOptions } from './chunkUpload';
 import { unpackSnapshot } from './snapshotWire';
 import { SupplierRecord, StoreInspoRecord, User, InviteLink, AppNotification, LabItem, LabFormulaStatus, FranchiseStore } from '../types';
 
@@ -138,7 +139,7 @@ export const viewFranchiseStoreApi = (id: string) => sendJson(`/api/franchise-st
 
 export async function uploadMediaToServer(
   file: File,
-  options?: { recordId?: string; recordType?: string; recordTitle?: string }
+  options?: UploadOptions
 ): Promise<string> {
   let mimeType = file.type ? file.type.split(';')[0].toLowerCase() : '';
 
@@ -177,55 +178,11 @@ export async function uploadMediaToServer(
     }
   }
 
-  // Try direct resumable upload to Google Drive first if session is available
-  try {
-    const sessionRes = await sendJson('/api/drive/session', {
-      filename: file.name || `file-${Date.now()}`,
-      mimeType,
-      fileSize: file.size,
-      recordType: options?.recordType || 'misc',
-      recordId: options?.recordId || 'general',
-      recordTitle: options?.recordTitle || '',
-    });
-
-    if (sessionRes?.directAvailable && sessionRes?.sessionUrl) {
-      // A blocked Google connection must yield to the server relay, not hang forever.
-      const uploadController = new AbortController();
-      const uploadTimer = setTimeout(() => uploadController.abort(), 45000);
-      let driveData: any;
-      try {
-        const uploadRes = await fetch(sessionRes.sessionUrl, {
-          method: 'PUT', headers: { 'Content-Type': mimeType }, body: file,
-          signal: uploadController.signal,
-        });
-        if (!uploadRes.ok) throw new Error(`Google Drive HTTP ${uploadRes.status}`);
-        driveData = await uploadRes.json();
-      } finally { clearTimeout(uploadTimer); }
-
-      if (driveData) {
-        if (driveData?.id) {
-          const completeRes = await sendJson('/api/drive/complete', {
-            fileId: driveData.id,
-            folderId: sessionRes.folderId,
-            recordId: options?.recordId || 'general',
-            filename: file.name,
-            mimeType,
-            fileSize: file.size,
-            md5Checksum: driveData.md5Checksum,
-          });
-          if (completeRes?.url) {
-            return new URL(completeRes.url, getRenderServerUrl()).href;
-          }
-        }
-      }
-    }
-  } catch (driveErr) {
-    // Non-blocking fallback to server storage
-    console.warn('Direct Drive upload skipped or unavailable, using server upload:', driveErr);
+  options?.signal?.throwIfAborted();
+  if (mimeType.startsWith('video/') || file.size > 8 * 1024 * 1024 || options?.onProgress) {
+    return uploadInChunks(file, mimeType, options);
   }
 
-  // Fallback to server media storage
-  if (file.size > 50 * 1024 * 1024) throw new Error('ไฟล์ต้องไม่เกิน 50 MB');
   const normalized = new Blob([file], { type: mimeType });
   const base64 = await new Promise<string>((resolve, reject) => {
     const reader = new FileReader();
@@ -238,6 +195,7 @@ export async function uploadMediaToServer(
     {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
+      signal: options?.signal,
       body: JSON.stringify({
         mimeType,
         base64,

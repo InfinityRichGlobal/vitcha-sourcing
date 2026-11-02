@@ -1,3 +1,4 @@
+import { MediaImage } from './MediaImage';
 import { AvatarImage } from './AvatarImage';
 import React, { useState } from 'react';
 import { StoreInspoRecord } from '../types';
@@ -263,7 +264,7 @@ export const StoreInspoCard: React.FC<StoreInspoCardProps> = ({
                     className="relative aspect-square rounded-xl overflow-hidden bg-slate-100 border border-slate-200/80 group cursor-pointer focus:outline-none"
                     title={`ดูรูปที่ ${idx + 1} / ${displayPhotos.length}`}
                   >
-                    <img
+                    <MediaImage
                       loading="lazy"
                       decoding="async"
                       src={photoUrl}
@@ -633,7 +634,7 @@ export const StoreInspoCard: React.FC<StoreInspoCardProps> = ({
               </button>
             )}
 
-            <img loading="lazy" decoding="async"
+            <MediaImage loading="lazy" decoding="async"
               src={displayPhotos[lightboxIdx]}
               alt=""
               className="max-w-full max-h-[75vh] object-contain rounded-xl shadow-2xl"
@@ -664,7 +665,7 @@ export const StoreInspoCard: React.FC<StoreInspoCardProps> = ({
                     idx === lightboxIdx ? 'border-amber-400 scale-105' : 'border-white/20 opacity-60'
                   }`}
                 >
-                  <img src={url} className="w-full h-full object-cover" />
+                  <MediaImage src={url} className="w-full h-full object-cover" />
                 </button>
               ))}
             </div>

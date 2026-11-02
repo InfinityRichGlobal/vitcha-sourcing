@@ -163,6 +163,20 @@ const MainApp: React.FC = () => {
     }
   };
 
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    const url = new URL(window.location.href);
+    const target = url.searchParams.get('notificationTarget');
+    if (!target) return;
+    const type = url.searchParams.get('notificationType') || '';
+    if (type === 'lead_lab') { setActiveTab('lead_lab'); setInitialLeadLabItemId(target); }
+    else if (type === 'franchise_store') { setActiveTab('franchise_stores'); setInitialFranchiseStoreId(target); }
+    else if ([...suppliers, ...drinkStores, ...locations].some(item => item.id === target)) handleSelectFromNotification(target, type);
+    else return;
+    url.searchParams.delete('notificationTarget'); url.searchParams.delete('notificationType');
+    window.history.replaceState({}, '', url);
+  }, [isAuthenticated, suppliers, drinkStores, locations]);
+
   // Lockscreen Gate: ทุกคนต้องล็อกอินก่อนเข้าถึงหน้าหลักและข้อมูล
   // หากมีรหัสคำเชิญ (?invite=...) จะพาเข้าสู่หน้าสมัครสมาชิกทันที
   if (!isAuthenticated) {

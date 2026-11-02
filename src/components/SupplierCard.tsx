@@ -1,3 +1,4 @@
+import { MediaImage } from './MediaImage';
 import { AvatarImage } from './AvatarImage';
 import React, { useState } from 'react';
 import { SupplierRecord } from '../types';
@@ -60,12 +61,10 @@ export const SupplierCard: React.FC<SupplierCardProps> = ({
     ordered: { label: 'สั่งซื้อแล้ว', color: 'bg-emerald-600 text-white border-emerald-600 font-bold' },
   }[supplier.status] || { label: 'สำรวจแล้ว', color: 'bg-slate-100 text-slate-700 border-slate-200' };
 
-  // Collect ALL uploaded photos of this supplier
+  // Keep the card album focused on the storefront; other categories live in Detail.
   const allPhotos: string[] = Array.from(
     new Set([
       ...(supplier.photos?.storefrontAndAtmosphere || []),
-      ...(supplier.catalogItems || []).map((c) => c.photo).filter(Boolean),
-      ...(supplier.photos?.contactCards || []),
     ])
   );
 
@@ -263,7 +262,7 @@ export const SupplierCard: React.FC<SupplierCardProps> = ({
                     className="relative aspect-square rounded-xl overflow-hidden bg-slate-100 border border-slate-200/80 group cursor-pointer focus:outline-none"
                     title={`ดูรูปที่ ${idx + 1} / ${displayPhotos.length}`}
                   >
-                    <img
+                    <MediaImage
                       loading="lazy"
                       decoding="async"
                       src={photoUrl}
@@ -633,7 +632,7 @@ export const SupplierCard: React.FC<SupplierCardProps> = ({
               </button>
             )}
 
-            <img loading="lazy" decoding="async"
+            <MediaImage loading="lazy" decoding="async"
               src={displayPhotos[lightboxIdx]}
               alt=""
               className="max-w-full max-h-[75vh] object-contain rounded-xl shadow-2xl"
@@ -664,7 +663,7 @@ export const SupplierCard: React.FC<SupplierCardProps> = ({
                     idx === lightboxIdx ? 'border-emerald-400 scale-105' : 'border-white/20 opacity-60'
                   }`}
                 >
-                  <img src={url} className="w-full h-full object-cover" />
+                  <MediaImage src={url} className="w-full h-full object-cover" />
                 </button>
               ))}
             </div>

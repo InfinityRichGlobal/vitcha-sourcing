@@ -15,3 +15,5 @@ server/data/*.backup-tmp
 release/
 
 server/data/recovery.json
+
+server/data/pending-uploads/
