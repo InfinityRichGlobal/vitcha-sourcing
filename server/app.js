@@ -4,6 +4,7 @@ import { recordActivity } from './activity-history.js';
 import { resolveMapLink } from './map-links.js';
 import { packSnapshot } from './snapshot-wire.js';
 import express from 'express';
+import { parseCommentMedia } from './comment-media.js';
 import { SAMPLE_PACK_ID, sampleCatalog, mergeSamples } from './sample-pack.js';
 import cors from 'cors';
 import fs from 'node:fs';
@@ -416,32 +417,35 @@ export function createApp({ dataDir, defaults = DEFAULT_DATABASE, sessionTtlMs =
       ];
       save(db); res.json({ success: true });
     });
-    app.post(`/api/${route}/:id/actions`, (req, res) => {
+    app.post([`/api/${route}/:id/actions`, `/api/${route}/:id/comments`], (req, res) => {
       const { action, data = {}, operationId } = req.body;
+      if (req.path.endsWith('/comments') && !['comment', 'reply'].includes(action)) fail(400, 'ประเภทความคิดเห็นไม่ถูกต้อง');
       if (action !== 'view') requireWriter(req);
       const db = read(); const item = (db[collection] || []).find(x => x.id === req.params.id);
       if (!item) fail(404, 'ไม่พบรายการ');
       if (!clean(operationId)) fail(400, 'Missing operation ID');
-      if ((item.appliedOperations || []).includes(operationId)) return res.json({ success: true });
+      if ((item.appliedOperations || []).includes(operationId)) return res.json({ success: true, ...(['comment', 'reply'].includes(action) ? { item: currentRecord(db, item) } : {}) });
       const beforeActivity = structuredClone(pick(item, HANDOFF));
       const author = { authorId: req.user.id, author: req.user.alias, authorAvatar: req.user.avatar, authorRole: req.user.role, timestamp: now() };
       if (action === 'comment' || action === 'reply') {
         const rawText = clean(data.text);
         const voiceUrl = clean(data.voiceUrl || data.audioUrl);
-        const photoUrl = clean(data.photoUrl || data.imageUrl);
+        const media = parseCommentMedia(data.media);
+        const photoUrl = clean(data.photoUrl || data.imageUrl || media.find(m => m.type === 'image')?.url);
         const duration = typeof data.duration === 'number' && data.duration > 0 ? Math.round(data.duration) : undefined;
         let text = rawText;
+        if (!text && media.length) text = `แนบรูป / วิดีโอ ${media.length} ไฟล์`;
         if (!text && (voiceUrl || photoUrl)) {
           text = photoUrl && voiceUrl ? '📷 แนบรูปภาพและเสียง' : photoUrl ? '📷 แนบรูปภาพ' : '🎙️ ข้อความเสียง';
         }
         if (!text || text.length > 10000) fail(400, 'ความคิดเห็นต้องมี 1–10000 ตัวอักษร');
         item.reviewerNotes ||= [];
         if (action === 'comment') {
-          item.reviewerNotes.push({ ...author, id: operationId, text, voiceUrl, photoUrl, duration, replies: [] });
+          item.reviewerNotes.push({ ...author, id: operationId, text, voiceUrl, photoUrl, ...(media.length ? { media } : {}), duration, replies: [] });
         } else {
           const note = item.reviewerNotes.find(n => n.id === data.noteId);
           if (!note) fail(404, 'ไม่พบความคิดเห็น');
-          (note.replies ||= []).push({ ...author, id: operationId, text, voiceUrl, photoUrl, duration, replyToAuthor: clean(data.replyToAuthor), replyToId: clean(data.replyToId) });
+          (note.replies ||= []).push({ ...author, id: operationId, text, voiceUrl, photoUrl, ...(media.length ? { media } : {}), duration, replyToAuthor: clean(data.replyToAuthor), replyToId: clean(data.replyToId) });
         }
       } else if (action === 'handoff') {
         expectRevision(item, req.body.revision);
@@ -501,7 +505,7 @@ export function createApp({ dataDir, defaults = DEFAULT_DATABASE, sessionTtlMs =
         const notifTitle = action === 'handoff' ? 'อัปเดตงานส่งต่อ' : action === 'reply' ? 'ตอบกลับความคิดเห็น' : 'ความคิดเห็นใหม่';
         notify(db, req.user, action === 'handoff' ? 'status' : action, notifTitle, clean(data.text).slice(0, 120) || item.name || item.storeName, item.id);
       }
-      save(db); res.json({ success: true });
+      save(db); res.json({ success: true, ...(['comment', 'reply'].includes(action) ? { item: currentRecord(db, item) } : {}) });
     });
   }
   app.post('/api/profile/avatar', (req, res) => {

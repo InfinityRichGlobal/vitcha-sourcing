@@ -2,7 +2,7 @@ import { syncPushNotifications, disablePushNotifications } from '../services/pus
 import { dismissDeviceNotifications } from '../services/pushNotifications';
 import { NotificationReceipts } from '../services/notificationReceipts';
 import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
-import { User, SupplierRecord, StoreInspoRecord, LocationRecord, ExchangeRateConfig, InviteLink, PipelineStatus, UserRole, AppNotification, HandoffStage, AppViewTab, QuickMessageTemplate, CuratedProduct, ProductTaxon, ProductSet, ProductChanges, TrashedItem, LabItem, LabFormulaStatus, FranchiseStore, ViewLogEntry } from '../types';
+import { User, CommentMedia, SupplierRecord, StoreInspoRecord, LocationRecord, ExchangeRateConfig, InviteLink, PipelineStatus, UserRole, AppNotification, HandoffStage, AppViewTab, QuickMessageTemplate, CuratedProduct, ProductTaxon, ProductSet, ProductChanges, TrashedItem, LabItem, LabFormulaStatus, FranchiseStore, ViewLogEntry } from '../types';
 import { INITIAL_CATEGORIES, INITIAL_STORE_CATEGORIES, INITIAL_LOCATION_TYPES, INITIAL_QUICK_TAGS, INITIAL_QUICK_MESSAGES } from '../utils/defaultSettings';
 import { getRenderServerUrl, saveRenderServerUrl, checkServerHealth, fetchCentralData, sendJson, requestJson, getSessionToken, setSessionToken, loginUserApi, ApiError, markNotificationsReadApi, clearNotificationsApi, postLeadLabItemApi, deleteLeadLabItemApi, likeLeadLabItemApi, likeLeadLabCommentApi, cycleLeadLabItemApi, updateLeadLabStatusApi, postFranchiseStoreApi, deleteFranchiseStoreApi } from '../services/api';
 
@@ -177,8 +177,8 @@ interface AppContextType {
   openEditItem: (item: SupplierRecord | StoreInspoRecord | LocationRecord) => void;
   closeEditItem: () => void;
 
-  addReviewerNote: (targetId: string, type: 'supplier' | 'drink_store' | 'location', noteText: string, extra?: { voiceUrl?: string; photoUrl?: string; duration?: number }) => Promise<boolean>;
-  addReviewReply: (targetId: string, type: 'supplier' | 'drink_store' | 'location', noteId: string, replyText: string, replyToAuthor?: string, extra?: { voiceUrl?: string; photoUrl?: string; duration?: number; replyToId?: string }) => Promise<boolean>;
+  addReviewerNote: (targetId: string, type: 'supplier' | 'drink_store' | 'location', noteText: string, extra?: { media?: CommentMedia[]; voiceUrl?: string; photoUrl?: string; duration?: number }) => Promise<boolean>;
+  addReviewReply: (targetId: string, type: 'supplier' | 'drink_store' | 'location', noteId: string, replyText: string, replyToAuthor?: string, extra?: { media?: CommentMedia[]; voiceUrl?: string; photoUrl?: string; duration?: number; replyToId?: string }) => Promise<boolean>;
   updatePipelineStatus: (supplierId: string, status: PipelineStatus) => Promise<boolean>;
 
   updateExchangeRate: (rate: number, isAuto?: boolean) => void;
@@ -430,9 +430,18 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const itemAction = (id: string, type: 'supplier' | 'drink_store' | 'location', action: string, data: unknown) => {
     const key = `${id}:${action}:${JSON.stringify(data)}`;
     return perform(`${id}:${action}`, async () => {
-      await sendJson(`/api/${routeFor(type)}/${encodeURIComponent(id)}/actions`, { action, data, operationId: commandId(key), revision: itemById(id, type)?.revision || 0 });
+      // A distinct route prevents an older server in a rolling deployment from
+      // accepting the text while silently ignoring its new media array.
+      const isComment = action === 'comment' || action === 'reply';
+      const result = await sendJson(`/api/${routeFor(type)}/${encodeURIComponent(id)}/${isComment ? 'comments' : 'actions'}`, { action, data, operationId: commandId(key), revision: itemById(id, type)?.revision || 0 });
+      if (action === 'comment' || action === 'reply') {
+        const saved = confirmedRecord(result);
+        if (type === 'supplier') setSuppliers(p => p.map(item => item.id === id ? saved : item));
+        else if (type === 'drink_store') setDrinkStores(p => p.map(item => item.id === id ? saved : item));
+        else setLocations(p => p.map(item => item.id === id ? saved : item));
+      }
       commandIds.current.delete(key);
-    });
+    }, action === 'comment' || action === 'reply' ? { message: 'ส่งความคิดเห็นเรียบร้อยแล้ว', backgroundRefresh: true } : undefined);
   };
   const resetFilters = (tab?: AppViewTab) => {
     setFilterResetVersion(v => v + 1);
@@ -507,8 +516,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     await sendJson('/api/trash/batch', { action, items: items.map(({id, trashedAt}) => ({id, trashedAt})) });
     await fetchTrash();
   });
-  const addReviewerNote = (id: string, type: 'supplier' | 'drink_store' | 'location', text: string, extra?: { voiceUrl?: string; photoUrl?: string; duration?: number }) => itemAction(id, type, 'comment', { text, ...extra });
-  const addReviewReply = (id: string, type: 'supplier' | 'drink_store' | 'location', noteId: string, text: string, replyToAuthor?: string, extra?: { voiceUrl?: string; photoUrl?: string; duration?: number; replyToId?: string }) => itemAction(id, type, 'reply', { noteId, text, replyToAuthor, ...extra });
+  const addReviewerNote = (id: string, type: 'supplier' | 'drink_store' | 'location', text: string, extra?: { media?: CommentMedia[]; voiceUrl?: string; photoUrl?: string; duration?: number }) => itemAction(id, type, 'comment', { text, ...extra });
+  const addReviewReply = (id: string, type: 'supplier' | 'drink_store' | 'location', noteId: string, text: string, replyToAuthor?: string, extra?: { media?: CommentMedia[]; voiceUrl?: string; photoUrl?: string; duration?: number; replyToId?: string }) => itemAction(id, type, 'reply', { noteId, text, replyToAuthor, ...extra });
   const updateHandoff: AppContextType['updateHandoff'] = (id, type, data) => itemAction(id, type, 'handoff', data);
   const updatePipelineStatus = (id: string, status: PipelineStatus) => itemAction(id, 'supplier', 'handoff', { status });
   // View logging is telemetry; failure must not prevent opening a record.

@@ -503,6 +503,37 @@ test('users manage their own notifications independently: marking read and clear
   assert.ok(!(await call('/api/data', owner, undefined, 'GET')).data.notifications.some(n => n.id === notifId));
 });
 
+test('field comments append mixed media for each author without editing the record or duplicating a retry', async t => {
+  const { call, login } = await setup(t); const reviewer = await login('review'), admin = await login('admin'), viewer = await login('view');
+  const media = [{ id: 'p1', type: 'image', url: '/uploads/photo-a.jpg', name: 'photo-a.jpg' }, { id: 'v1', type: 'video', url: '/media/video-b', name: 'video-b.mov' }, { id: 'p2', type: 'image', url: 'https://example.com/photo-c.jpg' }];
+  const fixtures = [
+    ['suppliers', { ...item }],
+    ['drink-stores', { ...item, storeName: 'Cafe', drinkItems: [], ratings: { taste: 4, aesthetics: 4, value: 4, speed: 4 } }],
+    ['locations', { ...item, locationType: 'Mall', ratings: { footTraffic: 4, visibility: 4, accessibility: 4, valueRoi: 4 } }],
+  ];
+  for (const [route, record] of fixtures) {
+    assert.equal((await call(`/api/${route}`, admin, record)).status, 200);
+    const action = `/api/${route}/${record.id}/comments`;
+    const payload = { action: 'comment', operationId: 'mixed-note', data: { text: 'ภาพจากสมาชิกหน้างาน', media } };
+    const added = await call(action, reviewer, payload); assert.equal(added.status, 200);
+    assert.deepEqual(added.data.item.reviewerNotes[0].media, media);
+    assert.deepEqual(added.data.item.photos, record.photos);
+    assert.equal((await call(action, reviewer, payload)).data.item.reviewerNotes.length, 1);
+    const replied = await call(action, admin, { action: 'reply', operationId: 'mixed-reply', data: { noteId: 'mixed-note', media: [media[1]] } });
+    assert.equal(replied.status, 200);
+    assert.deepEqual(replied.data.item.reviewerNotes[0].replies[0].media, [media[1]]);
+    assert.equal(replied.data.item.reviewerNotes[0].authorId, 'user-review');
+    assert.equal(replied.data.item.reviewerNotes[0].replies[0].authorId, 'user-admin');
+    assert.deepEqual(replied.data.item.history.find(e => e.id === 'mixed-note').content.media, media);
+    assert.equal((await call(action, viewer, { ...payload, operationId: 'forbidden' })).status, 403);
+    for (const invalid of [[{ ...media[0], url: 'blob:local-only' }], [{ ...media[0], url: 'javascript:alert(1)' }], [{ ...media[0], type: 'script' }], Array.from({ length: 21 }, (_, i) => ({ ...media[0], id: String(i) })), [media[0], media[0]]]) {
+      assert.equal((await call(action, reviewer, { ...payload, operationId: 'bad-media', data: { media: invalid } })).status, 400);
+    }
+    const final = await call(action, reviewer, payload);
+    assert.equal(final.data.item.reviewerNotes.length, 1); assert.deepEqual(final.data.item.photos, record.photos);
+  }
+});
+
 test('comments and replies support photoUrl and voiceUrl attachments and send reply notifications', async t => {
   const { call, login } = await setup(t);
   const reviewer = await login('review');

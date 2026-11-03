@@ -90,7 +90,15 @@ export interface CatalogItem {
   voiceNotes?: VoiceNoteEntry[]; // รองรับบันทึกเสียงหลายรายการไม่จำกัด
 }
 
+export interface CommentMedia {
+  id: string;
+  type: 'image' | 'video';
+  url: string;
+  name?: string;
+}
+
 export interface ReviewReply {
+  media?: CommentMedia[];
   authorId?: string;
   id: string;
   author: string;
@@ -107,6 +115,7 @@ export interface ReviewReply {
 }
 
 export interface ReviewerNote {
+  media?: CommentMedia[];
   authorId?: string;
   id: string;
   author: string;

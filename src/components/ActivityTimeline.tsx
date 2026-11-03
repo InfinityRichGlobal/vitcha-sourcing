@@ -1,3 +1,5 @@
+import { CommentMediaGallery } from './CommentMediaGallery';
+import { commentMedia } from '../utils/commentMedia';
 import { activityStages as stages, activityStageName as stageName, activityFieldLabels as labels, getActivityEntries } from '../utils/activityHistory';
 import React, { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
@@ -46,7 +48,7 @@ export function ActivityTimeline({ item, users }: { item: SupplierRecord | Store
   const events = getActivityEntries(item);
   const current = item.handoffStage || 'awaiting';
   const visited = (stage: HandoffStage) => events.filter(e => e.version === 2 && (e.stageAfter === stage || e.stageBefore === stage));
-  const isFiles = (e: ActivityEntry) => !!(e.content?.photoUrl || e.content?.voiceUrl || e.content?.audioUrl || e.changes?.some(c => /photos|videos|voice|attachedFiles|catalogItems|drinkItems/.test(c.field)));
+  const isFiles = (e: ActivityEntry) => !!(e.content?.media?.length || e.content?.photoUrl || e.content?.voiceUrl || e.content?.audioUrl || e.changes?.some(c => /photos|videos|voice|attachedFiles|catalogItems|drinkItems/.test(c.field)));
   const shown = events.filter(e => (selected === 'all' || e.version === 2 && (e.stageAfter === selected || e.stageBefore === selected)) && (filter === 'all' || filter === 'files' && isFiles(e) || filter === 'comments' && ['comment','reply'].includes(e.kind || '') || filter === 'data' && ['create','update','delete','restore'].includes(e.kind || '') || filter === 'handoff' && e.kind === 'handoff')).map((e, index) => ({ e, index })).sort((a,b) => (oldest ? 1 : -1) * ((Date.parse(a.e.timestamp) - Date.parse(b.e.timestamp) || a.index - b.index)));
   return <section data-testid="activity-timeline" className="p-3.5 bg-slate-50 rounded-xl border border-slate-200 space-y-4 text-xs min-w-0">
     <h3 className="font-bold text-sm text-slate-900">ประวัติการดำเนินงาน & ส่งต่องาน (Activity Log)</h3>
@@ -82,7 +84,7 @@ export function ActivityTimeline({ item, users }: { item: SupplierRecord | Store
         {moved && <p className="text-emerald-800 font-bold">{stageName(e.stageBefore)} → {stageName(e.stageAfter)}</p>}
         {e.version === 2 && !moved && <p className="text-[10px] text-slate-500">ณ {stageName(e.stageAfter)}</p>}
         {e.content && e.version !== 2 && <p className="text-[10px] text-amber-800">ข้อความที่ยังเก็บในรายการ · ไม่ทราบพาร์ท ณ เวลานั้น</p>}
-        {e.content && <div className="space-y-2">{e.content.replyToAuthor && <p>ตอบกลับ {e.content.replyToAuthor}</p>}<p className="whitespace-pre-wrap break-words [overflow-wrap:anywhere]">{e.content.text}</p>{e.content.photoUrl && <Value value={e.content.photoUrl} field="photo" users={users} preview={setMedia} />}{(e.content.voiceUrl || e.content.audioUrl) && <Value value={e.content.voiceUrl || e.content.audioUrl} field="voice" users={users} preview={setMedia} />}</div>}
+        {e.content && <div className="space-y-2">{e.content.replyToAuthor && <p>ตอบกลับ {e.content.replyToAuthor}</p>}<p className="whitespace-pre-wrap break-words [overflow-wrap:anywhere]">{e.content.text}</p><CommentMediaGallery media={commentMedia(e.content)} />{(e.content.voiceUrl || e.content.audioUrl) && <Value value={e.content.voiceUrl || e.content.audioUrl} field="voice" users={users} preview={setMedia} />}</div>}
         {!!e.changes?.length && <details open={e.kind !== 'create'}><summary className="cursor-pointer text-emerald-700 font-bold py-1">รายละเอียดที่บันทึก ({e.changes.length})</summary><div className="space-y-3 mt-2">{e.changes.map(c => <div key={c.field} className="border-t pt-2"><h4 className="font-bold mb-2">{labels[c.field] || c.field}</h4><div className="grid sm:grid-cols-2 gap-2"><div className="min-w-0 rounded-lg bg-slate-50 p-2"><p className="text-[10px] text-slate-500 mb-1">ก่อนเปลี่ยน</p><Value value={c.before} field={c.field} users={users} preview={setMedia} /></div><div className="min-w-0 rounded-lg bg-emerald-50 p-2"><p className="text-[10px] text-emerald-700 mb-1">หลังเปลี่ยน</p><Value value={c.after} field={c.field} users={users} preview={setMedia} /></div></div></div>)}</div></details>}
       </article>;
     })}</div>

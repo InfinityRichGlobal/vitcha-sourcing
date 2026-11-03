@@ -4,6 +4,7 @@
 
 import { compressImageFile } from './imageCompressor';
 import { uploadMediaToServer, getRenderServerUrl } from '../services/api';
+import type { UploadOptions } from '../services/chunkUpload';
 
 const DB_NAME = 'vitcha_media_db';
 const DB_VERSION = 1;
@@ -136,9 +137,11 @@ export async function uploadImageFile(
   file: File,
   maxDimension = 1600,
   quality = 0.82,
-  options?: { recordId?: string; recordType?: string; recordTitle?: string }
+  options?: UploadOptions
 ): Promise<string> {
+  options?.signal?.throwIfAborted();
   const compressed = await compressImageFile(file, maxDimension, quality);
+  options?.signal?.throwIfAborted();
   const blob = await (await fetch(compressed)).blob();
   return uploadMediaToServer(
     new File([blob], `${file.name.replace(/\.[^.]+$/, '')}.jpg`, { type: 'image/jpeg' }),

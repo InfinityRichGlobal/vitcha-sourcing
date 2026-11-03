@@ -26,9 +26,10 @@ test('mobile detail shows the complete journey, full notes, filters and dismissi
   await timeline.getByLabel('ประเภทประวัติ').selectOption('comments');
   await expect(timeline.getByTestId('activity-event')).toHaveCount(1);
   await expect(timeline.getByTestId('activity-event')).toContainText(text);
-  await timeline.getByRole('button',{name:'เปิดภาพจากประวัติ'}).click();
-  const dialog=page.getByRole('dialog',{name:'สื่อจากประวัติ'});await expect(dialog).toBeVisible();
-  await dialog.getByRole('button',{name:'ปิดสื่อ'}).click();await expect(dialog).toHaveCount(0);await expect(timeline).toBeVisible();
+  await timeline.getByRole('button',{name:'เปิดรูปภาพแนบ 1'}).click();
+  const photos=page.getByRole('dialog',{name:'รูปและวิดีโอในความคิดเห็น'});await expect(photos).toBeVisible();
+  await photos.getByRole('button',{name:'ปิดสื่อความคิดเห็น'}).click();await expect(photos).toBeHidden();await expect(timeline).toBeVisible();
+  const dialog=page.getByRole('dialog',{name:'สื่อจากประวัติ'});
   await timeline.getByRole('button',{name:'เปิดฟังเสียง'}).click();await expect(dialog.locator('audio')).toHaveAttribute('controls','');await page.keyboard.press('Escape');await expect(dialog).toHaveCount(0);
   expect(await timeline.evaluate(el=>el.scrollWidth<=el.clientWidth+1)).toBeTruthy();
   await timeline.getByRole('button',{name:'ดูทุกพาร์ท'}).click();await third.click();

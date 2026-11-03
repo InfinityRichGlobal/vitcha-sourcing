@@ -1,10 +1,13 @@
+import { CommentMediaField } from './CommentMediaField';
+import { CommentMediaGallery } from './CommentMediaGallery';
+import { commentMedia } from '../utils/commentMedia';
 import { getPhotoGroups } from '../utils/photoGroups';
 import { normalizeMediaUrl } from '../utils/mediaUrl';
 import { MediaImage } from './MediaImage';
 import { ActivityTimeline } from './ActivityTimeline';
 import { AvatarImage } from './AvatarImage';
 import React, { useState, useEffect } from 'react';
-import { SupplierRecord, StoreInspoRecord, LocationRecord, PipelineStatus, AttachedFile } from '../types';
+import { CommentMedia, SupplierRecord, StoreInspoRecord, LocationRecord, PipelineStatus, AttachedFile } from '../types';
 import { useApp } from '../context/AppContext';
 import { SeenByBadge } from './SeenByBadge';
 import { openExecutiveReport } from '../utils/exportReport';
@@ -33,7 +36,6 @@ import {
   ChevronRight,
   Volume2,
   Pencil,
-  Image as ImageIcon,
   Mic,
   Paperclip,
   Package,
@@ -108,11 +110,15 @@ export const DetailModal: React.FC<DetailModalProps> = ({
   const [collapsedReplies, setCollapsedReplies] = useState<Record<string, boolean>>({});
 
   // Rich comment & reply attachments (Photos & Live Voice notes to Google Drive CENTER)
-  const [commentPhotoUrl, setCommentPhotoUrl] = useState<string | null>(null);
+  const [commentMediaItems, setCommentMediaItems] = useState<CommentMedia[]>([]);
+  const [mediaBusy, setMediaBusy] = useState<Record<string, boolean>>({});
+  const mediaBusyRef = React.useRef<Record<string, boolean>>({});
+  const [sendingComment, setSendingComment] = useState(false);
+  const sendingCommentRef = React.useRef(false);
+  const updateMediaBusy = (key: string, busy: boolean) => { mediaBusyRef.current[key] = busy; setMediaBusy(p => ({ ...p, [key]: busy })); };
   const [commentVoiceUrl, setCommentVoiceUrl] = useState<string | null>(null);
   const [isUploadingCommentAttachment, setIsUploadingCommentAttachment] = useState(false);
-  const [replyAttachments, setReplyAttachments] = useState<Record<string, { photoUrl?: string; voiceUrl?: string }>>({});
-  const commentPhotoInputRef = React.useRef<HTMLInputElement | null>(null);
+  const [replyAttachments, setReplyAttachments] = useState<Record<string, { media?: CommentMedia[]; voiceUrl?: string }>>({});
   const [recordingCommentTarget, setRecordingCommentTarget] = useState<string | null>(null);
   const [recordingSeconds, setRecordingSeconds] = useState(0);
   const commentRecorderRef = React.useRef<MediaRecorder | null>(null);
@@ -216,7 +222,7 @@ export const DetailModal: React.FC<DetailModalProps> = ({
     }
   };
 
-  const handleUploadAttachment = async (file: File, type: 'photo' | 'audio', noteId?: string) => {
+  const handleUploadAttachment = async (file: File, _type: 'audio', noteId?: string) => {
     try {
       setIsUploadingCommentAttachment(true);
       const url = await uploadMediaToServer(file, {
@@ -229,12 +235,11 @@ export const DetailModal: React.FC<DetailModalProps> = ({
           ...prev,
           [noteId]: {
             ...prev[noteId],
-            ...(type === 'photo' ? { photoUrl: url } : { voiceUrl: url }),
+            voiceUrl: url,
           },
         }));
       } else {
-        if (type === 'photo') setCommentPhotoUrl(url);
-        else setCommentVoiceUrl(url);
+        setCommentVoiceUrl(url);
       }
     } catch (err: any) {
       alert(err.message || 'อัปโหลดไฟล์แนบไม่สำเร็จ');
@@ -304,31 +309,28 @@ export const DetailModal: React.FC<DetailModalProps> = ({
 
   const handleAddReview = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (sendingCommentRef.current || mediaBusyRef.current.main || isUploadingCommentAttachment || recordingCommentTarget) return;
     const text = newReviewText.trim();
-    if (!text && !commentPhotoUrl && !commentVoiceUrl) return;
-    const ok = await addReviewerNote(currentItem.id, currentItem.type, text, {
-      photoUrl: commentPhotoUrl || undefined,
-      voiceUrl: commentVoiceUrl || undefined,
-    });
-    if (!ok) return;
-    setNewReviewText('');
-    setCommentPhotoUrl(null);
-    setCommentVoiceUrl(null);
+    if (!text && !commentMediaItems.length && !commentVoiceUrl) return;
+    sendingCommentRef.current = true; setSendingComment(true);
+    try {
+      const ok = await addReviewerNote(currentItem.id, currentItem.type, text, { media: commentMediaItems, voiceUrl: commentVoiceUrl || undefined });
+      if (!ok) return;
+      setNewReviewText(''); setCommentMediaItems([]); setCommentVoiceUrl(null);
+    } finally { sendingCommentRef.current = false; setSendingComment(false); }
   };
 
   const handleSendReply = async (noteId: string, replyToAuthor?: string, replyToId?: string) => {
-    const text = (replyInputs[noteId] || '').trim();
-    const att = replyAttachments[noteId];
-    if (!text && !att?.photoUrl && !att?.voiceUrl) return;
-    const ok = await addReviewReply(currentItem.id, currentItem.type, noteId, text, replyToAuthor, {
-      photoUrl: att?.photoUrl,
-      voiceUrl: att?.voiceUrl,
-      replyToId,
-    });
-    if (!ok) return;
-    setReplyInputs({ ...replyInputs, [noteId]: '' });
-    setReplyAttachments((prev) => ({ ...prev, [noteId]: {} }));
-    setReplyTarget(null);
+    if (sendingCommentRef.current || mediaBusyRef.current[noteId] || isUploadingCommentAttachment || recordingCommentTarget) return;
+    const text = (replyInputs[noteId] || '').trim(), att = replyAttachments[noteId];
+    if (!text && !att?.media?.length && !att?.voiceUrl) return;
+    sendingCommentRef.current = true; setSendingComment(true);
+    try {
+      const ok = await addReviewReply(currentItem.id, currentItem.type, noteId, text, replyToAuthor, { media: att?.media, voiceUrl: att?.voiceUrl, replyToId });
+      if (!ok) return;
+      setReplyInputs(p => ({ ...p, [noteId]: '' }));
+      setReplyAttachments(p => ({ ...p, [noteId]: {} })); setReplyTarget(null);
+    } finally { sendingCommentRef.current = false; setSendingComment(false); }
   };
 
   const handleStatusChange = (status: PipelineStatus) => {
@@ -1127,18 +1129,8 @@ export const DetailModal: React.FC<DetailModalProps> = ({
                           </div>
                           <p className="text-xs text-slate-700 leading-relaxed">{note.text}</p>
 
-                          {note.photoUrl && (
-                            <div className="mt-1.5">
-                              <MediaImage
-                                src={note.photoUrl}
-                                alt="ภาพแนบ"
-                                className="max-h-48 max-w-xs rounded-xl border border-slate-200 object-cover cursor-pointer hover:opacity-95 shadow-2xs"
-                                onClick={() => window.open(note.photoUrl, '_blank')}
-                              />
-                            </div>
-                          )}
-
-                          {(note.voiceUrl || note.audioUrl) && (
+                          <CommentMediaGallery media={commentMedia(note)} />
+{(note.voiceUrl || note.audioUrl) && (
                             <div className="mt-1.5 flex items-center gap-2 bg-slate-50 p-2 rounded-xl border border-slate-200/80 max-w-sm">
                               <Volume2 className="w-4 h-4 text-emerald-600 shrink-0" />
                               <audio controls src={note.voiceUrl || note.audioUrl} className="h-7 w-full" />
@@ -1221,17 +1213,8 @@ export const DetailModal: React.FC<DetailModalProps> = ({
                                 </span>
                               </div>
                               <p className="text-slate-700 leading-snug">{reply.text}</p>
-                              {reply.photoUrl && (
-                                <div className="mt-1">
-                                  <MediaImage
-                                    src={reply.photoUrl}
-                                    alt="ภาพแนบ"
-                                    className="max-h-36 max-w-[200px] rounded-lg border border-slate-200 object-cover cursor-pointer hover:opacity-95 shadow-2xs"
-                                    onClick={() => window.open(reply.photoUrl, '_blank')}
-                                  />
-                                </div>
-                              )}
-                              {(reply.voiceUrl || reply.audioUrl) && (
+                              <CommentMediaGallery media={commentMedia(reply)} />
+{(reply.voiceUrl || reply.audioUrl) && (
                                 <div className="mt-1 flex items-center gap-1.5 bg-white p-1.5 rounded-lg border border-slate-200 max-w-[240px]">
                                   <Volume2 className="w-3.5 h-3.5 text-blue-600 shrink-0" />
                                   <audio controls src={reply.voiceUrl || reply.audioUrl} className="h-6 w-full" />
@@ -1257,16 +1240,13 @@ export const DetailModal: React.FC<DetailModalProps> = ({
                       )}
 
                       {/* Inline Reply Form */}
+                      {canComment && <div className={replyTarget?.noteId === note.id ? 'mt-2' : 'hidden'}>
+                        <CommentMediaField value={replyAttachments[note.id]?.media || []} onChange={media => setReplyAttachments(p => ({ ...p, [note.id]: { ...p[note.id], media } }))} onBusyChange={busy => updateMediaBusy(note.id, busy)} disabled={sendingComment} recordId={currentItem.id} recordType={currentItem.type} recordTitle={currentItem.id} />
+                      </div>}
                       {canComment && replyTarget?.noteId === note.id && (
                         <div className="mt-2 pt-2 border-t border-slate-100 space-y-1.5 animate-in fade-in">
-                          {(replyAttachments[note.id]?.photoUrl || replyAttachments[note.id]?.voiceUrl) && (
+                          {(replyAttachments[note.id]?.voiceUrl) && (
                             <div className="flex flex-wrap items-center gap-1.5 text-[10px]">
-                              {replyAttachments[note.id]?.photoUrl && (
-                                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-800 border border-emerald-200">
-                                  <ImageIcon className="w-3 h-3" /> ภาพพร้อมแนบ
-                                  <button type="button" onClick={() => setReplyAttachments(p => ({ ...p, [note.id]: { ...p[note.id], photoUrl: undefined } }))}><X className="w-2.5 h-2.5" /></button>
-                                </span>
-                              )}
                               {replyAttachments[note.id]?.voiceUrl && (
                                 <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded bg-blue-50 text-blue-800 border border-blue-200">
                                   <Mic className="w-3 h-3" /> เสียงอัดสดพร้อมส่ง
@@ -1280,6 +1260,7 @@ export const DetailModal: React.FC<DetailModalProps> = ({
                             <input
                               type="text"
                               placeholder={`ตอบกลับ @${replyTarget.author} ในฐานะ ${currentUser.alias}...`}
+                              disabled={sendingComment}
                               value={replyInputs[note.id] || ''}
                               onChange={(e) =>
                                 setReplyInputs({ ...replyInputs, [note.id]: e.target.value })
@@ -1295,29 +1276,12 @@ export const DetailModal: React.FC<DetailModalProps> = ({
                             />
                             <button
                               type="button"
-                              title="แนบรูปภาพในคำตอบกลับ"
-                              onClick={() => {
-                                const input = document.createElement('input');
-                                input.type = 'file';
-                                input.accept = 'image/*';
-                                input.onchange = (e: any) => {
-                                  const f = e.target?.files?.[0];
-                                  if (f) handleUploadAttachment(f, 'photo', note.id);
-                                };
-                                input.click();
-                              }}
-                              className="p-1.5 rounded-lg border border-slate-200 hover:bg-slate-100 text-slate-500"
-                            >
-                              <ImageIcon className="w-3.5 h-3.5" />
-                            </button>
-                            <button
-                              type="button"
                               title={
                                 recordingCommentTarget === note.id
                                   ? 'กดเพื่อหยุดอัดเสียงสด'
                                   : 'กดเพื่ออัดเสียงสดในคำตอบกลับ'
                               }
-                              disabled={isUploadingCommentAttachment}
+                              disabled={sendingComment || isUploadingCommentAttachment}
                               onClick={() => void toggleLiveVoiceRecording(note.id)}
                               className={`px-2 py-1.5 rounded-lg border text-[11px] font-bold inline-flex items-center gap-1 transition-all ${
                                 recordingCommentTarget === note.id
@@ -1334,6 +1298,7 @@ export const DetailModal: React.FC<DetailModalProps> = ({
                             </button>
                             <button
                               type="button"
+                              disabled={sendingComment || mediaBusy[note.id] || isUploadingCommentAttachment || !!recordingCommentTarget}
                               onClick={() => handleSendReply(note.id, replyTarget.author)}
                               className="px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold"
                             >
@@ -1382,23 +1347,11 @@ export const DetailModal: React.FC<DetailModalProps> = ({
 
             {/* Post New Top-Level Comment */}
             {currentUser.role === 'viewer' ? null : (
-              <form onSubmit={handleAddReview} className="space-y-2 pt-1">
+              <form onSubmit={handleAddReview} className="space-y-2 pt-1" aria-label="เขียนความคิดเห็น">
+                <CommentMediaField value={commentMediaItems} onChange={setCommentMediaItems} onBusyChange={busy => updateMediaBusy("main", busy)} disabled={sendingComment} recordId={currentItem.id} recordType={currentItem.type} recordTitle={currentItem.id} />
                 {/* Pending Attachment Previews */}
-                {(commentPhotoUrl || commentVoiceUrl || isUploadingCommentAttachment) && (
+                {(commentVoiceUrl || isUploadingCommentAttachment) && (
                   <div className="flex flex-wrap items-center gap-2 px-1">
-                    {commentPhotoUrl && (
-                      <div className="flex items-center gap-1.5 px-2 py-1 bg-emerald-50 border border-emerald-200 rounded-lg text-xs text-emerald-800">
-                        <ImageIcon className="w-3.5 h-3.5 text-emerald-600" />
-                        <span className="truncate max-w-[120px]">รูปภาพพร้อมแนบ</span>
-                        <button
-                          type="button"
-                          onClick={() => setCommentPhotoUrl(null)}
-                          className="text-slate-400 hover:text-rose-600"
-                        >
-                          <X className="w-3 h-3" />
-                        </button>
-                      </div>
-                    )}
                     {commentVoiceUrl && (
                       <div className="flex items-center gap-1.5 px-2 py-1 bg-blue-50 border border-blue-200 rounded-lg text-xs text-blue-800">
                         <Mic className="w-3.5 h-3.5 text-blue-600" />
@@ -1424,35 +1377,13 @@ export const DetailModal: React.FC<DetailModalProps> = ({
 
                 <div className="flex gap-1.5 items-center flex-wrap sm:flex-nowrap">
                   <input
-                    ref={commentPhotoInputRef}
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    onChange={(e) => {
-                      const f = e.target.files?.[0];
-                      if (f) handleUploadAttachment(f, 'photo');
-                      e.target.value = '';
-                    }}
-                  />
-
-                  <input
                     type="text"
                     placeholder={`พิมพ์ข้อคิดเห็นใหม่ในฐานะ ${currentUser.alias}...`}
+                    disabled={sendingComment}
                     value={newReviewText}
                     onChange={(e) => setNewReviewText(e.target.value)}
                     className="flex-1 min-w-[140px] h-8 bg-white border border-slate-200 rounded-lg px-2.5 text-xs text-slate-900 focus:outline-none focus:border-blue-500 shadow-2xs"
                   />
-
-                  <button
-                    type="button"
-                    title="แนบรูปภาพ"
-                    disabled={isUploadingCommentAttachment}
-                    onClick={() => commentPhotoInputRef.current?.click()}
-                    className="h-8 px-2.5 rounded-lg border border-slate-200 bg-white hover:border-emerald-500 hover:bg-emerald-50 text-slate-600 hover:text-emerald-700 text-[11px] font-bold inline-flex items-center justify-center gap-1 transition-colors shrink-0"
-                  >
-                    <ImageIcon className="w-3.5 h-3.5" />
-                    <span className="hidden sm:inline">รูปภาพ</span>
-                  </button>
 
                   <button
                     type="button"
@@ -1461,7 +1392,7 @@ export const DetailModal: React.FC<DetailModalProps> = ({
                         ? 'กดเพื่อหยุดอัดเสียงสด'
                         : 'กดเพื่ออัดเสียงสดในคอมเมนต์'
                     }
-                    disabled={isUploadingCommentAttachment}
+                    disabled={sendingComment || isUploadingCommentAttachment}
                     onClick={() => void toggleLiveVoiceRecording('main')}
                     className={`h-8 px-2.5 rounded-lg border text-[11px] font-bold inline-flex items-center justify-center gap-1 transition-all shrink-0 ${
                       recordingCommentTarget === 'main'
@@ -1479,11 +1410,11 @@ export const DetailModal: React.FC<DetailModalProps> = ({
 
                   <button
                     type="submit"
-                    disabled={isUploadingCommentAttachment || recordingCommentTarget === 'main'}
+                    disabled={sendingComment || mediaBusy.main || isUploadingCommentAttachment || !!recordingCommentTarget}
                     className="h-8 px-3 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-[11px] font-bold shadow-2xs active:scale-95 transition-all inline-flex items-center justify-center gap-1 shrink-0 disabled:opacity-50"
                   >
                     <Send className="w-3 h-3" />
-                    <span>โพสต์</span>
+                    <span>{sendingComment ? 'กำลังส่ง…' : 'โพสต์'}</span>
                   </button>
                 </div>
               </form>

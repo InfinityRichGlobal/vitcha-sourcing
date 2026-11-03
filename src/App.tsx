@@ -338,6 +338,7 @@ const MainApp: React.FC = () => {
       /></Suspense>}
 
       {selectedDetailItem && <Suspense fallback={<ModalLoading />}><DetailModal
+        key={selectedDetailItem.id}
         item={selectedDetailItem}
         isOpen={!!selectedDetailItem}
         onClose={() => setSelectedDetailItem(null)}

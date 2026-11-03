@@ -1,3 +1,7 @@
+import { CommentMediaField } from './CommentMediaField';
+import { CommentMediaGallery } from './CommentMediaGallery';
+import { commentMedia } from '../utils/commentMedia';
+import type { CommentMedia } from '../types';
 import { MediaImage } from './MediaImage';
 import { AvatarImage } from './AvatarImage';
 import React, { useState } from 'react';
@@ -49,6 +53,11 @@ export const SupplierCard: React.FC<SupplierCardProps> = ({
   const [lightboxIdx, setLightboxIdx] = useState<number | null>(null);
   const [showComments, setShowComments] = useState(false);
   const [commentInput, setCommentInput] = useState('');
+  const [commentAttachments, setCommentAttachments] = useState<CommentMedia[]>([]);
+  const [commentMediaBusy, setCommentMediaBusy] = useState(false);
+  const commentBusyRef = React.useRef(false);
+  const postingRef = React.useRef(false);
+  const [posting, setPosting] = useState(false);
   const [replyingTo, setReplyingTo] = useState<{ noteId: string; author: string } | null>(null);
   const [replyInput, setReplyInput] = useState('');
   const [collapsedReplies, setCollapsedReplies] = useState<Record<string, boolean>>({});
@@ -89,9 +98,12 @@ export const SupplierCard: React.FC<SupplierCardProps> = ({
   const handlePostComment = async (e: React.FormEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    if (!commentInput.trim()) return;
-    if (!await addReviewerNote(supplier.id, 'supplier', commentInput.trim())) return;
-    setCommentInput('');
+    if (postingRef.current || commentBusyRef.current || (!commentInput.trim() && !commentAttachments.length)) return;
+    postingRef.current = true; setPosting(true);
+    try {
+      if (!await addReviewerNote(supplier.id, 'supplier', commentInput.trim(), { media: commentAttachments })) return;
+      setCommentInput(''); setCommentAttachments([]);
+    } finally { postingRef.current = false; setPosting(false); }
   };
 
   const handlePostReply = async (e: React.FormEvent, noteId: string, replyToAuthor?: string) => {
@@ -105,7 +117,7 @@ export const SupplierCard: React.FC<SupplierCardProps> = ({
 
   return (
     <>
-      <div className="bg-white border border-slate-200/80 rounded-2xl overflow-hidden shadow-2xs hover:border-slate-300 transition-all duration-200 flex flex-col justify-between">
+      <div role="article" aria-label={supplier.name} className="bg-white border border-slate-200/80 rounded-2xl overflow-hidden shadow-2xs hover:border-slate-300 transition-all duration-200 flex flex-col justify-between">
         {/* 1. Clean Minimal Header */}
         <div
           onClick={() => onSelect(supplier)}
@@ -444,6 +456,7 @@ export const SupplierCard: React.FC<SupplierCardProps> = ({
                               </span>
                             </div>
                             <p className="text-xs text-slate-700 leading-relaxed">{note.text}</p>
+                            <CommentMediaGallery media={commentMedia(note)} />
                           </div>
 
                           <div className="flex items-center gap-3 px-2 mt-0.5 text-[10px] font-bold text-slate-500">
@@ -521,6 +534,7 @@ export const SupplierCard: React.FC<SupplierCardProps> = ({
                                     </span>
                                   </div>
                                   <p className="text-[11px] text-slate-700">{rep.text}</p>
+                            <CommentMediaGallery media={commentMedia(rep)} />
                                 </div>
                                 {canComment && (
 <button
@@ -568,6 +582,8 @@ export const SupplierCard: React.FC<SupplierCardProps> = ({
             )}
 
             {canComment && (
+<div className="space-y-2">
+              <CommentMediaField value={commentAttachments} onChange={setCommentAttachments} onBusyChange={busy => { commentBusyRef.current = busy; setCommentMediaBusy(busy); }} disabled={posting} recordId={supplier.id} recordType="supplier" recordTitle={supplier.id} />
 <form onSubmit={handlePostComment} className="flex items-center gap-1.5 pt-1">
               <AvatarImage loading="lazy" decoding="async"
                 src={currentUser.avatar}
@@ -576,6 +592,7 @@ export const SupplierCard: React.FC<SupplierCardProps> = ({
               />
               <input
                 type="text"
+                disabled={posting}
                 value={commentInput}
                 onChange={(e) => setCommentInput(e.target.value)}
                 placeholder="เขียนความคิดเห็นในโพสต์นี้..."
@@ -583,12 +600,13 @@ export const SupplierCard: React.FC<SupplierCardProps> = ({
               />
               <button
                 type="submit"
-                disabled={!commentInput.trim()}
+                disabled={posting || commentMediaBusy || (!commentInput.trim() && !commentAttachments.length)} aria-label="ส่งความคิดเห็น"
                 className="p-1.5 rounded-full bg-slate-900 hover:bg-emerald-600 disabled:opacity-40 text-white transition-colors"
               >
                 <Send className="w-3.5 h-3.5" />
               </button>
             </form>
+            </div>
 )}
           </div>
         )}
