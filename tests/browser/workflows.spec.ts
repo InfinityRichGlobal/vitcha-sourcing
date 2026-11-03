@@ -102,7 +102,7 @@ test('overlapping photo batches keep save disabled until every image is ready', 
   await inputs.nth(1).setInputFiles({ name: 'second.png', mimeType: 'image/png', buffer: pixel });
   const save = dialog.locator('button').last();
   await expect(save).toBeDisabled();
-  await expect(dialog.getByRole('status')).toContainText('1 ชุด');
+  await expect(dialog.getByRole('status').filter({ hasText: 'กำลังประมวลผลรูปภาพ' })).toContainText('1 ชุด');
   await expect(save).toBeDisabled();
   await expect(save).toBeEnabled({ timeout: 10000 });
   const responsePromise = page.waitForResponse(r => r.url().endsWith('/api/suppliers') && r.request().method() === 'POST');
