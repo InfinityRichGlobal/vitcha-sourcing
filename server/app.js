@@ -381,8 +381,10 @@ export function createApp({ dataDir, defaults = DEFAULT_DATABASE, sessionTtlMs =
         fail(409, 'รายการนี้ถูกบันทึกแล้ว กรุณาโหลดข้อมูลล่าสุด');
       }
       if (target) {
+        const saveReceipt = `save:${req.user.id}:${createHash('sha256').update(JSON.stringify({ revision: input.revision, fields: pick(input, fields) })).digest('hex')}`;
+        if ((target.appliedOperations || []).includes(saveReceipt)) return res.json({ success: true, item: target });
         requireWriter(req); expectRevision(target, input.revision);
-        item = { ...target, ...pick(input, fields) };
+        item = { ...target, ...pick(input, fields), appliedOperations: [...(target.appliedOperations || []), saveReceipt].slice(-500) };
         validateRecord(item, collection);
         // Concurrent notes, likes, handoff and audit history are not client-editable.
         touch(item); item.history = [...(target.history || [])];

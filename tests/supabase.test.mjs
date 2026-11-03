@@ -3,31 +3,45 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { randomUUID } from 'node:crypto';
+import { randomBytes, randomUUID } from 'node:crypto';
 import { PGlite } from '@electric-sql/pglite';
 import { createApp } from '../server/app.js';
+import { stateDelta } from '../server/state-delta.js';
 import { createSupabasePersistence } from '../server/supabase-persistence.js';
 
-async function fixture(t, { simulation = false } = {}) {
+async function fixture(t, { simulation = false, large = false } = {}) {
   const db = new PGlite();
   await db.exec('create role anon; create role authenticated; create role service_role bypassrls;');
   await db.exec(fs.readFileSync('deployment/supabase.sql', 'utf8'));
+  await db.exec(fs.readFileSync('deployment/supabase-delta.sql', 'utf8'));
   const body = { users: [{ id: 'user-ice', emailOrId: 'ice', name: 'Test', alias: 'Test', pin: 'fixture-password', role: 'admin', avatar: '' }], invites: [], suppliers: [], drinkStores: [], notifications: [] };
+  if (large) {
+    const avatar = `data:image/jpeg;base64,${randomBytes(52000).toString('base64')}`;
+    body.users[0].avatar = avatar;
+    body.suppliers = Array.from({ length: 30 }, (_, i) => ({ id: `old-${i}`, name: `Old ${i}`, revision: 0, photos: { storefrontAndAtmosphere: ['/media/old-photo'], contactCards: [] }, history: Array.from({ length: 5 }, (_, j) => ({ id: `h-${i}-${j}`, userAvatar: avatar, action: 'create' })) }));
+    body.notifications = Array.from({ length: 40 }, (_, i) => ({ id: `n-${i}`, userAvatar: avatar, title: 'Old', readBy: [] }));
+  }
   if (simulation) body.users.push({ id: 'user-ann', emailOrId: 'ann', name: 'Ann', alias: 'Ann', pin: '', role: 'viewer', avatar: '' });
   await db.query('insert into public.vitcha_state(id,body) values ($1,$2)', ['main', JSON.stringify(body)]);
-  let failWrite = false, loseAcknowledgement = false, beforeCommit = null;
+  let failWrite = false, loseAcknowledgement = false, beforeCommit = null, transientFailures = 0, receiptFailures = 0;
+  const payloads = [];
   const request = async (route, options = {}) => {
-    if (route === '/rest/v1/rpc/vitcha_commit') {
+    if (route === '/rest/v1/rpc/vitcha_commit_delta') {
+      payloads.push(options.body);
+      if (transientFailures-- > 0) throw Object.assign(new Error('temporary network failure'), { status: 503 });
       if (beforeCommit) await beforeCommit();
       if (failWrite) throw Object.assign(new Error('fixture unavailable'), { status: 503 });
       const v = JSON.parse(options.body);
       let result;
-      try { result = (await db.query('select public.vitcha_commit($1,$2,$3) as version', [v.expected_version, JSON.stringify(v.next_body), v.commit_id])).rows[0].version; }
+      try { result = (await db.query('select public.vitcha_commit_delta($1,$2,$3) as version', [v.expected_version, JSON.stringify(v.delta), v.commit_id])).rows[0].version; }
       catch (e) { throw Object.assign(new Error(e.message), { status: e.code === 'PT409' ? 409 : 503 }); }
       if (loseAcknowledgement) { loseAcknowledgement = false; throw Object.assign(new Error('fixture lost acknowledgement'), { status: 503 }); }
       return result;
     }
-    if (route.startsWith('/rest/v1/vitcha_commits?')) return (await db.query('select version from public.vitcha_commits where id=$1', [route.match(/id=eq\.([^&]+)/)[1]])).rows;
+    if (route.startsWith('/rest/v1/vitcha_commits?')) {
+      if (receiptFailures-- > 0) throw new Error('temporary receipt failure');
+      return (await db.query('select version from public.vitcha_commits where id=$1', [route.match(/id=eq\.([^&]+)/)[1]])).rows;
+    }
     return (await db.query(route.endsWith('select=version') ? 'select version from public.vitcha_state' : 'select version, body from public.vitcha_state')).rows;
   };
   const servers = [], dirs = [];
@@ -46,7 +60,7 @@ async function fixture(t, { simulation = false } = {}) {
     return { call, token, dir };
   };
   t.after(async () => { for (const server of servers) await new Promise(resolve => server.close(resolve)); for (const dir of dirs) fs.rmSync(dir, { recursive: true, force: true }); await db.close(); });
-  return { db, start, failWrites: v => { failWrite = v; }, loseAck: () => { loseAcknowledgement = true; }, gate: v => { beforeCommit = v; }, read: async () => (await db.query('select body from public.vitcha_state')).rows[0].body };
+  return { db, start, payloads, failOnce: () => { transientFailures = 1; }, failReceiptOnce: () => { receiptFailures = 1; }, failWrites: v => { failWrite = v; }, loseAck: () => { loseAcknowledgement = true; }, gate: v => { beforeCommit = v; }, read: async () => (await db.query('select body from public.vitcha_state')).rows[0].body };
 }
 
 test('PostgreSQL commits concurrent invites and consumes each invitation once, surviving a fresh server', async t => {
@@ -122,6 +136,8 @@ test('SQL denies anonymous and regular authenticated access to private data and 
     await f.db.exec(`set role ${role}`);
     for (const table of ['vitcha_state','vitcha_commits','vitcha_runtime','vitcha_media']) await assert.rejects(f.db.query(`select * from public.${table}`), e => e.code === '42501');
     await assert.rejects(f.db.query('select public.vitcha_commit(1,$1,$2)', ['{}', randomUUID()]), e => e.code === '42501');
+    await assert.rejects(f.db.query('select public.vitcha_commit_delta(1,$1,$2)', ['null', randomUUID()]), e => e.code === '42501');
+    await assert.rejects(f.db.query('select public.vitcha_apply_delta($1,$2)', ['{}', '{}']), e => e.code === '42501');
     await f.db.exec('reset role');
   }
 });
@@ -208,4 +224,61 @@ test('push events wait for durable commit; failed writes never send and subscrip
   assert.equal(sent.length, 1);
   await f.start({ pushDelivery: delivery });
   assert.deepEqual((await f.read()).pushVapid, keys);
+});
+
+
+test('13 MB database saves a supplier and five photos with a small delta, retrying safely without lost old records', async t => {
+  const f = await fixture(t, { large: true }); const a = await f.start();
+  const before = await f.read();
+  assert.ok(Buffer.byteLength(JSON.stringify(before)) > 13_000_000);
+  const command = { id: 'field-large-save', name: 'Five photos', rating: 0, category: 'Field test', location: { lat: 23, lng: 113 }, catalogItems: [], photos: { storefrontAndAtmosphere: Array.from({ length: 5 }, (_, i) => `/media/photo-${i}`), contactCards: [] } };
+  f.payloads.length = 0; f.failOnce();
+  const result = await a.call('/api/suppliers', command, a.token);
+  assert.equal(result.status, 200);
+  assert.equal(f.payloads.length, 2);
+  assert.equal(f.payloads[0], f.payloads[1], 'network retry must use identical commit ID and delta');
+  const transferred = Buffer.byteLength(f.payloads[0]);
+  assert.ok(transferred < 300_000, `delta was ${transferred} bytes`);
+  const after = await f.read();
+  assert.equal(after.suppliers.length, 31);
+  assert.deepEqual(after.suppliers.filter(s => s.id !== command.id), before.suppliers);
+  assert.deepEqual(after.users, before.users);
+  assert.deepEqual(after.suppliers.find(s => s.id === command.id).photos, command.photos);
+  assert.equal((await a.call('/api/suppliers', command, a.token)).status, 200);
+  assert.equal((await f.read()).suppliers.length, 31, 'repeated save creates no duplicate');
+  f.loseAck(); f.failReceiptOnce(); f.payloads.length = 0;
+  const saved = after.suppliers.find(s => s.id === command.id);
+  assert.equal((await a.call('/api/suppliers', { ...command, revision: saved.revision, name: 'Edited once' }, a.token)).status, 200);
+  assert.equal(f.payloads.length, 2);
+  assert.equal(f.payloads[0], f.payloads[1]);
+  const edited = (await f.read()).suppliers.find(s => s.id === command.id);
+  assert.equal(edited.revision, saved.revision + 1);
+  assert.equal(edited.history.length, saved.history.length + 1);
+  const notifications = (await f.read()).notifications.length;
+  assert.equal((await a.call('/api/suppliers', { ...command, revision: saved.revision, name: 'Edited once' }, a.token)).status, 200);
+  assert.deepEqual((await f.read()).suppliers.find(s => s.id === command.id), edited);
+  assert.equal((await f.read()).notifications.length, notifications);
+  assert.equal((await a.call('/api/suppliers', { ...command, revision: saved.revision, name: 'Different stale edit' }, a.token)).status, 409);
+  t.diagnostic(`13 MB supplier save transferred ${transferred} bytes`);
+});
+
+test('SQL delta preserves reordered arrays, null, removed fields and arbitrary JSON keys; invalid changes roll back', async t => {
+  const f = await fixture(t);
+  const cases = [
+    [{ a: 1, b: 2 }, { a: null, c: 0 }],
+    [[{ id: 'a', n: 1 }, { id: 'b', n: 2 }], [{ id: 'b', n: 3 }, { id: 'c', n: 4 }, { id: 'a', n: 1 }]],
+    [[1, 2, 1, null], [null, 1, 1, 5]],
+    [[], [null]], [[1], []], [{ a: [] }, {}],
+    [JSON.parse('{"__proto__":1,"constructor":2}'), JSON.parse('{"__proto__":null,"constructor":{"x":3}}')],
+  ];
+  for (const [old, next] of cases) {
+    const delta = stateDelta(old, next);
+    const result = (await f.db.query('select public.vitcha_apply_delta($1,$2) as body', [JSON.stringify(old), JSON.stringify(delta)])).rows[0].body;
+    assert.deepEqual(result, next);
+  }
+  const before = await f.read();
+  await assert.rejects(f.db.query('select public.vitcha_commit_delta(1,$1,$2)', [JSON.stringify({ fields: { users: { items: [{ from: 999 }] } }, remove: [] }), randomUUID()]), e => e.code === 'PT400');
+  assert.deepEqual(await f.read(), before);
+  await assert.rejects(f.db.query('select public.vitcha_commit_delta(1,$1,$2)', [JSON.stringify({ value: {} }), randomUUID()]), e => e.code === 'PT400');
+  assert.deepEqual(await f.read(), before);
 });

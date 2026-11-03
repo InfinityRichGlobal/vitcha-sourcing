@@ -140,3 +140,32 @@ test('read notifications do not revert during slow sync or reload and can retry 
   await page.reload(); await page.getByTitle('การแจ้งเตือนความเคลื่อนไหว').click();
   await expect(sheet.getByRole('button', { name: 'อ่านแล้ว', exact: true })).toHaveCount(unreadAfterClick);
 });
+
+test('retrying an edit after the server reply is lost confirms the same save without duplicate history', async ({ page }) => {
+  const token = await signIn(page); const id = `lost-save-${Date.now()}`;
+  const record = { id, name: 'Lost response fixture', category: 'เครื่องชงชา/กาแฟ', rating: 0, quickTags: [], photos: { storefrontAndAtmosphere: [], contactCards: [] }, catalogItems: [], location: { lat: 23, lng: 113 } };
+  expect((await page.request.post('/api/suppliers', { headers: { Authorization: `Bearer ${token}` }, data: record })).ok()).toBeTruthy();
+  await page.goto(`/?view=${id}&type=supplier`);
+  await page.getByTitle('แก้ไขข้อมูลรายการนี้ (Admin / Editor)').click();
+  const dialog = page.getByRole('dialog').last();
+  await dialog.locator('input[placeholder*="FEST"]').fill('Confirmed after retry');
+  let saved: any; let writes = 0;
+  let replyLost!: () => void; const firstCommitted = new Promise<void>(resolve => { replyLost = resolve; });
+  await page.route('**/api/suppliers', async route => {
+    writes++;
+    const response = await route.fetch();
+    expect(response.ok()).toBeTruthy();
+    const item = (await response.json()).item;
+    if (writes === 1) { saved = item; await route.abort('failed'); replyLost(); }
+    else { expect(item).toEqual(saved); await route.fulfill({ response }); }
+  });
+  await dialog.getByRole('button', { name: /บันทึกการแก้ไข/ }).click();
+  await firstCommitted;
+  await expect(page.getByRole('alert')).toBeVisible();
+  await expect(dialog.locator('input[placeholder*="FEST"]')).toHaveValue('Confirmed after retry');
+  await expect(page.getByTestId('success-feedback')).toHaveCount(0);
+  await dialog.getByRole('button', { name: /บันทึกการแก้ไข/ }).click();
+  await expect(dialog).toHaveCount(0);
+  await expect(page.getByTestId('success-feedback')).toContainText('บันทึกการแก้ไขเรียบร้อยแล้ว');
+  expect(writes).toBe(2);
+});

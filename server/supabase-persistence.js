@@ -1,23 +1,32 @@
 import { AsyncLocalStorage } from 'node:async_hooks';
 import { randomUUID } from 'node:crypto';
+import { setTimeout as delay } from 'node:timers/promises';
+import { stateDelta } from './state-delta.js';
 
 const unavailable = () => Object.assign(new Error('ฐานข้อมูลยังไม่ตอบรับ กรุณาลองอีกครั้ง'), { status: 503 });
 
 export function supabaseRequest({ url, key, fetchImpl = fetch }) {
   if (!/^https:\/\/[^/]+\.supabase\.co$/.test(url || '') || !key) throw new Error('Supabase server configuration missing or invalid');
   return async (route, options = {}) => {
+    const { timeoutMs = 20000, ...fetchOptions } = options;
     const headers = { apikey: key, ...(key.startsWith('sb_secret_') ? {} : { Authorization: `Bearer ${key}` }), ...options.headers };
-    let response;
-    try { response = await fetchImpl(url + route, { ...options, headers, signal: AbortSignal.timeout(20000) }); }
-    catch { throw unavailable(); }
+    const started = Date.now();
+    const failure = (code, status, retryable) => {
+      // Never log credentials, query parameters, user content or raw DB errors.
+      console.warn('[database-request]', JSON.stringify({ route: route.split('?')[0], code, status, elapsedMs: Date.now() - started, bytes: Buffer.byteLength(options.body || '') }));
+      return Object.assign(unavailable(), { retryable });
+    };
+    let response, data;
+    try {
+      response = await fetchImpl(url + route, { ...fetchOptions, headers, signal: AbortSignal.timeout(timeoutMs) });
+      const text = await response.text();
+      data = text ? JSON.parse(text) : null;
+    } catch { throw failure('transport', response?.status, true); }
     if (!response.ok) {
-      const error = await response.json().catch(() => ({}));
-      if (response.status === 409 || error.code === 'PT409') throw Object.assign(new Error('ข้อมูลเปลี่ยนแล้ว กรุณาโหลดข้อมูลล่าสุดแล้วลองอีกครั้ง'), { status: 409 });
-      throw unavailable();
+      if (response.status === 409 || data?.code === 'PT409') throw Object.assign(new Error('ข้อมูลเปลี่ยนแล้ว กรุณาโหลดข้อมูลล่าสุดแล้วลองอีกครั้ง'), { status: 409 });
+      throw failure(/^[A-Z0-9]{3,12}$/.test(data?.code || '') ? data.code : 'http', response.status, response.status === 429 || response.status >= 500);
     }
-    if (response.status === 204) return null;
-    const text = await response.text();
-    return text ? JSON.parse(text) : null;
+    return data;
   };
 }
 
@@ -41,18 +50,26 @@ export async function createSupabasePersistence(options) {
     if (rows.length !== 1) throw unavailable();
     if (Number(rows[0].version) > Number(cached.version)) await reload();
   }
-  async function commit(body, expected, id = randomUUID()) {
+  async function commit(body, expected, previous, id = randomUUID()) {
+    // Match JSON's persisted semantics (e.g. omit undefined optional fields).
+    body = JSON.parse(JSON.stringify(body));
+    const payload = JSON.stringify({ expected_version: expected, delta: stateDelta(previous, body), commit_id: id });
     let version;
-    try {
-      version = await request('/rest/v1/rpc/vitcha_commit', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ expected_version: expected, next_body: body, commit_id: id }) });
-    } catch (error) {
-      if (error.status === 409) throw error;
-      // A lost HTTP acknowledgement must not cause us to apply the write twice.
-      const receipt = await request(`/rest/v1/vitcha_commits?id=eq.${id}&select=version`).catch(() => []);
-      if (!receipt.length) throw error;
-      version = receipt[0].version;
+    for (let attempt = 0; attempt < 2; attempt++) {
+      try {
+        version = await request('/rest/v1/rpc/vitcha_commit_delta', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: payload, timeoutMs: 12000 });
+        break;
+      } catch (error) {
+        if (error.status === 409) throw error;
+        // Reuse the exact ID and expected snapshot. A late first attempt and its
+        // retry share the SQL lock/receipt, so only one can apply the change.
+        const receipt = await request(`/rest/v1/vitcha_commits?id=eq.${id}&select=version`, { timeoutMs: 5000 }).catch(() => []);
+        if (receipt.length) { version = receipt[0].version; break; }
+        if (attempt || error.retryable === false) throw error;
+        await delay(250);
+      }
     }
-    if (Number(version) >= Number(cached.version)) cached = { version, body: structuredClone(body) };
+    if (Number(version) >= Number(cached.version)) cached = { version, body };
   }
   const store = {
     read() { return structuredClone(context.getStore()?.body || initialWrite || cached.body); },
@@ -67,7 +84,7 @@ export async function createSupabasePersistence(options) {
       else callback();
     },
     async flush() {
-      if (initialWrite) { await commit(initialWrite, cached.version); initialWrite = undefined; }
+      if (initialWrite) { await commit(initialWrite, cached.version, cached.body); initialWrite = undefined; }
     },
     middleware() {
       return async (req, res, next) => {
@@ -87,7 +104,7 @@ export async function createSupabasePersistence(options) {
           await refresh();
           // read() makes isolated copies; retaining this immutable committed body
           // avoids an extra full-database clone for every poll and upload chunk.
-          const state = { body: cached.body, version: cached.version, readOnly, dirty: false, callbacks: [], aborted: false, responding: false };
+          const state = { body: cached.body, original: cached.body, version: cached.version, readOnly, dirty: false, callbacks: [], aborted: false, responding: false };
           const json = res.json.bind(res);
           res.once('close', () => { state.aborted = true; if (!state.responding) release(); });
           res.json = body => {
@@ -96,7 +113,7 @@ export async function createSupabasePersistence(options) {
             void (async () => {
               try {
                 if (res.statusCode < 400) {
-                  if (state.dirty) await commit(state.body, state.version);
+                  if (state.dirty) await commit(state.body, state.version, state.original);
                   for (const callback of state.callbacks) callback();
                 }
                 if (!res.destroyed) json(body);

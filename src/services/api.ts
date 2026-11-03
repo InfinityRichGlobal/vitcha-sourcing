@@ -92,7 +92,7 @@ export async function requestJson(path: string, init: RequestInit = {}, timeoutM
     init.signal?.removeEventListener('abort', onAbort);
   }
 }
-export const sendJson = (path: string, body: unknown, method = 'POST') => requestJson(path, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+export const sendJson = (path: string, body: unknown, method = 'POST') => requestJson(path, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }, 90000);
 export async function checkServerHealth(customUrl?: string): Promise<{ ok: boolean; message: string; count?: any }> {
   try {
     const data = await requestJson('/api/health', {}, 10000, customUrl?.trim().replace(/\/+$/, '') || getRenderServerUrl());
