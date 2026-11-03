@@ -32,9 +32,15 @@ export async function createSupabasePersistence(options) {
   async function reload() {
     const rows = await request('/rest/v1/vitcha_state?id=eq.main&select=version,body');
     if (rows.length !== 1 || !Array.isArray(rows[0].body?.users) || !rows[0].body.users.some(u => u.id === 'user-ice' && (u.pinHash || u.pin))) throw new Error('Complete VITCHA database must be imported before startup');
-    cached = rows[0];
+    // A slow read must never replace a newer commit with its older snapshot.
+    if (!cached || Number(rows[0].version) >= Number(cached.version)) cached = rows[0];
   }
   await reload();
+  async function refresh() {
+    const rows = await request('/rest/v1/vitcha_state?id=eq.main&select=version');
+    if (rows.length !== 1) throw unavailable();
+    if (Number(rows[0].version) > Number(cached.version)) await reload();
+  }
   async function commit(body, expected, id = randomUUID()) {
     let version;
     try {
@@ -46,13 +52,13 @@ export async function createSupabasePersistence(options) {
       if (!receipt.length) throw error;
       version = receipt[0].version;
     }
-    cached = { version, body: structuredClone(body) };
+    if (Number(version) >= Number(cached.version)) cached = { version, body: structuredClone(body) };
   }
   const store = {
     read() { return structuredClone(context.getStore()?.body || initialWrite || cached.body); },
     save(body) {
       const current = context.getStore();
-      if (current) { if (current.aborted) throw unavailable(); current.body = structuredClone(body); current.dirty = true; }
+      if (current) { if (current.aborted || current.readOnly) throw unavailable(); current.body = structuredClone(body); current.dirty = true; }
       else initialWrite = structuredClone(body);
     },
     afterCommit(callback) {
@@ -65,20 +71,23 @@ export async function createSupabasePersistence(options) {
     },
     middleware() {
       return async (req, res, next) => {
-        if (waiting >= 100) return res.status(503).json({ error: 'ระบบกำลังรับหลายรายการ กรุณาลองอีกครั้ง' });
-        waiting++;
-        const previous = tail;
-        let unlock;
-        tail = new Promise(resolve => { unlock = resolve; });
-        await previous;
+        const readOnly = ['GET', 'HEAD'].includes(req.method) || req.path === '/upload' || req.path === '/uploads' || req.path.startsWith('/uploads/') || req.path.startsWith('/drive/') || req.path === '/push/test';
+        let unlock = () => {};
+        if (!readOnly) {
+          if (waiting >= 100) return res.status(503).json({ error: 'ระบบกำลังรับหลายรายการ กรุณาลองอีกครั้ง' });
+          waiting++;
+          const previous = tail;
+          tail = new Promise(resolve => { unlock = resolve; });
+          await previous;
+        }
         let released = false;
-        const release = () => { if (!released) { released = true; waiting--; unlock(); } };
+        const release = () => { if (!released) { released = true; if (!readOnly) waiting--; unlock(); } };
         if (res.destroyed) { release(); return; }
         try {
-          const rows = await request('/rest/v1/vitcha_state?id=eq.main&select=version');
-          if (rows.length !== 1) throw unavailable();
-          if (rows[0].version !== cached.version) await reload();
-          const state = { body: structuredClone(cached.body), version: cached.version, dirty: false, callbacks: [], aborted: false, responding: false };
+          await refresh();
+          // read() makes isolated copies; retaining this immutable committed body
+          // avoids an extra full-database clone for every poll and upload chunk.
+          const state = { body: cached.body, version: cached.version, readOnly, dirty: false, callbacks: [], aborted: false, responding: false };
           const json = res.json.bind(res);
           res.once('close', () => { state.aborted = true; if (!state.responding) release(); });
           res.json = body => {
@@ -97,9 +106,6 @@ export async function createSupabasePersistence(options) {
             })();
             return res;
           };
-          // Uploads do not mutate the database. Keep their authorization snapshot
-          // isolated while allowing other users' reads and writes to proceed.
-          if (req.path === '/upload' || req.path === '/uploads' || req.path.startsWith('/uploads/') || req.path.startsWith('/drive/')) release();
           context.run(state, next);
         } catch (error) { release(); next(error); }
       };

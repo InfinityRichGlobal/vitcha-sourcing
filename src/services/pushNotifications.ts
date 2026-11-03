@@ -59,3 +59,12 @@ export async function testPushNotification(onProgress: Progress = () => {}) {
   onProgress('กำลังส่งข้อความจากเซิร์ฟเวอร์เข้ามือถือ…');
   return requestJson('/api/push/test', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ endpoint: subscription.endpoint }) }, 45000);
 }
+export async function dismissDeviceNotifications(ids: string[]) {
+  if (!('serviceWorker' in navigator)) return;
+  try {
+    const reg = await bounded(navigator.serviceWorker.getRegistration(), 'timeout', 2000);
+    if (!reg?.getNotifications) return;
+    const notifications = await bounded(reg.getNotifications(), 'timeout', 2000);
+    for (const notification of notifications) if (ids.includes(notification.tag)) notification.close();
+  } catch { /* Inbox read state does not depend on OS notification availability. */ }
+}

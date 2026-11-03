@@ -1,8 +1,15 @@
 import { syncPushNotifications, disablePushNotifications } from '../services/pushNotifications';
+import { dismissDeviceNotifications } from '../services/pushNotifications';
+import { NotificationReceipts } from '../services/notificationReceipts';
 import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { User, SupplierRecord, StoreInspoRecord, LocationRecord, ExchangeRateConfig, InviteLink, PipelineStatus, UserRole, AppNotification, HandoffStage, AppViewTab, QuickMessageTemplate, CuratedProduct, ProductTaxon, ProductSet, ProductChanges, TrashedItem, LabItem, LabFormulaStatus, FranchiseStore, ViewLogEntry } from '../types';
 import { INITIAL_CATEGORIES, INITIAL_STORE_CATEGORIES, INITIAL_LOCATION_TYPES, INITIAL_QUICK_TAGS, INITIAL_QUICK_MESSAGES } from '../utils/defaultSettings';
 import { getRenderServerUrl, saveRenderServerUrl, checkServerHealth, fetchCentralData, sendJson, requestJson, getSessionToken, setSessionToken, loginUserApi, ApiError, markNotificationsReadApi, clearNotificationsApi, postLeadLabItemApi, deleteLeadLabItemApi, likeLeadLabItemApi, likeLeadLabCommentApi, cycleLeadLabItemApi, updateLeadLabStatusApi, postFranchiseStoreApi, deleteFranchiseStoreApi } from '../services/api';
+
+function confirmedRecord(result: any) {
+  if (!result?.success || !result.item?.id || !Number.isInteger(result.item.revision)) throw new ApiError(502, 'ยังไม่ได้รับรายการที่บันทึกจากเซิร์ฟเวอร์ กรุณาลองใหม่');
+  return result.item;
+}
 
 interface AppContextType {
   products: CuratedProduct[];
@@ -43,6 +50,9 @@ interface AppContextType {
   currentUser: User;
   actionError: string | null;
   clearActionError: () => void;
+  successFeedback: { id: string; message: string; detail?: string } | null;
+  notifySuccess: (message: string, detail?: string) => void;
+  clearSuccessFeedback: () => void;
   isMutating: boolean;
   users: User[];
   suppliers: SupplierRecord[];
@@ -79,6 +89,8 @@ interface AppContextType {
   markNotificationRead: (id: string) => Promise<void>;
   clearAllNotifications: () => Promise<void>;
   clearNotification: (id: string) => Promise<void>;
+  notificationSyncStatus: 'idle' | 'syncing' | 'error';
+  retryNotificationSync: () => Promise<void>;
   broadcastNotification: (
     title: string,
     message: string,
@@ -263,8 +275,18 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [filterResetVersion, setFilterResetVersion] = useState(0);
   const setActiveTab = (tab: AppViewTab) => { setActiveTabState(tab); setSelectedCategory('all'); setSelectedStatus('all'); setSelectedTag('all'); setSelectedRating(null); };
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
+  const notificationReceipts = useRef<NotificationReceipts | null>(null);
+  const [notificationSyncStatus, setNotificationSyncStatus] = useState<'idle' | 'syncing' | 'error'>('idle');
   const [activeToast, setActiveToast] = useState<AppNotification | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
+  const [successFeedback, setSuccessFeedback] = useState<{ id: string; message: string; detail?: string } | null>(null);
+  const successTimer = useRef<ReturnType<typeof setTimeout>>();
+  const refreshFailures = useRef(0);
+  const notifySuccess = (message: string, detail?: string) => {
+    clearTimeout(successTimer.current);
+    setSuccessFeedback({ id: crypto.randomUUID(), message, detail });
+    successTimer.current = setTimeout(() => setSuccessFeedback(null), 6500);
+  };
   const [mutationCount, setMutationCount] = useState(0);
   const [editingSupplier, setEditingSupplier] = useState<SupplierRecord | null>(null);
   const [editingStore, setEditingStore] = useState<StoreInspoRecord | null>(null);
@@ -285,6 +307,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const canAddItems = canComment;
 
   const clearSession = () => {
+    notificationReceipts.current = null; setNotificationSyncStatus('idle');
+    clearTimeout(successTimer.current); setSuccessFeedback(null); refreshFailures.current = 0;
     refreshController.current?.abort(); refreshController.current = null;
     setLastRefreshedAt(null); latestSnapshot.current = null; setMockLoadMessage(''); setMockLoadStatus('idle');
     setSessionToken(null); setIsAuthenticated(false); setIsRestoringSession(false); setCurrentUser(GUEST); setSimulatedFromAdmin(false);
@@ -299,7 +323,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     toastTimer.current = setTimeout(() => setActiveToast(null), 4500);
   }
   const refreshCentralData = async (background = false): Promise<boolean> => {
-    if (background && refreshController.current) return false;
+    if (background && (refreshController.current || pendingActions.current.size)) return false;
     refreshController.current?.abort();
     const controller = new AbortController(); refreshController.current = controller;
     try {
@@ -313,6 +337,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       if (!mounted.current || controller.signal.aborted || refreshController.current !== controller) return false;
       if (!data.user || !Array.isArray(data.suppliers) || !Array.isArray(data.drinkStores)) throw new Error('ข้อมูลเซิร์ฟเวอร์ไม่สมบูรณ์');
       latestSnapshot.current = data; setLastRefreshedAt(new Date().toISOString());
+      refreshFailures.current = 0;
       setRenderStatus('connected'); setCurrentUser(data.user); setSimulatedFromAdmin(data.simulated); setIsAuthenticated(true); setIsRestoringSession(false);
       setProducts(data.products || []); setProductCategories(data.productCategories || []); setProductTags(data.productTags || []); setProductSets(data.productSets || []); productTaxonomyRevision.current = data.productTaxonomyRevision || 0;
       setUsers(data.users); setInvites(data.invites);
@@ -324,18 +349,25 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       setCategories(data.categories || []); setStoreCategories(data.storeCategories || []);
       setLocationTypes(data.locationTypes && data.locationTypes.length ? data.locationTypes : INITIAL_LOCATION_TYPES);
       setQuickTagsList(data.quickTagsList || []); setQuickMessages(data.quickMessages || []);
-      const incoming = (data.notifications || []).filter((n: AppNotification) => n.actorId !== data.user.id);
-      const fresh = incoming.find((n: AppNotification) => !seenNotifications.current.has(n.id));
+      const receiptKey = `${getRenderServerUrl()}|${data.user.id}`;
+      if (notificationReceipts.current?.key !== receiptKey) notificationReceipts.current = new NotificationReceipts(receiptKey);
+      const incoming = notificationReceipts.current.merge(data.notifications || []).filter((n: AppNotification) => n.actorId !== data.user.id);
+      const fresh = incoming.find((n: AppNotification) => !n.read && !seenNotifications.current.has(n.id));
       if (notificationsInitialized.current && fresh) showToast(fresh);
       notificationsInitialized.current = true;
       incoming.forEach((n: AppNotification) => seenNotifications.current.add(n.id));
       setNotifications(incoming);
+      void latestNotificationSync.current();
       if (data.user?.id === 'user-ice') void fetchTrash();
       return true;
     } catch (error) {
       if (!controller.signal.aborted && mounted.current) {
         if (error instanceof ApiError && error.status === 401) clearSession();
-        else { setRenderStatus('disconnected'); setIsRestoringSession(false); }
+        else {
+          refreshFailures.current++;
+          if (!latestSnapshot.current || !background || refreshFailures.current >= 2 || !navigator.onLine) setRenderStatus('disconnected');
+          setIsRestoringSession(false);
+        }
       }
       return false;
     } finally { if (refreshController.current === controller) refreshController.current = null; }
@@ -354,20 +386,33 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     window.addEventListener('focus', refresh); document.addEventListener('visibilitychange', refresh);
     window.addEventListener('online', online); window.addEventListener('offline', offline); window.addEventListener('vitcha:session-expired', expired);
     return () => {
-      mounted.current = false; clearInterval(interval); clearTimeout(toastTimer.current);
+      mounted.current = false; clearInterval(interval); clearTimeout(toastTimer.current); clearTimeout(successTimer.current);
       refreshController.current?.abort(); refreshController.current = null;
       window.removeEventListener('focus', refresh); document.removeEventListener('visibilitychange', refresh);
       window.removeEventListener('online', online); window.removeEventListener('offline', offline); window.removeEventListener('vitcha:session-expired', expired);
     };
   }, [renderServerUrl]);
 
-  const perform = async (key: string, work: () => Promise<unknown>): Promise<boolean> => {
+  const perform = async (key: string, work: () => Promise<unknown>, feedback?: { message: string; backgroundRefresh?: boolean }): Promise<boolean> => {
+    feedback ||= /^(product:|product-set:|product-batch$|profile$|settings$|save-lead-lab$|save-franchise-store$)/.test(key) ? { message: 'บันทึกเรียบร้อยแล้ว' } : undefined;
     if (pendingActions.current.has(key)) return false;
     pendingActions.current.add(key); setMutationCount(n => n + 1); setActionError(null);
+    refreshController.current?.abort(); refreshController.current = null;
+    clearTimeout(successTimer.current); setSuccessFeedback(null);
     try {
       await work();
+      if (feedback?.backgroundRefresh) {
+        setRenderStatus('connected');
+        notifySuccess(feedback.message, 'เซิร์ฟเวอร์ยืนยันแล้ว');
+        // The authoritative record response is already applied. A slow team
+        // refresh must not keep the form locked or invite a duplicate save.
+        void latestRefresh.current();
+        return true;
+      }
       // A successful mutation must not be resubmitted when only the follow-up GET fails.
-      if (!await latestRefresh.current()) setActionError('บันทึกสำเร็จแล้ว แต่ยังโหลดข้อมูลล่าสุดไม่ได้ ระบบจะลองใหม่อัตโนมัติ');
+      const refreshed = await latestRefresh.current();
+      if (feedback) notifySuccess(feedback.message, refreshed ? 'เซิร์ฟเวอร์ยืนยันแล้ว' : 'บันทึกแล้ว · กำลังรอข้อมูลทีมล่าสุด');
+      else if (!refreshed) setActionError('บันทึกสำเร็จแล้ว แต่ยังโหลดข้อมูลล่าสุดไม่ได้ ระบบจะลองใหม่อัตโนมัติ');
       return true;
     } catch (error) {
       setActionError(error instanceof ApiError ? error.message : 'ยังไม่ได้รับการยืนยันจากเซิร์ฟเวอร์ กรุณาตรวจสอบการเชื่อมต่อแล้วลองใหม่');
@@ -395,37 +440,43 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
   const addSupplier: AppContextType['addSupplier'] = async input => {
     let item: SupplierRecord | null = null;
-    const ok = await perform('create-supplier', async () => { const result = await sendJson('/api/suppliers', { ...input, id: `sup-${commandId('create-supplier:' + JSON.stringify(input))}` }); item = result.item; });
+    const ok = await perform('create-supplier', async () => { const result = await sendJson('/api/suppliers', { ...input, id: `sup-${commandId('create-supplier:' + JSON.stringify(input))}` }); item = confirmedRecord(result); setSuppliers(previous => [result.item, ...previous.filter(s => s.id !== result.item.id)]); }, { message: 'บันทึกซัพพลายเออร์เรียบร้อยแล้ว', backgroundRefresh: true });
     if (ok) { commandIds.current.delete('create-supplier:' + JSON.stringify(input)); resetFilters('suppliers'); } return ok ? item : null;
   };
   const addStoreInspo: AppContextType['addStoreInspo'] = async input => {
     let item: StoreInspoRecord | null = null;
-    const ok = await perform('create-store', async () => { const result = await sendJson('/api/drink-stores', { ...input, id: `store-${commandId('create-store:' + JSON.stringify(input))}` }); item = result.item; });
+    const ok = await perform('create-store', async () => { const result = await sendJson('/api/drink-stores', { ...input, id: `store-${commandId('create-store:' + JSON.stringify(input))}` }); item = confirmedRecord(result); setDrinkStores(previous => [result.item, ...previous.filter(s => s.id !== result.item.id)]); }, { message: 'บันทึกร้านน้ำเรียบร้อยแล้ว', backgroundRefresh: true });
     if (ok) { commandIds.current.delete('create-store:' + JSON.stringify(input)); resetFilters('drink_stores'); } return ok ? item : null;
   };
   const addLocation: AppContextType['addLocation'] = async input => {
     let item: LocationRecord | null = null;
-    const ok = await perform('create-location', async () => { const result = await sendJson('/api/locations', { ...input, id: `loc-${commandId('create-location:' + JSON.stringify(input))}` }); item = result.item; });
+    const ok = await perform('create-location', async () => { const result = await sendJson('/api/locations', { ...input, id: `loc-${commandId('create-location:' + JSON.stringify(input))}` }); item = confirmedRecord(result); setLocations(previous => [result.item, ...previous.filter(s => s.id !== result.item.id)]); }, { message: 'บันทึกทำเลเรียบร้อยแล้ว', backgroundRefresh: true });
     if (ok) { commandIds.current.delete('create-location:' + JSON.stringify(input)); resetFilters('locations'); } return ok ? item : null;
   };
   const updateSupplier = (id: string, updates: Partial<SupplierRecord>) => perform(`${id}:edit`, async () => {
     const target = editingSupplier?.id === id ? editingSupplier : suppliers.find(s => s.id === id);
     if (!target) throw new Error('ไม่พบรายการ');
-    await sendJson('/api/suppliers', { ...target, ...updates, id, revision: target.revision || 0 });
+    const result = await sendJson('/api/suppliers', { ...updates, id, revision: target.revision || 0 });
+    const saved = confirmedRecord(result);
+    setSuppliers(previous => previous.map(item => item.id === id ? saved : item));
     resetFilters('suppliers');
-  });
+  }, { message: 'บันทึกการแก้ไขเรียบร้อยแล้ว', backgroundRefresh: true });
   const updateStoreInspo = (id: string, updates: Partial<StoreInspoRecord>) => perform(`${id}:edit`, async () => {
     const target = editingStore?.id === id ? editingStore : drinkStores.find(s => s.id === id);
     if (!target) throw new Error('ไม่พบรายการ');
-    await sendJson('/api/drink-stores', { ...target, ...updates, id, revision: target.revision || 0 });
+    const result = await sendJson('/api/drink-stores', { ...updates, id, revision: target.revision || 0 });
+    const saved = confirmedRecord(result);
+    setDrinkStores(previous => previous.map(item => item.id === id ? saved : item));
     resetFilters('drink_stores');
-  });
+  }, { message: 'บันทึกการแก้ไขเรียบร้อยแล้ว', backgroundRefresh: true });
   const updateLocation = (id: string, updates: Partial<LocationRecord>) => perform(`${id}:edit`, async () => {
     const target = editingLocation?.id === id ? editingLocation : locations.find(l => l.id === id);
     if (!target) throw new Error('ไม่พบรายการ');
-    await sendJson('/api/locations', { ...target, ...updates, id, revision: target.revision || 0 });
+    const result = await sendJson('/api/locations', { ...updates, id, revision: target.revision || 0 });
+    const saved = confirmedRecord(result);
+    setLocations(previous => previous.map(item => item.id === id ? saved : item));
     resetFilters('locations');
-  });
+  }, { message: 'บันทึกการแก้ไขเรียบร้อยแล้ว', backgroundRefresh: true });
   const deleteItem = (id: string, type: 'supplier' | 'drink_store' | 'location') => perform(`${id}:delete`, async () => {
     await sendJson(`/api/${routeFor(type)}/${encodeURIComponent(id)}`, { revision: itemById(id, type)?.revision || 0 }, 'DELETE');
     if (currentUser.role === 'admin') void fetchTrash();
@@ -671,22 +722,41 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return false;
   };
   const dismissToast = () => setActiveToast(null);
-  const markAllNotificationsRead = async () => {
-    setNotifications(p => p.map(n => ({ ...n, read: true })));
-    try { await markNotificationsReadApi({ all: true }); } catch (e) { console.warn('Failed to sync notification read:', e); }
+  const retryNotificationSync = async () => {
+    const receipt = notificationReceipts.current, token = getSessionToken();
+    if (!receipt || receipt.busy || !token) return;
+    const current = () => notificationReceipts.current === receipt && getSessionToken() === token;
+    receipt.busy = true;
+    try {
+      for (const kind of ['read', 'clear'] as const) {
+        while (current()) {
+          const ids = receipt.pending(kind); if (!ids.length) break;
+          setNotificationSyncStatus('syncing');
+          await (kind === 'read' ? markNotificationsReadApi({ ids }) : clearNotificationsApi({ ids }));
+          if (!current()) return;
+          receipt.acknowledge(ids, kind);
+        }
+      }
+      if (current()) setNotificationSyncStatus('idle');
+    } catch { if (current()) setNotificationSyncStatus('error'); }
+    finally { receipt.busy = false; }
   };
-  const markNotificationRead = async (id: string) => {
-    setNotifications(p => p.map(n => n.id === id ? { ...n, read: true } : n));
-    try { await markNotificationsReadApi({ id }); } catch (e) { console.warn('Failed to sync notification read:', e); }
+  const latestNotificationSync = useRef(retryNotificationSync); latestNotificationSync.current = retryNotificationSync;
+  const rememberNotifications = async (ids: string[], kind: 'read' | 'clear') => {
+    if (!ids.length) return;
+    const key = `${getRenderServerUrl()}|${currentUser.id}`;
+    if (notificationReceipts.current?.key !== key) notificationReceipts.current = new NotificationReceipts(key);
+    notificationReceipts.current.remember(ids, kind);
+    ids.forEach(id => seenNotifications.current.add(id));
+    setActiveToast(previous => previous && ids.includes(previous.id) ? null : previous);
+    setNotifications(previous => kind === 'clear' ? previous.filter(n => !ids.includes(n.id)) : previous.map(n => ids.includes(n.id) ? { ...n, read: true } : n));
+    void dismissDeviceNotifications(ids);
+    await retryNotificationSync();
   };
-  const clearAllNotifications = async () => {
-    setNotifications([]);
-    try { await clearNotificationsApi({ all: true }); } catch (e) { console.warn('Failed to sync notification clear:', e); }
-  };
-  const clearNotification = async (id: string) => {
-    setNotifications(p => p.filter(n => n.id !== id));
-    try { await clearNotificationsApi({ id }); } catch (e) { console.warn('Failed to sync notification clear:', e); }
-  };
+  const markAllNotificationsRead = () => rememberNotifications(notifications.filter(n => !n.read).map(n => n.id), 'read');
+  const markNotificationRead = (id: string) => rememberNotifications([id], 'read');
+  const clearAllNotifications = () => rememberNotifications(notifications.map(n => n.id), 'clear');
+  const clearNotification = (id: string) => rememberNotifications([id], 'clear');
   const saveLeadLabItem = async (item: Partial<LabItem>) => {
     return perform('save-lead-lab', async () => {
       const res = await postLeadLabItemApi({ ...item, expectedUpdatedAt: item.expectedUpdatedAt ?? leadLabItems.find(x => x.id === item.id)?.updatedAt });
@@ -886,7 +956,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     leadLabItems, franchiseStores, saveLeadLabItem, deleteLeadLabItem, toggleLikeLeadLabItem, addLeadLabComment, toggleLikeLeadLabComment, cycleLeadLabRevision, setLeadLabStatus, saveFranchiseStore, deleteFranchiseStore,
     toggleLikeFranchiseStore, addFranchiseStoreComment, toggleLikeFranchiseStoreComment, recordFranchiseStoreView, recordLeadLabItemView,
     activeTab, filterResetVersion, countryFilter, searchQuery, selectedCategory, selectedStatus, selectedTag, selectedRating, notifications, activeToast,
-    actionError, clearActionError: () => setActionError(null), isMutating: mutationCount > 0,
+    actionError, clearActionError: () => setActionError(null), successFeedback, notifySuccess, clearSuccessFeedback: () => setSuccessFeedback(null), isMutating: mutationCount > 0,
+    notificationSyncStatus, retryNotificationSync,
     setActiveTab, setCountryFilter, setSearchQuery, setSelectedCategory, setSelectedStatus, setSelectedTag, setSelectedRating,
     dismissToast, markAllNotificationsRead, markNotificationRead, clearAllNotifications, clearNotification, broadcastNotification, addCategory, editCategory, deleteCategory, addStoreCategory, editStoreCategory, deleteStoreCategory,
     addLocationType, editLocationType, deleteLocationType,

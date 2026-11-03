@@ -40,6 +40,7 @@ export const NewStoreInspoModal: React.FC<NewStoreInspoModalProps> = ({ isOpen, 
     currentUser,
     drinkStores,
     storeCategories,
+    notifySuccess,
   } = useApp();
 
   const isEditMode = !!editingStore;
@@ -194,6 +195,7 @@ export const NewStoreInspoModal: React.FC<NewStoreInspoModalProps> = ({ isOpen, 
           setDrinkItems((prev) =>
             prev.map((it) => (it.id === targetId ? { ...it, photo: uploadedUrl } : it))
           );
+          notifySuccess('อัปโหลดรูปเมนูเรียบร้อยแล้ว', 'กดบันทึกเพื่อเก็บรูปกับรายการนี้');
         })
         .catch((err) => {
           console.error('Failed to upload drink photo:', err);
@@ -874,6 +876,7 @@ export const NewStoreInspoModal: React.FC<NewStoreInspoModalProps> = ({ isOpen, 
                             setDrinkItems((previous) =>
                               previous.map((entry) => (entry.id === itemId ? { ...entry, photo: compressed } : entry))
                             );
+                            notifySuccess('อัปโหลดรูปเมนูเรียบร้อยแล้ว', 'กดบันทึกเพื่อเก็บรูปกับรายการนี้');
                           })
                           .catch((error) => {
                             alert(error instanceof Error ? error.message : 'ประมวลผลรูปไม่สำเร็จ');
@@ -1058,7 +1061,7 @@ export const NewStoreInspoModal: React.FC<NewStoreInspoModalProps> = ({ isOpen, 
               {isSaving ? (
                 <>
                   <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                  <span>กำลังส่งเข้าเซิร์ฟเวอร์ & รีเฟรช...</span>
+                  <span>กำลังบันทึก · รอเซิร์ฟเวอร์ยืนยัน…</span>
                 </>
               ) : (
                 <span>{isEditMode ? '💾 บันทึกการแก้ไข' : 'บันทึกร้านน้ำ'}</span>

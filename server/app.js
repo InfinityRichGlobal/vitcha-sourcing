@@ -647,10 +647,11 @@ export function createApp({ dataDir, defaults = DEFAULT_DATABASE, sessionTtlMs =
   });
   app.post('/api/notifications/read', (req, res) => {
     const db = read();
-    const { id, all } = req.body || {};
+    const { id, all, ids } = req.body || {};
+    const selected = new Set(Array.isArray(ids) ? ids.filter(id => typeof id === 'string').slice(0, 80) : []);
     let changed = false;
     for (const n of db.notifications || []) {
-      if (all || n.id === id) {
+      if (all || n.id === id || selected.has(n.id)) {
         n.readBy ||= [];
         if (!n.readBy.includes(req.user.id)) {
           n.readBy.push(req.user.id);
@@ -659,14 +660,15 @@ export function createApp({ dataDir, defaults = DEFAULT_DATABASE, sessionTtlMs =
       }
     }
     if (changed) save(db);
-    res.json({ success: true });
+    res.json({ success: true, acknowledgedIds: [...selected] });
   });
   app.post('/api/notifications/clear', (req, res) => {
     const db = read();
-    const { id, all } = req.body || {};
+    const { id, all, ids } = req.body || {};
+    const selected = new Set(Array.isArray(ids) ? ids.filter(id => typeof id === 'string').slice(0, 80) : []);
     let changed = false;
     for (const n of db.notifications || []) {
-      if (all || n.id === id) {
+      if (all || n.id === id || selected.has(n.id)) {
         n.clearedBy ||= [];
         if (!n.clearedBy.includes(req.user.id)) {
           n.clearedBy.push(req.user.id);
@@ -675,7 +677,7 @@ export function createApp({ dataDir, defaults = DEFAULT_DATABASE, sessionTtlMs =
       }
     }
     if (changed) save(db);
-    res.json({ success: true });
+    res.json({ success: true, acknowledgedIds: [...selected] });
   });
   // ==========================================
   // LEAD LAB 🧪 & FRANCHISE STORES ENDPOINTS

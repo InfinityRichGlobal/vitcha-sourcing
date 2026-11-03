@@ -475,11 +475,14 @@ test('users manage their own notifications independently: marking read and clear
   assert.equal(viewerData.notifications[0].read, false);
 
   // Owner marks the notification as read
-  assert.equal((await call('/api/notifications/read', owner, { id: notifId })).status, 200);
+  const marked = await call('/api/notifications/read', owner, { ids: [notifId] });
+  assert.equal(marked.status, 200);
+  assert.deepEqual(marked.data.acknowledgedIds, [notifId]);
 
   // Owner data now has read: true
   ownerData = (await call('/api/data', owner, undefined, 'GET')).data;
   assert.equal(ownerData.notifications.find(n => n.id === notifId).read, true);
+  assert.ok(ownerData.notifications.filter(n => n.id !== notifId).every(n => !n.read));
 
   // Viewer data STILL has read: false (isolated!)
   viewerData = (await call('/api/data', viewer, undefined, 'GET')).data;
@@ -495,6 +498,9 @@ test('users manage their own notifications independently: marking read and clear
   // Owner STILL has the notification in their box (not deleted for everyone!)
   ownerData = (await call('/api/data', owner, undefined, 'GET')).data;
   assert.ok(ownerData.notifications.some(n => n.id === notifId));
+  const cleared = await call('/api/notifications/clear', owner, { ids: [notifId] });
+  assert.deepEqual(cleared.data.acknowledgedIds, [notifId]);
+  assert.ok(!(await call('/api/data', owner, undefined, 'GET')).data.notifications.some(n => n.id === notifId));
 });
 
 test('comments and replies support photoUrl and voiceUrl attachments and send reply notifications', async t => {

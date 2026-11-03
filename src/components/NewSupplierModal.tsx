@@ -44,6 +44,7 @@ export const NewSupplierModal: React.FC<NewSupplierModalProps> = ({ isOpen, onCl
     quickTagsList,
     addQuickTag,
     setActiveTab,
+    notifySuccess,
   } = useApp();
 
   const isEditMode = !!editingSupplier;
@@ -202,6 +203,7 @@ export const NewSupplierModal: React.FC<NewSupplierModalProps> = ({ isOpen, onCl
           setCatalogItems((prev) =>
             prev.map((it) => (it.id === targetId ? { ...it, photo: uploadedUrl } : it))
           );
+          notifySuccess('อัปโหลดรูปสินค้าเรียบร้อยแล้ว', 'กดบันทึกเพื่อเก็บรูปกับรายการนี้');
         })
         .catch((error) => {
           console.error('Failed to upload catalog photo:', error);
@@ -887,6 +889,7 @@ export const NewSupplierModal: React.FC<NewSupplierModalProps> = ({ isOpen, onCl
                             setCatalogItems((previous) =>
                               previous.map((entry) => (entry.id === itemId ? { ...entry, photo: compressed } : entry))
                             );
+                            notifySuccess('อัปโหลดรูปสินค้าเรียบร้อยแล้ว', 'กดบันทึกเพื่อเก็บรูปกับรายการนี้');
                           })
                           .catch((error) => {
                             alert(error instanceof Error ? error.message : 'ประมวลผลรูปไม่สำเร็จ');
@@ -1071,7 +1074,7 @@ export const NewSupplierModal: React.FC<NewSupplierModalProps> = ({ isOpen, onCl
               {isSaving ? (
                 <>
                   <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                  <span>กำลังส่งเข้าเซิร์ฟเวอร์ & รีเฟรช...</span>
+                  <span>กำลังบันทึก · รอเซิร์ฟเวอร์ยืนยัน…</span>
                 </>
               ) : isCompressingPhotos ? (
                 <>

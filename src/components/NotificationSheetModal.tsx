@@ -1,4 +1,5 @@
 import { AvatarImage } from './AvatarImage';
+import { MediaImage } from './MediaImage';
 import React, { useEffect, useState } from 'react';
 import { useApp } from '../context/AppContext';
 import {
@@ -85,6 +86,8 @@ export const NotificationSheetModal: React.FC<NotificationSheetModalProps> = ({
     markNotificationRead,
     clearAllNotifications,
     clearNotification,
+    notificationSyncStatus,
+    retryNotificationSync,
   } = useApp();
 
   const [filterMode, setFilterMode] = useState<'all' | 'unread'>('all');
@@ -247,6 +250,7 @@ export const NotificationSheetModal: React.FC<NotificationSheetModalProps> = ({
       className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4 overscroll-contain touch-none animate-in fade-in"
     >
       <div
+        role="dialog" aria-modal="true" aria-label="การแจ้งเตือน"
         onClick={(e) => e.stopPropagation()}
         className="bg-white border border-slate-200/90 w-full max-w-lg rounded-t-3xl sm:rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh] text-slate-900 overscroll-contain animate-in slide-in-from-bottom-6 sm:zoom-in-95"
       >
@@ -310,6 +314,10 @@ export const NotificationSheetModal: React.FC<NotificationSheetModalProps> = ({
           </div>
         </div>
 
+        {notificationSyncStatus !== 'idle' && <div role="status" aria-live="polite" className="flex items-center justify-between gap-2 border-b px-4 py-2 text-xs text-slate-600">
+          <span>{notificationSyncStatus === 'syncing' ? 'อ่านบนเครื่องแล้ว · กำลังยืนยันกับเซิร์ฟเวอร์…' : 'เก็บสถานะบนเครื่องแล้ว · ยังส่งไม่สำเร็จ ระบบจะลองใหม่'}</span>
+          {notificationSyncStatus === 'error' && <button type="button" onClick={() => void retryNotificationSync()} className="shrink-0 rounded-lg bg-slate-100 px-3 py-2 font-bold">ลองส่งสถานะอีกครั้ง</button>}
+        </div>}
         {/* Filter Pills Tab (ทั้งหมด vs ยังไม่อ่าน) */}
         {visibleNotifications.length > 0 && (
           <div className="px-4 py-2 border-b border-slate-100 bg-slate-50/70 flex items-center justify-between text-xs shrink-0">
@@ -495,7 +503,7 @@ export const NotificationSheetModal: React.FC<NotificationSheetModalProps> = ({
 
                     {/* Thumbnail ภาพตัวอย่างของรายการปลายทาง (ถ้ามี) */}
                     {details.targetPhoto && (
-                      <img
+                      <MediaImage
                         loading="lazy"
                         src={details.targetPhoto}
                         alt=""

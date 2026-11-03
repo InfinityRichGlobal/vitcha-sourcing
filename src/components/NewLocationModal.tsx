@@ -132,6 +132,7 @@ export const NewLocationModal: React.FC<NewLocationModalProps> = ({ isOpen, onCl
   const [handoffNotes, setHandoffNotes] = useState('');
 
   const [isSaving, setIsSaving] = useState(false);
+  const savingRef = useRef(false);
   const [photoTaskCount, setPhotoTaskCount] = useState(0);
   const photoTaskRef = useRef(0);
   const audioJobs = useRef(new Set<string>());
@@ -302,6 +303,7 @@ export const NewLocationModal: React.FC<NewLocationModalProps> = ({ isOpen, onCl
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (savingRef.current || photoTaskRef.current || audioJobs.current.size || isFilesUploading || isVideoLoading || isLocating) return;
     const finalName = name.trim();
     if (!finalName) {
       alert('กรุณากรอกชื่อห้าง / โครงการ / ตึก');
@@ -312,7 +314,7 @@ export const NewLocationModal: React.FC<NewLocationModalProps> = ({ isOpen, onCl
       alert('กรุณาเลือกประเภทสถานที่');
       return;
     }
-    setIsSaving(true);
+    savingRef.current = true; setIsSaving(true);
     try {
       const locationPayload = {
         country,
@@ -375,15 +377,16 @@ export const NewLocationModal: React.FC<NewLocationModalProps> = ({ isOpen, onCl
       };
 
       if (isEditMode && editingLocation) {
-        await updateLocation(editingLocation.id, locationPayload);
+        if (!await updateLocation(editingLocation.id, locationPayload)) return;
       } else {
-        await addLocation(locationPayload);
+        if (!await addLocation(locationPayload)) return;
       }
 
       handleClose();
     } catch {
       alert('บันทึกข้อมูลไม่สำเร็จ โปรดลองใหม่อีกครั้ง');
     } finally {
+      savingRef.current = false;
       setIsSaving(false);
     }
   };
@@ -1383,7 +1386,7 @@ export const NewLocationModal: React.FC<NewLocationModalProps> = ({ isOpen, onCl
                 className="px-5 py-2 rounded-xl bg-sky-600 hover:bg-sky-700 disabled:opacity-40 text-white text-xs font-bold transition-all shadow-xs flex items-center gap-1.5"
               >
                 <i aria-hidden="true" className="fa-solid fa-floppy-disk" />
-                <span>{isSaving ? 'กำลังบันทึก...' : isEditMode ? 'บันทึกการแก้ไข' : 'บันทึกทำเล'}</span>
+                <span>{isSaving ? 'กำลังบันทึก · รอเซิร์ฟเวอร์ยืนยัน…' : isEditMode ? 'บันทึกการแก้ไข' : 'บันทึกทำเล'}</span>
               </button>
             </div>
           </div>

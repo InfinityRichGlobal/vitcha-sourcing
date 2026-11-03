@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { AttachedFile } from '../types';
 import { uploadMediaToServer } from '../services/api';
+import { useApp } from '../context/AppContext';
 
 export interface AttachedFilesSectionProps {
   files?: AttachedFile[];
@@ -124,6 +125,8 @@ export const AttachedFilesSection: React.FC<AttachedFilesSectionProps> = ({
   themeColor = 'sky',
 }) => {
   const [isUploading, setIsUploading] = useState(false);
+  const { notifySuccess } = useApp();
+  const [uploadedCount, setUploadedCount] = useState(0);
   const [uploadProgress, setUploadProgress] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -152,6 +155,7 @@ export const AttachedFilesSection: React.FC<AttachedFilesSectionProps> = ({
     setIsUploading(true);
     onBusyChange?.(true);
     const updated = [...files];
+    let succeeded = 0;
 
     for (let i = 0; i < selected.length; i++) {
       const file = selected[i];
@@ -171,6 +175,7 @@ export const AttachedFilesSection: React.FC<AttachedFilesSectionProps> = ({
           url,
           uploadedAt: new Date().toISOString(),
         });
+        succeeded++;
       } catch (err: any) {
         alert(`อัปโหลดไฟล์ "${file.name}" ไม่สำเร็จ: ${err?.message || err}`);
       }
@@ -180,6 +185,10 @@ export const AttachedFilesSection: React.FC<AttachedFilesSectionProps> = ({
     onBusyChange?.(false);
     setUploadProgress(null);
     if (onChange) onChange(updated);
+    if (succeeded) {
+      setUploadedCount(count => count + succeeded);
+      notifySuccess(`อัปโหลดไฟล์เรียบร้อยแล้ว ${succeeded} ไฟล์`, 'กดบันทึกเพื่อเก็บไฟล์กับรายการนี้');
+    }
     e.target.value = '';
   };
 
@@ -245,6 +254,7 @@ export const AttachedFilesSection: React.FC<AttachedFilesSectionProps> = ({
       )}
 
       {/* Uploading progress indicator */}
+      {uploadedCount > 0 && <p role="status" className="text-xs text-emerald-700">อัปโหลดไฟล์แล้ว {uploadedCount} ไฟล์ · กดบันทึกเพื่อเก็บกับรายการ</p>}
       {isUploading && (
         <div className="p-3 bg-white rounded-xl border border-sky-200 flex items-center gap-2.5 text-xs text-sky-800 animate-pulse">
           <Loader2 className="w-4 h-4 animate-spin text-sky-600 shrink-0" />

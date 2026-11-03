@@ -8,7 +8,7 @@ interface NotificationToastProps {
 }
 
 export const NotificationToast: React.FC<NotificationToastProps> = ({ onSelectItem }) => {
-  const { activeToast, dismissToast } = useApp();
+  const { activeToast, dismissToast, markNotificationRead } = useApp();
 
   if (!activeToast) return null;
 
@@ -37,6 +37,7 @@ export const NotificationToast: React.FC<NotificationToastProps> = ({ onSelectIt
         <div
           className="min-w-0 flex-1"
           onClick={() => {
+            void markNotificationRead(activeToast.id);
             if (activeToast.targetId && onSelectItem) {
               onSelectItem(activeToast.targetId, activeToast.type);
             }

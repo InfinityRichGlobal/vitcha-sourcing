@@ -118,8 +118,15 @@ export const deleteSupplierFromCentral = (id: string, revision: number) => sendJ
 export const deleteStoreFromCentral = (id: string, revision: number) => sendJson(`/api/drink-stores/${encodeURIComponent(id)}`, { revision }, 'DELETE');
 export const deleteUserFromCentral = (id: string, revision: number) => sendJson(`/api/users/${encodeURIComponent(id)}`, { revision }, 'DELETE');
 export const deleteInviteFromCentral = (id: string) => sendJson(`/api/invites/${encodeURIComponent(id)}`, {}, 'DELETE');
-export const markNotificationsReadApi = (params: { id?: string; all?: boolean }) => sendJson('/api/notifications/read', params);
-export const clearNotificationsApi = (params: { id?: string; all?: boolean }) => sendJson('/api/notifications/clear', params);
+async function sendNotificationReceipt(path: string, params: { id?: string; ids?: string[]; all?: boolean }) {
+  const result = await sendJson(path, params);
+  // During a rolling deployment an older server can accept JSON but not know
+  // batch IDs yet. Keep the local receipt pending until the IDs are acknowledged.
+  if (params.ids && (!Array.isArray(result.acknowledgedIds) || !params.ids.every(id => result.acknowledgedIds.includes(id)))) throw new ApiError(503, 'ยังยืนยันสถานะแจ้งเตือนไม่ครบ');
+  return result;
+}
+export const markNotificationsReadApi = (params: { id?: string; ids?: string[]; all?: boolean }) => sendNotificationReceipt('/api/notifications/read', params);
+export const clearNotificationsApi = (params: { id?: string; ids?: string[]; all?: boolean }) => sendNotificationReceipt('/api/notifications/clear', params);
 export const getDriveStatusApi = () => requestJson('/api/drive/status');
 export const saveDriveConfigApi = (config: { clientId: string; clientSecret: string; refreshToken: string; folderId?: string }) =>
   sendJson('/api/drive/config', config);

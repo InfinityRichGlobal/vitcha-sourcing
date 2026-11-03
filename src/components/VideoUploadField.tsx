@@ -3,10 +3,13 @@ import { X, RefreshCw } from 'lucide-react';
 import { uploadMediaToServer } from '../services/api';
 import { UploadOptions, UploadProgress } from '../services/chunkUpload';
 import { VideoPlayer } from './VideoPlayer';
+import { useApp } from '../context/AppContext';
 
 type Job = { id: string; file: File; preview: string; controller: AbortController; progress: UploadProgress; error?: string };
 type Props = { urls: string[]; onChange: (urls: string[]) => void; onBusyChange: (busy: boolean) => void; disabled?: boolean; label: string } & Pick<UploadOptions, 'recordId' | 'recordType' | 'recordTitle'>;
 export function VideoUploadField({ urls, onChange, onBusyChange, disabled, label, ...metadata }: Props) {
+  const { notifySuccess } = useApp();
+  const [uploadedCount, setUploadedCount] = useState(0);
   const [jobs, setJobs] = useState<Job[]>([]);
   const jobsRef = useRef<Job[]>([]);
   const running = useRef(new Set<string>());
@@ -29,6 +32,8 @@ export function VideoUploadField({ urls, onChange, onBusyChange, disabled, label
       // Update the ref before React renders, so simultaneous completions cannot lose a file.
       const next = [...latest.current.urls, url]; latest.current.urls = next; latest.current.onChange(next);
       remove(job.id);
+      setUploadedCount(count => count + 1);
+      notifySuccess('อัปโหลดวิดีโอเรียบร้อยแล้ว', 'กดบันทึกเพื่อเก็บวิดีโอกับรายการนี้');
     } catch (error) {
       if (!job.controller.signal.aborted) publish(jobsRef.current.map(j => j.id === job.id ? { ...j, error: error instanceof Error ? error.message : 'อัปโหลดไม่สำเร็จ' } : j));
     }
@@ -44,6 +49,7 @@ export function VideoUploadField({ urls, onChange, onBusyChange, disabled, label
   return <section aria-label={label} className="bg-slate-50 p-4 rounded-2xl border border-slate-100 space-y-3">
     <h3 className="text-xs font-bold">{label} ({urls.length + jobs.length})</h3>
     <p className="text-xs text-slate-500">สูงสุด 2 GB ต่อไฟล์ · เปิดหน้านี้ไว้ระหว่างอัปโหลด</p>
+    {uploadedCount > 0 && <p role="status" className="text-xs text-emerald-700">อัปโหลดวิดีโอแล้ว {uploadedCount} คลิป · กดบันทึกเพื่อเก็บกับรายการ</p>}
     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
       {urls.map((url, i) => <VideoPlayer key={`${url}-${i}`} src={url} className="rounded-xl h-40" badgeLabel={`คลิป #${i + 1}`} onRemove={disabled ? undefined : () => onChange(urls.filter((_, index) => i !== index))} />)}
       {jobs.map(job => <div key={job.id} className="relative rounded-xl border bg-white overflow-hidden" data-testid="video-upload-job">

@@ -1,6 +1,7 @@
 import { MediaImage } from './MediaImage';
 import React, { useState, useEffect, useRef } from 'react';
-import { Camera, X, Loader2, AlertCircle, Plus } from 'lucide-react';
+import { Camera, X, Loader2, AlertCircle, Plus, CheckCircle2 } from 'lucide-react';
+import { useApp } from '../context/AppContext';
 import { uploadImageFile as compressImageFile } from '../utils/mediaStorage';
 
 export interface PhotoItem {
@@ -42,6 +43,9 @@ export const UploadablePhotoGrid: React.FC<UploadablePhotoGridProps> = ({
   onEndUpload,
   disabled = false,
 }) => {
+  const { notifySuccess } = useApp();
+  const [uploadedCount, setUploadedCount] = useState(0);
+  const removed = useRef(new Set<string>());
   const [items, setItems] = useState<PhotoItem[]>(() =>
     urls.map((u) => ({
       id: u,
@@ -97,10 +101,15 @@ export const UploadablePhotoGrid: React.FC<UploadablePhotoGridProps> = ({
     // Notify parent immediately and synchronously
     onBeginUpload?.();
     let remaining = fileList.length;
+    let succeeded = 0;
     const checkDone = () => {
       remaining--;
       if (remaining <= 0) {
         onEndUpload?.();
+        if (succeeded) {
+          setUploadedCount(count => count + succeeded);
+          notifySuccess(`อัปโหลดรูปเรียบร้อยแล้ว ${succeeded} รูป`, 'กดบันทึกเพื่อเก็บรูปกับรายการนี้');
+        }
       }
     };
 
@@ -127,6 +136,7 @@ export const UploadablePhotoGrid: React.FC<UploadablePhotoGridProps> = ({
         recordId,
       })
         .then((uploadedUrl) => {
+          if (!removed.current.has(targetItem.id)) succeeded++;
           setItems((current) => {
             const found = current.find((i) => i.id === targetItem.id);
             if (!found) {
@@ -168,6 +178,7 @@ export const UploadablePhotoGrid: React.FC<UploadablePhotoGridProps> = ({
   };
 
   const handleDelete = (id: string) => {
+    removed.current.add(id);
     setItems((current) => {
       const target = current.find((i) => i.id === id);
       if (target?.previewUrl?.startsWith('blob:')) {
@@ -271,6 +282,7 @@ export const UploadablePhotoGrid: React.FC<UploadablePhotoGridProps> = ({
           </div>
         )}
       </div>
+      {uploadedCount > 0 && <p role="status" className="flex items-center gap-1.5 text-xs text-emerald-700"><CheckCircle2 size={14} />อัปโหลดรูปแล้ว {uploadedCount} รูป · กดบันทึกเพื่อเก็บกับรายการ</p>}
     </div>
   );
 };

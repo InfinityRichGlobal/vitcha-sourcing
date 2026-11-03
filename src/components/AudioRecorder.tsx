@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { Mic, Square, Trash2, Upload, RefreshCw } from "lucide-react";
 import { VoiceNoteEntry } from "../types";
 import { uploadMediaToServer } from "../services/api";
+import { useApp } from '../context/AppContext';
 
 interface AudioRecorderProps {
   voiceNotes?: VoiceNoteEntry[];
@@ -14,6 +15,7 @@ interface AudioRecorderProps {
 }
 
 export const AudioRecorder: React.FC<AudioRecorderProps> = (props) => {
+  const { notifySuccess } = useApp();
   const initial =
     props.voiceNotes ||
     (props.initialAudioUrl
@@ -99,6 +101,7 @@ export const AudioRecorder: React.FC<AudioRecorderProps> = (props) => {
         },
       ]);
       failed.current = null;
+      notifySuccess('อัปโหลดเสียงเรียบร้อยแล้ว', 'กดบันทึกเพื่อเก็บเสียงกับรายการนี้');
       busy(false);
     } catch (e) {
       if (mounted.current)

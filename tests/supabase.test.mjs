@@ -96,6 +96,26 @@ test('another writer wins atomically; stale requests cannot overwrite its update
   assert.equal((await a.call('/api/data', undefined, a.token)).data.user.alias, 'External update');
 });
 
+test('team reads stay responsive during a slow commit and only expose committed data', async t => {
+  const f = await fixture(t); const a = await f.start();
+  let entered, release;
+  const reached = new Promise(resolve => { entered = resolve; });
+  const held = new Promise(resolve => { release = resolve; });
+  f.gate(async () => { entered(); await held; });
+  const saving = a.call('/api/invites', { role: 'reviewer', requestId: 'slow-mobile-save' }, a.token);
+  await reached;
+  let timer;
+  try {
+    const reads = await Promise.race([
+      Promise.all(Array.from({ length: 8 }, () => a.call('/api/data', undefined, a.token))),
+      new Promise((_, reject) => { timer = setTimeout(() => reject(new Error('Reads queued behind the save')), 2000); }),
+    ]);
+    assert.ok(reads.every(result => result.status === 200 && result.data.invites.length === 0));
+  } finally { clearTimeout(timer); release(); }
+  assert.equal((await saving).status, 201); f.gate(null);
+  assert.equal((await a.call('/api/data', undefined, a.token)).data.invites.length, 1);
+});
+
 test('SQL denies anonymous and regular authenticated access to private data and commit functions', async t => {
   const f = await fixture(t);
   for (const role of ['anon', 'authenticated']) {
