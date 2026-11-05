@@ -125,7 +125,12 @@ test('deleted drink stores retain their name and photo, can be searched and rest
   const token = await login(page, 'ice');
   const headers = { Authorization: `Bearer ${token}` };
   const snapshot = await data(page, token);
-  const store = { ...snapshot.drinkStores[0], id: 'qa-trash-store', storeName: 'ร้านทดสอบถังขยะ', revision: undefined };
+  const id = `qa-trash-store-${Date.now()}`;
+  const photo = `data:image/png;base64,${fs.readFileSync('tests/fixtures/photo.png').toString('base64')}`;
+  // Other workflows may have added a store with no storefront photos. This
+  // preservation check must own its image and avoid colliding with a retry.
+  const store = { ...snapshot.drinkStores[0], id, storeName: `ร้านทดสอบถังขยะ ${id}`, revision: undefined,
+    photos: { storefrontAndAtmosphere: [photo], menuBoard: [], drinkCups: [] } };
   delete store.name;
   expect((await page.request.post('/api/drink-stores', { headers, data: store })).ok()).toBeTruthy();
   expect((await page.request.delete(`/api/drink-stores/${store.id}`, { headers, data: { revision: 1 } })).ok()).toBeTruthy();
@@ -133,12 +138,13 @@ test('deleted drink stores retain their name and photo, can be searched and rest
   await expect(page.getByRole('heading', { name: store.storeName, exact: true })).toBeVisible();
   await page.getByPlaceholder('ค้นหาตามชื่อรายการ, หมวดหมู่, หรือผู้ลบ...').fill(store.storeName);
   await expect(page.getByRole('heading', { name: store.storeName, exact: true })).toBeVisible();
-  await expect(page.locator('main img').first()).toHaveAttribute('src', store.photos.storefrontAndAtmosphere[0]);
+  await expect(page.getByRole('img', { name: store.storeName, exact: true })).toHaveAttribute('src', photo);
   await capture(page, { path: 'test-results/trash-store.png' });
   await page.getByRole('button', { name: 'กู้คืนสู่ระบบ', exact: true }).click();
   await expect(page.getByText(`กู้คืน "${store.storeName}" กลับสู่ระบบเรียบร้อยแล้ว`, { exact: true })).toBeVisible();
   const restored = (await data(page, token)).drinkStores.find((record: any) => record.id === store.id);
   expect(restored.storeName).toBe(store.storeName);
+  expect(restored.photos).toEqual(store.photos);
   expect(restored.revision).toBeGreaterThan(1);
 });
 
