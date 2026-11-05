@@ -86,24 +86,21 @@ test('overlapping photo batches keep save disabled until every image is ready', 
   await page.setViewportSize({ width: 390, height: 844 });
   await signIn(page);
   const dialog = await newSupplier(page);
-  // Delay native image decoding, without modifying application code.
-  await page.evaluate(() => {
-    const NativeImage = window.Image;
-    const descriptor = Object.getOwnPropertyDescriptor(HTMLImageElement.prototype, 'src')!;
-    let count = 0;
-    window.Image = function () {
-      const image = new NativeImage();
-      Object.defineProperty(image, 'src', { get() { return descriptor.get!.call(image); }, set(value) { const delay = ++count === 1 ? 700 : 2600; setTimeout(() => descriptor.set!.call(image, value), delay); } });
-      return image;
-    } as typeof Image;
+  let release!: () => void; const gate = new Promise<void>(resolve => { release = resolve; });
+  let uploads = 0;
+  await page.route('**/api/upload', async route => {
+    if (++uploads === 2) await gate;
+    await route.continue();
   });
   const inputs = dialog.locator('input[type="file"][accept="image/*"]');
   await inputs.nth(0).setInputFiles({ name: 'first.png', mimeType: 'image/png', buffer: pixel });
   await inputs.nth(1).setInputFiles({ name: 'second.png', mimeType: 'image/png', buffer: pixel });
   const save = dialog.locator('button').last();
   await expect(save).toBeDisabled();
-  await expect(dialog.getByRole('status').filter({ hasText: 'กำลังประมวลผลรูปภาพ' })).toContainText('1 ชุด');
+  await expect(dialog.getByTestId('photo-upload-grid').first().locator('[data-status=done]')).toHaveCount(1);
+  await expect(dialog.getByRole('status').filter({ hasText: 'มีรูปที่ยังอัปโหลดไม่ครบ' })).toBeVisible();
   await expect(save).toBeDisabled();
+  release();
   await expect(save).toBeEnabled({ timeout: 10000 });
   const responsePromise = page.waitForResponse(r => r.url().endsWith('/api/suppliers') && r.request().method() === 'POST');
   await save.click();

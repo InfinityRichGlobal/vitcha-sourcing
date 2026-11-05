@@ -1,3 +1,4 @@
+import fs from 'node:fs';
 import { capture } from './capture';
 import { test, expect, Page } from "@playwright/test";
 // Avoid this host's unstable Metal screenshot compositor; map coverage uses its own renderer.
@@ -325,15 +326,25 @@ test("profile has one name field and avatar saves immediately without submitting
   const profile = page.getByRole("dialog", { name: "โปรไฟล์" });
   await expect(profile.locator('input[type="text"]')).toHaveCount(2); // display name + login ID
   await expect(profile).not.toContainText(/สิทธิ์|ชื่อ-นามสกุล \/ ตำแหน่งเต็ม/);
+  let failAvatar = true;
+  const original = `data:image/png;base64,${fs.readFileSync('tests/fixtures/photo.png').toString('base64')}`;
+  await page.route('**/api/profile/avatar', route => {
+    expect(route.request().postDataJSON().avatar).toBe(original);
+    return failAvatar ? route.fulfill({ status: 503, json: { error: 'QA Drive unavailable' } }) : route.continue();
+  });
   await profile
     .locator('input[type="file"]')
     .first()
     .setInputFiles(path.resolve("tests/fixtures/photo.png"));
+  await expect(profile.getByRole('button', {name:'ลองอัปโหลดรูปโปรไฟล์ใหม่'})).toBeVisible();
+  await expect(profile.locator('button[type=submit]')).toBeDisabled();
+  failAvatar = false;
+  await profile.getByRole('button', {name:'ลองอัปโหลดรูปโปรไฟล์ใหม่'}).click();
   await expect(profile.getByRole("status")).toContainText(
     "บันทึกรูปบนเซิร์ฟเวอร์แล้ว",
   );
   const saved = await data(page, token);
-  expect(saved.user.avatar).toMatch(/^data:image\/jpeg;base64,/);
+  expect(saved.user.avatar).toBe(original);
   await profile.getByLabel("ปิดโปรไฟล์").first().click();
   await page.reload();
   await expect(page.locator("header img").last()).toHaveAttribute(

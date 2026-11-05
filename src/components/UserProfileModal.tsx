@@ -2,7 +2,7 @@ import { useDialog } from '../hooks/useDialog';
 import { AvatarImage } from './AvatarImage';
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
-import { compressImageFile } from '../utils/imageCompressor';
+import { readOriginalImage } from '../utils/mediaStorage';
 import { X, Camera, ShieldCheck, KeyRound, Check, LogOut, User } from 'lucide-react';
 
 interface UserProfileModalProps {
@@ -20,12 +20,15 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({ isOpen, onCl
   const [isProcessing, setIsProcessing] = useState(false);
   const [profileRevision, setProfileRevision] = useState(currentUser.revision || 0);
   const [avatarSaved, setAvatarSaved] = useState(false);
+  const [pendingAvatar, setPendingAvatar] = useState('');
+  const [avatarError, setAvatarError] = useState('');
   const [isSaved, setIsSaved] = useState(false);
 
   // Sync form state whenever currentUser changes or modal opens
   useEffect(() => {
     if (isOpen && currentUser) {
       setProfileRevision(currentUser.revision || 0); setAvatarSaved(false);
+      setPendingAvatar(''); setAvatarError('');
       setAlias(currentUser.alias || '');
       setEmailOrId(currentUser.emailOrId || '');
       setAvatar(currentUser.avatar || '');
@@ -36,22 +39,29 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({ isOpen, onCl
   const dialog = useDialog(isOpen);
   if (!isOpen) return null;
 
+  const saveAvatar = async (image: string) => {
+    setIsProcessing(true);
+    setPendingAvatar(image); setAvatarError(''); setAvatarSaved(false);
+    try {
+      const saved = await updateCurrentUserAvatar(image, profileRevision);
+      if (saved) { setAvatar(saved.avatar); setProfileRevision(saved.revision || 0); setAvatarSaved(true); setPendingAvatar(''); }
+      else setAvatarError('ยังบันทึกรูปไม่สำเร็จ กดลองใหม่ได้โดยไม่ต้องเลือกไฟล์ใหม่');
+    }
+    catch (error) { setAvatarError(error instanceof Error ? error.message : 'อัปโหลดรูปไม่สำเร็จ'); }
+    finally { setIsProcessing(false); }
+  };
   const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
+    const file = e.target.files?.[0]; e.target.value = '';
     if (!file) return;
     setIsProcessing(true);
-    try {
-      const image = await compressImageFile(file, 320, 0.82);
-      const saved = await updateCurrentUserAvatar(image, profileRevision);
-      if (saved) { setAvatar(saved.avatar); setProfileRevision(saved.revision || 0); setAvatarSaved(true); }
-    }
-    catch (error) { alert(error instanceof Error ? error.message : 'ประมวลผลรูปไม่สำเร็จ'); }
+    try { await saveAvatar(await readOriginalImage(file)); }
+    catch (error) { setAvatarError(error instanceof Error ? error.message : 'อ่านไฟล์ไม่สำเร็จ'); }
     finally { setIsProcessing(false); }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (isProcessing || isMutating) return;
+    if (isProcessing || isMutating || pendingAvatar) return;
     if (!alias.trim()) {
       alert('กรุณากรอกชื่อนามแฝงที่จะแสดงบนระบบ');
       return;
@@ -94,12 +104,13 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({ isOpen, onCl
 
         {/* Form */}
         {avatarSaved && <p role="status" className="px-4 text-center text-xs text-emerald-700">บันทึกรูปบนเซิร์ฟเวอร์แล้ว สมาชิกทุกคนจะเห็นรูปเดียวกัน</p>}
+        {avatarError && <div role="alert" className="px-4 text-xs text-rose-700"><p>{avatarError}</p>{pendingAvatar && <><button type="button" disabled={isProcessing || isMutating} onClick={() => saveAvatar(pendingAvatar)} className="p-2 font-bold">ลองอัปโหลดรูปโปรไฟล์ใหม่</button><button type="button" disabled={isProcessing || isMutating} onClick={() => { setPendingAvatar(''); setAvatarError(''); }} className="p-2">ยกเลิกรูปที่เลือก</button></>}</div>}
         <form onSubmit={handleSubmit} className="p-5 space-y-3.5">
           {/* Avatar Upload */}
           <div className="flex flex-col items-center justify-center gap-2">
             <label className="relative group cursor-pointer">
               <AvatarImage
-                src={avatar}
+                src={pendingAvatar || avatar}
                 alt={alias}
                 className="w-20 h-20 rounded-full object-cover ring-4 ring-emerald-500/20 shadow-md"
               />
@@ -199,7 +210,7 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({ isOpen, onCl
                 ยกเลิก
               </button>
               <button
-                type="submit" disabled={isProcessing || isMutating}
+                type="submit" disabled={isProcessing || isMutating || !!pendingAvatar}
                 className="flex items-center gap-1.5 px-5 py-2.5 text-xs font-bold rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white shadow-md active:scale-95 transition-all"
               >
                 {isSaved ? (

@@ -1,3 +1,4 @@
+import { MediaImage } from './MediaImage';
 import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { usePendingMedia } from '../hooks/usePendingMedia';
@@ -45,7 +46,7 @@ import {
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { FranchiseStore, StoreMenuItem, LabItem, VoiceNoteEntry } from '../types';
-import { compressImageFile } from '../utils/imageCompressor';
+import { UploadablePhotoGrid } from './UploadablePhotoGrid';
 import { printFranchiseStoreReport, shareFranchiseStore, printLeadLabSpecReport, shareLeadLabItem } from '../utils/labAndStoreExport';
 import { uploadMediaToServer } from '../services/api';
 import { saveVideoFile } from '../utils/mediaStorage';
@@ -116,7 +117,7 @@ export function FranchiseStoreView({
   const [storeCommentVoiceUrl, setStoreCommentVoiceUrl] = useState<string | null>(null);
   const [storeCommentVoiceDuration, setStoreCommentVoiceDuration] = useState<number | undefined>(undefined);
   const [isUploadingStoreAttachment, setIsUploadingStoreAttachment] = useState(false);
-  const storePhotoInputRef = useRef<HTMLInputElement | null>(null);
+  const [storePhotoInputRefBusy, setStorePhotoInputRefBusy] = useState(false);
 
   // Live voice recording for store discussion
   const [isRecordingStore, setIsRecordingStore] = useState(false);
@@ -253,23 +254,7 @@ export function FranchiseStoreView({
     }
   };
 
-  const handleUploadStorePhoto = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file || !activeStore) return;
-    try {
-      setIsUploadingStoreAttachment(true);
-      const url = await uploadMediaToServer(file, {
-        recordId: activeStore.id,
-        recordType: 'franchise_store',
-        recordTitle: activeStore.name,
-      });
-      setStoreCommentPhotoUrl(url);
-    } catch (err: any) {
-      alert(err.message || 'อัปโหลดรูปภาพไม่สำเร็จ');
-    } finally {
-      setIsUploadingStoreAttachment(false);
-    }
-  };
+
 
   const toggleLiveVoiceRecordingStore = async () => {
     if (isRecordingStore) {
@@ -283,7 +268,7 @@ export function FranchiseStoreView({
       return;
     }
 
-    if (isUploadingStoreAttachment) return;
+    if ((isUploadingStoreAttachment || storePhotoInputRefBusy)) return;
     setIsUploadingStoreAttachment(true);
     try {
       if (!navigator.mediaDevices?.getUserMedia || typeof MediaRecorder === 'undefined') {
@@ -359,7 +344,7 @@ export function FranchiseStoreView({
 
   const handlePostStoreComment = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!activeStore || !canEditMenus || isSubmittingStoreComment || isUploadingStoreAttachment || isRecordingStore) return;
+    if (!activeStore || !canEditMenus || isSubmittingStoreComment || (isUploadingStoreAttachment || storePhotoInputRefBusy) || isRecordingStore) return;
     const text = storeCommentText.trim();
     if (!text && !storeCommentPhotoUrl && !storeCommentVoiceUrl) return;
 
@@ -485,7 +470,7 @@ export function FranchiseStoreView({
                       className="relative w-full bg-slate-100 dark:bg-slate-950 overflow-hidden cursor-pointer flex items-center justify-center min-h-[110px]"
                       onClick={() => setSelectedStoreId(store.id)}
                     >
-                      <img
+                      <MediaImage
                         src={store.logoUrl || 'https://images.unsplash.com/photo-1544787219-7f47ccb76574?w=800&auto=format&fit=crop&q=80'}
                         alt={store.name}
                         className="w-full h-auto object-contain block group-hover:scale-102 transition-transform duration-300"
@@ -727,7 +712,7 @@ export function FranchiseStoreView({
       <div style={/^#[0-9a-f]{6}$/i.test(activeStore.themeColor || '') ? {'--brand-color': activeStore.themeColor} as React.CSSProperties : undefined} className={`relative overflow-hidden rounded-2xl sm:rounded-3xl bg-gradient-to-br ${theme.bg} text-white p-4 sm:p-6 md:p-8 shadow-xl border print:hidden`}>
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="space-y-2 max-w-2xl">
-            {activeStore.logoUrl && <img src={activeStore.logoUrl} alt={activeStore.name} className="h-24 w-24 rounded-2xl bg-white object-contain" />}
+            {activeStore.logoUrl && <MediaImage src={activeStore.logoUrl} alt={activeStore.name} className="h-24 w-24 rounded-2xl bg-white object-contain" />}
             <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wider border ${theme.pill}`}>
               <Store className="w-3.5 h-3.5" />
               <span>ข้อมูลแบรนด์ · เมนูและสูตร</span>
@@ -774,7 +759,7 @@ export function FranchiseStoreView({
                   {activeStore.likedBy.slice(0, 4).map((uid, uIdx) => {
                     const u = users.find((x) => x.id === uid);
                     return (
-                      <img
+                      <MediaImage
                         key={uIdx}
                         src={u?.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&auto=format&fit=crop&q=80'}
                         alt={u?.name || uid}
@@ -991,7 +976,7 @@ export function FranchiseStoreView({
                   <div>
                     {/* Product Image (Square Fit container, no awkward black background) */}
                     <div className="relative aspect-square rounded-xl overflow-hidden bg-slate-100 dark:bg-slate-800 border border-slate-200/60 dark:border-slate-700/60 flex items-center justify-center">
-                      <img
+                      <MediaImage
                         src={labItem.photoUrl}
                         alt={menuItem.customName || labItem.name}
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
@@ -1062,7 +1047,7 @@ export function FranchiseStoreView({
                   className="rounded-2xl bg-amber-50/40 dark:bg-amber-950/20 border border-amber-200/60 dark:border-amber-900/40 p-2.5 sm:p-3 hover:shadow-md transition-all cursor-pointer flex flex-col justify-between"
                 >
                   <div className="flex items-center gap-2.5">
-                    <img
+                    <MediaImage
                       src={labItem.photoUrl}
                       alt={menuItem.customName || labItem.name}
                       className="w-10 h-10 rounded-xl object-cover shrink-0 border border-amber-300 dark:border-amber-700"
@@ -1115,7 +1100,7 @@ export function FranchiseStoreView({
               >
                 <div className="flex items-center justify-between text-xs">
                   <div className="flex items-center gap-2">
-                    <img
+                    <MediaImage
                       src={comm.authorAvatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80'}
                       alt={comm.authorName}
                       className="w-5 h-5 rounded-full object-cover"
@@ -1152,7 +1137,7 @@ export function FranchiseStoreView({
                       rel="noreferrer"
                       className="inline-block rounded-xl overflow-hidden border border-slate-200 dark:border-slate-700 shadow-xs max-w-[200px] hover:opacity-90"
                     >
-                      <img src={comm.photoUrl} alt="รูปแนบคอมเมนต์" className="w-full h-auto max-h-36 object-cover" />
+                      <MediaImage src={comm.photoUrl} alt="รูปแนบคอมเมนต์" className="w-full h-auto max-h-36 object-cover" />
                     </a>
                   </div>
                 )}
@@ -1186,27 +1171,14 @@ export function FranchiseStoreView({
             </select>
 
             <div className="flex items-center gap-2">
-              <input
-                ref={storePhotoInputRef}
-                type="file"
-                accept="image/*"
-                onChange={handleUploadStorePhoto}
-                className="hidden"
-              />
-              <button
-                type="button"
-                onClick={() => storePhotoInputRef.current?.click()}
-                disabled={isUploadingStoreAttachment || isRecordingStore}
-                className="h-8 px-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold transition-colors inline-flex items-center gap-1"
-                title="แนบรูปถ่ายประกอบความเห็นหน้าร้าน"
-              >
-                <Camera className="w-3.5 h-3.5 text-emerald-600" />
-                <span>แนบรูป</span>
-              </button>
+              <UploadablePhotoGrid single label="รูปแนบความคิดเห็น" urls={storeCommentPhotoUrl ? [storeCommentPhotoUrl] : []}
+                        onChange={urls => setStoreCommentPhotoUrl(urls[0] || null)} onUploadingChange={setStorePhotoInputRefBusy}
+                        recordType="franchise_stores" recordId={activeStore?.id} recordTitle={activeStore?.name || ''}
+                        disabled={isSubmittingStoreComment || isRecordingStore} />
 
               <button
                 type="button"
-                disabled={isUploadingStoreAttachment}
+                disabled={(isUploadingStoreAttachment || storePhotoInputRefBusy)}
                 onClick={toggleLiveVoiceRecordingStore}
                 className={`h-8 px-2.5 rounded-xl text-xs font-bold transition-all inline-flex items-center gap-1.5 ${
                   isRecordingStore
@@ -1231,9 +1203,9 @@ export function FranchiseStoreView({
           </div>
 
           {/* Attachment Preview Chips */}
-          {(storeCommentPhotoUrl || storeCommentVoiceUrl || isUploadingStoreAttachment) && (
+          {(storeCommentPhotoUrl || storeCommentVoiceUrl || (isUploadingStoreAttachment || storePhotoInputRefBusy)) && (
             <div className="flex items-center gap-2 flex-wrap p-2 bg-slate-50 dark:bg-slate-800/80 rounded-xl border border-slate-200 dark:border-slate-700 text-xs">
-              {isUploadingStoreAttachment && (
+              {(isUploadingStoreAttachment || storePhotoInputRefBusy) && (
                 <div className="flex items-center gap-1.5 text-emerald-600 font-bold">
                   <Loader2 className="w-3.5 h-3.5 animate-spin" />
                   <span>กำลังอัปโหลดไฟล์แนบ...</span>
@@ -1242,7 +1214,7 @@ export function FranchiseStoreView({
 
               {storeCommentPhotoUrl && (
                 <div className="flex items-center gap-2 bg-white dark:bg-slate-700 px-2 py-1 rounded-lg border border-slate-200 dark:border-slate-600">
-                  <img src={storeCommentPhotoUrl} alt="" className="w-5 h-5 rounded object-cover" />
+                  <MediaImage src={storeCommentPhotoUrl} alt="" className="w-5 h-5 rounded object-cover" />
                   <span className="font-medium text-slate-700 dark:text-slate-200 text-[11px]">รูปถ่ายพร้อมแนบ</span>
                   <button
                     type="button"
@@ -1285,7 +1257,7 @@ export function FranchiseStoreView({
             />
             <button
               type="submit"
-              disabled={isSubmittingStoreComment || isUploadingStoreAttachment || isRecordingStore || (!storeCommentText.trim() && !storeCommentPhotoUrl && !storeCommentVoiceUrl)}
+              disabled={isSubmittingStoreComment || (isUploadingStoreAttachment || storePhotoInputRefBusy) || isRecordingStore || (!storeCommentText.trim() && !storeCommentPhotoUrl && !storeCommentVoiceUrl)}
               className="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 disabled:opacity-40 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-sm shrink-0"
             >
               <Send className="w-3.5 h-3.5" />
@@ -1440,37 +1412,6 @@ function StoreFormModal({
     { id: 'indigo', label: 'อินดิโก้', dot: 'bg-indigo-600', ring: 'ring-indigo-600' },
     { id: 'slate', label: 'ดำมินิมอล', dot: 'bg-slate-800', ring: 'ring-slate-800' },
   ];
-
-  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    try {
-      pendingMedia.begin();
-      setIsCompressing(true);
-      const compressed = await compressImageFile(file, 960, 0.75);
-      setLogoUrl(compressed);
-    } catch (err: any) {
-      alert(err.message || 'ไม่สามารถอัปโหลดรูปภาพได้');
-    } finally {
-      setIsCompressing(false);
-      pendingMedia.end();
-    }
-  };
-
-  const handleGalleryUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files || []);
-    e.target.value = '';
-    if (!files.length) return;
-    pendingMedia.begin();
-    const failed: string[] = [];
-    try {
-      for (const file of files) {
-        try { const compressed = await compressImageFile(file, 960, 0.75); setGalleryPhotos(prev => [...prev, compressed]); }
-        catch { failed.push(file.name); }
-      }
-      if (failed.length) alert(`รูปเหล่านี้ยังไม่ได้เพิ่ม กรุณาเลือกใหม่: ${failed.join(', ')}`);
-    } finally { pendingMedia.end(); }
-  };
 
   const handleVideoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
@@ -1726,7 +1667,7 @@ function StoreFormModal({
             <div className="flex items-center gap-3">
               <div className="w-16 h-16 rounded-xl overflow-hidden bg-slate-200 dark:bg-slate-700 shrink-0 border border-slate-300 dark:border-slate-600 relative">
                 {logoUrl ? (
-                  <img src={logoUrl} alt="Logo Preview" className="w-full h-full object-cover" />
+                  <MediaImage src={logoUrl} alt="Logo Preview" className="w-full h-full object-cover" />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center text-slate-400">
                     <Store className="w-5 h-5" />
@@ -1741,19 +1682,9 @@ function StoreFormModal({
 
               <div className="flex-1">
                 {photoMode === 'upload' ? (
-                  <div>
-                    <label className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 hover:bg-slate-50 cursor-pointer font-bold text-slate-700 dark:text-slate-200 shadow-xs">
-                      <Upload className="w-3.5 h-3.5 text-emerald-600" />
-                      <span>เลือกภาพโลโก้จากเครื่อง / กล้อง</span>
-                      <input
-                        type="file"
-                        accept="image/*"
-                        onChange={handleImageUpload}
-                        className="hidden"
-                      />
-                    </label>
-                    <p className="text-[10px] text-slate-400 mt-1">บีบอัดภาพอัตโนมัติ รวดเร็ว</p>
-                  </div>
+                  <UploadablePhotoGrid single label="โลโก้ / ปกร้าน" urls={logoUrl ? [logoUrl] : []} onChange={urls => setLogoUrl(urls[0] || '')}
+                    recordType="franchise_stores" recordTitle={name} onUploadingChange={setIsCompressing}
+                    onBeginUpload={pendingMedia.begin} onEndUpload={pendingMedia.end} disabled={isSubmitting} />
                 ) : (
                   <div>
                     <input
@@ -1818,45 +1749,8 @@ function StoreFormModal({
 
           {/* 6. MULTIMEDIA (Clean Label, AudioRecorder & VideoPlayer like Supplier Modal) */}
           <div className="p-3.5 bg-emerald-50/40 dark:bg-emerald-950/20 rounded-2xl border border-emerald-100 dark:border-emerald-900/40 space-y-3.5">
-            <div className="flex items-center justify-between">
-              <label className="font-extrabold text-emerald-900 dark:text-emerald-300 flex items-center gap-1.5 text-xs">
-                <ImageIcon className="w-4 h-4 text-emerald-600" />
-                <span>พาร์ทมัลติมีเดียเพิ่มเติม</span>
-              </label>
-              <label className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[10px] cursor-pointer shadow-xs">
-                <Plus className="w-3 h-3" />
-                <span>เพิ่มรูปแกลเลอรี</span>
-                <input
-                  type="file"
-                  multiple
-                  accept="image/*"
-                  onChange={handleGalleryUpload}
-                  className="hidden"
-                />
-              </label>
-            </div>
-
-            {/* Gallery Thumbnails */}
-            {galleryPhotos.length > 0 && (
-              <div className="space-y-1">
-                <span className="text-[10px] font-bold text-slate-400">ภาพประกอบแบรนด์ ({galleryPhotos.length} รูป)</span>
-                <div className="flex gap-2 overflow-x-auto pb-1">
-                  {galleryPhotos.map((photo, pIdx) => (
-                    <div key={pIdx} className="relative w-14 h-14 rounded-lg overflow-hidden shrink-0 border border-slate-200 dark:border-slate-700 shadow-xs group">
-                      <img src={photo} alt="" className="w-full h-full object-cover" />
-                      <button
-                        type="button"
-                        onClick={() => setGalleryPhotos((p) => p.filter((_, i) => i !== pIdx))}
-                        className="absolute top-0.5 right-0.5 w-4 h-4 rounded-full bg-rose-600 text-white flex items-center justify-center opacity-80 hover:opacity-100"
-                        title="ลบรูปนี้"
-                      >
-                        <X className="w-2.5 h-2.5" />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
+            <UploadablePhotoGrid label="รูปภาพเพิ่มเติม" urls={galleryPhotos} onChange={setGalleryPhotos}
+              recordType="franchise_stores" recordTitle={name} onBeginUpload={pendingMedia.begin} onEndUpload={pendingMedia.end} disabled={isSubmitting} />
 
             {/* Live Audio Recorder Component */}
             <div className="pt-2 border-t border-emerald-100 dark:border-emerald-900/50 space-y-1.5">
@@ -2163,7 +2057,7 @@ function QuickSopModal({
   const [commentVoiceUrl, setCommentVoiceUrl] = useState<string | null>(null);
   const [commentVoiceDuration, setCommentVoiceDuration] = useState<number | undefined>(undefined);
   const [isUploadingAttachment, setIsUploadingAttachment] = useState(false);
-  const photoInputRef = useRef<HTMLInputElement | null>(null);
+  const [photoInputRefBusy, setPhotoInputRefBusy] = useState(false);
 
   // Live voice recording
   const [isRecording, setIsRecording] = useState(false);
@@ -2203,23 +2097,7 @@ function QuickSopModal({
   const commentsList = (labItem.revisionCycles || []).slice().reverse().flatMap(c => c.comments || []);
 
   // Attachment upload handler
-  const handleUploadPhoto = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    try {
-      setIsUploadingAttachment(true);
-      const url = await uploadMediaToServer(file, {
-        recordId: labItem.id,
-        recordType: 'lead_lab',
-        recordTitle: labItem.name,
-      });
-      setCommentPhotoUrl(url);
-    } catch (err: any) {
-      alert(err.message || 'อัปโหลดรูปภาพไม่สำเร็จ');
-    } finally {
-      setIsUploadingAttachment(false);
-    }
-  };
+
 
   // Live voice recording toggle
   const toggleLiveVoiceRecording = async () => {
@@ -2234,7 +2112,7 @@ function QuickSopModal({
       return;
     }
 
-    if (isUploadingAttachment) return;
+    if ((isUploadingAttachment || photoInputRefBusy)) return;
     setIsUploadingAttachment(true);
     try {
       if (!navigator.mediaDevices?.getUserMedia || typeof MediaRecorder === 'undefined') {
@@ -2311,7 +2189,7 @@ function QuickSopModal({
   const handlePostComment = async (e: React.FormEvent) => {
     e.preventDefault();
     const text = commentText.trim();
-    if (!canWrite || isSubmittingComment || isUploadingAttachment || isRecording || (!text && !commentPhotoUrl && !commentVoiceUrl)) return;
+    if (!canWrite || isSubmittingComment || (isUploadingAttachment || photoInputRefBusy) || isRecording || (!text && !commentPhotoUrl && !commentVoiceUrl)) return;
 
     setIsSubmittingComment(true);
     const ok = await onAddLabComment(labItem.id, text, sweetnessTarget, {
@@ -2336,7 +2214,7 @@ function QuickSopModal({
           {/* Row 1: Code + Title + Close */}
           <div className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-3 min-w-0">
-              <img
+              <MediaImage
                 src={labItem.photoUrl}
                 alt={labItem.name}
                 className="w-12 h-12 rounded-xl object-cover border border-slate-200 dark:border-slate-700 shrink-0 shadow-xs"
@@ -2433,7 +2311,7 @@ function QuickSopModal({
                   {labItem.likedBy.slice(0, 5).map((uid, uIdx) => {
                     const u = users.find((x) => x.id === uid);
                     return (
-                      <img
+                      <MediaImage
                         key={uIdx}
                         src={u?.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=80&auto=format&fit=crop&q=80'}
                         alt={u?.name || uid}
@@ -2549,7 +2427,7 @@ function QuickSopModal({
                     >
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
-                          <img
+                          <MediaImage
                             src={comm.authorAvatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&auto=format&fit=crop&q=80'}
                             alt={comm.authorName}
                             className="w-5 h-5 rounded-full object-cover border border-slate-200 dark:border-slate-700"
@@ -2588,7 +2466,7 @@ function QuickSopModal({
                             rel="noreferrer"
                             className="inline-block rounded-xl overflow-hidden border border-slate-200 dark:border-slate-700 shadow-xs max-w-[180px] hover:opacity-90 transition-opacity"
                           >
-                            <img src={comm.photoUrl} alt="รูปแนบคอมเมนต์" className="w-full h-auto max-h-32 object-cover" />
+                            <MediaImage src={comm.photoUrl} alt="รูปแนบคอมเมนต์" className="w-full h-auto max-h-32 object-cover" />
                           </a>
                         </div>
                       )}
@@ -2612,7 +2490,7 @@ function QuickSopModal({
             {/* Attached Photo Staging Preview */}
             {commentPhotoUrl && (
               <div className="flex items-center gap-2 p-2 bg-indigo-50/70 dark:bg-indigo-950/40 rounded-xl border border-indigo-200 dark:border-indigo-800 text-xs">
-                <img src={commentPhotoUrl} alt="แนบรูป" className="w-10 h-10 rounded-lg object-cover border" />
+                <MediaImage src={commentPhotoUrl} alt="แนบรูป" className="w-10 h-10 rounded-lg object-cover border" />
                 <div className="flex-1 min-w-0">
                   <div className="font-bold text-indigo-900 dark:text-indigo-200 truncate text-[11px]">แนบรูปถ่ายเรียบร้อย</div>
                   <div className="text-[10px] text-indigo-500">จะถูกส่งพร้อมคอมเมนต์</div>
@@ -2687,29 +2565,16 @@ function QuickSopModal({
 
                 <div className="flex items-center gap-2">
                   {/* Photo attachment input */}
-                  <input
-                    ref={photoInputRef}
-                    type="file"
-                    accept="image/*"
-                    onChange={handleUploadPhoto}
-                    className="hidden"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => photoInputRef.current?.click()}
-                    disabled={isUploadingAttachment || isRecording}
-                    className="h-7 px-2.5 rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold transition-colors inline-flex items-center gap-1"
-                    title="แนบรูปถ่ายประกอบคอมเมนต์"
-                  >
-                    <Camera className="w-3.5 h-3.5 text-indigo-600" />
-                    <span>แนบรูป</span>
-                  </button>
+                  <UploadablePhotoGrid single label="รูปแนบความคิดเห็น" urls={commentPhotoUrl ? [commentPhotoUrl] : []}
+                        onChange={urls => setCommentPhotoUrl(urls[0] || null)} onUploadingChange={setPhotoInputRefBusy}
+                        recordType="lead_lab" recordId={labItem.id} recordTitle={labItem.name || ''}
+                        disabled={isSubmittingComment || isRecording} />
 
                   {/* Live Voice Recording Button */}
                   <button
                     type="button"
                     onClick={toggleLiveVoiceRecording}
-                    disabled={isUploadingAttachment}
+                    disabled={(isUploadingAttachment || photoInputRefBusy)}
                     className={`h-7 px-2.5 rounded-lg text-xs font-bold transition-colors inline-flex items-center gap-1 ${
                       isRecording
                         ? 'bg-rose-600 text-white animate-pulse'
@@ -2733,10 +2598,10 @@ function QuickSopModal({
                 />
                 <button
                   type="submit"
-                  disabled={isSubmittingComment || isUploadingAttachment || isRecording || (!commentText.trim() && !commentPhotoUrl && !commentVoiceUrl)}
+                  disabled={isSubmittingComment || (isUploadingAttachment || photoInputRefBusy) || isRecording || (!commentText.trim() && !commentPhotoUrl && !commentVoiceUrl)}
                   className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white font-bold text-xs flex items-center justify-center gap-1 shrink-0 transition-colors"
                 >
-                  {isSubmittingComment || isUploadingAttachment ? (
+                  {isSubmittingComment || (isUploadingAttachment || photoInputRefBusy) ? (
                     <Loader2 className="w-3.5 h-3.5 animate-spin" />
                   ) : (
                     <Send className="w-3 h-3" />

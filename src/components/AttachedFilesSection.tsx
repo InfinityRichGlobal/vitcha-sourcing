@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useLayoutEffect, useRef, useState } from 'react';
 import {
   FileText,
   FileSpreadsheet,
@@ -11,7 +11,8 @@ import {
   Loader2,
 } from 'lucide-react';
 import { AttachedFile } from '../types';
-import { uploadMediaToServer } from '../services/api';
+import { useMediaUploadQueue } from '../hooks/useMediaUploadQueue';
+import { originalImageUrl } from '../utils/mediaUrl';
 import { useApp } from '../context/AppContext';
 
 export interface AttachedFilesSectionProps {
@@ -124,11 +125,23 @@ export const AttachedFilesSection: React.FC<AttachedFilesSectionProps> = ({
   subtitle = 'อัปโหลดไฟล์เก็บเข้า Google Drive และสามารถกดเปิดดูหรือสแกนผ่าน QR Code ใน PDF ได้',
   themeColor = 'sky',
 }) => {
-  const [isUploading, setIsUploading] = useState(false);
   const { notifySuccess } = useApp();
   const [uploadedCount, setUploadedCount] = useState(0);
-  const [uploadProgress, setUploadProgress] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const filesRef = useRef(files);
+  useLayoutEffect(() => { filesRef.current = files; }, [files]);
+  const queue = useMediaUploadQueue({
+    enabled: !readOnly, recordType, recordTitle, recordId,
+    onBusyChange: busy => onBusyChange?.(busy),
+    onComplete: (id, url, file) => {
+      filesRef.current = [...filesRef.current, { id, url, name: file.name, size: file.size, mimeType: file.type || 'application/octet-stream', uploadedAt: new Date().toISOString() }];
+      onChange?.(filesRef.current);
+      setUploadedCount(count => count + 1);
+      notifySuccess('อัปโหลดไฟล์เรียบร้อยแล้ว', 'กดบันทึกเพื่อเก็บไฟล์กับรายการนี้');
+    },
+  });
+  const isUploading = queue.jobs.some(job => job.status !== 'error');
 
   const themeRing =
     themeColor === 'emerald'
@@ -148,54 +161,13 @@ export const AttachedFilesSection: React.FC<AttachedFilesSectionProps> = ({
       ? 'text-indigo-700'
       : 'text-sky-700';
 
-  const handleFilesSelected = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const selected = e.target.files;
-    if (!selected || selected.length === 0) return;
-
-    setIsUploading(true);
-    onBusyChange?.(true);
-    const updated = [...files];
-    let succeeded = 0;
-
-    for (let i = 0; i < selected.length; i++) {
-      const file = selected[i];
-      setUploadProgress(`กำลังอัปโหลด (${i + 1}/${selected.length}): ${file.name}`);
-      try {
-        const url = await uploadMediaToServer(file, {
-          recordType,
-          recordTitle,
-          recordId,
-        });
-
-        updated.push({
-          id: `file-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
-          name: file.name,
-          size: file.size,
-          mimeType: file.type || 'application/octet-stream',
-          url,
-          uploadedAt: new Date().toISOString(),
-        });
-        succeeded++;
-      } catch (err: any) {
-        alert(`อัปโหลดไฟล์ "${file.name}" ไม่สำเร็จ: ${err?.message || err}`);
-      }
-    }
-
-    setIsUploading(false);
-    onBusyChange?.(false);
-    setUploadProgress(null);
-    if (onChange) onChange(updated);
-    if (succeeded) {
-      setUploadedCount(count => count + succeeded);
-      notifySuccess(`อัปโหลดไฟล์เรียบร้อยแล้ว ${succeeded} ไฟล์`, 'กดบันทึกเพื่อเก็บไฟล์กับรายการนี้');
-    }
-    e.target.value = '';
+  const handleFilesSelected = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const selected = Array.from(e.target.files || []); e.target.value = '';
+    for (const file of selected) queue.enqueue(crypto.randomUUID(), file);
   };
-
   const handleRemove = (id: string) => {
-    if (onChange) {
-      onChange(files.filter((f) => f.id !== id));
-    }
+    filesRef.current = filesRef.current.filter(file => file.id !== id);
+    onChange?.(filesRef.current);
   };
 
   if (readOnly && files.length === 0) {
@@ -258,10 +230,16 @@ export const AttachedFilesSection: React.FC<AttachedFilesSectionProps> = ({
       {isUploading && (
         <div className="p-3 bg-white rounded-xl border border-sky-200 flex items-center gap-2.5 text-xs text-sky-800 animate-pulse">
           <Loader2 className="w-4 h-4 animate-spin text-sky-600 shrink-0" />
-          <span className="font-semibold">{uploadProgress || 'กำลังอัปโหลดไฟล์ไปยังระบบ...'}</span>
+          <span className="font-semibold">กำลังอัปโหลดไฟล์ต้นฉบับ...</span>
         </div>
       )}
 
+      {queue.jobs.filter(job => job.status === 'error').map(job => <div key={job.id} role="alert" className="rounded-xl border border-rose-200 p-2 text-xs text-rose-700">
+        <p>{job.file.name}: {job.error}</p>
+        <button type="button" onClick={() => queue.retry(job.id)} className="p-2 font-bold">ลองอัปโหลดใหม่</button>
+        <button type="button" onClick={() => queue.remove(job.id)} className="p-2">เอาไฟล์นี้ออก</button>
+      </div>)}
+      {queue.jobs.some(job => job.status === 'error') && <button type="button" onClick={() => queue.retry()} className="p-2 text-xs font-bold text-rose-700">ลองใหม่ทั้งหมด</button>}
       {/* Files List / Grid */}
       {files.length > 0 ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -304,7 +282,7 @@ export const AttachedFilesSection: React.FC<AttachedFilesSectionProps> = ({
 
                 <div className="flex items-center gap-1 shrink-0">
                   <a
-                    href={file.url}
+                    href={file.mimeType?.startsWith('image/') ? originalImageUrl(file.url) : file.url}
                     target="_blank"
                     rel="noopener noreferrer"
                     onClick={(e) => {

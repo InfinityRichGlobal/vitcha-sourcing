@@ -1,3 +1,4 @@
+import { MediaImage } from './MediaImage';
 import React, { useEffect, useRef, useState } from 'react';
 import { useApp } from '../context/AppContext';
 import { SupplierRecord, StoreInspoRecord, LocationRecord } from '../types';
@@ -328,7 +329,7 @@ export const MapView: React.FC<MapViewProps> = ({
           null;
 
         const pinInner = photo
-          ? `<img src="${photo.replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;")}" style="width: 100%; height: 100%; object-fit: cover;" />`
+          ? `<MediaImage src="${photo.replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;")}" style="width: 100%; height: 100%; object-fit: cover;" />`
           : `<div style="width: 100%; height: 100%; background: #ecfdf5; display: flex; align-items: center; justify-content: center; color: #059669; font-size: 18px;"><i class="fa-solid fa-industry"></i></div>`;
 
         const customIcon = L.divIcon({
@@ -368,7 +369,7 @@ export const MapView: React.FC<MapViewProps> = ({
           null;
 
         const pinInner = photo
-          ? `<img src="${photo.replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;")}" style="width: 100%; height: 100%; object-fit: cover;" />`
+          ? `<MediaImage src="${photo.replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;")}" style="width: 100%; height: 100%; object-fit: cover;" />`
           : `<div style="width: 100%; height: 100%; background: #fffbeb; display: flex; align-items: center; justify-content: center; color: #d97706; font-size: 18px;"><i class="fa-solid fa-mug-hot"></i></div>`;
 
         const customIcon = L.divIcon({
@@ -408,7 +409,7 @@ export const MapView: React.FC<MapViewProps> = ({
           null;
 
         const pinInner = photo
-          ? `<img src="${photo.replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;")}" style="width: 100%; height: 100%; object-fit: cover;" />`
+          ? `<MediaImage src="${photo.replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;")}" style="width: 100%; height: 100%; object-fit: cover;" />`
           : `<div style="width: 100%; height: 100%; background: #f0f9ff; display: flex; align-items: center; justify-content: center; color: #0284c7; font-size: 18px;"><i class="fa-solid fa-map-location-dot"></i></div>`;
 
         const customIcon = L.divIcon({
@@ -794,7 +795,7 @@ export const MapView: React.FC<MapViewProps> = ({
               return (
                 <div className="flex items-center gap-3 mb-3">
                   {previewThumb ? (
-                    <img
+                    <MediaImage
                       src={previewThumb}
                       alt="Thumbnail"
                       className="w-16 h-16 rounded-2xl object-cover shrink-0 border border-slate-100 shadow-sm"

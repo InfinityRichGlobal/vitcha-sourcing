@@ -1,3 +1,4 @@
+import { MediaImage } from './MediaImage';
 import { useMemo, useState } from "react";
 import {
   Package,
@@ -465,7 +466,7 @@ export function ProductWorkspace({
                     className="block h-full w-full text-left"
                     onClick={() => setOpened(product)}
                   >
-                    <img
+                    <MediaImage
                       src={product.photo || "./logo.jpg"}
                       alt={product.title}
                       loading="lazy"
@@ -711,7 +712,7 @@ function ProductEditor({
           }}
         >
           <fieldset disabled={!canManage || isMutating} className="space-y-4">
-            <img
+            <MediaImage
               src={product.photo || "./logo.jpg"}
               alt={product.title}
               className="max-h-64 w-full rounded-xl bg-slate-50 object-contain"

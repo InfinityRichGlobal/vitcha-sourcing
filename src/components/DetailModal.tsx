@@ -2,7 +2,7 @@ import { CommentMediaField } from './CommentMediaField';
 import { CommentMediaGallery } from './CommentMediaGallery';
 import { commentMedia } from '../utils/commentMedia';
 import { getPhotoGroups } from '../utils/photoGroups';
-import { normalizeMediaUrl } from '../utils/mediaUrl';
+import { normalizeMediaUrl, imageDisplayUrl, originalImageUrl } from '../utils/mediaUrl';
 import { MediaImage } from './MediaImage';
 import { ActivityTimeline } from './ActivityTimeline';
 import { AvatarImage } from './AvatarImage';
@@ -1512,6 +1512,7 @@ export const DetailModal: React.FC<DetailModalProps> = ({
             )}
 
             <MediaImage
+              imageSize={2000}
               src={allPhotos[activeImageIndex].url}
               alt={allPhotos[activeImageIndex].label}
               className="max-w-full max-h-[72vh] object-contain rounded-xl shadow-2xl"
@@ -1531,6 +1532,10 @@ export const DetailModal: React.FC<DetailModalProps> = ({
             )}
           </div>
 
+          <div className="flex gap-4 py-2 text-sm text-white underline" onClick={e => e.stopPropagation()}>
+            <a href={imageDisplayUrl(allPhotos[activeImageIndex].url, 0)} target="_blank" rel="noreferrer">ดูเต็มความละเอียด</a>
+            <a href={originalImageUrl(allPhotos[activeImageIndex].url)} target="_blank" rel="noreferrer">เปิดไฟล์ต้นฉบับ</a>
+          </div>
           {/* Bottom Thumbnail Strip */}
           {allPhotos.length > 1 && (
             <div

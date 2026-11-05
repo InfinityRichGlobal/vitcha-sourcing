@@ -1,3 +1,4 @@
+import { MediaImage } from './MediaImage';
 import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
 import { SupplierRecord, StoreInspoRecord } from '../types';
@@ -249,7 +250,7 @@ export const CategoryExplorerView: React.FC<CategoryExplorerViewProps> = ({
                     <div className="flex items-center -space-x-1.5">
                       {cat.thumbs.length > 0 ? (
                         cat.thumbs.slice(0, 3).map((t, i) => (
-                          <img
+                          <MediaImage
                             key={i}
                             src={t}
                             alt=""
@@ -405,7 +406,7 @@ export const CategoryExplorerView: React.FC<CategoryExplorerViewProps> = ({
                     <div className="flex items-center -space-x-1.5">
                       {cat.thumbs.length > 0 ? (
                         cat.thumbs.slice(0, 3).map((t, i) => (
-                          <img
+                          <MediaImage
                             key={i}
                             src={t}
                             alt=""

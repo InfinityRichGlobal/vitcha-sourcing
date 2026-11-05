@@ -1,3 +1,4 @@
+import { MediaImage } from './MediaImage';
 import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
 import { Lock, AlertCircle, ShieldCheck, Ticket, User, Eye, EyeOff } from 'lucide-react';
@@ -60,7 +61,7 @@ export const PinLoginModal: React.FC<PinLoginModalProps> = ({
         {/* Platform Branding */}
         <div className="text-center space-y-2.5">
           <div className="relative inline-block mx-auto">
-            <img
+            <MediaImage
               src="./logo.jpg"
               alt="ฉันจะเป็นหัวแถว"
               className="w-16 h-16 sm:w-18 sm:h-18 rounded-2xl object-cover mx-auto border border-slate-200 shadow-md ring-4 ring-emerald-50"

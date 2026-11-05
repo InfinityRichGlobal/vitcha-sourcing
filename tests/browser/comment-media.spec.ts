@@ -104,3 +104,42 @@ test('feed comments accept a photo batch and cancel unfinished files when the co
   await expect(card.getByTestId('comment-media-gallery').getByRole('button')).toHaveCount(2);
   await expect(card.getByTestId('comment-media-draft')).toHaveCount(0);
 });
+
+test('comment photo batches preserve every byte, retry all failures and display public Drive sizes with an original link', async ({ page }) => {
+  const { id, form, headers } = await setup(page);
+  let fail = true, chunkCount = 0;
+  const fileIds = new Map<string, string>();
+  const original = photo('batch.png').buffer;
+  await page.route('https://lh3.googleusercontent.com/d/**', route => route.fulfill({ contentType: 'image/png', body: original }));
+  await page.route('**/api/uploads', route => {
+    const data = route.request().postDataJSON(); const n = Number(data.filename.match(/(\d+)/)?.[1]);
+    if (fail && n % 5 === 0) return route.fulfill({ status: 400, json: { error: 'QA connection interrupted' } });
+    const id = `public-photo-${n}`; fileIds.set(id, data.filename);
+    return route.fulfill({ status: 201, json: { id, chunkSize: 1024 * 1024, offset: 0 } });
+  });
+  await page.route('**/api/uploads/*/chunk?*', route => {
+    expect(route.request().postDataBuffer()).toEqual(original); chunkCount++;
+    return route.fulfill({ json: { offset: original.length } });
+  });
+  await page.route('**/api/uploads/*/complete', route => {
+    const id = route.request().url().split('/').at(-2)!;
+    return route.fulfill({ json: { url: `https://lh3.googleusercontent.com/d/${id}=s0` } });
+  });
+  await form.getByLabel('เลือกรูปและวิดีโอแนบความคิดเห็น').setInputFiles(Array.from({length:20}, (_,i) => photo(`original-${i + 1}.png`)));
+  await expect(form.getByRole('button', {name:'ลองอัปโหลดใหม่',exact:true})).toHaveCount(4);
+  await expect(form.getByRole('button', {name:'โพสต์',exact:true})).toBeDisabled();
+  fail = false; await form.getByRole('button', {name:'ลองใหม่ทั้งหมด (4 ไฟล์)'}).click();
+  await expect(form.getByRole('status')).toContainText('อัปโหลดครบ 20 ไฟล์แล้ว'); expect(chunkCount).toBe(20);
+  await form.getByRole('button', {name:'โพสต์',exact:true}).click();
+  const gallery = page.getByTestId('comment-media-gallery').first();
+  await expect(gallery.getByRole('button')).toHaveCount(20);
+  await expect(gallery.locator('img').first()).toHaveAttribute('src', 'https://lh3.googleusercontent.com/d/public-photo-1=s600');
+  await gallery.getByRole('button', {name:'เปิดรูปภาพแนบ 1',exact:true}).click();
+  const viewer = page.getByRole('dialog', {name:'รูปและวิดีโอในความคิดเห็น'});
+  await expect(viewer.locator('img')).toHaveAttribute('src', 'https://lh3.googleusercontent.com/d/public-photo-1=s2000');
+  await expect(viewer.getByRole('link', {name:'ดูเต็มความละเอียด'})).toHaveAttribute('href', 'https://lh3.googleusercontent.com/d/public-photo-1=s0');
+  await expect(viewer.getByRole('link', {name:'เปิดไฟล์ต้นฉบับ'})).toHaveAttribute('href', 'https://drive.google.com/file/d/public-photo-1/view');
+  const db = await (await page.request.get('/api/data', {headers})).json();
+  const media = db.suppliers.find((item: any) => item.id === id).reviewerNotes[0].media;
+  expect(media).toHaveLength(20); expect(media.every((item: any) => item.url.endsWith('=s0'))).toBeTruthy();
+});

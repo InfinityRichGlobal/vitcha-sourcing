@@ -1,3 +1,5 @@
+import { imageDisplayUrl, originalImageUrl } from '../utils/mediaUrl';
+import { MediaImage } from './MediaImage';
 import { useEffect, useRef, useState } from 'react';
 import { ChevronLeft, ChevronRight, X } from 'lucide-react';
 
@@ -22,7 +24,7 @@ export function StorePhotoGallery({ photos }: { photos: string[] }) {
     <span className="text-[11px] font-bold text-slate-400">ภาพหน้าร้าน ({photos.length})</span>
     <div className="flex gap-2.5 overflow-x-auto pb-1">
       {photos.map((photo, position) => <button key={position} type="button" aria-label={`เปิดภาพหน้าร้าน ${position + 1}`} onClick={() => setIndex(position)} className="w-20 h-20 rounded-xl overflow-hidden shrink-0 border border-slate-200 shadow-xs hover:opacity-80">
-        <img src={photo} alt="" className="w-full h-full object-cover" />
+        <MediaImage src={photo} alt="" className="w-full h-full object-cover" />
       </button>)}
     </div>
     <dialog ref={dialog} aria-label="รูปภาพหน้าร้าน" onClose={() => setIndex(null)} onCancel={() => setIndex(null)}
@@ -47,13 +49,14 @@ export function StorePhotoGallery({ photos }: { photos: string[] }) {
           const dy = event.changedTouches[0].clientY - start.y;
           if (Math.abs(dx) > 45 && Math.abs(dx) > Math.abs(dy)) move(dx < 0 ? 1 : -1);
         }}>
-          <img src={photos[current]} alt={`ภาพหน้าร้าน ${current + 1}`} className="h-[60dvh] w-full object-contain" draggable={false} />
+          <MediaImage imageSize={2000} src={photos[current]} alt={`ภาพหน้าร้าน ${current + 1}`} className="h-[60dvh] w-full object-contain" draggable={false} />
         </div>
         <div className="flex items-center justify-between gap-3 pt-3">
           <button type="button" aria-label="ภาพก่อนหน้า" disabled={photos.length < 2} onClick={() => move(-1)} className="rounded-xl bg-white/15 p-3 disabled:opacity-30"><ChevronLeft /></button>
           <span role="status">{current + 1} / {photos.length}</span>
           <button type="button" aria-label="ภาพถัดไป" disabled={photos.length < 2} onClick={() => move(1)} className="rounded-xl bg-white/15 p-3 disabled:opacity-30"><ChevronRight /></button>
         </div>
+        <div className="flex gap-4 py-2 text-xs underline"><a href={imageDisplayUrl(photos[current], 0)} target="_blank" rel="noreferrer">ดูเต็มความละเอียด</a><a href={originalImageUrl(photos[current])} target="_blank" rel="noreferrer">เปิดไฟล์ต้นฉบับ</a></div>
       </>}
     </dialog>
   </div>;

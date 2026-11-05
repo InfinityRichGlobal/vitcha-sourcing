@@ -580,7 +580,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const switchUser = (userId: string) => perform('simulate', () => sendJson('/api/simulate', { userId }));
   const restoreAdminUser = () => switchUser('user-ice');
   const registerUserWithInvite: AppContextType['registerUserWithInvite'] = async (code, name, alias, emailOrId, pin, avatar) => {
-    const result = await sendJson('/api/register', { code, name, alias, emailOrId, pin, avatar });
+    const result = await sendJson(`/api/register?invite=${encodeURIComponent(code)}`, { code, name, alias, emailOrId, pin, avatar });
     setSessionToken(result.token); await refreshCentralData(); return result.user;
   };
   const redeemInvite: AppContextType['redeemInvite'] = async (code, name, alias, avatar, pin) => {

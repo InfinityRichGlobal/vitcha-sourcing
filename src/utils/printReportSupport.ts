@@ -1,3 +1,4 @@
+import { imageDisplayUrl } from './mediaUrl';
 import { FranchiseStore, LabItem, LabRevisionCycle, User } from '../types';
 import { getRenderServerUrl } from '../services/api';
 
@@ -16,7 +17,7 @@ export function reportDate(value?: string): string {
   return Number.isFinite(date.getTime()) ? date.toLocaleString('th-TH', { dateStyle: 'medium', timeStyle: 'short', timeZone: 'Asia/Bangkok' }) : 'ไม่ระบุ';
 }
 export function reportImage(url: string | undefined, alt: string, className = ''): string {
-  const src = reportUrl(url);
+  const src = reportUrl(imageDisplayUrl(url, 2000));
   return src ? `<img class="${className}" src="${reportEscape(src)}" alt="${reportEscape(alt)}" loading="eager" />` : `<div class="image-missing ${className}">ยังไม่มีภาพ</div>`;
 }
 export const reportLink = (url: string | undefined, label: string) => {
@@ -26,7 +27,7 @@ export const reportLink = (url: string | undefined, label: string) => {
 export function reportPerson(id: string | undefined, name: string | undefined, avatar: string | undefined, users: User[]) {
   const member = users.find(u => u.id === id);
   const label = member?.alias || member?.name || name || 'ไม่ระบุผู้บันทึก';
-  const image = reportUrl(member?.avatar || avatar);
+  const image = reportUrl(imageDisplayUrl(member?.avatar || avatar, 96));
   return `${image ? `<img class="actor-avatar" src="${reportEscape(image)}" alt="" />` : ''}<strong>${reportEscape(label)}</strong>`;
 }
 

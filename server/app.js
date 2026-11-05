@@ -267,13 +267,27 @@ export function createApp({ dataDir, defaults = DEFAULT_DATABASE, sessionTtlMs =
     if (++entry.count > 30) fail(429, 'ลองหลายครั้งเกินไป กรุณารอ 15 นาที');
     attempts.set(key, entry);
   }
+  async function storeOriginalAvatar(avatar, recordId) {
+    if (!mediaStorage || !avatar?.startsWith('data:image/')) return avatar;
+    const match = /^data:(image\/(jpeg|png|webp|gif));base64,([A-Za-z0-9+/]+=*)$/.exec(avatar);
+    if (!match) fail(400, 'รูปโปรไฟล์ไม่ถูกต้อง');
+    const bytes = Buffer.from(match[3], 'base64');
+    if (!bytes.length || bytes.length > 25 * 1024 * 1024) fail(413, 'รูปโปรไฟล์ต้องมีขนาดไม่เกิน 25 MB');
+    return mediaStorage.upload({ filename: `${randomUUID()}.${match[2] === 'jpeg' ? 'jpg' : match[2]}`, bytes, mimeType: match[1], recordType: 'profiles', recordId, recordTitle: recordId });
+  }
   app.disable('x-powered-by');
   app.use(cors({ origin: true, methods: ['GET', 'POST', 'PATCH', 'DELETE', 'OPTIONS'], allowedHeaders: ['Content-Type', 'Authorization'] }));
   app.use((req, res, next) => { res.set('X-Content-Type-Options', 'nosniff'); res.set('Cache-Control', 'no-store'); next(); });
   app.get('/api/health', (_req, res) => res.json({ status: 'ok' }));
   if (storage.middleware) app.use('/api', storage.middleware());
   // Parse auth requests separately; reject unauthenticated large bodies before parsing.
-  app.use(['/api/login', '/api/register'], express.json({ limit: '2mb' }));
+  app.use('/api/login', express.json({ limit: '2mb' }));
+  // Only a currently valid invitation can submit a full-size original avatar.
+  app.use('/api/register', (req, res, next) => {
+    const invite = read().invites.find(i => i.code === clean(req.query.invite).toUpperCase() && !i.isUsed);
+    if (invite) rateLimit(req, `invite-image:${req.ip}`);
+    return express.json({ limit: invite ? '36mb' : '2mb' })(req, res, next);
+  });
   app.post('/api/login', (req, res) => {
     const key = clean(req.body?.idOrEmail).toLowerCase();
     const pin = typeof req.body?.pin === 'string' ? req.body.pin : '';
@@ -295,17 +309,24 @@ export function createApp({ dataDir, defaults = DEFAULT_DATABASE, sessionTtlMs =
     if (!invite || invite.isUsed || !ROLES.includes(invite.role)) fail(404, 'คำเชิญไม่ถูกต้องหรือถูกใช้แล้ว');
     res.json(pick(invite, ['role', 'prefilledAlias']));
   });
-  app.post('/api/register', (req, res) => {
+  app.post('/api/register', async (req, res) => {
     rateLimit(req);
-    const db = read();
+    let db = read();
     if (resolveSession(req.headers.authorization?.replace(/^Bearer /, ''), db)) fail(409, 'มีบัญชีเข้าสู่ระบบอยู่แล้ว กรุณาออกจากระบบก่อนสมัครบัญชีใหม่');
     const { code, name, alias, emailOrId, pin, avatar } = req.body || {};
     if (!clean(name) || !clean(emailOrId) || !/^[\p{L}\p{N}_.@+\-]{3,120}$/u.test(clean(emailOrId)) || typeof pin !== 'string' || pin.length < 1 || pin.length > 4096) fail(400, 'กรุณาระบุชื่อ ไอดี และรหัสผ่าน');
-    const invite = db.invites.find(i => i.code === clean(code).toUpperCase());
+    let invite = db.invites.find(i => i.code === clean(code).toUpperCase());
     if (!invite || invite.isUsed || !ROLES.includes(invite.role)) fail(400, 'รหัสคำเชิญไม่ถูกต้องหรือถูกใช้แล้ว');
     const key = clean(emailOrId).toLowerCase();
     if (db.users.some(u => [clean(u.emailOrId).toLowerCase(), u.id.toLowerCase(), u.id.replace(/^user-/, '').toLowerCase()].includes(key))) fail(409, 'ชื่อผู้ใช้หรืออีเมลนี้มีบัญชีอยู่แล้ว กรุณาเข้าสู่ระบบ');
     const user = { id: `user-${randomUUID()}`, name: clean(alias) || clean(name), alias: clean(alias) || clean(name), emailOrId: key, avatar: clean(avatar), pinHash: pinHash(pin), role: invite.role, createdAt: now(), revision: 0 };
+    if (mediaStorage && user.avatar.startsWith('data:image/')) {
+      user.avatar = await storeOriginalAvatar(user.avatar, user.id);
+      // Local storage has no request lock: re-check after the network await.
+      db = read(); invite = db.invites.find(i => i.code === clean(code).toUpperCase());
+      if (!invite || invite.isUsed || invite.role !== user.role) fail(400, 'รหัสคำเชิญไม่ถูกต้องหรือถูกใช้แล้ว');
+      if (db.users.some(u => [clean(u.emailOrId).toLowerCase(), u.id.toLowerCase(), u.id.replace(/^user-/, '').toLowerCase()].includes(key))) fail(409, 'ชื่อผู้ใช้หรืออีเมลนี้มีบัญชีอยู่แล้ว กรุณาเข้าสู่ระบบ');
+    }
     db.users.push(user);
     invite.isUsed = true; invite.usedBy = user.id; invite.usedAt = now();
     notify(db, user, 'system', 'สมาชิกใหม่เข้าร่วมทีม', user.alias);
@@ -510,13 +531,17 @@ export function createApp({ dataDir, defaults = DEFAULT_DATABASE, sessionTtlMs =
       save(db); res.json({ success: true, ...(['comment', 'reply'].includes(action) ? { item: currentRecord(db, item) } : {}) });
     });
   }
-  app.post('/api/profile/avatar', (req, res) => {
+  app.post('/api/profile/avatar', async (req, res) => {
     if (req.session.simulatedId) fail(403, 'ไม่สามารถดำเนินการนี้ได้');
-    const db = read(); const user = db.users.find(u => u.id === req.user.id);
+    let db = read(); let user = db.users.find(u => u.id === req.user.id);
     expectRevision(user, req.body.revision);
     const avatar = req.body.avatar;
-    if (typeof avatar !== 'string' || avatar.length > 2 * 1024 * 1024 || !/^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/]+=*$/.test(avatar)) fail(400, 'รูปโปรไฟล์ไม่ถูกต้อง');
-    user.avatar = avatar; user.revision = revision(user) + 1;
+    if (typeof avatar !== 'string' || avatar.length > 35 * 1024 * 1024 || !/^data:image\/(jpeg|png|webp|gif);base64,[A-Za-z0-9+/]+=*$/.test(avatar)) fail(400, 'รูปโปรไฟล์ไม่ถูกต้อง');
+    const storedAvatar = mediaStorage ? await storeOriginalAvatar(avatar, user.id) : avatar;
+    db = read(); user = db.users.find(u => u.id === req.user.id);
+    if (!user) fail(404, 'ไม่พบบัญชีผู้ใช้');
+    expectRevision(user, req.body.revision);
+    user.avatar = storedAvatar; user.revision = revision(user) + 1;
     save(db); res.json({ success: true, user: publicUser(user) });
   });
   app.post('/api/users', (req, res) => {

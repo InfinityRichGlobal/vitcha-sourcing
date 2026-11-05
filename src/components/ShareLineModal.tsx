@@ -1,3 +1,4 @@
+import { MediaImage } from './MediaImage';
 import React, { useState } from 'react';
 import { SupplierRecord, StoreInspoRecord } from '../types';
 import { useApp } from '../context/AppContext';
@@ -78,7 +79,7 @@ ${directLink}
         {/* Header */}
         <div className="p-4 border-b border-slate-100 flex items-center justify-between">
           <div className="flex items-center gap-2.5">
-            <img
+            <MediaImage
               src="./logo.jpg"
               alt="ฉันจะเป็นหัวแถว"
               className="w-9 h-9 rounded-xl object-cover border border-slate-200"

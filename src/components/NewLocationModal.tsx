@@ -6,7 +6,7 @@ import { useDialog } from '../hooks/useDialog';
 import { useApp } from '../context/AppContext';
 import { LocationRecord, LocationType, LayoutFormat, RentModel, VoiceNoteEntry, AttachedFile } from '../types';
 import { AudioRecorder } from './AudioRecorder';
-import { uploadImageFile as compressImageFile } from '../utils/mediaStorage';
+import { uploadImageFile } from '../utils/mediaStorage';
 import { UploadablePhotoGrid } from './UploadablePhotoGrid';
 import { AttachedFilesSection } from './AttachedFilesSection';
 import {
@@ -1078,7 +1078,7 @@ export const NewLocationModal: React.FC<NewLocationModalProps> = ({ isOpen, onCl
               <span>ภาพถ่ายพื้นที่ & งานระบบ (Photos)</span>
               {isCompressingPhotos && (
                 <span className="text-[10px] text-sky-700 animate-pulse font-bold">
-                  (กำลังประมวลผลรูป...)
+                  (มีรูปที่ยังอัปโหลดไม่ครบ)
                 </span>
               )}
             </label>

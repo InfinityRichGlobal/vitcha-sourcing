@@ -2,7 +2,6 @@
  * IndexedDB is read only for compatibility with legacy local video links.
  */
 
-import { compressImageFile } from './imageCompressor';
 import { uploadMediaToServer, getRenderServerUrl } from '../services/api';
 import type { UploadOptions } from '../services/chunkUpload';
 
@@ -132,19 +131,25 @@ export function isVideoUrl(url?: string): boolean {
   );
 }
 
-/** Upload every processed image before the record can be saved. */
-export async function uploadImageFile(
-  file: File,
-  maxDimension = 1600,
-  quality = 0.82,
-  options?: UploadOptions
-): Promise<string> {
+/** Keep original pixels, format and metadata: never resize/re-encode field photos.
+ * Large originals use the existing resumable chunk transport automatically.
+ */
+export async function uploadImageFile(file: File, options?: UploadOptions): Promise<string> {
   options?.signal?.throwIfAborted();
-  const compressed = await compressImageFile(file, maxDimension, quality);
-  options?.signal?.throwIfAborted();
-  const blob = await (await fetch(compressed)).blob();
-  return uploadMediaToServer(
-    new File([blob], `${file.name.replace(/\.[^.]+$/, '')}.jpg`, { type: 'image/jpeg' }),
-    options
-  );
+  if (!['image/jpeg', 'image/png', 'image/webp', 'image/gif'].includes(file.type)) {
+    throw new Error('รองรับไฟล์ต้นฉบับ JPG, PNG, WebP และ GIF กรุณาเลือกไฟล์ชนิดที่รองรับ');
+  }
+  return uploadMediaToServer(file, options);
+}
+
+/** Original avatar bytes for invite/profile requests, without canvas conversion. */
+export async function readOriginalImage(file: File): Promise<string> {
+  if (!['image/jpeg', 'image/png', 'image/webp', 'image/gif'].includes(file.type)) throw new Error('รองรับ JPG, PNG, WebP และ GIF');
+  if (!file.size || file.size > 25 * 1024 * 1024) throw new Error('รูปโปรไฟล์ต้องมีขนาดไม่เกิน 25 MB');
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result));
+    reader.onerror = () => reject(new Error('อ่านไฟล์ภาพไม่สำเร็จ'));
+    reader.readAsDataURL(file);
+  });
 }

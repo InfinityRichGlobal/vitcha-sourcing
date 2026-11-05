@@ -1,3 +1,4 @@
+import { imageDisplayUrl, originalImageUrl } from '../utils/mediaUrl';
 import { useEffect, useRef, useState } from 'react';
 import { ChevronLeft, ChevronRight, Play, X } from 'lucide-react';
 import { CommentMedia } from '../types';
@@ -34,9 +35,10 @@ export function CommentMediaGallery({ media }: { media: CommentMedia[] }) {
           const dx = e.changedTouches[0].clientX - start.x, dy = e.changedTouches[0].clientY - start.y;
           if (Math.abs(dx) > 45 && Math.abs(dx) > Math.abs(dy)) move(dx < 0 ? 1 : -1);
         }}>
-          {media[current].type === 'video' ? <video key={media[current].url} src={normalizeMediaUrl(media[current].url)} controls playsInline preload="metadata" className="h-[60dvh] w-full object-contain" /> : <MediaImage src={media[current].url} alt={`รูปแนบ ${current + 1}`} draggable={false} className="h-[60dvh] w-full object-contain" />}
+          {media[current].type === 'video' ? <video key={media[current].url} src={normalizeMediaUrl(media[current].url)} controls playsInline preload="metadata" className="h-[60dvh] w-full object-contain" /> : <MediaImage imageSize={2000} src={media[current].url} alt={`รูปแนบ ${current + 1}`} draggable={false} className="h-[60dvh] w-full object-contain" />}
         </div>
         <div className="flex items-center justify-between pt-3"><button type="button" aria-label="สื่อก่อนหน้า" disabled={media.length < 2} onClick={() => move(-1)} className="p-3 rounded-xl bg-white/15 disabled:opacity-30"><ChevronLeft /></button><span role="status">{current + 1} / {media.length}</span><button type="button" aria-label="สื่อถัดไป" disabled={media.length < 2} onClick={() => move(1)} className="p-3 rounded-xl bg-white/15 disabled:opacity-30"><ChevronRight /></button></div>
+        {media[current].type === 'image' && <div className="flex gap-4 py-2 text-xs underline"><a href={imageDisplayUrl(media[current].url, 0)} target="_blank" rel="noreferrer">ดูเต็มความละเอียด</a><a href={originalImageUrl(media[current].url)} target="_blank" rel="noreferrer">เปิดไฟล์ต้นฉบับ</a></div>}
       </>}
     </dialog>
   </div>;

@@ -1,3 +1,4 @@
+import { MediaImage } from './MediaImage';
 import React from 'react';
 import { useApp } from '../context/AppContext';
 import {
@@ -64,7 +65,7 @@ export const AppDrawerMenu: React.FC<AppDrawerMenuProps> = ({
         {/* Header Branding with Official Logo */}
         <div className="p-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/70 sticky top-0 z-10 backdrop-blur-md">
           <div className="flex items-center gap-2.5">
-            <img
+            <MediaImage
               src="./logo.jpg"
               alt="ฉันจะเป็นหัวแถว"
               className="w-10 h-10 rounded-xl object-cover border border-slate-200 shadow-xs"

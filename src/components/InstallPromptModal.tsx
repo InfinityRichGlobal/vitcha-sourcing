@@ -1,3 +1,4 @@
+import { MediaImage } from './MediaImage';
 import { enablePushNotifications, testPushNotification } from '../services/pushNotifications';
 import { useDialog } from '../hooks/useDialog';
 import React, { useState, useEffect } from 'react';
@@ -122,7 +123,7 @@ export const InstallPromptModal: React.FC<InstallPromptModalProps> = ({ isOpen, 
         {/* Header */}
         <div className="flex items-center justify-between pb-3.5 border-b border-slate-100">
           <div className="flex items-center gap-2.5">
-            <img
+            <MediaImage
               src="./logo.jpg"
               alt="ฉันจะเป็นหัวแถว"
               className="w-10 h-10 rounded-xl object-cover border border-slate-200 shadow-xs"

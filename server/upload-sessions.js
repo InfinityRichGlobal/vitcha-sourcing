@@ -34,7 +34,8 @@ export function registerUploadSessions(app, { uploads, mediaStorage, requireWrit
     const { filename, mimeType, fileSize, recordType, recordId, recordTitle } = req.body || {};
     if (!types.has(mimeType) || !Number.isSafeInteger(fileSize) || fileSize < 1) fail(400, 'ชนิดหรือขนาดไฟล์ไม่ถูกต้อง');
     if (fileSize > MAX_UPLOAD_BYTES) fail(413, 'ไฟล์ต้องไม่เกิน 2 GB');
-    if ([...sessions.values()].filter(s => s.userId === req.user.id && !s.result).length >= 4 || sessions.size >= 100) fail(429, 'มีไฟล์กำลังอัปโหลดหลายรายการ กรุณารอสักครู่');
+    // Six original photos may use chunks concurrently, alongside a video/audio job.
+    if ([...sessions.values()].filter(s => s.userId === req.user.id && !s.result).length >= 8 || sessions.size >= 100) fail(429, 'มีไฟล์กำลังอัปโหลดหลายรายการ กรุณารอสักครู่');
     if (mediaStorage && !mediaStorage.uploadFromFile) fail(503, 'เซิร์ฟเวอร์ยังไม่รองรับการอัปโหลดไฟล์ใหญ่');
     const id = randomBytes(24).toString('hex');
     const filePath = path.join(staging, id);

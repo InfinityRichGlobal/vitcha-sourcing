@@ -1,3 +1,4 @@
+import { MediaImage } from './components/MediaImage';
 import React, { useState, useEffect, lazy, Suspense } from 'react';
 import { ConnectionStatus } from './components/ConnectionStatus';
 import { AppProvider, useApp } from './context/AppContext';
@@ -183,7 +184,7 @@ const MainApp: React.FC = () => {
     if (isRestoringSession && !(authView === 'invite' && inviteCodeUrl)) {
       return (
         <div className="min-h-screen bg-white flex flex-col items-center justify-center font-sans text-slate-600 gap-3">
-          <img
+          <MediaImage
             src="./logo.jpg"
             alt="ฉันจะเป็นหัวแถว"
             className="w-12 h-12 rounded-2xl object-cover border border-slate-200 shadow-xs animate-pulse"

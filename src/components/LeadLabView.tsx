@@ -1,3 +1,4 @@
+import { MediaImage } from './MediaImage';
 import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { usePendingMedia } from '../hooks/usePendingMedia';
@@ -44,7 +45,7 @@ import {
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { LabItem, LabFormulaStatus, LabItemType, SweetnessDetail, VoiceNoteEntry } from '../types';
-import { compressImageFile } from '../utils/imageCompressor';
+import { UploadablePhotoGrid } from './UploadablePhotoGrid';
 import { printLeadLabSpecReport, shareLeadLabItem } from '../utils/labAndStoreExport';
 import { uploadMediaToServer } from '../services/api';
 import { saveVideoFile } from '../utils/mediaStorage';
@@ -455,7 +456,7 @@ function LabItemCard({
         className="relative w-full bg-slate-100 dark:bg-slate-800/70 overflow-hidden cursor-pointer flex items-center justify-center"
         onClick={onSelect}
       >
-        <img
+        <MediaImage
           src={item.photoUrl}
           alt={item.name}
           className="w-full h-auto object-contain block group-hover:scale-102 transition-transform duration-300"
@@ -524,7 +525,7 @@ function LabItemCard({
                   {item.likedBy.slice(0, 3).map((uid, idx) => {
                     const u = users.find((x) => x.id === uid);
                     return (
-                      <img
+                      <MediaImage
                         key={idx}
                         src={u?.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=60&auto=format&fit=crop&q=80'}
                         alt={u?.name || uid}
@@ -604,7 +605,7 @@ function LabDetailModal({
   const [commentVoiceUrl, setCommentVoiceUrl] = useState<string | null>(null);
   const [commentVoiceDuration, setCommentVoiceDuration] = useState<number | undefined>(undefined);
   const [isUploadingAttachment, setIsUploadingAttachment] = useState(false);
-  const photoInputRef = useRef<HTMLInputElement | null>(null);
+  const [photoInputRefBusy, setPhotoInputRefBusy] = useState(false);
 
   // Live voice recording
   const [isRecording, setIsRecording] = useState(false);
@@ -648,23 +649,7 @@ function LabDetailModal({
     : '0.0';
 
   // Attachment upload handler
-  const handleUploadPhoto = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    try {
-      setIsUploadingAttachment(true);
-      const url = await uploadMediaToServer(file, {
-        recordId: item.id,
-        recordType: 'lead_lab',
-        recordTitle: item.name,
-      });
-      setCommentPhotoUrl(url);
-    } catch (err: any) {
-      alert(err.message || 'อัปโหลดรูปภาพไม่สำเร็จ');
-    } finally {
-      setIsUploadingAttachment(false);
-    }
-  };
+
 
   // Live voice recording toggle
   const toggleLiveVoiceRecording = async () => {
@@ -679,7 +664,7 @@ function LabDetailModal({
       return;
     }
 
-    if (isUploadingAttachment) return;
+    if ((isUploadingAttachment || photoInputRefBusy)) return;
     setIsUploadingAttachment(true);
     try {
       if (!navigator.mediaDevices?.getUserMedia || typeof MediaRecorder === 'undefined') {
@@ -756,7 +741,7 @@ function LabDetailModal({
   const handlePostComment = async (e: React.FormEvent) => {
     e.preventDefault();
     const text = commentText.trim();
-    if (!canWrite || isSubmittingComment || isUploadingAttachment || isRecording || (!text && !commentPhotoUrl && !commentVoiceUrl)) return;
+    if (!canWrite || isSubmittingComment || (isUploadingAttachment || photoInputRefBusy) || isRecording || (!text && !commentPhotoUrl && !commentVoiceUrl)) return;
     setIsSubmittingComment(true);
     try {
 
@@ -810,7 +795,7 @@ function LabDetailModal({
                 </div>
                 {/* Creator Attribution Stamp */}
                 <div className="flex items-center gap-1.5 mt-1 text-[11px] text-slate-500 dark:text-slate-400 flex-wrap">
-                  <img
+                  <MediaImage
                     src={item.createdByAvatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=60&auto=format&fit=crop&q=80'}
                     alt={item.createdByName || 'ผู้สร้างสูตร'}
                     className="w-4 h-4 rounded-full object-cover border border-slate-200 dark:border-slate-700 shadow-2xs shrink-0"
@@ -887,7 +872,7 @@ function LabDetailModal({
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="md:col-span-1 space-y-3">
               <div className="rounded-2xl overflow-hidden aspect-square bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 relative shadow-sm">
-                <img src={item.photoUrl} alt={item.name} className="w-full h-full object-cover" />
+                <MediaImage src={item.photoUrl} alt={item.name} className="w-full h-full object-cover" />
               </div>
 
               {/* Viewers Log */}
@@ -897,7 +882,7 @@ function LabDetailModal({
                   <span>เข้าดู {item.viewLogs.length} คน:</span>
                   <div className="flex -space-x-1.5 overflow-hidden ml-auto">
                     {item.viewLogs.slice(0, 5).map((v, vIdx) => (
-                      <img
+                      <MediaImage
                         key={vIdx}
                         src={v.avatar}
                         alt={v.alias}
@@ -918,7 +903,7 @@ function LabDetailModal({
                     {item.likedBy.slice(0, 5).map((uid, uIdx) => {
                       const u = users.find((x) => x.id === uid);
                       return (
-                        <img
+                        <MediaImage
                           key={uIdx}
                           src={u?.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&auto=format&fit=crop&q=80'}
                           alt={u?.name || uid}
@@ -975,7 +960,7 @@ function LabDetailModal({
                         rel="noreferrer"
                         className="w-16 h-16 rounded-xl overflow-hidden shrink-0 border border-slate-200 dark:border-slate-700 hover:opacity-80 transition-opacity"
                       >
-                        <img src={photo} alt="" className="w-full h-full object-cover" />
+                        <MediaImage src={photo} alt="" className="w-full h-full object-cover" />
                       </a>
                     ))}
                   </div>
@@ -1228,7 +1213,7 @@ function LabDetailModal({
                       </div>
                       {comm.photoUrl && (
                         <a href={comm.photoUrl} target="_blank" rel="noreferrer" className="inline-block mt-1">
-                          <img src={comm.photoUrl} alt="รูปแนบ" className="w-20 h-20 rounded-lg object-cover border border-slate-200" />
+                          <MediaImage src={comm.photoUrl} alt="รูปแนบ" className="w-20 h-20 rounded-lg object-cover border border-slate-200" />
                         </a>
                       )}
                       {comm.voiceUrl && (
@@ -1269,7 +1254,7 @@ function LabDetailModal({
                       return (
                         <div key={comm.id} className="flex items-start gap-3 p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800">
                           {comm.authorAvatar ? (
-                            <img src={comm.authorAvatar} alt={comm.authorName} className="w-7 h-7 rounded-full object-cover shrink-0" />
+                            <MediaImage src={comm.authorAvatar} alt={comm.authorName} className="w-7 h-7 rounded-full object-cover shrink-0" />
                           ) : (
                             <div className="w-7 h-7 rounded-full bg-indigo-600 text-white font-bold text-xs flex items-center justify-center shrink-0">
                               {comm.authorName.charAt(0)}
@@ -1312,7 +1297,7 @@ function LabDetailModal({
                                   rel="noreferrer"
                                   className="inline-block rounded-xl overflow-hidden border border-slate-200 dark:border-slate-700 shadow-xs max-w-[200px] hover:opacity-90 transition-opacity"
                                 >
-                                  <img src={comm.photoUrl} alt="รูปแนบคอมเมนต์" className="w-full h-auto max-h-36 object-cover" />
+                                  <MediaImage src={comm.photoUrl} alt="รูปแนบคอมเมนต์" className="w-full h-auto max-h-36 object-cover" />
                                 </a>
                               </div>
                             )}
@@ -1368,28 +1353,15 @@ function LabDetailModal({
                     {/* Media Actions: Photo & Live Mic */}
                     <div className="flex items-center gap-2">
                       {/* Photo Attachment Input */}
-                      <input
-                        ref={photoInputRef}
-                        type="file"
-                        accept="image/*"
-                        onChange={handleUploadPhoto}
-                        className="hidden"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => photoInputRef.current?.click()}
-                        disabled={isUploadingAttachment || isRecording}
-                        className="h-7 px-2 rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold transition-colors inline-flex items-center gap-1"
-                        title="แนบรูปถ่ายประกอบคอมเมนต์"
-                      >
-                        <Camera className="w-3.5 h-3.5 text-indigo-600" />
-                        <span>แนบรูป</span>
-                      </button>
+                      <UploadablePhotoGrid single label="รูปแนบความคิดเห็น" urls={commentPhotoUrl ? [commentPhotoUrl] : []}
+                        onChange={urls => setCommentPhotoUrl(urls[0] || null)} onUploadingChange={setPhotoInputRefBusy}
+                        recordType="lead_lab" recordId={item.id} recordTitle={item.name || ''}
+                        disabled={isSubmittingComment || isRecording} />
 
                       {/* Live Voice Recording Button */}
                       <button
                         type="button"
-                        disabled={isUploadingAttachment}
+                        disabled={(isUploadingAttachment || photoInputRefBusy)}
                         onClick={toggleLiveVoiceRecording}
                         className={`h-7 px-2.5 rounded-lg text-xs font-bold transition-all inline-flex items-center gap-1.5 ${
                           isRecording
@@ -1414,9 +1386,9 @@ function LabDetailModal({
                   </div>
 
                   {/* Attachment Preview Chips */}
-                  {(commentPhotoUrl || commentVoiceUrl || isUploadingAttachment) && (
+                  {(commentPhotoUrl || commentVoiceUrl || (isUploadingAttachment || photoInputRefBusy)) && (
                     <div className="flex items-center gap-2 flex-wrap p-2 bg-slate-50 dark:bg-slate-800/80 rounded-xl border border-slate-200 dark:border-slate-700 text-xs">
-                      {isUploadingAttachment && (
+                      {(isUploadingAttachment || photoInputRefBusy) && (
                         <div className="flex items-center gap-1.5 text-indigo-600 font-bold">
                           <Loader2 className="w-3.5 h-3.5 animate-spin" />
                           <span>กำลังอัปโหลดไฟล์แนบ...</span>
@@ -1425,7 +1397,7 @@ function LabDetailModal({
 
                       {commentPhotoUrl && (
                         <div className="flex items-center gap-2 bg-white dark:bg-slate-700 px-2 py-1 rounded-lg border border-slate-200 dark:border-slate-600">
-                          <img src={commentPhotoUrl} alt="" className="w-5 h-5 rounded object-cover" />
+                          <MediaImage src={commentPhotoUrl} alt="" className="w-5 h-5 rounded object-cover" />
                           <span className="font-medium text-slate-700 dark:text-slate-200 text-[11px]">รูปถ่ายพร้อมแนบ</span>
                           <button
                             type="button"
@@ -1468,7 +1440,7 @@ function LabDetailModal({
                     />
                     <button
                       type="submit"
-                      disabled={isSubmittingComment || isUploadingAttachment || isRecording || (!commentText.trim() && !commentPhotoUrl && !commentVoiceUrl)}
+                      disabled={isSubmittingComment || (isUploadingAttachment || photoInputRefBusy) || isRecording || (!commentText.trim() && !commentPhotoUrl && !commentVoiceUrl)}
                       className="px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 disabled:opacity-40 text-white font-bold text-xs transition-colors flex items-center gap-1.5 shrink-0"
                     >
                       <Send className="w-3.5 h-3.5" />
@@ -1570,37 +1542,6 @@ export function LabItemFormModal({
   const [sweetnessExtra, setSweetnessExtra] = useState(item?.sweetnessLevels);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const pendingMedia = usePendingMedia();
-
-  const handlePrimaryUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    try {
-      pendingMedia.begin();
-      setIsCompressingPrimary(true);
-      const compressed = await compressImageFile(file, 960, 0.75);
-      setPhotoUrl(compressed);
-    } catch (err: any) {
-      alert(err.message || 'ไม่สามารถประมวลผลรูปภาพได้');
-    } finally {
-      setIsCompressingPrimary(false);
-      pendingMedia.end();
-    }
-  };
-
-  const handleGalleryUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files || []);
-    e.target.value = '';
-    if (!files.length) return;
-    pendingMedia.begin();
-    const failed: string[] = [];
-    try {
-      for (const file of files) {
-        try { const compressed = await compressImageFile(file, 960, 0.75); setGalleryPhotos(prev => [...prev, compressed]); }
-        catch { failed.push(file.name); }
-      }
-      if (failed.length) alert(`รูปเหล่านี้ยังไม่ได้เพิ่ม กรุณาเลือกใหม่: ${failed.join(', ')}`);
-    } finally { pendingMedia.end(); }
-  };
 
   const handleVideoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
@@ -1899,7 +1840,7 @@ export function LabItemFormModal({
             <div className="flex items-center gap-3">
               <div className="w-16 h-16 rounded-xl overflow-hidden bg-slate-200 dark:bg-slate-700 shrink-0 border border-slate-300 dark:border-slate-600 shadow-xs relative">
                 {photoUrl ? (
-                  <img src={photoUrl} alt="Preview" className="w-full h-full object-cover" />
+                  <MediaImage src={photoUrl} alt="Preview" className="w-full h-full object-cover" />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center text-slate-400">
                     <Camera className="w-5 h-5" />
@@ -1914,19 +1855,9 @@ export function LabItemFormModal({
 
               <div className="flex-1">
                 {photoMode === 'upload' ? (
-                  <div>
-                    <label className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 hover:bg-slate-50 cursor-pointer font-bold text-slate-700 dark:text-slate-200 shadow-xs">
-                      <Upload className="w-3.5 h-3.5 text-indigo-600" />
-                      <span>เลือกรูปจากเครื่อง / ถ่ายภาพ</span>
-                      <input
-                        type="file"
-                        accept="image/*"
-                        onChange={handlePrimaryUpload}
-                        className="hidden"
-                      />
-                    </label>
-                    <p className="text-[10px] text-slate-400 mt-1">รองรับ JPG, PNG, WebP บีบอัดอัตโนมัติ</p>
-                  </div>
+                  <UploadablePhotoGrid single label="ภาพหลัก" urls={photoUrl ? [photoUrl] : []} onChange={urls => setPhotoUrl(urls[0] || '')}
+                    recordType="lead_lab" recordTitle={name} onUploadingChange={setIsCompressingPrimary}
+                    onBeginUpload={pendingMedia.begin} onEndUpload={pendingMedia.end} disabled={isSubmitting} />
                 ) : (
                   <div>
                     <input
@@ -1945,45 +1876,8 @@ export function LabItemFormModal({
 
           {/* 📸 MULTIMEDIA (Clean Label, AudioRecorder & VideoPlayer like Supplier Modal) */}
           <div className="p-3.5 bg-indigo-50/40 dark:bg-indigo-950/20 rounded-2xl border border-indigo-100 dark:border-indigo-900/40 space-y-3.5">
-            <div className="flex items-center justify-between">
-              <label className="font-extrabold text-indigo-900 dark:text-indigo-300 flex items-center gap-1.5 text-xs">
-                <ImageIcon className="w-4 h-4 text-indigo-600" />
-                <span>พาร์ทมัลติมีเดียเพิ่มเติม</span>
-              </label>
-              <label className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-[10px] cursor-pointer shadow-xs">
-                <Plus className="w-3 h-3" />
-                <span>เพิ่มรูปแกลเลอรี</span>
-                <input
-                  type="file"
-                  multiple
-                  accept="image/*"
-                  onChange={handleGalleryUpload}
-                  className="hidden"
-                />
-              </label>
-            </div>
-
-            {/* Gallery Thumbnails */}
-            {galleryPhotos.length > 0 && (
-              <div className="space-y-1">
-                <span className="text-[10px] font-bold text-slate-400">รูปภาพเพิ่มเติม ({galleryPhotos.length} รูป)</span>
-                <div className="flex gap-2 overflow-x-auto pb-1">
-                  {galleryPhotos.map((photo, pIdx) => (
-                    <div key={pIdx} className="relative w-14 h-14 rounded-lg overflow-hidden shrink-0 border border-slate-200 dark:border-slate-700 shadow-xs group">
-                      <img src={photo} alt="" className="w-full h-full object-cover" />
-                      <button
-                        type="button"
-                        onClick={() => setGalleryPhotos(p => p.filter((_, i) => i !== pIdx))}
-                        className="absolute top-0.5 right-0.5 w-4 h-4 rounded-full bg-rose-600 text-white flex items-center justify-center opacity-80 hover:opacity-100"
-                        title="ลบรูปนี้"
-                      >
-                        <X className="w-2.5 h-2.5" />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
+            <UploadablePhotoGrid label="รูปภาพเพิ่มเติม" urls={galleryPhotos} onChange={setGalleryPhotos}
+              recordType="lead_lab" recordTitle={name} onBeginUpload={pendingMedia.begin} onEndUpload={pendingMedia.end} disabled={isSubmitting} />
 
             {/* Live Audio Recorder Component */}
             <div className="pt-2 border-t border-indigo-100 dark:border-indigo-900/50 space-y-1.5">

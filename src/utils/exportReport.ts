@@ -1,3 +1,4 @@
+import { imageDisplayUrl } from './mediaUrl';
 import { commentMedia } from './commentMedia';
 import QRCode from 'qrcode';
 import { SupplierRecord, StoreInspoRecord, LocationRecord, AttachedFile, User } from '../types';
@@ -246,7 +247,7 @@ export function buildExecutiveReportHtml(
                   <img
                     id="video-thumb-img-${idx}"
                     class="video-thumb-img"
-                    src="${escapeHtml(fallbackThumbUrl)}"
+                    src="${escapeHtml(imageDisplayUrl(fallbackThumbUrl, 2000))}"
                     crossorigin="anonymous"
                     data-video-src="${escapeHtml(playableUrl)}"
                   />
@@ -281,7 +282,7 @@ export function buildExecutiveReportHtml(
           <td>
             ${
               c.photo
-                ? `<img src="${escapeHtml(c.photo)}" crossorigin="anonymous" class="table-thumb" />`
+                ? `<img src="${escapeHtml(imageDisplayUrl(c.photo, 2000))}" crossorigin="anonymous" class="table-thumb" />`
                 : `<div class="table-thumb-empty">ไม่มีรูป</div>`
             }
           </td>
@@ -356,7 +357,7 @@ export function buildExecutiveReportHtml(
           <td>
             ${
               d.photo
-                ? `<img src="${escapeHtml(d.photo)}" crossorigin="anonymous" class="table-thumb" />`
+                ? `<img src="${escapeHtml(imageDisplayUrl(d.photo, 2000))}" crossorigin="anonymous" class="table-thumb" />`
                 : `<div class="table-thumb-empty">ไม่มีรูป</div>`
             }
           </td>
@@ -481,7 +482,7 @@ export function buildExecutiveReportHtml(
             .map(
               (p, i) => `
               <div class="photo-card">
-                <img src="${escapeHtml(p.url)}" crossorigin="anonymous" />
+                <img src="${escapeHtml(imageDisplayUrl(p.url, 2000))}" crossorigin="anonymous" />
                 <div class="photo-caption">${segmentThaiHtml(`รูปที่ ${i + 1}: ${p.label}`)}</div>
               </div>`
             )
@@ -509,7 +510,7 @@ export function buildExecutiveReportHtml(
       const isVideo = /video/i.test(field);
       const isImage = !isAudio && !isVideo && (/photos|photo|storefrontAndAtmosphere|contactCards|menuBoard|drinkCups|floorPlanAndSpecs|surroundingNeighbors/i.test(field) || /\.(png|jpe?g|webp|gif)(\?|$)/i.test(text));
       const link = text.startsWith('data:') ? directLink : url;
-      return `<div class="audit-media">${isImage ? `<img src="${escapeHtml(url)}" crossorigin="anonymous" alt="ภาพที่บันทึกในประวัติ" />` : ''}<a href="${escapeHtml(link)}" target="_blank" rel="noopener noreferrer">${segmentThaiHtml(isAudio ? 'เปิดไฟล์เสียง' : isVideo ? 'เปิดวิดีโอ' : isImage ? 'เปิดภาพ' : 'เปิดไฟล์แนบ')}</a>${isAudio || isVideo ? `<span class="audit-empty"> · ${segmentThaiHtml('เปิดผ่านลิงก์หรือ QR ของรายการเพื่อฟังและดูต่อ')}</span>` : ''}</div>`;
+      return `<div class="audit-media">${isImage ? `<img src="${escapeHtml(imageDisplayUrl(url, 2000))}" crossorigin="anonymous" alt="ภาพที่บันทึกในประวัติ" />` : ''}<a href="${escapeHtml(link)}" target="_blank" rel="noopener noreferrer">${segmentThaiHtml(isAudio ? 'เปิดไฟล์เสียง' : isVideo ? 'เปิดวิดีโอ' : isImage ? 'เปิดภาพ' : 'เปิดไฟล์แนบ')}</a>${isAudio || isVideo ? `<span class="audit-empty"> · ${segmentThaiHtml('เปิดผ่านลิงก์หรือ QR ของรายการเพื่อฟังและดูต่อ')}</span>` : ''}</div>`;
     }
     return segmentThaiHtml(text);
   };
@@ -541,7 +542,7 @@ export function buildExecutiveReportHtml(
       const safeAvatar = avatar && /^(https?:\/\/|\.\/|\/(?!\/)|data:image\/)/i.test(avatar) ? avatar : '';
       const moved = h.version === 2 && h.stageBefore && h.stageBefore !== h.stageAfter;
       return `<article class="audit-event" data-activity-id="${escapeHtml(h.id || idx)}">
-        <div class="audit-event-heading">${safeAvatar ? `<img class="audit-avatar" src="${escapeHtml(safeAvatar)}" crossorigin="anonymous" alt="${escapeHtml(person?.alias || h.user)}" />` : `<span class="audit-avatar audit-avatar-fallback">${escapeHtml((person?.alias || h.user || '?').slice(0, 1))}</span>`}<strong>${segmentThaiHtml(person?.alias || h.user)}</strong><span>${segmentThaiHtml(Number.isNaN(Date.parse(h.timestamp)) ? h.timestamp : new Date(h.timestamp).toLocaleString('th-TH'))}</span></div>
+        <div class="audit-event-heading">${safeAvatar ? `<img class="audit-avatar" src="${escapeHtml(imageDisplayUrl(safeAvatar, 2000))}" crossorigin="anonymous" alt="${escapeHtml(person?.alias || h.user)}" />` : `<span class="audit-avatar audit-avatar-fallback">${escapeHtml((person?.alias || h.user || '?').slice(0, 1))}</span>`}<strong>${segmentThaiHtml(person?.alias || h.user)}</strong><span>${segmentThaiHtml(Number.isNaN(Date.parse(h.timestamp)) ? h.timestamp : new Date(h.timestamp).toLocaleString('th-TH'))}</span></div>
         <div class="audit-action">${segmentThaiHtml(actionLabel)}</div>
         ${h.version === 2 ? `<div class="audit-transition">${segmentThaiHtml(moved ? `${activityStageName(h.stageBefore)} → ${activityStageName(h.stageAfter)}` : `ณ ${activityStageName(h.stageAfter)}`)}</div>` : ''}
         ${h.content ? `<div class="audit-content">${h.version !== 2 ? `<div class="audit-empty">${segmentThaiHtml('ข้อความที่ยังเก็บในรายการ · ไม่ทราบพาร์ท ณ เวลานั้น')}</div>` : ''}${h.content.replyToAuthor ? `<strong>${segmentThaiHtml(`ตอบกลับ ${h.content.replyToAuthor}`)}</strong>` : ''}<p>${segmentThaiHtml(h.content.text)}</p>${commentMedia(h.content).map(m => historyValueHtml(m.url, m.type === 'video' ? 'videos' : 'photo')).join('')}${h.content.voiceUrl || h.content.audioUrl ? historyValueHtml(h.content.voiceUrl || h.content.audioUrl, 'voice') : ''}</div>` : ''}

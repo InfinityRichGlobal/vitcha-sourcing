@@ -927,3 +927,36 @@ test('R&D explicit like retries keep intent and stale status changes are rejecte
   assert.equal(item.status,'testing');
   assert.equal((await call(route+'/status',token,{status:'approved',expectedUpdatedAt:item.updatedAt})).status,200);
 });
+
+test('profile and invitation keep original avatar bytes in Drive; failed storage preserves account and invite', async t => {
+  const source = Buffer.concat([fs.readFileSync('tests/fixtures/photo.png'), Buffer.alloc(3 * 1024 * 1024, 37)]);
+  const avatar = `data:image/png;base64,${source.toString('base64')}`;
+  let reject = true, uploads = 0;
+  const mediaStorage = { upload: async ({bytes, mimeType, recordType}) => {
+    assert.deepEqual(bytes, source); assert.equal(mimeType, 'image/png'); assert.equal(recordType, 'profiles'); uploads++;
+    if (reject) throw Object.assign(new Error('Drive unavailable'), { status: 503 });
+    return 'https://lh3.googleusercontent.com/d/avatar-original=s0';
+  } };
+  const { call, login, dir } = await setup(t, {mediaStorage}); const token = await login('view');
+  const read = () => JSON.parse(fs.readFileSync(path.join(dir, 'database.json')));
+  assert.equal((await call('/api/profile/avatar', token, { avatar, revision: 0 })).status, 503);
+  assert.equal(read().users.find(u => u.id === 'user-view').avatar, '');
+  assert.equal((await call('/api/register?invite=INVITE1', null, { code:'INVITE1', name:'Photo Member', emailOrId:'photo-member', pin:'abc', avatar })).status, 503);
+  assert.equal(read().invites[0].isUsed, false);
+  reject = false;
+  const changed = await call('/api/profile/avatar', token, { avatar, revision: 0 });
+  assert.equal(changed.status, 200); assert.equal(changed.data.user.avatar, 'https://lh3.googleusercontent.com/d/avatar-original=s0');
+  const created = await call('/api/register?invite=INVITE1', null, { code:'INVITE1', name:'Photo Member', emailOrId:'photo-member', pin:'abc', avatar });
+  assert.equal(created.status, 201); assert.equal(created.data.user.avatar, changed.data.user.avatar); assert.equal(read().invites[0].isUsed, true); assert.equal(uploads, 4);
+});
+
+test('concurrent registrations with original avatars cannot consume an invite twice', async t => {
+  let release, entered = 0;
+  const gate = new Promise(r => release = r);
+  const mediaStorage = { upload: async () => { if (++entered === 2) release(); await gate; return 'https://lh3.googleusercontent.com/d/avatar=s0'; } };
+  const {call, dir} = await setup(t, {mediaStorage});
+  const avatar = `data:image/png;base64,${fs.readFileSync('tests/fixtures/photo.png').toString('base64')}`;
+  const results = await Promise.all(['original-a','original-b'].map(emailOrId => call('/api/register?invite=INVITE1', null, {code:'INVITE1',name:emailOrId,emailOrId,pin:'abc',avatar})));
+  assert.deepEqual(results.map(r => r.status).sort(), [201,400]);
+  assert.equal(JSON.parse(fs.readFileSync(path.join(dir,'database.json'))).users.filter(u => u.emailOrId.startsWith('original-')).length, 1);
+});

@@ -1,3 +1,4 @@
+import { MediaImage } from './MediaImage';
 import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
 import { SupplierRecord, StoreInspoRecord, LocationRecord, HandoffStage } from '../types';
@@ -238,7 +239,7 @@ export const HandoffManagementView: React.FC<HandoffManagementViewProps> = ({ on
           className="flex items-start gap-3 cursor-pointer group"
         >
           {thumb && (
-            <img
+            <MediaImage
               src={thumb}
               alt={title}
               className="w-16 h-16 rounded-xl object-cover border border-slate-200 shrink-0 group-hover:scale-103 transition-transform"

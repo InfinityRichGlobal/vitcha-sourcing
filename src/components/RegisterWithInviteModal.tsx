@@ -1,7 +1,8 @@
+import { MediaImage } from './MediaImage';
 import { AvatarImage } from './AvatarImage';
 import React, { useState, useEffect, useRef } from 'react';
 import { useApp } from '../context/AppContext';
-import { compressImageFile } from '../utils/imageCompressor';
+import { readOriginalImage } from '../utils/mediaStorage';
 import { requestJson } from '../services/api';
 import { UserRole } from '../types';
 import {
@@ -67,7 +68,7 @@ export const RegisterWithInviteModal: React.FC<RegisterWithInviteModalProps> = (
     try {
       setIsCompressing(true);
       setError(null);
-      const compressed = await compressImageFile(file, 400, 0.82);
+      const compressed = await readOriginalImage(file);
       if (compressed) {
         setAvatar(compressed);
       } else {
@@ -138,7 +139,7 @@ export const RegisterWithInviteModal: React.FC<RegisterWithInviteModalProps> = (
         {/* Brand & Verification Badge */}
         <div className="text-center space-y-2">
           <div className="relative inline-block mx-auto">
-            <img
+            <MediaImage
               src="./logo.jpg"
               alt="ฉันจะเป็นหัวแถว"
               className="w-14 h-14 rounded-2xl mx-auto shadow-md object-cover border-2 border-emerald-500/20"

@@ -67,7 +67,7 @@ test('photo upload confirms the completed batch and still asks the user to save 
   const input = dialog.locator('input[type=file][accept="image/*"]').first();
   const bytes = fs.readFileSync('tests/fixtures/photo.png');
   await input.setInputFiles([{ name: 'one.png', mimeType: 'image/png', buffer: bytes }, { name: 'two.png', mimeType: 'image/png', buffer: bytes }]);
-  await expect(dialog.getByRole('button', { name: 'กำลังบีบอัดรูปภาพ...' })).toBeDisabled();
+  await expect(dialog.getByRole('button', { name: 'ยังมีรูปอัปโหลดไม่ครบ' })).toBeDisabled();
   await expect(page.getByTestId('success-feedback')).toHaveCount(0);
   release();
   await expect(page.getByTestId('success-feedback')).toContainText('อัปโหลดรูปเรียบร้อยแล้ว 2 รูป');

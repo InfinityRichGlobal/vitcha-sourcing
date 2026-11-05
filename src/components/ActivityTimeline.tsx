@@ -1,3 +1,4 @@
+import { MediaImage } from './MediaImage';
 import { CommentMediaGallery } from './CommentMediaGallery';
 import { commentMedia } from '../utils/commentMedia';
 import { activityStages as stages, activityStageName as stageName, activityFieldLabels as labels, getActivityEntries } from '../utils/activityHistory';
@@ -16,7 +17,7 @@ function MediaPreview({ media, close }: { media: Media; close: () => void }) {
   useEffect(() => { dialog.current?.showModal(); }, []);
   return createPortal(<dialog ref={dialog} onCancel={close} onClose={close} onClick={e => { if (e.target === e.currentTarget) close(); }} className="fixed inset-0 m-auto max-w-[94vw] w-[900px] max-h-[90dvh] rounded-2xl p-4 backdrop:bg-black/70" aria-label="สื่อจากประวัติ">
     <div className="flex justify-end mb-3"><button type="button" autoFocus onClick={close} className="rounded-lg px-4 py-2 bg-slate-100 font-bold">ปิดสื่อ</button></div>
-    {media.kind === 'image' ? <img src={media.url} alt="ภาพจากประวัติ" className="max-h-[72dvh] max-w-full mx-auto object-contain" /> : media.kind === 'audio' ? <audio controls src={media.url} className="w-full" /> : <video controls src={media.url} className="max-h-[72dvh] w-full" />}
+    {media.kind === 'image' ? <MediaImage src={media.url} alt="ภาพจากประวัติ" className="max-h-[72dvh] max-w-full mx-auto object-contain" /> : media.kind === 'audio' ? <audio controls src={media.url} className="w-full" /> : <video controls src={media.url} className="max-h-[72dvh] w-full" />}
   </dialog>, document.body);
 }
 
@@ -31,7 +32,7 @@ function Value({ value, field, users, preview }: { value: unknown; field: string
   if (field === 'status') return ({ scouted: 'สำรวจแล้ว', reviewing: 'เทียบสเปก', rfq_sent: 'ส่ง RFQ', shortlisted: 'ตัวเต็ง', ordered: 'สั่งซื้อแล้ว' } as Record<string,string>)[text] || text;
   if (safeUrl(text) && (/url$/i.test(field) || mediaFields.test(field) || /videos|voice|audio/i.test(field))) {
     const kind = /voice|audio/i.test(field) ? 'audio' : /video/i.test(field) ? 'video' : mediaFields.test(field) || /\.(png|jpe?g|webp|gif)(\?|$)/i.test(text) ? 'image' : null;
-    if (kind) return <button type="button" onClick={() => preview({ url: text, kind })} className="text-emerald-700 underline text-left">{kind === 'image' ? <img loading="lazy" src={text} alt="เปิดภาพจากประวัติ" className="max-w-full w-32 max-h-28 rounded-lg object-cover" /> : kind === 'audio' ? 'เปิดฟังเสียง' : 'เปิดดูวิดีโอ'}</button>;
+    if (kind) return <button type="button" onClick={() => preview({ url: text, kind })} className="text-emerald-700 underline text-left">{kind === 'image' ? <MediaImage loading="lazy" src={text} alt="เปิดภาพจากประวัติ" className="max-w-full w-32 max-h-28 rounded-lg object-cover" /> : kind === 'audio' ? 'เปิดฟังเสียง' : 'เปิดดูวิดีโอ'}</button>;
     return <a href={text} target="_blank" rel="noopener noreferrer" className="text-blue-700 underline break-all">เปิดไฟล์แนบ</a>;
   }
   return <span className="whitespace-pre-wrap break-words [overflow-wrap:anywhere]">{text}</span>;

@@ -1,3 +1,4 @@
+import { MediaImage } from './MediaImage';
 import { AvatarImage } from './AvatarImage';
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
@@ -106,7 +107,7 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
             title="กดเพื่อเปิดเมนูแพลตฟอร์ม (เมนูด้านซ้าย) · กดที่โลโก้เพื่อเปิดเมนูเข้าหน้าต่างๆ"
           >
             <div className="relative shrink-0">
-              <img
+              <MediaImage
                 src="./logo.jpg"
                 alt="ฉันจะเป็นหัวแถว"
                 className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl object-cover border border-slate-200/80 shadow-2xs group-hover:scale-105 transition-transform"

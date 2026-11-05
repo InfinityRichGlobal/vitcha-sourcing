@@ -1,6 +1,6 @@
 import { ImgHTMLAttributes } from 'react';
-import { normalizeMediaUrl } from '../utils/mediaUrl';
+import { imageDisplayUrl, ImageSize } from '../utils/mediaUrl';
 
-export function MediaImage({ src, alt = 'รูปภาพ', ...props }: ImgHTMLAttributes<HTMLImageElement>) {
-  return <img {...props} src={normalizeMediaUrl(src)} alt={alt} />;
+export function MediaImage({ src, alt = 'รูปภาพ', imageSize = 600, ...props }: ImgHTMLAttributes<HTMLImageElement> & { imageSize?: ImageSize }) {
+  return <img decoding="async" {...props} src={imageDisplayUrl(src, imageSize)} alt={alt} />;
 }

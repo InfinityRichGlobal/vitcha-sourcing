@@ -5,10 +5,18 @@ import { pipeline } from 'node:stream/promises';
 
 // Both providers use a stable application URL. Expiring signed URLs and OAuth
 // access tokens are never written into product records or returned as credentials.
-export function createCloudMedia({ request, url, key, drive = null, fetchImpl = fetch }) {
+export function createCloudMedia({ request, url, key, drive = null, publicDriveImages = false, driveOnly = false, fetchImpl = fetch }) {
   let driveConfig = drive ? { ...drive } : null;
   let accessToken, tokenUntil = 0, tokenPromise;
   const getCenterFolderId = () => driveConfig?.folderId || process.env.GOOGLE_DRIVE_FOLDER_ID || '1OXmOSXAA7py0ixs6vT3EBjndZCvpkDT1';
+  const imageUrl = fileId => `https://lh3.googleusercontent.com/d/${encodeURIComponent(fileId)}=s0`;
+  const storedUrl = (id, provider, fileId, mimeType) => publicDriveImages && provider === 'drive' && /^image\/(jpeg|png|webp|gif)$/.test(mimeType)
+    ? imageUrl(fileId) : `/media/${id}`;
+  const requireDrive = () => {
+    if (driveOnly && (!driveConfig?.clientId || !driveConfig?.refreshToken)) {
+      throw Object.assign(new Error('กรุณาเชื่อม Google Drive ก่อนอัปโหลดไฟล์ต้นฉบับ'), { status: 503 });
+    }
+  };
 
   async function googleToken() {
     if (!driveConfig?.clientId || !driveConfig?.refreshToken) return null;
@@ -65,6 +73,7 @@ export function createCloudMedia({ request, url, key, drive = null, fetchImpl = 
   }
 
   async function createDirectUploadSession({ filename, mimeType, fileSize, recordType, recordId, recordTitle }) {
+    requireDrive();
     const token = await googleToken();
     if (!token) return { directAvailable: false };
     const folderId = await resolveItemFolder({ recordType, recordId, recordTitle });
@@ -110,7 +119,7 @@ export function createCloudMedia({ request, url, key, drive = null, fetchImpl = 
         sha256: md5Checksum || createHash('sha256').update(`${fileId}:${id}`).digest('hex'),
       }),
     });
-    return { success: true, url: `/media/${id}`, mediaId: id };
+    return { success: true, url: storedUrl(id, 'drive', fileId, mimeType), mediaId: id };
   }
 
   function extractFolderId(raw) {
@@ -185,9 +194,10 @@ export function createCloudMedia({ request, url, key, drive = null, fetchImpl = 
   }
   const headers = () => ({ apikey: key, ...(key.startsWith('sb_secret_') ? {} : { Authorization: `Bearer ${key}` }) });
   async function upload({ filename, bytes, mimeType, recordType, recordId, recordTitle }) {
+    requireDrive();
     const id = randomBytes(24).toString('hex');
     let fileId, provider;
-    if (driveConfig?.folderId && driveConfig?.refreshToken) {
+    if (driveConfig?.clientId && driveConfig?.refreshToken) {
       const token = await googleToken();
       const folderId = await resolveItemFolder({ recordType, recordId, recordTitle });
       const session = await fetchImpl('https://www.googleapis.com/upload/drive/v3/files?uploadType=resumable&fields=id,size,md5Checksum', { method: 'POST', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json', 'X-Upload-Content-Type': mimeType, 'X-Upload-Content-Length': String(bytes.length) }, body: JSON.stringify({ name: `${id}-${filename}`, parents: [folderId] }), signal: AbortSignal.timeout(20000) });
@@ -204,7 +214,7 @@ export function createCloudMedia({ request, url, key, drive = null, fetchImpl = 
       if (!result.ok) throw new Error('อัปโหลดไม่สำเร็จ กรุณาตรวจสอบพื้นที่เก็บไฟล์แล้วลองอีกครั้ง');
     }
     await request('/rest/v1/vitcha_media', { method: 'POST', headers: { 'Content-Type': 'application/json', Prefer: 'return=minimal' }, body: JSON.stringify({ id, provider, file_id: fileId, mime_type: mimeType, bytes: bytes.length, sha256: createHash('sha256').update(bytes).digest('hex') }) });
-    return `/media/${id}`;
+    return storedUrl(id, provider, fileId, mimeType);
   }
   async function uploadFromFile({ filePath, filename, mimeType, fileSize, recordType, recordId, recordTitle, signal }) {
     const md5 = createHash('md5'), sha256 = createHash('sha256');
@@ -233,6 +243,14 @@ export function createCloudMedia({ request, url, key, drive = null, fetchImpl = 
     const [file] = await request(`/rest/v1/vitcha_media?id=eq.${id}&select=provider,file_id,mime_type,bytes`);
     if (!file) return res.sendStatus(404);
     res.set('X-Content-Type-Options', 'nosniff'); res.set('Cache-Control', 'private, no-store');
+    // Public Drive images travel Google -> browser. Legacy application URLs
+    // remain valid; no record/history migration or permission change is needed.
+    if (publicDriveImages && file.provider === 'drive' && /^image\/(jpeg|png|webp|gif)$/.test(file.mime_type)) {
+      if (req.query?.original === '1') return res.redirect(307, `https://drive.google.com/file/d/${encodeURIComponent(file.file_id)}/view`);
+      const size = ['0', '96', '600', '2000'].includes(String(req.query?.size)) ? String(req.query.size) : '0';
+      res.set('Cache-Control', 'private, max-age=3600');
+      return res.redirect(307, imageUrl(file.file_id).replace(/=s0$/, `=s${size}`));
+    }
     if (file.provider === 'supabase') {
       const result = await request(`/storage/v1/object/sign/vitcha-media/${file.file_id}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ expiresIn: 120 }) });
       const signedPath = result.signedURL || result.signedUrl;

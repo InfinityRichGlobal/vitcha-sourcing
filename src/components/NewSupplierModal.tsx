@@ -7,7 +7,7 @@ import { useApp } from '../context/AppContext';
 import { CatalogItem, VoiceNoteEntry, AttachedFile } from '../types';
 import { AudioRecorder } from './AudioRecorder';
 import { getItemVoiceNotes } from '../utils/audioHelper';
-import { uploadImageFile as compressImageFile } from '../utils/mediaStorage';
+import { useMediaUploadQueue } from '../hooks/useMediaUploadQueue';
 import { UploadablePhotoGrid } from './UploadablePhotoGrid';
 import { AttachedFilesSection } from './AttachedFilesSection';
 import {
@@ -99,6 +99,12 @@ export const NewSupplierModal: React.FC<NewSupplierModalProps> = ({ isOpen, onCl
   const beginPhotos = () => { photoTaskRef.current++; setPhotoTaskCount(photoTaskRef.current); };
   const endPhotos = () => { photoTaskRef.current--; setPhotoTaskCount(photoTaskRef.current); };
 
+  const itemUploads = useMediaUploadQueue({
+    enabled: modalOpen, recordType: 'suppliers', recordTitle: name || 'ซัพพลายเออร์', recordId: editingSupplier?.id,
+    onBusyChange: busy => busy ? beginPhotos() : endPhotos(),
+    onComplete: (id, url) => setCatalogItems(previous => previous.map(item => item.id === id ? { ...item, photo: url } : item)),
+  });
+
   // Populate form when editingSupplier changes or reset when opening fresh
   useEffect(() => {
     if (editingSupplier) {
@@ -169,53 +175,13 @@ export const NewSupplierModal: React.FC<NewSupplierModalProps> = ({ isOpen, onCl
 
   // Mass batch photo upload for catalog (Instant local previews + background upload)
   const handleMassCatalogUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (!files || files.length === 0) return;
-
-    const fileList = Array.from(files);
-    const newItems: CatalogItem[] = fileList.map((file, idx) => {
-      const localBlob = URL.createObjectURL(file);
-      return {
-        id: `item-${Date.now()}-${idx}-${Math.random().toString(36).substring(2, 5)}`,
-        photo: localBlob,
-        name: '',
-        dimensions: '',
-        weightKg: '',
-        priceRmb: undefined,
-        memo: '',
-        voiceNotes: [],
-      };
+    const files = Array.from(e.target.files || []); e.target.value = '';
+    const newItems: CatalogItem[] = files.map(file => {
+      const id = crypto.randomUUID();
+      return { id, photo: itemUploads.enqueue(id, file), name: '', dimensions: '', weightKg: '', priceRmb: undefined, memo: '', voiceNotes: [] };
     });
-
-    // Display cards with local thumbnails immediately!
-    setCatalogItems((prev) => [...prev, ...newItems]);
-
-    // Upload files in parallel
-    fileList.forEach((file, idx) => {
-      const targetId = newItems[idx].id;
-      beginPhotos();
-      compressImageFile(file, 900, 0.72, {
-        recordType: 'suppliers',
-        recordTitle: name || 'ซัพพลายเออร์',
-        recordId: editingSupplier?.id,
-      })
-        .then((uploadedUrl) => {
-          setCatalogItems((prev) =>
-            prev.map((it) => (it.id === targetId ? { ...it, photo: uploadedUrl } : it))
-          );
-          notifySuccess('อัปโหลดรูปสินค้าเรียบร้อยแล้ว', 'กดบันทึกเพื่อเก็บรูปกับรายการนี้');
-        })
-        .catch((error) => {
-          console.error('Failed to upload catalog photo:', error);
-        })
-        .finally(() => {
-          endPhotos();
-        });
-    });
-
-    e.target.value = '';
+    setCatalogItems(previous => [...previous, ...newItems]);
   };
-
 
   const addManualCatalogItem = () => {
     setCatalogItems([
@@ -233,6 +199,7 @@ export const NewSupplierModal: React.FC<NewSupplierModalProps> = ({ isOpen, onCl
   };
 
   const removeCatalogItem = (index: number) => {
+    itemUploads.remove(catalogItems[index].id);
     setCatalogItems(catalogItems.filter((_, i) => i !== index));
   };
 
@@ -408,7 +375,7 @@ export const NewSupplierModal: React.FC<NewSupplierModalProps> = ({ isOpen, onCl
     <div ref={dialogRef} role="dialog" aria-modal="true" aria-label="บันทึกรายการ" className="fixed inset-0 z-[110] bg-black/45 backdrop-blur-md flex items-center justify-center p-2 sm:p-4 overflow-y-auto">
       <div className="bg-white border border-slate-200/90 w-full max-w-2xl rounded-2xl shadow-2xl overflow-hidden my-auto animate-in zoom-in-95 max-h-[92vh] supports-[height:100dvh]:max-h-[92dvh] flex flex-col text-slate-900">
         {audioPending > 0 && <div role="status" className="border-b border-emerald-100 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">กำลังอัดหรือส่งเสียงขึ้นเซิร์ฟเวอร์ กรุณารอให้ครบก่อนบันทึก</div>}
-        {(isCompressingPhotos || isVideoLoading) && <div role="status" className="border-b border-emerald-100 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-800">{isVideoLoading ? 'กำลังอัปโหลดวิดีโอ กรุณารอให้ครบก่อนบันทึก' : `กำลังประมวลผลรูปภาพ ${photoTaskCount} ชุด กรุณารอสักครู่`}</div>}
+        {(isCompressingPhotos || isVideoLoading) && <div role="status" className="border-b border-emerald-100 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-800">{isVideoLoading ? 'กำลังอัปโหลดวิดีโอ กรุณารอให้ครบก่อนบันทึก' : 'มีรูปที่ยังอัปโหลดไม่ครบ กรุณารอ หรือลองใหม่/ลบรูปที่ไม่สำเร็จก่อนบันทึก'}</div>}
         {/* Header */}
         <div className="p-4 border-b border-slate-100 flex items-center justify-between bg-white sticky top-0 z-10">
           <div className="flex items-center gap-2.5">
@@ -823,6 +790,8 @@ export const NewSupplierModal: React.FC<NewSupplierModalProps> = ({ isOpen, onCl
               />
             </label>
 
+            {itemUploads.jobs.some(job => job.status === 'error') && <button type="button" onClick={() => itemUploads.retry()} className="rounded-lg border border-rose-300 p-2 text-xs font-bold text-rose-700">ลองใหม่ทั้งหมด ({itemUploads.jobs.filter(job => job.status === 'error').length} รูป)</button>}
+
             {catalogItems.map((item, idx) => (
               <div
                 key={item.id}
@@ -848,6 +817,7 @@ export const NewSupplierModal: React.FC<NewSupplierModalProps> = ({ isOpen, onCl
 
                 <div className="flex gap-3">
                   {/* Item Photo thumbnail (clickable to upload/replace photo) */}
+                  <div className="w-20 shrink-0">
                   <label className="shrink-0 cursor-pointer relative group">
                     {item.photo ? (
                       <div className="relative w-20 h-20 rounded-xl overflow-hidden border border-slate-200 shadow-sm">
@@ -856,7 +826,7 @@ export const NewSupplierModal: React.FC<NewSupplierModalProps> = ({ isOpen, onCl
                           alt="item"
                           className="w-full h-full object-cover group-hover:opacity-80"
                         />
-                        {item.photo.startsWith('blob:') && (
+                        {itemUploads.jobs.some(job => job.id === item.id && job.status !== 'error') && (
                           <div className="absolute inset-0 bg-black/60 backdrop-blur-[1px] flex flex-col items-center justify-center text-white p-1">
                             <Loader2 className="w-4 h-4 animate-spin text-white mb-0.5" />
                             <span className="text-[8px] font-medium leading-none">กำลังอัป...</span>
@@ -872,36 +842,21 @@ export const NewSupplierModal: React.FC<NewSupplierModalProps> = ({ isOpen, onCl
                       type="file" disabled={isSaving || isVideoLoading}
                       accept="image/*"
                       onChange={(e) => {
-                        const f = e.target.files?.[0];
-                        if (!f) return;
-                        const itemId = item.id;
-                        const localBlob = URL.createObjectURL(f);
-                        setCatalogItems((previous) =>
-                          previous.map((entry) => (entry.id === itemId ? { ...entry, photo: localBlob } : entry))
-                        );
-                        beginPhotos();
-                        compressImageFile(f, 900, 0.72, {
-                          recordType: 'suppliers',
-                          recordTitle: name || 'ซัพพลายเออร์',
-                          recordId: editingSupplier?.id,
-                        })
-                          .then((compressed) => {
-                            setCatalogItems((previous) =>
-                              previous.map((entry) => (entry.id === itemId ? { ...entry, photo: compressed } : entry))
-                            );
-                            notifySuccess('อัปโหลดรูปสินค้าเรียบร้อยแล้ว', 'กดบันทึกเพื่อเก็บรูปกับรายการนี้');
-                          })
-                          .catch((error) => {
-                            alert(error instanceof Error ? error.message : 'ประมวลผลรูปไม่สำเร็จ');
-                          })
-                          .finally(() => {
-                            endPhotos();
-                          });
-                        e.target.value = '';
+                        const file = e.target.files?.[0]; e.target.value = '';
+                        if (!file) return;
+                        const preview = itemUploads.enqueue(item.id, file);
+                        setCatalogItems(previous => previous.map(entry => entry.id === item.id ? { ...entry, photo: preview } : entry));
                       }}
                       className="hidden"
                     />
                   </label>
+                  {itemUploads.jobs.filter(job => job.id === item.id && job.status === 'error').map(job => (
+                    <div key={job.id} className="break-words text-xs text-rose-700" role="alert">
+                      <p>{job.error}</p>
+                      <button type="button" onClick={() => itemUploads.retry(item.id)} className="py-2 font-bold">ลองอัปโหลดใหม่</button>
+                    </div>
+                  ))}
+                  </div>
 
                   <div className="flex-1 space-y-1.5 min-w-0">
                     <input
@@ -1079,7 +1034,7 @@ export const NewSupplierModal: React.FC<NewSupplierModalProps> = ({ isOpen, onCl
               ) : isCompressingPhotos ? (
                 <>
                   <RefreshCw className="w-3.5 h-3.5 animate-spin text-amber-300" />
-                  <span>กำลังบีบอัดรูปภาพ...</span>
+                  <span>ยังมีรูปอัปโหลดไม่ครบ</span>
                 </>
               ) : (
                 <span>{isEditMode ? '💾 บันทึกการแก้ไข' : 'บันทึกเข้าระบบ'}</span>

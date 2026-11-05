@@ -1,3 +1,4 @@
+import { MediaImage } from './MediaImage';
 import React, { useState, useEffect } from 'react';
 import {
   Trash2,
@@ -260,7 +261,7 @@ export const TrashView: React.FC = () => {
                   {/* Photo & Basic Info */}
                   <div className="flex items-start gap-3">
                     {firstPhoto ? (
-                      <img
+                      <MediaImage
                         src={firstPhoto}
                         alt={itemName(item)}
                         className="w-16 h-16 rounded-xl object-contain bg-slate-50 border border-slate-200 shrink-0"

@@ -36,7 +36,7 @@ if (cloud) {
         folderId: process.env.GOOGLE_DRIVE_FOLDER_ID || '1OXmOSXAA7py0ixs6vT3EBjndZCvpkDT1',
       }
     : null;
-  mediaStorage = createCloudMedia({ ...config, request, drive: runtime.find(row => row.key === 'google_drive')?.value || envDrive });
+  mediaStorage = createCloudMedia({ ...config, request, drive: runtime.find(row => row.key === 'google_drive')?.value || envDrive, publicDriveImages: true, driveOnly: true });
 }
 const app = createApp({ dataDir, defaults, recoveryPasswordHash, persistence, mediaStorage });
 await persistence?.flush();

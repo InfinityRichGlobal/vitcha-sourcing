@@ -1,4 +1,5 @@
 import { LabItem, FranchiseStore, User } from '../types';
+import { imageDisplayUrl } from './mediaUrl';
 import { buildFranchiseStoreReportHtml, EnrichedStoreMenu } from './franchiseReport';
 import { buildRecordedHistory, historyPrintCss, openPrintReport, reportActions, reportPrintScript, reportUrl } from './printReportSupport';
 export { buildFranchiseStoreReportHtml } from './franchiseReport';
@@ -99,7 +100,7 @@ export function buildLeadLabSpecReportHtml(item: LabItem, users: User[] = []): s
 
   <div class="grid-2">
     <div class="photo-box">
-      <img src="${escapeHtml(reportUrl(item.photoUrl))}" alt="${escapeHtml(item.name)}" />
+      <img src="${escapeHtml(reportUrl(imageDisplayUrl(item.photoUrl, 2000)))}" alt="${escapeHtml(item.name)}" />
     </div>
     <div class="info-card">
       <div style="font-size: 18px; font-weight: 900; color: #0f172a;">${escapeHtml(item.name)}</div>

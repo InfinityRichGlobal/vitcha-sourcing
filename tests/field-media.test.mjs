@@ -114,3 +114,10 @@ test('logout atomically detaches the push subscription for that session', async 
   assert.equal(JSON.parse(fs.readFileSync(path.join(dir,'database.json'))).pushSubscriptions.length, 0);
   assert.equal((await call('/api/push/subscribe', token, { subscription: subscription('late') })).status, 401);
 });
+
+test('six original image uploads can hold chunk sessions together and release every slot', async t => {
+ const {call,login}=await setup(t);const token=await login('editor');
+ const results=await Promise.all(Array.from({length:6},(_,i)=>call('/api/uploads',token,{filename:`original-${i}.png`,mimeType:'image/png',fileSize:9*1024*1024})));
+ assert.ok(results.every(r=>r.status===201));
+ for(const result of results) assert.equal((await call(`/api/uploads/${result.data.id}`,token,undefined,'DELETE')).status,200);
+});
