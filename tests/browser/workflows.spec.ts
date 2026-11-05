@@ -155,17 +155,15 @@ test('store bulk photos are included and inline replacement preserves a concurre
     { name: 'drink2.png', mimeType: 'image/png', buffer: pixel },
   ]);
   await expect(dialog.getByPlaceholder('ชื่อเมนูเครื่องดื่ม (เว้นว่างได้)')).toHaveCount(2);
-  await page.evaluate(() => {
-    const NativeImage = window.Image;
-    const descriptor = Object.getOwnPropertyDescriptor(HTMLImageElement.prototype, 'src')!;
-    window.Image = function () { const img = new NativeImage(); Object.defineProperty(img, 'src', { set(v) { setTimeout(() => descriptor.set!.call(img, v), 1000); } }); return img; } as typeof Image;
-  });
+  let releaseReplacement!: () => void;
+  const replacementGate = new Promise<void>(resolve => { releaseReplacement = resolve; });
+  await page.route('**/api/upload', async route => { await replacementGate; await route.continue(); });
   await dialog.locator('input[type="file"][accept="image/*"]').nth(4).setInputFiles({ name: 'replacement.png', mimeType: 'image/png', buffer: pixel });
   await dialog.locator('input[placeholder*="CHAGEE"]').fill('ร้านน้ำทดสอบ');
   await dialog.locator('button:has-text("ชาผลไม้")').first().click();
   await dialog.getByPlaceholder('ชื่อเมนูเครื่องดื่ม (เว้นว่างได้)').first().fill('Name typed during image processing');
   const save = dialog.getByRole('button', { name: 'บันทึกร้านน้ำ', exact: true });
-  await expect(save).toBeDisabled(); await expect(save).toBeEnabled();
+  await expect(save).toBeDisabled(); releaseReplacement(); await expect(save).toBeEnabled();
   const responsePromise = page.waitForResponse(r => r.url().endsWith('/api/drink-stores') && r.request().method() === 'POST');
   await save.click();
   const response = await responsePromise; expect(response.ok()).toBeTruthy();
