@@ -1,6 +1,7 @@
 import { newPushKeys, createPushDelivery, registerPushRoutes } from './push.js';
 import { registerUploadSessions } from './upload-sessions.js';
 import { recordActivity } from './activity-history.js';
+import { compactActivityHistories } from '../src/utils/activitySummary.js';
 import { resolveMapLink } from './map-links.js';
 import { packSnapshot } from './snapshot-wire.js';
 import express from 'express';
@@ -41,7 +42,7 @@ function currentNote(db, note) {
 }
 function currentHistory(db, h) {
   const user = db.users.find(u => (h.userId && u.id === h.userId) || [u.alias, u.name].includes(h.user));
-  return user ? { ...h, user: user.alias || user.name, userAvatar: user.avatar } : h;
+  return user ? { ...h, user: user.alias || user.name } : h;
 }
 function currentRecord(db, record) {
   return { ...record, creator: currentIdentity(db, record.creator), reviewerNotes: (record.reviewerNotes || []).map(note => currentNote(db, note)), likes: (record.likes || []).map(like => currentIdentity(db, like, 'userId')), viewedBy: (record.viewedBy || []).map(view => currentIdentity(db, view, 'userId')), history: (record.history || []).map(h => currentHistory(db, h)) };
@@ -128,7 +129,8 @@ export function createApp({ dataDir, defaults = DEFAULT_DATABASE, sessionTtlMs =
   const deletedAlready = (db, list, id, receipt) => receipt && [...list, ...(db.trash || [])].some(x => x.id === id && (x.appliedOperations || []).includes(receipt));
   // One-time migration of legacy plaintext credentials before serving requests.
   const initial = read();
-  let migrated = false;
+  // Retain each event's actor/time/action/counts; current records and media stay intact.
+  let migrated = compactActivityHistories(initial);
   if (!initial.pushVapid) {
     initial.pushVapid = process.env.VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY
       ? { publicKey: process.env.VAPID_PUBLIC_KEY, privateKey: process.env.VAPID_PRIVATE_KEY } : newPushKeys();
@@ -415,10 +417,10 @@ export function createApp({ dataDir, defaults = DEFAULT_DATABASE, sessionTtlMs =
       } else {
         if (input.revision !== undefined) fail(404, 'รายการนี้ถูกลบแล้ว');
         const createdAt = now();
-        item = { ...pick(input, [...fields, ...HANDOFF]), id: input.id, type: collection === 'suppliers' ? 'supplier' : collection === 'drinkStores' ? 'drink_store' : 'location', creator: { ...pick(req.user, ['id', 'name', 'alias', 'avatar']), timestamp: createdAt }, creationHash, reviewerNotes: [], likes: [], viewedBy: [], history: [{ action: 'สร้างบันทึกรายการสำรวจใหม่', user: req.user.alias, userAvatar: req.user.avatar, timestamp: createdAt }], revision: 1, updatedAt: createdAt };
-        item.history = [];
+        item = { ...pick(input, [...fields, ...HANDOFF]), id: input.id, type: collection === 'suppliers' ? 'supplier' : collection === 'drinkStores' ? 'drink_store' : 'location', creator: { ...pick(req.user, ['id', 'name', 'alias', 'avatar']), timestamp: createdAt }, creationHash, reviewerNotes: [], likes: [], viewedBy: [], history: [], revision: 1, updatedAt: createdAt };
+        validateRecord(item, collection);
         recordActivity(item, req.user, { kind: 'create', action: 'สร้างบันทึกรายการสำรวจใหม่', fields: [...fields, ...HANDOFF], timestamp: createdAt });
-        validateRecord(item, collection); list.unshift(item);
+        list.unshift(item);
       }
       notify(db, req.user, item.type, target ? 'อัปเดตข้อมูลรายการ' : 'เพิ่มรายการใหม่', item.name || item.storeName, item.id);
       save(db); res.json({ success: true, item });
@@ -491,41 +493,12 @@ export function createApp({ dataDir, defaults = DEFAULT_DATABASE, sessionTtlMs =
       // Views and likes do not invalidate an editor's main-data version.
       if (!['view', 'like'].includes(action)) {
         touch(item);
-        const stageLabels = {
-          awaiting: 'พาร์ท 1: รอรับช่วงต่อ',
-          rfq_sent: 'พาร์ท 2: ขอสเปก / ส่ง RFQ',
-          sample_test: 'พาร์ท 3: ทดสอบตัวอย่าง Lab/R&D',
-          negotiate: 'พาร์ท 4: ต่อรองราคา & MOQ',
-          approved: 'พาร์ท 5: ตัวเต็งอนุมัติ',
-          ordered: 'พาร์ท 6: สั่งซื้อสำเร็จ',
-        };
-        const statusLabels = {
-          scouted: '1. สำรวจแล้ว',
-          reviewing: '2. เทียบสเปก',
-          rfq_sent: '3. ส่ง RFQ',
-          shortlisted: '4. ตัวเต็ง (Shortlist)',
-          ordered: '5. สั่งซื้อแล้ว (Ordered)',
-        };
-        let historyText = action;
-        if (action === 'handoff') {
-          const parts = [];
-          if (data.handoffStage) parts.push(`ย้ายเข้าสู่ ${stageLabels[data.handoffStage] || data.handoffStage}`);
-          if (data.status) parts.push(`เปลี่ยนสถานะเป็น ${statusLabels[data.status] || data.status}`);
-          if (data.assignedTo !== undefined) parts.push(data.assignedTo ? `มอบหมายผู้รับช่วงต่อ: ${data.assignedTo}` : 'ยกเลิกผู้รับผิดชอบ');
-          if (data.targetFollowUpDate) parts.push(`นัดติดตาม: ${data.targetFollowUpDate}`);
-          if (data.handoffNotes) parts.push(`บันทึกส่งต่องาน: ${clean(data.handoffNotes)}`);
-          historyText = parts.length > 0 ? parts.join(' · ') : 'อัปเดตสถานะการส่งต่องาน';
-        } else if (action === 'comment') {
-          historyText = `แสดงความคิดเห็น: "${clean(data.text || 'แนบไฟล์สื่อ')}"`;
-        } else if (action === 'reply') {
-          historyText = `ตอบกลับความคิดเห็น${data.replyToAuthor ? ` @${clean(data.replyToAuthor)}` : ''}`;
-        }
         const content = action === 'comment'
           ? item.reviewerNotes.find(n => n.id === operationId)
           : action === 'reply'
             ? { ...item.reviewerNotes.find(n => n.id === data.noteId)?.replies.find(r => r.id === operationId), noteId: data.noteId }
             : undefined;
-        recordActivity(item, req.user, { id: operationId, kind: action, action: historyText, before: beforeActivity, fields: action === 'handoff' ? HANDOFF : [], content });
+        recordActivity(item, req.user, { id: operationId, kind: action, action, before: beforeActivity, fields: action === 'handoff' ? HANDOFF : [], content });
         const notifTitle = action === 'handoff' ? 'อัปเดตงานส่งต่อ' : action === 'reply' ? 'ตอบกลับความคิดเห็น' : 'ความคิดเห็นใหม่';
         notify(db, req.user, action === 'handoff' ? 'status' : action, notifTitle, clean(data.text).slice(0, 120) || item.name || item.storeName, item.id);
       }

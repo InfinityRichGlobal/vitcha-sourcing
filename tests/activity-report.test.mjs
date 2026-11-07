@@ -15,63 +15,58 @@ const text = html => html.replace(/<[^>]*>/g, '').replaceAll('&amp;', '&');
 const item = () => ({ id: 'report-test', type: 'supplier', name: 'รายงานทดสอบ', category: 'ชา', rating: 4, photos: { storefrontAndAtmosphere: [], contactCards: [] }, catalogItems: [], quickTags: [], location: { lat: 13, lng: 100 }, creator: { alias: 'ผู้สร้าง', timestamp: '2026-10-30T00:00:00Z' }, history: [], reviewerNotes: [], handoffStage: 'sample_test', assignedTo: 'member-1' });
 const users = [{ id: 'member-1', alias: 'May', name: 'May', role: 'editor' }];
 
-test('report includes every event, full before/after values, repeated/backward stages and member names', () => {
+const historyPart = html => html.slice(html.indexOf('id="activity-history"'), html.indexOf('<script>\n    // Never'));
+
+test('report includes all concise events in chronological order without copying old fields', () => {
   const record = item();
-  const longText = 'บันทึกยาวมาก ต้องอ่านได้ครบทุกบรรทัด\n'.repeat(80) + 'จบข้อความสำคัญ';
-  record.history = Array.from({ length: 32 }, (_, i) => ({ id: `event-${i}`, version: 2, kind: 'handoff', user: 'SuperiCez', userId: 'owner-id', timestamp: `2026-10-30T${String(Math.floor(i / 60)).padStart(2, '0')}:${String(i % 60).padStart(2, '0')}:00Z`, action: `เหตุการณ์ที่ ${i}`, stageBefore: i % 2 ? 'sample_test' : 'rfq_sent', stageAfter: i % 2 ? 'rfq_sent' : 'sample_test', changes: [{ field: 'assignedTo', before: null, after: 'member-1' }, { field: 'handoffNotes', before: i === 0 ? 'บันทึกเดิม' : null, after: i === 31 ? longText : `บันทึกใหม่ ${i}` }] }));
-  const html = report(record, n => n * 5, 'pdf', users);
-  const plain = text(html);
+  record.history = Array.from({ length: 32 }, (_, i) => ({ id: `event-${i}`, version: 2, kind: 'handoff', user: 'SuperiCez', timestamp: `2026-10-30T00:${String(i).padStart(2, '0')}:00Z`, action: 'ส่งต่อ', changes: [{ field: 'handoffNotes', before: null, after: 'old large note'.repeat(1000) }] }));
+  const html = historyPart(report(record, n => n, 'print', users));
   assert.equal((html.match(/class="audit-event"/g) || []).length, 32);
-  assert.ok(plain.includes('จบข้อความสำคัญ'));
-  assert.equal((plain.match(/บันทึกยาวมาก/g) || []).length, 80);
-  assert.ok(plain.includes('ก่อนเปลี่ยน') && plain.includes('หลังเปลี่ยน') && plain.includes('บันทึกเดิม'));
-  assert.ok(plain.includes('พาร์ท 3: ทดสอบตัวอย่าง Lab/R&D → พาร์ท 2: ขอสเปก / ส่ง RFQ'));
-  assert.ok(plain.includes('บันทึกเข้า 16 ครั้ง'));
-  assert.ok(plain.includes('ผู้รับช่วงต่อ: May'));
-  assert.ok(plain.includes('SuperiCez'));
-  assert.ok(!plain.includes('owner-id'));
-  assert.ok(html.indexOf('data-activity-id="event-0"') < html.indexOf('data-activity-id="event-30"'));
-  assert.ok(html.indexOf('data-activity-id="event-1"') < html.indexOf('data-activity-id="event-31"'));
+  assert.ok(!html.includes('old large note') && !html.includes('audit-change'));
+  assert.ok(text(html).includes('อัปเดตการส่งต่องาน'));
+  assert.ok(text(html).includes('SuperiCez'));
+  assert.ok(html.indexOf('data-activity-id="event-0"') < html.indexOf('data-activity-id="event-31"'));
 });
 
-test('report preserves legacy comments and replies, deduplicates snapshots and does not invent stage history', () => {
+test('comments and replies retain all text and named attachments separately from concise history', () => {
   const record = item();
-  record.history = [{ action: 'ประวัติเก่าที่มีอยู่', user: 'ผู้บันทึกเดิม', timestamp: '2026-10-29T00:00:00Z' }, { id: 'note-1', version: 2, kind: 'comment', action: 'แสดงความคิดเห็น', user: 'May', timestamp: '2026-10-30T00:00:00Z', stageAfter: 'sample_test', content: { id: 'note-1', text: 'ข้อความเต็มจาก snapshot' } }];
-  record.reviewerNotes = [{ id: 'note-1', author: 'May', text: 'ข้อความเต็มจาก snapshot', timestamp: '2026-10-30T00:00:00Z', replies: [{ id: 'reply-1', author: 'Lek', text: 'คำตอบเก่าที่ยังมีครบ', timestamp: '2026-10-30T01:00:00Z' }] }];
+  record.history = [{ id: 'note-1', version: 2, kind: 'comment', action: 'แสดงความคิดเห็น', user: 'May', timestamp: '2026-10-30T00:00:00Z', content: { id: 'note-1', text: 'ข้อความจริง' } }];
+  record.reviewerNotes = [{ id: 'note-1', author: 'May', text: 'ข้อความจริง', timestamp: '2026-10-30T00:00:00Z', media: [{ id: 'p', type: 'image', name: 'หน้าร้านแนวตั้ง.jpg', url: 'https://example.com/portrait.jpg' }, { id: 'v', type: 'video', name: 'ชมร้าน.mp4', url: '/media/clip' }], voiceUrl: '/media/voice', replies: [{ id: 'reply-1', author: 'Lek', text: 'คำตอบครบถ้วน', timestamp: '2026-10-30T01:00:00Z' }] }];
   const html = report(record, n => n, 'print');
-  const activity = html.slice(html.indexOf('id="activity-history"'), html.indexOf('<script>\n    // Extract'));
-  const plain = text(activity);
-  assert.equal((activity.match(/class="audit-event"/g) || []).length, 3);
-  assert.equal((plain.match(/ข้อความเต็มจาก snapshot/g) || []).length, 1);
-  assert.ok(plain.includes('คำตอบเก่าที่ยังมีครบ'));
-  assert.ok(plain.includes('ไม่เติมขั้นตอนย้อนหลัง'));
-  assert.ok(!plain.includes('เคยอยู่ขั้นตอนนี้'));
+  const comments = html.slice(html.indexOf('id="record-comments"'), html.indexOf('id="activity-history"'));
+  assert.ok(text(comments).includes('ข้อความจริง') && text(comments).includes('คำตอบครบถ้วน'));
+  for (const label of ['May', 'Lek', 'หน้าร้านแนวตั้ง.jpg', 'ชมร้าน.mp4', 'เสียงแนบ', 'ตอบกลับ #1.1']) assert.ok(text(comments).includes(label), label);
+  assert.ok(comments.includes('data-video-src="https://vitcha-sourcing-fxjw.onrender.com/media/clip"'));
+  assert.ok(comments.includes('href="https://vitcha-sourcing-fxjw.onrender.com/media/voice"'));
+  const history = historyPart(html);
+  assert.equal((history.match(/class="audit-event"/g) || []).length, 2);
+  assert.ok(!history.includes('ข้อความจริง') && !history.includes('คำตอบครบถ้วน'));
+  assert.ok(!history.includes('<img') && !history.includes('data-video-src'));
 });
 
-test('history output escapes user text and rejects unsafe links while retaining removed media', () => {
+test('legacy comments match their existing actor/time log instead of appearing twice', () => {
   const record = item();
-  record.history = [{ id: 'change', version: 2, kind: 'update', user: '<img onerror=alert(1)>', userAvatar: '/logo.jpg', action: '<script>alert(1)</script>', timestamp: '2026-10-30T00:00:00Z', changes: [{ field: 'attachedFiles', before: [{ name: 'สเปกเดิม', url: 'https://example.com/spec.pdf' }], after: [] }, { field: 'photos', before: ['/logo.jpg'], after: [] }, { field: 'voiceNotes', before: [], after: [{ url: 'javascript:alert(1)' }, { url: 'http://' }] }], content: { text: '<svg onload=alert(1)>', voiceUrl: '/audio/clip.m4a' } }];
+  record.history = [{ action: 'แสดงความคิดเห็น: \"ข้อความเดิม\"', user: 'May', timestamp: '2026-10-30T00:00:00Z' }];
+  record.reviewerNotes = [{ id: 'note-1', author: 'May', text: 'ข้อความเดิม', timestamp: '2026-10-30T00:00:00Z', replies: [] }];
+  assert.equal((historyPart(report(record, n => n, 'print')).match(/class="audit-event"/g) || []).length, 1);
+});
+
+test('report does not substitute unrelated photos for video posters or emit unsafe comment links', () => {
+  const record = item(); record.videos = ['/media/actual-clip']; record.photos.storefrontAndAtmosphere = ['https://example.com/unrelated.jpg'];
+  record.reviewerNotes = [{ id: 'bad', author: '<img onerror=alert(1)>', text: '<svg onload=alert(1)>', timestamp: '', voiceUrl: 'javascript:alert(1)', replies: [] }];
   const html = report(record, n => n, 'print');
-  assert.ok(html.includes('href="https://example.com/spec.pdf"'));
-  assert.ok(html.includes('src="https://vitcha-sourcing-fxjw.onrender.com/logo.jpg"'));
+  const clip = html.slice(html.indexOf('<figure class="video-card"'), html.indexOf('</figure>'));
+  assert.ok(!clip.includes('unrelated.jpg'));
+  assert.ok(clip.includes('hidden') && clip.includes('data-video-src="https://vitcha-sourcing-fxjw.onrender.com/media/actual-clip"'));
   assert.ok(!html.includes('href="javascript:'));
-  assert.ok(!html.includes('<svg onload=') && !html.includes('<img onerror=') && !html.includes('<script>alert(1)</script>'));
-  assert.ok(text(html).includes('เปิดไฟล์เสียง'));
-  assert.ok(html.includes('class="audit-avatar" src="/logo.jpg"'));
-  assert.ok(!html.includes('id="activity-history"') || (html.match(/class="audit-content"/g) || []).length === 1);
+  assert.ok(!html.includes('<svg onload=') && !html.includes('<img onerror='));
 });
 
-test('report stops at the furthest relevant stage and gives skipped stages one short line', () => {
-  const record = item();
-  record.history = [{ id: 'skip', version: 2, kind: 'handoff', user: 'May', action: 'ส่งทดสอบ', timestamp: '2026-10-30T00:00:00Z', stageBefore: 'awaiting', stageAfter: 'sample_test', changes: [] }];
-  let html = report(record, n => n, 'print');
-  let activity = text(html.slice(html.indexOf('id="activity-history"'), html.indexOf('<script>\n    // Extract')));
-  assert.equal((html.match(/class="audit-stage /g) || []).length, 3);
-  assert.ok(activity.includes('พาร์ท 2: ไม่พบการบันทึกในพาร์ทนี้'));
-  assert.ok(!activity.includes('พาร์ท 4:') && !activity.includes('พาร์ท 5:') && !activity.includes('พาร์ท 6:'));
-  record.history.push({ id: 'back', version: 2, kind: 'handoff', user: 'May', action: 'ทดสอบซ้ำ', timestamp: '2026-10-30T01:00:00Z', stageBefore: 'approved', stageAfter: 'sample_test', changes: [] });
-  html = report(record, n => n, 'print');
-  activity = text(html.slice(html.indexOf('id="activity-history"'), html.indexOf('<script>\n    // Extract')));
-  assert.ok(activity.includes('พาร์ท 5: ตัวเต็งอนุมัติ → พาร์ท 3:'));
-  assert.ok(!activity.includes('พาร์ท 6:'));
+
+test('location report uses location ratings, contacts and lease data without restaurant placeholders', () => {
+  const record = { ...item(), type: 'location', locationType: 'คอมมูนิตี้มอลล์', zoneOrFloor: 'ชั้น 1', ratings: { footTraffic: 4, visibility: 3, accessibility: 2, valueRoi: 5 }, spaceSpecs: { usableAreaSqm: 120, layoutFormat: 'corner' }, leaseTerms: { monthlyRentThb: 60000, contactPerson: 'เจ้าของพื้นที่', contactPhone: '0123456789', rentModel: 'fixed' } };
+  const plain = text(report(record, n => n, 'print'));
+  assert.ok(plain.includes('รายงานสำรวจทำเล') && plain.includes('คนสัญจร 4/5'));
+  for (const value of ['ข้อมูลพื้นที่และเงื่อนไขเช่า', '60000', '120', 'เจ้าของพื้นที่', '0123456789', 'ห้องมุม']) assert.ok(plain.includes(value), value);
+  assert.ok(!plain.includes('undefined') && !plain.includes('รสชาติ') && !plain.includes('เมนูชิม'));
 });

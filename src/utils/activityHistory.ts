@@ -1,5 +1,6 @@
 import { ActivityEntry, SupplierRecord, StoreInspoRecord, LocationRecord } from '../types';
 import type { HandoffStage } from '../types';
+import { activityKind, compactActivity } from './activitySummary';
 
 export const activityStages: Array<[HandoffStage, string]> = [
   ['awaiting', 'รอรับช่วงต่อ'], ['rfq_sent', 'ขอสเปก / ส่ง RFQ'],
@@ -26,14 +27,18 @@ export const activityFieldLabels: Record<string, string> = {
 };
 
 export function getActivityEntries(item: SupplierRecord | StoreInspoRecord | LocationRecord): ActivityEntry[] {
-  const events: ActivityEntry[] = item.history?.length ? [...item.history] : [{ action: 'ข้อมูลเริ่มต้นจากผู้บันทึกรายการ', user: item.creator.alias, userAvatar: item.creator.avatar, timestamp: item.creator.timestamp }];
-  // Existing full comments remain useful even when their legacy log was shortened.
-  // Do not guess which stage they belonged to, or manufacture a historical snapshot.
+  const events: ActivityEntry[] = item.history?.length ? item.history.map(event => ({ ...event })) : [{ kind: 'create', action: 'สร้างรายการ', user: item.creator.alias, timestamp: item.creator.timestamp }];
+  // Old comments can lack an operation ID in their log. Match actor/time as well
+  // so one comment remains one event rather than repeating its legacy log.
   for (const note of item.reviewerNotes || []) {
     for (const [kind, content] of [['comment', note], ...(note.replies || []).map(reply => ['reply', reply])] as const) {
       const saved = content as typeof note;
-      if (!events.some(e => e.id === saved.id || e.content?.id === saved.id)) events.push({ id: `legacy-content-${saved.id}`, kind: kind as 'comment' | 'reply', action: 'ความคิดเห็นที่ยังเก็บในรายการ', user: saved.author, userId: saved.authorId, userAvatar: saved.authorAvatar, timestamp: saved.timestamp, content: saved });
+      const existing = events.find(e => e.id === saved.id || e.content?.id === saved.id ||
+        activityKind(e) === kind && e.timestamp === saved.timestamp && (e.userId === saved.authorId && !!e.userId || e.user === saved.author));
+      if (existing) {
+        if (!existing.content && !existing.mediaCounts && existing.version !== 3) existing.content = saved;
+      } else events.push({ id: saved.id, kind: kind as 'comment' | 'reply', action: '', user: saved.author, userId: saved.authorId, timestamp: saved.timestamp, content: saved });
     }
   }
-  return events;
+  return events.map(compactActivity);
 }

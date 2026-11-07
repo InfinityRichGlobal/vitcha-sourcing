@@ -1,10 +1,9 @@
-import { imageDisplayUrl } from './mediaUrl';
+import { imageDisplayUrl, normalizeMediaUrl, originalImageUrl } from './mediaUrl';
 import { commentMedia } from './commentMedia';
 import QRCode from 'qrcode';
-import { SupplierRecord, StoreInspoRecord, LocationRecord, AttachedFile, User } from '../types';
-import { activityStages, activityStageName, activityFieldLabels, getActivityEntries } from './activityHistory';
+import { SupplierRecord, StoreInspoRecord, LocationRecord, AttachedFile, User, ReviewerNote, ReviewReply } from '../types';
+import { getActivityEntries } from './activityHistory';
 import { getItemVoiceNotes } from './audioHelper';
-import { FALLBACK_DEMO_VIDEO_URL } from './mediaStorage';
 import { getRenderServerUrl } from '../services/api';
 
 function escapeHtml(str?: string | number | null): string {
@@ -159,11 +158,12 @@ export function buildExecutiveReportHtml(
 
   // Collect all voice clips (main item + sub-items)
   const mainVoiceClips = getItemVoiceNotes(item);
-  const allVoiceClips: { label: string; durationSec: number; source: string }[] = [];
+  const allVoiceClips: { label: string; durationSec: number; source: string; url: string }[] = [];
   mainVoiceClips.forEach((vc, idx) => {
     allVoiceClips.push({
       label: vc.label || `คลิปเสียงหน้างาน #${idx + 1}`,
-      durationSec: vc.durationSec || 4,
+      durationSec: vc.durationSec || 0,
+      url: vc.url,
       source: 'บันทึกเสียงหลักหน้างานจริง',
     });
   });
@@ -172,7 +172,8 @@ export function buildExecutiveReportHtml(
       getItemVoiceNotes(c).forEach((vc, vIdx) => {
         allVoiceClips.push({
           label: vc.label || `คลิปเสียงสินค้า #${vIdx + 1}`,
-          durationSec: vc.durationSec || 4,
+          durationSec: vc.durationSec || 0,
+      url: vc.url,
           source: `สินค้า: ${c.name || `รายการที่ #${cIdx + 1}`}`,
         });
       });
@@ -182,7 +183,8 @@ export function buildExecutiveReportHtml(
       getItemVoiceNotes(d).forEach((vc, vIdx) => {
         allVoiceClips.push({
           label: vc.label || `คลิปเสียงเมนู #${vIdx + 1}`,
-          durationSec: vc.durationSec || 4,
+          durationSec: vc.durationSec || 0,
+      url: vc.url,
           source: `เมนู: ${d.name || `แก้วที่ #${dIdx + 1}`}`,
         });
       });
@@ -191,7 +193,6 @@ export function buildExecutiveReportHtml(
 
   // Collect all videos
   const rawVideos = Array.isArray(item.videos) ? item.videos.filter(Boolean) : [];
-  const fallbackThumbUrl = allPhotos[0]?.url || './logo.jpg';
 
   const viewedBy = Array.isArray(item.viewedBy) ? item.viewedBy : [];
   const likes = Array.isArray(item.likes) ? item.likes : [];
@@ -213,6 +214,18 @@ export function buildExecutiveReportHtml(
 
   const handoffStageLabel = stageMap[item.handoffStage || 'awaiting'] || 'พาร์ท 1: รอรับช่วงต่อ';
 
+  const mediaLink = (url: string) => {
+    const normalized = normalizeMediaUrl(url);
+    try {
+      const resolved = new URL(normalized, normalizedBase);
+      return ['http:', 'https:'].includes(resolved.protocol) ? resolved.href : '';
+    } catch { return ''; }
+  };
+  const mediaAccess = (url: string, label: string) => {
+    const href = mediaLink(url);
+    return href ? `<div class="media-access"><a href="${escapeHtml(href)}" target="_blank" rel="noopener noreferrer">${segmentThaiHtml(label)}</a><img class="media-qr" width="56" height="56" src="${generateQrSvgDataUri(href)}" alt="QR เปิดไฟล์" /></div>` : '';
+  };
+
   // Build Multimedia Section (Voice Notes + Video Clips with Thumbnails)
   const voiceCardsHtml =
     allVoiceClips.length > 0
@@ -224,8 +237,8 @@ export function buildExecutiveReportHtml(
                 <div class="voice-icon">▶</div>
                 <div class="voice-meta">
                   <div class="voice-title">${segmentThaiHtml(`${idx + 1}. ${vc.label}`)}</div>
-                  <div class="voice-sub">${segmentThaiHtml(`${vc.source} · ความยาว ${vc.durationSec} วินาที`)}</div>
-                  <div class="voice-wave">${segmentThaiHtml('ılıll|ılıl||ılıll|ılı · สแกน QR เพื่อกดฟังเสียงจริง')}</div>
+                  <div class="voice-sub">${segmentThaiHtml(`${vc.source} · ${vc.durationSec ? `ความยาว ${vc.durationSec} วินาที` : 'ไม่ระบุความยาวเสียง'}`)}</div>
+                  ${mediaAccess(vc.url, 'เปิดฟังเสียงบันทึก')}
                 </div>
               </div>`
             )
@@ -233,42 +246,32 @@ export function buildExecutiveReportHtml(
         </div>`
       : `<div class="empty-note">${segmentThaiHtml('ไม่มีไฟล์เสียงบันทึกในรายการนี้')}</div>`;
 
-  const videoCardsHtml =
-    rawVideos.length > 0
-      ? `<div class="video-grid">
-          ${rawVideos
-            .map((vidUrl, idx) => {
-              const playableUrl = vidUrl.includes('gtv-videos-bucket')
-                ? FALLBACK_DEMO_VIDEO_URL
-                : vidUrl;
-              return `
-              <div class="video-card">
-                <div class="video-thumb-wrap">
-                  <img
-                    id="video-thumb-img-${idx}"
-                    class="video-thumb-img"
-                    src="${escapeHtml(imageDisplayUrl(fallbackThumbUrl, 2000))}"
-                    crossorigin="anonymous"
-                    data-video-src="${escapeHtml(playableUrl)}"
-                  />
-                  <div class="video-overlay-top">
-                    <span class="video-chip">VIDEO CLIP #${idx + 1}</span>
-                    <span class="video-chip-right">HD PREVIEW</span>
-                  </div>
-                  <div class="video-play-circle">▶</div>
-                  <div class="video-overlay-bottom">
-                    <span>${segmentThaiHtml(`คลิปวิดีโอที่ ${idx + 1} · สแกน QR Code ด้านบนเพื่อเปิดเล่นวิดีโอ`)}</span>
-                  </div>
-                </div>
-                <div class="video-caption">
-                  <div class="video-caption-title">${segmentThaiHtml(`คลิปวิดีโอหน้างาน #${idx + 1} (จากทั้งหมด ${rawVideos.length} คลิป)`)}</div>
-                  <div class="video-caption-sub">${segmentThaiHtml('เอกสารกระดาษแสดงภาพ Thumbnail ตัวอย่าง — สแกน QR Code เพื่อรับชมวิดีโอเคลื่อนไหวพร้อมเสียง')}</div>
-                </div>
-              </div>`;
-            })
-            .join('')}
-        </div>`
-      : `<div class="empty-note">${segmentThaiHtml('ไม่มีคลิปวิดีโอในรายการนี้')}</div>`;
+  const videoCard = (url: string, title: string) => `<figure class="video-card">
+    <div class="video-thumb-wrap"><img class="video-thumb-img" alt="${escapeHtml(title)}" crossorigin="anonymous" data-video-src="${escapeHtml(mediaLink(url))}" hidden /><p class="video-thumb-status">กำลังเตรียมภาพจากคลิปนี้…</p></div>
+    <figcaption class="video-caption"><div class="video-caption-title">${segmentThaiHtml(title)}</div>${mediaAccess(url, 'เปิดคลิปพร้อมเสียง')}</figcaption>
+  </figure>`;
+  const videoCardsHtml = rawVideos.length
+    ? `<div class="video-grid media-masonry">${rawVideos.map((url, i) => videoCard(url, `คลิปวิดีโอหน้างาน #${i + 1}`)).join('')}</div>`
+    : `<div class="empty-note">${segmentThaiHtml('ไม่มีคลิปวิดีโอในรายการนี้')}</div>`;
+
+  const reportDate = (value?: string) => value && !Number.isNaN(Date.parse(value)) ? new Date(value).toLocaleString('th-TH') : value || 'ไม่ระบุเวลา';
+  const commentHtml = (note: ReviewerNote | ReviewReply, number: string, reply = false) => {
+    const author = users.find(u => u.id === note.authorId)?.alias || note.author;
+    const context = `${reply ? 'ตอบกลับ' : 'ความคิดเห็น'} #${number}`;
+    const media = commentMedia(note);
+    const voice = note.voiceUrl || note.audioUrl;
+    return `<article class="comment-box${reply ? ' reply-item' : ''}" data-comment-id="${escapeHtml(note.id)}">
+      <div class="comment-header"><strong class="comment-author">${segmentThaiHtml(`${context} · ${author}`)}</strong><time class="comment-time">${segmentThaiHtml(reportDate(note.timestamp))}</time></div>
+      ${'replyToAuthor' in note && note.replyToAuthor ? `<p class="comment-target">${segmentThaiHtml(`ตอบกลับ ${note.replyToAuthor}`)}</p>` : ''}
+      ${note.text ? `<div class="comment-body">${segmentThaiHtml(note.text)}</div>` : ''}
+      ${media.length ? `<div class="comment-media media-masonry">${media.map((m, i) => {
+        const label = `${m.type === 'video' ? 'วิดีโอ' : 'ภาพ'}แนบ ${i + 1} · ${context}${m.name ? ` · ${m.name}` : ''}`;
+        return m.type === 'video' ? videoCard(m.url, label) : `<figure class="photo-card"><img src="${escapeHtml(imageDisplayUrl(m.url, 2000))}" crossorigin="anonymous" alt="${escapeHtml(label)}" /><figcaption class="photo-caption">${segmentThaiHtml(label)}${mediaAccess(originalImageUrl(m.url), 'เปิดภาพต้นฉบับ')}</figcaption></figure>`;
+      }).join('')}</div>` : ''}
+      ${voice ? `<div class="comment-audio"><strong>${segmentThaiHtml(`เสียงแนบ · ${context}${note.duration ? ` · ${note.duration} วินาที` : ''}`)}</strong>${mediaAccess(voice, 'เปิดฟังเสียง')}</div>` : ''}
+    </article>`;
+  };
+  const commentsHtml = notes.map((note, index) => `<section class="comment-thread">${commentHtml(note, String(index + 1))}${(note.replies || []).map((reply, i) => commentHtml(reply, `${index + 1}.${i + 1}`, true)).join('')}</section>`).join('');
 
   // Build Catalog or Drink Items Table HTML
   let itemsSectionHtml = '';
@@ -432,6 +435,13 @@ export function buildExecutiveReportHtml(
     `;
   }
 
+  if (loc) {
+    const labels: Record<string, string> = { usableAreaSqm: 'พื้นที่ใช้สอย (ตร.ม.)', frontageWidthM: 'หน้ากว้าง (เมตร)', ceilingHeightM: 'เพดานสูง (เมตร)', layoutFormat: 'รูปแบบพื้นที่', electricalPower: 'ระบบไฟฟ้า', hasWaterInflow: 'ท่อน้ำดี', hasDrainage: 'ท่อน้ำทิ้ง', hasGreaseTrap: 'ถังดักไขมัน', riderAccessNotes: 'การเข้าถึงของไรเดอร์', rentModel: 'รูปแบบค่าเช่า', monthlyRentThb: 'ค่าเช่า (บาท/เดือน)', monthlyRentRmb: 'ค่าเช่า (หยวน/เดือน)', gpPercent: 'ส่วนแบ่ง GP (%)', serviceFeePerSqm: 'ค่าส่วนกลาง/ตร.ม.', depositMonths: 'เงินประกัน (เดือน)', leasePeriodYears: 'ระยะสัญญา (ปี)', fitOutPeriodDays: 'ระยะตกแต่งปลอดค่าเช่า (วัน)', contactPerson: 'ผู้ติดต่อ', contactPhone: 'โทรศัพท์', contactLineWechat: 'LINE / WeChat' };
+    const choices: Record<string, string> = { inline: 'ห้องแถว', corner: 'ห้องมุม', island: 'พื้นที่เกาะกลาง', kiosk: 'คีออสก์', fixed: 'ค่าเช่าคงที่', gp: 'ส่วนแบ่งยอดขาย', hybrid: 'ค่าเช่าคงที่และส่วนแบ่ง' };
+    const fields = { ...loc.spaceSpecs, ...loc.leaseTerms, ...(loc.unitNumber ? { unitNumber: loc.unitNumber } : {}) };
+    itemsSectionHtml = `<div class="section-box location-details"><div class="section-title">กลุ่มที่ 3: ข้อมูลพื้นที่และเงื่อนไขเช่า</div><div class="info-grid">${Object.entries(fields).filter(([, value]) => value !== undefined && value !== null && value !== '').map(([key, value]) => `<div class="info-item"><span class="info-label">${segmentThaiHtml(key === 'unitNumber' ? 'เลขที่ห้อง' : labels[key] || key)}</span><span class="info-value">${segmentThaiHtml(typeof value === 'boolean' ? value ? 'มี' : 'ไม่มี' : choices[String(value)] || String(value))}</span></div>`).join('')}</div></div>`;
+  }
+
   // Build Attached Files Section
   const rawAttachedFiles: AttachedFile[] = (item as any).attachedFiles || [];
   const attachedFilesHtml =
@@ -477,12 +487,12 @@ export function buildExecutiveReportHtml(
   // Build All Photos Grid
   const photosGridHtml =
     allPhotos.length > 0
-      ? `<div class="photo-grid">
+      ? `<div class="photo-grid media-masonry">
           ${allPhotos
             .map(
               (p, i) => `
               <div class="photo-card">
-                <img src="${escapeHtml(imageDisplayUrl(p.url, 2000))}" crossorigin="anonymous" />
+                <img src="${escapeHtml(imageDisplayUrl(p.url, 2000))}" crossorigin="anonymous" alt="${escapeHtml(p.label)}" />
                 <div class="photo-caption">${segmentThaiHtml(`รูปที่ ${i + 1}: ${p.label}`)}</div>
               </div>`
             )
@@ -490,66 +500,11 @@ export function buildExecutiveReportHtml(
         </div>`
       : `<div class="empty-note">${segmentThaiHtml('ไม่มีรูปภาพในรายการนี้')}</div>`;
 
-  // Build Comments & Replies Section
-  // Render the same complete history as the detail page, independent of UI filters.
-  // Blocks can flow across printed pages; a long event must never be clipped in a table row.
-  const historyValueHtml = (value: unknown, field: string): string => {
-    if (value == null || value === '' || Array.isArray(value) && !value.length) return '<span class="audit-empty">ยังไม่ระบุ / ไม่มีข้อมูล</span>';
-    if (Array.isArray(value)) return value.map((v, i) => `<div class="audit-value-item"><b>${i + 1}.</b> ${historyValueHtml(v, field)}</div>`).join('');
-    if (typeof value === 'object') return Object.entries(value).filter(([key]) => !['id', 'driveFileId'].includes(key)).map(([key, v]) => `<div class="audit-value-item"><strong>${segmentThaiHtml(activityFieldLabels[key] || key)}:</strong> ${historyValueHtml(v, `${field}.${key}`)}</div>`).join('');
-    if (typeof value === 'boolean') return value ? 'ใช่' : 'ไม่ใช่';
-    const text = String(value);
-    if (field === 'handoffStage') return segmentThaiHtml(activityStageName(text));
-    if (field === 'assignedTo') return segmentThaiHtml(userName(text));
-    if (field === 'status') return segmentThaiHtml(({ scouted: 'สำรวจแล้ว', reviewing: 'เทียบสเปก', rfq_sent: 'ส่ง RFQ', shortlisted: 'ตัวเต็ง', ordered: 'สั่งซื้อแล้ว' } as Record<string, string>)[text] || text);
-    const isMediaField = /url$|photos|photo|videos|voice|audio|storefrontAndAtmosphere|contactCards|menuBoard|drinkCups|floorPlanAndSpecs|surroundingNeighbors/i.test(field);
-    if (isMediaField && /^(https?:\/\/|\.\/|\/(?!\/)|data:(image|audio|video)\/)/i.test(text)) {
-      let url: string;
-      try { url = new URL(text, /^\/(uploads|media)\//.test(text) ? getRenderServerUrl() : normalizedBase).href; } catch { return segmentThaiHtml(text); }
-      const isAudio = /voice|audio/i.test(field);
-      const isVideo = /video/i.test(field);
-      const isImage = !isAudio && !isVideo && (/photos|photo|storefrontAndAtmosphere|contactCards|menuBoard|drinkCups|floorPlanAndSpecs|surroundingNeighbors/i.test(field) || /\.(png|jpe?g|webp|gif)(\?|$)/i.test(text));
-      const link = text.startsWith('data:') ? directLink : url;
-      return `<div class="audit-media">${isImage ? `<img src="${escapeHtml(imageDisplayUrl(url, 2000))}" crossorigin="anonymous" alt="ภาพที่บันทึกในประวัติ" />` : ''}<a href="${escapeHtml(link)}" target="_blank" rel="noopener noreferrer">${segmentThaiHtml(isAudio ? 'เปิดไฟล์เสียง' : isVideo ? 'เปิดวิดีโอ' : isImage ? 'เปิดภาพ' : 'เปิดไฟล์แนบ')}</a>${isAudio || isVideo ? `<span class="audit-empty"> · ${segmentThaiHtml('เปิดผ่านลิงก์หรือ QR ของรายการเพื่อฟังและดูต่อ')}</span>` : ''}</div>`;
-    }
-    return segmentThaiHtml(text);
-  };
-
-  const currentStage = item.handoffStage || 'awaiting';
-  const recordedStages = historyEntries.filter(e => e.version === 2).flatMap(e => [e.stageBefore, e.stageAfter]);
-  const lastRelevantStage = Math.max(0, ...[currentStage, ...recordedStages].map(stage => activityStages.findIndex(([key]) => key === stage)));
-  const stageJourneyHtml = () => `<div class="audit-stages">${activityStages.slice(0, lastRelevantStage + 1).map(([stage], index) => {
-    const visits = historyEntries.filter(e => e.version === 2 && (e.stageBefore === stage || e.stageAfter === stage));
-    const entries = visits.filter(e => e.stageAfter === stage && e.stageBefore !== stage);
-    const current = currentStage === stage;
-    if (!visits.length) return `<div class="audit-stage audit-stage-missing">${segmentThaiHtml(`พาร์ท ${index + 1}: ไม่พบการบันทึกในพาร์ทนี้${current ? ' (สถานะปัจจุบัน)' : ''}`)}</div>`;
-    const rows = historyEntries.map((e, i) => e.version === 2 && e.stageAfter === stage ? activityRowsHtml[i] : '').join('');
-    return `<section class="audit-part"><div class="audit-stage ${current ? 'audit-current' : ''}"><strong>${segmentThaiHtml(activityStageName(stage))}${current ? ' · ปัจจุบัน' : ''}</strong>${entries.length > 1 ? `<span>${segmentThaiHtml(`บันทึกเข้า ${entries.length} ครั้ง`)}</span>` : ''}</div>${rows || `<p class="audit-empty">${segmentThaiHtml('พบพาร์ทนี้ในประวัติการส่งต่อไปขั้นตอนอื่น')}</p>`}</section>`;
-  }).join('')}</div>`;
-
-  const activityRowsHtml = historyEntries
-    .map((h, idx) => {
-      const actionLabel =
-        h.kind === 'handoff' || h.action === 'handoff'
-          ? 'ส่งต่องาน'
-          : h.kind === 'comment' || h.action === 'comment'
-          ? 'ความคิดเห็น'
-          : h.kind === 'reply' || h.action === 'reply'
-          ? 'ตอบกลับ'
-          : h.action;
-      const person = users.find(u => u.id === h.userId || u.alias === h.user || u.name === h.user);
-      const avatar = h.userAvatar || person?.avatar;
-      const safeAvatar = avatar && /^(https?:\/\/|\.\/|\/(?!\/)|data:image\/)/i.test(avatar) ? avatar : '';
-      const moved = h.version === 2 && h.stageBefore && h.stageBefore !== h.stageAfter;
-      return `<article class="audit-event" data-activity-id="${escapeHtml(h.id || idx)}">
-        <div class="audit-event-heading">${safeAvatar ? `<img class="audit-avatar" src="${escapeHtml(imageDisplayUrl(safeAvatar, 2000))}" crossorigin="anonymous" alt="${escapeHtml(person?.alias || h.user)}" />` : `<span class="audit-avatar audit-avatar-fallback">${escapeHtml((person?.alias || h.user || '?').slice(0, 1))}</span>`}<strong>${segmentThaiHtml(person?.alias || h.user)}</strong><span>${segmentThaiHtml(Number.isNaN(Date.parse(h.timestamp)) ? h.timestamp : new Date(h.timestamp).toLocaleString('th-TH'))}</span></div>
-        <div class="audit-action">${segmentThaiHtml(actionLabel)}</div>
-        ${h.version === 2 ? `<div class="audit-transition">${segmentThaiHtml(moved ? `${activityStageName(h.stageBefore)} → ${activityStageName(h.stageAfter)}` : `ณ ${activityStageName(h.stageAfter)}`)}</div>` : ''}
-        ${h.content ? `<div class="audit-content">${h.version !== 2 ? `<div class="audit-empty">${segmentThaiHtml('ข้อความที่ยังเก็บในรายการ · ไม่ทราบพาร์ท ณ เวลานั้น')}</div>` : ''}${h.content.replyToAuthor ? `<strong>${segmentThaiHtml(`ตอบกลับ ${h.content.replyToAuthor}`)}</strong>` : ''}<p>${segmentThaiHtml(h.content.text)}</p>${commentMedia(h.content).map(m => historyValueHtml(m.url, m.type === 'video' ? 'videos' : 'photo')).join('')}${h.content.voiceUrl || h.content.audioUrl ? historyValueHtml(h.content.voiceUrl || h.content.audioUrl, 'voice') : ''}</div>` : ''}
-        ${(h.kind === 'create' ? [] : h.changes || []).filter(c => c.field !== 'handoffStage').map(c => `<div class="audit-change"><h4>${segmentThaiHtml(activityFieldLabels[c.field] || c.field)}</h4>${c.before != null && c.before !== '' && (!Array.isArray(c.before) || c.before.length) ? `<div class="audit-before"><b>ก่อนเปลี่ยน</b><div>${historyValueHtml(c.before, c.field)}</div></div>` : ''}<div class="audit-after">${c.before != null && c.before !== '' ? '<b>หลังเปลี่ยน</b>' : ''}<div>${historyValueHtml(c.after, c.field)}</div></div></div>`).join('')}
-      </article>`;
-    });
-  const unassignedHistoryHtml = historyEntries.map((h, i) => h.version === 2 && activityStages.some(([stage]) => stage === h.stageAfter) ? '' : activityRowsHtml[i]).join('');
+  // Export every concise event, independent of the timeline's filter/page limit.
+  const activityRowsHtml = historyEntries.map((h, idx) => {
+    const person = users.find(u => u.id === h.userId || u.alias === h.user || u.name === h.user);
+    return `<article class="audit-event" data-activity-id="${escapeHtml(h.id || idx)}"><div class="audit-event-heading"><strong>${segmentThaiHtml(person?.alias || h.user)}</strong><span>${segmentThaiHtml(Number.isNaN(Date.parse(h.timestamp)) ? h.timestamp : new Date(h.timestamp).toLocaleString('th-TH'))}</span></div><div class="audit-action">${segmentThaiHtml(h.action)}</div></article>`;
+  }).join('');
 
   const viewerRowsHtml =
     viewedBy.length > 0
@@ -588,7 +543,8 @@ export function buildExecutiveReportHtml(
       : `<div class="empty-note" style="margin-top:8px;">${segmentThaiHtml('ยังไม่มีประวัติผู้เปิดอ่านเพิ่มเติม')}</div>`;
 
   const ratingSummaryText = isSupplier
-    ? `คะแนนประเมิน ${sup?.rating || 5}/5 ดาว (${sup?.isFactory ? 'โรงงานผลิต' : 'หน้าร้าน/โชว์รูม'})`
+    ? `คะแนนประเมิน ${sup?.rating ?? '-'}/5 ดาว (${sup?.isFactory ? 'โรงงานผลิต' : 'หน้าร้าน/โชว์รูม'})`
+    : isLocation ? `คนสัญจร ${loc?.ratings.footTraffic ?? '-'}/5 · การมองเห็น ${loc?.ratings.visibility ?? '-'}/5 · การเข้าถึง ${loc?.ratings.accessibility ?? '-'}/5 · ความคุ้มค่า ${loc?.ratings.valueRoi ?? '-'}/5`
     : `รสชาติ ${st?.ratings.taste}/5 · ดีไซน์ ${st?.ratings.aesthetics}/5 · คุ้มค่า ${st?.ratings.value}/5 · ความไว ${st?.ratings.speed}/5`;
 
   return `<!DOCTYPE html>
@@ -618,7 +574,7 @@ export function buildExecutiveReportHtml(
       color: #0f172a;
       margin: 0;
       padding: 0;
-      line-height: 1.55;
+      line-height: 1.35;
       -webkit-font-smoothing: antialiased;
     }
     .w-seg {
@@ -643,6 +599,7 @@ export function buildExecutiveReportHtml(
       left: 0;
       flex-wrap: wrap;
     }
+    .toolbar-btn:disabled { opacity: 0.5; cursor: wait; }
     .toolbar-btn {
       padding: 8px 16px;
       border-radius: 10px;
@@ -757,7 +714,7 @@ export function buildExecutiveReportHtml(
       text-align: right;
       font-size: 11px;
       color: #475569;
-      line-height: 1.5;
+      line-height: 1.35;
       max-width: 210px;
     }
     .meta-platform {
@@ -856,6 +813,8 @@ export function buildExecutiveReportHtml(
       background: #ffffff;
     }
     .section-title {
+      break-after: avoid;
+      page-break-after: avoid;
       font-size: 13px;
       font-weight: 800;
       color: #0f172a;
@@ -886,7 +845,7 @@ export function buildExecutiveReportHtml(
       font-size: 12px;
       color: #0f172a;
       font-weight: 700;
-      line-height: 1.45;
+      line-height: 1.35;
       word-break: break-word;
     }
     .note-banner {
@@ -906,7 +865,7 @@ export function buildExecutiveReportHtml(
       font-size: 12px;
       color: #0f172a;
       font-weight: 500;
-      line-height: 1.6;
+      line-height: 1.35;
       word-break: break-word;
     }
     .handoff-banner {
@@ -979,106 +938,30 @@ export function buildExecutiveReportHtml(
       margin-top: 2px;
     }
 
-    .video-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 10px;
-    }
-    .video-card {
-      border: 1px solid #cbd5e1;
-      border-radius: 8px;
-      overflow: hidden;
-      background: #0f172a;
-      page-break-inside: avoid;
-    }
-    .video-thumb-wrap {
-      position: relative;
-      width: 100%;
-      height: 124px;
-      background: #0f172a;
-      overflow: hidden;
-    }
-    .video-thumb-img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-      display: block;
-      opacity: 0.85;
-    }
-    .video-overlay-top {
-      position: absolute;
-      top: 8px;
-      left: 8px;
-      right: 8px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-    .video-chip {
-      background: #7c3aed;
-      color: #ffffff;
-      font-size: 9.5px;
-      font-weight: 800;
-      padding: 2px 7px;
-      border-radius: 4px;
-    }
-    .video-chip-right {
-      background: rgba(15, 23, 42, 0.8);
-      color: #e2e8f0;
-      font-size: 9px;
-      font-weight: 700;
-      padding: 2px 6px;
-      border-radius: 4px;
-    }
-    .video-play-circle {
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      width: 44px;
-      height: 44px;
-      border-radius: 50%;
-      background: rgba(15, 23, 42, 0.82);
-      border: 2px solid #ffffff;
-      color: #ffffff;
-      font-size: 18px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding-left: 3px;
-    }
-    .video-overlay-bottom {
-      position: absolute;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      background: rgba(15, 23, 42, 0.84);
-      color: #ffffff;
-      font-size: 10px;
-      font-weight: 700;
-      padding: 4px 8px;
-      text-align: center;
-    }
-    .video-caption {
-      background: #ffffff;
-      padding: 7px 10px;
-      border-top: 1px solid #cbd5e1;
-    }
-    .video-caption-title {
-      font-size: 11.5px;
-      font-weight: 800;
-      color: #0f172a;
-    }
-    .video-caption-sub {
-      font-size: 10px;
-      color: #475569;
-      margin-top: 2px;
-    }
+    .media-masonry { column-count: 2; column-gap: 12px; }
+    .video-card, .photo-card { display: inline-block; vertical-align: top; width: 100%; margin: 0 0 12px; break-inside: avoid; page-break-inside: avoid; }
+    .video-card { border: 1px solid #cbd5e1; border-radius: 8px; overflow: hidden; background: #fff; }
+    .video-thumb-wrap { position: relative; width: 100%; }
+    .video-thumb-img { display: block; width: 100%; height: auto; }
+    .video-thumb-img[hidden] { display: none; }
+    .video-thumb-status { padding: 14px; color: #64748b; font-size: 11px; }
+    .video-caption { padding: 8px 10px; border-top: 1px solid #cbd5e1; }
+    .video-caption-title { font-size: 11.5px; font-weight: 800; color: #0f172a; }
+    .media-access { position: relative; min-height: 56px; padding-right: 64px; margin-top: 6px; font-size: 10px; }
+    .media-access a { color: #047857; text-decoration: underline; overflow-wrap: anywhere; }
+    .media-access img.media-qr { position: absolute; display: block; right: 0; top: 0; width: 56px; height: 56px; }
+    .pdf-media-grid { column-count: auto; display: block; }
+    .pdf-media-row { display: flex; gap: 12px; align-items: flex-start; margin-bottom: 12px; break-inside: avoid; page-break-inside: avoid; }
+    .pdf-media-row > figure, .pdf-media-row > .photo-card { margin: 0; min-width: 0; }
+    .comment-media { margin-top: 10px; }
+    .comment-audio { border-top: 1px solid #cbd5e1; padding-top: 8px; break-inside: avoid; }
+    .comment-target { color: #64748b; font-size: 10px; }
 
     /* Complete activity history: normal document flow, with no fixed-height cells. */
     .activity-report { overflow: visible; }
     .activity-report .w-seg { max-width: 100%; white-space: normal; overflow-wrap: anywhere; }
-    .audit-intro, .audit-legacy { font-size: 11px; line-height: 1.6; }
+    .audit-intro { margin: 3px 0; break-after: avoid; page-break-after: avoid; }
+    .audit-intro, .audit-legacy { font-size: 11px; line-height: 1.35; }
     .audit-legacy { color: #92400e; background: #fffbeb; padding: 8px; }
     .audit-current-summary { border-left: 3px solid #059669; padding: 8px 12px; font-size: 11.5px; margin-bottom: 12px; }
     .audit-stages { margin-bottom: 12px; }
@@ -1086,12 +969,12 @@ export function buildExecutiveReportHtml(
     .audit-stage strong { display: block; font-size: 11px; }
     .audit-stage-missing { grid-column: 1 / -1; border: 0; padding: 2px 0; color: #64748b; }
     .audit-current { background: #ecfdf5; border-color: #10b981; }
-    .audit-event { border-bottom: 1px solid #e2e8f0; padding: 8px 0; margin: 0; font-size: 11.5px; overflow-wrap: anywhere; break-inside: avoid; }
+    .audit-event { border-bottom: 1px solid #e2e8f0; padding: 4px 0; margin: 0; font-size: 11.5px; overflow-wrap: anywhere; break-inside: avoid; }
     .audit-event-heading { display: flex; align-items: center; gap: 7px; font-size: 11px; break-after: avoid; }
     .audit-event-heading > span:last-child { color: #64748b; margin-left: auto; font-size: 10px; }
     .audit-avatar { width: 27px; height: 27px; border-radius: 50%; object-fit: cover; flex-shrink: 0; }
     .audit-avatar-fallback { background: #e2e8f0; color: #475569; text-align: center; line-height: 27px; }
-    .audit-action { font-weight: 700; margin-top: 6px; }
+    .audit-action { font-weight: 700; margin-top: 2px; }
     .audit-transition { color: #047857; font-weight: 700; margin: 6px 0; }
     .audit-change { margin: 6px 0; break-inside: avoid; }
     .audit-change h4 { margin: 0 0 2px; color: #334155; font-size: 11px; break-after: avoid; }
@@ -1131,8 +1014,7 @@ export function buildExecutiveReportHtml(
     }
     .table-thumb {
       width: 62px;
-      height: 62px;
-      object-fit: cover;
+      height: auto;
       border-radius: 6px;
       border: 1px solid #cbd5e1;
       display: block;
@@ -1153,18 +1035,18 @@ export function buildExecutiveReportHtml(
       font-weight: 800;
       color: #0f172a;
       font-size: 12px;
-      line-height: 1.4;
+      line-height: 1.35;
       margin-bottom: 2px;
     }
     .cell-text {
       color: #1e293b;
       font-size: 11.5px;
-      line-height: 1.45;
+      line-height: 1.35;
     }
     .cell-sub {
       font-size: 10.5px;
       color: #475569;
-      line-height: 1.4;
+      line-height: 1.35;
       margin-top: 2px;
     }
     .cell-price-green {
@@ -1190,11 +1072,7 @@ export function buildExecutiveReportHtml(
     }
 
     /* Photos Grid */
-    .photo-grid {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 10px;
-    }
+    .photo-grid { column-count: 3; }
     .photo-card {
       border: 1px solid #cbd5e1;
       border-radius: 8px;
@@ -1205,8 +1083,7 @@ export function buildExecutiveReportHtml(
     }
     .photo-card img {
       width: 100%;
-      height: 185px;
-      object-fit: contain;
+      height: auto;
       background: #f8fafc;
       display: block;
     }
@@ -1224,13 +1101,15 @@ export function buildExecutiveReportHtml(
     .comment-box {
       border: 1px solid #cbd5e1;
       border-radius: 8px;
-      padding: 8px 10px;
-      margin-bottom: 8px;
+      padding: 6px 8px;
+      margin-bottom: 6px;
       background: #f8fafc;
       font-size: 11.5px;
-      page-break-inside: avoid;
+      page-break-inside: auto;
+      break-inside: auto;
     }
     .comment-header {
+      break-after: avoid;
       display: flex;
       justify-content: space-between;
       align-items: center;
@@ -1247,9 +1126,11 @@ export function buildExecutiveReportHtml(
       color: #64748b;
     }
     .comment-body {
+      overflow-wrap: anywhere;
+      orphans: 3; widows: 3;
       color: #1e293b;
       font-weight: 500;
-      line-height: 1.5;
+      line-height: 1.35;
     }
     .reply-list {
       margin-top: 6px;
@@ -1282,6 +1163,7 @@ export function buildExecutiveReportHtml(
       color: #334155;
     }
 
+    @page { size: A4; margin: 8mm; }
     @media print {
       body { background: #ffffff; }
       .toolbar { display: none !important; }
@@ -1307,8 +1189,8 @@ export function buildExecutiveReportHtml(
     </div>
     <div style="display:flex;gap:8px;flex-wrap:wrap;">
       <a class="toolbar-btn btn-close" href="${escapeHtml(directLink)}">กลับหน้ารายละเอียด</a>
-      <button class="toolbar-btn btn-pdf" onclick="triggerDownloadPdf()">ดาวน์โหลด PDF</button>
-      <button class="toolbar-btn btn-print" onclick="window.print()">สั่งพิมพ์ (Print)</button>
+      <button class="toolbar-btn btn-pdf" data-report-export disabled onclick="triggerDownloadPdf()">ดาวน์โหลด PDF</button>
+      <button class="toolbar-btn btn-print" data-report-export disabled onclick="window.print()">สั่งพิมพ์ (Print)</button>
       <button class="toolbar-btn btn-close" onclick="window.close()">ปิดหน้านี้</button>
     </div>
   </div>
@@ -1318,7 +1200,7 @@ export function buildExecutiveReportHtml(
       <!-- Report Header with QR Code -->
       <div class="report-header">
         <div class="header-left">
-          <div class="badge">${segmentThaiHtml(`${isSupplier ? 'รายงานซัพพลายเออร์ & โรงงาน' : 'รายงานเรฟร้านน้ำ & R&D'} · ${countryLabel}`)}</div>
+          <div class="badge">${segmentThaiHtml(`${isSupplier ? 'รายงานซัพพลายเออร์ & โรงงาน' : isLocation ? 'รายงานสำรวจทำเล' : 'รายงานเรฟร้านน้ำ & R&D'} · ${countryLabel}`)}</div>
           <h1 class="brand-title">${segmentThaiHtml(title)}</h1>
           <div class="brand-sub">${segmentThaiHtml(`${chineseName ? `${chineseName} · ` : ''}หมวดหมู่: ${category}`)}</div>
 
@@ -1327,7 +1209,7 @@ export function buildExecutiveReportHtml(
             <span class="summary-pill">${segmentThaiHtml(`รูปภาพ ${allPhotos.length} รูป`)}</span>
             <span class="summary-pill">${segmentThaiHtml(`วอยซ์เสียง ${allVoiceClips.length} คลิป`)}</span>
             <span class="summary-pill">${segmentThaiHtml(`วิดีโอ ${rawVideos.length} คลิป`)}</span>
-            <span class="summary-pill">${segmentThaiHtml(isSupplier ? `สินค้า ${(sup?.catalogItems || []).length} รายการ` : `เมนูชิม ${(st?.drinkItems || []).length} เมนู`)}</span>
+            <span class="summary-pill">${segmentThaiHtml(isSupplier ? `สินค้า ${(sup?.catalogItems || []).length} รายการ` : isLocation ? `พื้นที่ ${loc?.spaceSpecs?.usableAreaSqm ?? '-'} ตร.ม.` : `เมนูชิม ${(st?.drinkItems || []).length} เมนู`)}</span>
             <span class="summary-pill">${segmentThaiHtml(`คอมเมนต์ ${notes.length} หัวข้อ`)}</span>
             <span class="summary-pill">${segmentThaiHtml(`ประวัติ Log ${historyEntries.length} รายการ`)}</span>
           </div>
@@ -1386,7 +1268,7 @@ export function buildExecutiveReportHtml(
           <div class="info-item">
             <span class="info-label">${segmentThaiHtml('ช่องทางติดต่อ (WeChat / LINE / โทรศัพท์)')}</span>
             <span class="info-value">${segmentThaiHtml(
-              `WeChat: ${(isSupplier ? sup?.wechatId : st?.wechatId) || '-'} | LINE: ${(isSupplier ? sup?.lineId : st?.lineId) || '-'} | โทร: ${(isSupplier ? sup?.phone : st?.phone) || '-'}`
+              isLocation ? `ผู้ติดต่อ: ${loc?.leaseTerms?.contactPerson || '-'} · โทร: ${loc?.leaseTerms?.contactPhone || '-'} · LINE / WeChat: ${loc?.leaseTerms?.contactLineWechat || '-'}` : `WeChat: ${(isSupplier ? sup?.wechatId : st?.wechatId) || '-'} | LINE: ${(isSupplier ? sup?.lineId : st?.lineId) || '-'} | โทร: ${(isSupplier ? sup?.phone : st?.phone) || '-'}`
             )}</span>
           </div>
           <div class="info-item">
@@ -1447,79 +1329,81 @@ export function buildExecutiveReportHtml(
         ${photosGridHtml}
       </div>
 
+      <div class="section-box comments-report" id="record-comments">
+        <div class="section-title">${segmentThaiHtml(`กลุ่มที่ 5: ความคิดเห็นและการตอบกลับ (${notes.length} ความคิดเห็น)`)}</div>
+        ${commentsHtml || `<div class="empty-note">ยังไม่มีความคิดเห็น</div>`}
+      </div>
+
       <!-- Group 6: Activity & Handoff Log + Viewer Log -->
       <div class="section-box activity-report" id="activity-history">
-        <div class="section-title">${segmentThaiHtml(`กลุ่มที่ 5: ประวัติการดำเนินงานและความคิดเห็น (${historyEntries.length} เหตุการณ์)`)}</div>
-        <p class="audit-intro">${segmentThaiHtml('จัดตามพาร์ทที่เกี่ยวข้อง แต่ละพาร์ทเรียงเหตุการณ์จากเก่าไปใหม่')}</p>
-        <div class="audit-current-summary"><strong>${segmentThaiHtml(`ปัจจุบัน: ${handoffStageLabel}`)}</strong><div>${segmentThaiHtml(`ผู้รับช่วงต่อ: ${item.assignedTo ? userName(item.assignedTo) : 'ยังไม่ระบุ'} · กำหนดติดตาม: ${item.targetFollowUpDate || 'ยังไม่ระบุ'}`)}</div></div>
-        ${stageJourneyHtml()}
-        ${historyEntries.some(h => h.version !== 2) ? `<p class="audit-legacy">${segmentThaiHtml('ประวัติเก่าแสดงตามที่บันทึกไว้ ไม่เติมขั้นตอนย้อนหลัง')}</p>` : ''}
-        ${unassignedHistoryHtml ? `<h3 class="audit-viewers">ประวัติที่ไม่ได้ระบุพาร์ท</h3>${unassignedHistoryHtml}` : ''}
+        <div class="section-title">${segmentThaiHtml(`กลุ่มที่ 6: ประวัติการดำเนินงาน (${historyEntries.length} เหตุการณ์)`)}</div>
+        <p class="audit-intro">${segmentThaiHtml('วันเวลา · ผู้ดำเนินการ · กิจกรรม เรียงจากเก่าไปใหม่')}</p>
+        ${activityRowsHtml}
         ${viewedBy.length ? `<h3 class="audit-viewers">${segmentThaiHtml('ผู้เปิดอ่านรายการ')}</h3>${viewerRowsHtml}` : ''}
       </div>
     </div>
   </div>
 
   <script>
-    // Extract real video frame thumbnail into <img data-video-src> when possible
+    // Never substitute another photo for a clip. Decode the actual file, preserving
+    // its dimensions; at most two transfers run together and repeated URLs share a frame.
     function prepareVideoThumbnails() {
-      var imgs = Array.prototype.slice.call(document.querySelectorAll('img[data-video-src]'));
-      return Promise.all(imgs.map(function(img) {
+      var imgs = Array.from(document.querySelectorAll('img[data-video-src]'));
+      var completed = 0;
+      var groups = new Map();
+      imgs.forEach(function(img) {
+        var src = img.getAttribute('data-video-src');
+        if (!groups.has(src)) groups.set(src, []);
+        groups.get(src).push(img);
+      });
+      var queue = Array.from(groups.entries());
+      function frame(src, targets) {
         return new Promise(function(resolve) {
-          var src = img.getAttribute('data-video-src');
-          if (!src) return resolve();
+          var video = document.createElement('video');
           var done = false;
-          var finish = function() {
-            if (!done) {
-              done = true;
-              resolve();
-            }
+          var finish = function(data) {
+            if (done) return;
+            done = true; clearTimeout(timer);
+            completed += targets.length;
+            var progress = document.getElementById('status-indicator');
+            if (progress) progress.textContent = 'เตรียมภาพจากคลิป ' + completed + ' / ' + imgs.length;
+            targets.forEach(function(img) {
+              var status = img.parentElement.querySelector('.video-thumb-status');
+              if (data) { img.src = data; img.hidden = false; img.dataset.thumbnailStatus = 'ready'; status.hidden = true; }
+              else { img.dataset.thumbnailStatus = 'unavailable'; status.textContent = 'ไม่สามารถสร้างภาพจากคลิปนี้ได้ · เปิดคลิปจากลิงก์ด้านล่าง'; }
+            });
+            video.pause(); video.removeAttribute('src'); video.load();
+            Promise.all(targets.map(function(img) { return data ? img.decode().catch(function(){}) : Promise.resolve(); })).then(resolve);
           };
-          var timer = setTimeout(finish, 1800);
-          try {
-            var video = document.createElement('video');
-            video.crossOrigin = 'anonymous';
-            video.muted = true;
-            video.playsInline = true;
-            video.preload = 'auto';
-            video.addEventListener('loadeddata', function() {
-              try {
-                video.currentTime = Math.min(0.5, (video.duration || 1) * 0.25);
-              } catch (e) {
-                clearTimeout(timer);
-                finish();
-              }
-            });
-            video.addEventListener('seeked', function() {
-              try {
-                var canvas = document.createElement('canvas');
-                canvas.width = video.videoWidth || 480;
-                canvas.height = video.videoHeight || 270;
-                var ctx = canvas.getContext('2d');
-                if (ctx) {
-                  ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-                  img.src = canvas.toDataURL('image/jpeg', 0.85);
-                }
-              } catch (e) {}
-              clearTimeout(timer);
-              finish();
-            });
-            video.addEventListener('error', function() {
-              clearTimeout(timer);
-              finish();
-            });
-            video.src = src;
-          } catch (e) {
-            clearTimeout(timer);
-            finish();
-          }
+          var timer = setTimeout(function() { finish(); }, 30000);
+          var capture = function() {
+            if (done || !video.videoWidth || !video.videoHeight) return;
+            try {
+              var scale = Math.min(1, 1200 / Math.max(video.videoWidth, video.videoHeight));
+              var canvas = document.createElement('canvas');
+              canvas.width = Math.round(video.videoWidth * scale); canvas.height = Math.round(video.videoHeight * scale);
+              canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
+              finish(canvas.toDataURL('image/jpeg', 0.9));
+            } catch(e) { finish(); }
+          };
+          video.crossOrigin = 'anonymous'; video.muted = true; video.playsInline = true; video.preload = 'auto';
+          video.addEventListener('loadeddata', function() {
+            var time = Number.isFinite(video.duration) ? Math.min(0.5, video.duration / 4) : 0;
+            if (time > 0) { try { video.currentTime = time; } catch(e) { capture(); } }
+            else capture();
+          }, {once: true});
+          video.addEventListener('seeked', capture, {once: true});
+          video.addEventListener('error', function() { finish(); }, {once: true});
+          if (src) video.src = src; else finish();
         });
-      }));
+      }
+      async function worker() { while (queue.length) { var entry = queue.shift(); await frame(entry[0], entry[1]); } }
+      return Promise.all([worker(), worker()]);
     }
 
     // Rasterize all SVG QR images onto PNG Data URLs so html2canvas renders them crisply on all browsers
     function rasterizeQrImage() {
-      var qrImgs = Array.prototype.slice.call(document.querySelectorAll('#report-qr-img, .file-attachment-qr img'));
+      var qrImgs = Array.prototype.slice.call(document.querySelectorAll('#report-qr-img, .file-attachment-qr img, .media-qr'));
       if (!qrImgs.length) return Promise.resolve();
       return Promise.all(qrImgs.map(function(img) {
         return new Promise(function(resolve) {
@@ -1545,6 +1429,31 @@ export function buildExecutiveReportHtml(
           temp.src = img.src;
         });
       }));
+    }
+
+    function pdfLayout(element) {
+      var clone = element.cloneNode(true);
+      // html2pdf cannot paginate CSS columns reliably. Keep natural image heights
+      // in complete rows for the downloadable PDF; the preview stays masonry.
+      clone.querySelectorAll('.media-masonry').forEach(function(grid) {
+        var cards = Array.from(grid.children);
+        var portraitClips = grid.classList.contains('video-grid') && cards.every(function(card) {
+          var image = card.querySelector('.video-thumb-img');
+          return image && !image.hidden && image.naturalHeight > image.naturalWidth;
+        });
+        var columns = grid.classList.contains('photo-grid') || portraitClips ? 3 : 2;
+        grid.replaceChildren(); grid.classList.remove('media-masonry'); grid.classList.add('pdf-media-grid');
+        grid.style.columnCount = 'auto';
+        for (var i = 0; i < cards.length; i += columns) {
+          var row = document.createElement('div'); row.className = 'pdf-media-row';
+          cards.slice(i, i + columns).forEach(function(card) {
+            var width = 'calc((100% - ' + ((columns - 1) * 12) + 'px) / ' + columns + ')';
+            card.style.width = width; card.style.flex = '0 0 ' + width; row.appendChild(card);
+          });
+          grid.appendChild(row);
+        }
+      });
+      return clone;
     }
 
     function triggerDownloadPdf() {
@@ -1578,10 +1487,10 @@ export function buildExecutiveReportHtml(
           jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
           pagebreak: {
             mode: ['css', 'legacy'],
-            avoid: ['tr', '.info-item', '.voice-card', '.video-card', '.photo-card', '.comment-box', '.note-banner', '.handoff-banner', '.report-header', '.file-attachment-card', '.audit-stage', '.audit-event', '.audit-change', '.audit-event-heading', '.audit-media']
+            avoid: ['.location-details', '.pdf-media-row', 'tr', '.info-item', '.voice-card', '.video-card', '.photo-card', '.comment-header', '.comment-audio', '.note-banner', '.handoff-banner', '.report-header', '.file-attachment-card', '.audit-stage', '.audit-event', '.audit-change', '.audit-event-heading', '.audit-media']
           }
         };
-        var worker = window.html2pdf().set(opt).from(element);
+        var worker = window.html2pdf().set(opt).from(pdfLayout(element));
         worker.toContainer().then(function() {
           if (this.prop && this.prop.overlay) {
             this.prop.overlay.style.position = 'absolute';
@@ -1613,7 +1522,10 @@ export function buildExecutiveReportHtml(
     window.addEventListener('load', function() {
       var mode = ${JSON.stringify(mode)};
       var fontsReady = (document.fonts && document.fonts.ready) ? document.fonts.ready : Promise.resolve();
-      Promise.all([fontsReady, rasterizeQrImage(), prepareVideoThumbnails()]).then(function() {
+      window.reportReady = Promise.all([fontsReady, rasterizeQrImage(), prepareVideoThumbnails()]);
+      window.reportReady.then(function() {
+        document.documentElement.dataset.reportReady = 'true';
+        document.querySelectorAll('[data-report-export]').forEach(function(button) { button.disabled = false; });
         setTimeout(function() {
           if (mode === 'pdf') {
             triggerDownloadPdf();

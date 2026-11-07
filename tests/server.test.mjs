@@ -524,7 +524,8 @@ test('field comments append mixed media for each author without editing the reco
     assert.deepEqual(replied.data.item.reviewerNotes[0].replies[0].media, [media[1]]);
     assert.equal(replied.data.item.reviewerNotes[0].authorId, 'user-review');
     assert.equal(replied.data.item.reviewerNotes[0].replies[0].authorId, 'user-admin');
-    assert.deepEqual(replied.data.item.history.find(e => e.id === 'mixed-note').content.media, media);
+    assert.deepEqual(replied.data.item.history.find(e => e.id === 'mixed-note').mediaCounts, { images: { added: 2, removed: 0 }, videos: { added: 1, removed: 0 } });
+    assert.equal(replied.data.item.history.find(e => e.id === 'mixed-note').content, undefined);
     assert.equal((await call(action, viewer, { ...payload, operationId: 'forbidden' })).status, 403);
     for (const invalid of [[{ ...media[0], url: 'blob:local-only' }], [{ ...media[0], url: 'javascript:alert(1)' }], [{ ...media[0], type: 'script' }], Array.from({ length: 21 }, (_, i) => ({ ...media[0], id: String(i) })), [media[0], media[0]]]) {
       assert.equal((await call(action, reviewer, { ...payload, operationId: 'bad-media', data: { media: invalid } })).status, 400);
@@ -824,7 +825,7 @@ test('lab failed/retried comments cannot appear twice and Viewer cannot write in
  assert.equal((await call('/api/lead-lab/items',editor,{id:item.id,name:'New edit',expectedUpdatedAt:item.updatedAt,revisionCycles:[]})).data.item.revisionCycles[0].comments.length,1);
 });
 
-test('activity audit preserves full immutable before/after, skipped and backward stages, media and retries', async t => {
+test('concise activity records counts once, preserves current content and rejects retries and forged history', async t => {
   const { call, login, dir } = await setup(t); const token = await login('ice');
   const initialUsers = JSON.parse(fs.readFileSync(path.join(dir,'database.json'))).users;
   const create = await call('/api/suppliers', token, item); assert.equal(create.status,200);
@@ -835,8 +836,8 @@ test('activity audit preserves full immutable before/after, skipped and backward
   assert.equal((await act('audit-forward',{handoffStage:'sample_test',assignedTo:'user-review',handoffNotes:full,targetFollowUpDate:'2026-11-05'})).status,200);
   record=await snapshot();
   const first=structuredClone(record.history.at(-1));
-  assert.equal(first.stageBefore,'awaiting');assert.equal(first.stageAfter,'sample_test');
-  assert.equal(first.changes.find(c=>c.field==='handoffNotes').after,full);
+  assert.equal(first.version,3); assert.equal(first.action,'อัปเดตการส่งต่องาน');
+  assert.equal(first.changes,undefined); assert.equal(record.handoffNotes,full);
   assert.equal(first.userId,'user-ice');
   assert.equal((await act('audit-forward',{handoffStage:'sample_test'})).status,200);
   assert.equal((await snapshot()).history.length,record.history.length);
@@ -844,22 +845,24 @@ test('activity audit preserves full immutable before/after, skipped and backward
   assert.equal((await snapshot()).history.length,record.history.length);
   assert.equal((await act('audit-back',{handoffStage:'rfq_sent',assignedTo:'',handoffNotes:'',targetFollowUpDate:''})).status,200);
   record=await snapshot();const back=record.history.at(-1);
-  assert.equal(back.stageBefore,'sample_test');assert.equal(back.stageAfter,'rfq_sent');
-  for(const field of ['assignedTo','handoffNotes','targetFollowUpDate'])assert.equal(back.changes.find(c=>c.field===field).after,'');
-  assert.equal(back.changes.find(c=>c.field==='handoffNotes').before,full);
+  assert.equal(back.action,'อัปเดตการส่งต่องาน'); assert.equal(record.handoffStage,'rfq_sent');
+  for(const field of ['assignedTo','handoffNotes','targetFollowUpDate'])assert.equal(record[field],'');
+  assert.ok(!JSON.stringify(record.history).includes(full));
   assert.deepEqual(record.history.find(e=>e.id==='audit-forward'),first);
   assert.equal((await act('audit-comment',{text:full,photoUrl:'https://example.com/photo.png',voiceUrl:'https://example.com/voice.m4a'},'comment')).status,200);
-  record=await snapshot();assert.equal(record.history.at(-1).content.text,full);assert.equal(record.history.at(-1).content.voiceUrl,'https://example.com/voice.m4a');
+  record=await snapshot(); assert.deepEqual(record.history.at(-1).mediaCounts,{images:{added:1,removed:0},audio:{added:1,removed:0}}); assert.equal(record.reviewerNotes[0].text,full); assert.equal(record.reviewerNotes[0].voiceUrl,'https://example.com/voice.m4a');
   assert.equal((await act('audit-reply',{noteId:'audit-comment',text:full},'reply')).status,200);
-  record=await snapshot();assert.equal(record.history.at(-1).content.noteId,'audit-comment');assert.equal(record.history.at(-1).content.text,full);
-  assert.equal(record.history.find(e=>e.id==='audit-comment').content.replies.length,0);
+  record=await snapshot(); assert.equal(record.history.at(-1).kind,'reply'); assert.equal(record.history.at(-1).content,undefined); assert.equal(record.reviewerNotes[0].replies[0].text,full);
+  assert.ok(!JSON.stringify(record.history).includes('https://example.com/')); assert.ok(!JSON.stringify(record.history).includes(full));
   const beforeEdit=structuredClone(record);
   assert.equal((await call('/api/suppliers',token,{...record,memo:full,attachedFiles:[{id:'f1',name:'Specs.pdf',url:'https://example.com/specs.pdf'}],history:[]})).status,200);
   record=await snapshot();assert.equal(record.history.length,beforeEdit.history.length+1);
-  assert.equal(record.history.at(-1).changes.find(c=>c.field==='memo').after,full);
-  assert.equal(record.history.at(-1).changes.find(c=>c.field==='attachedFiles').after[0].name,'Specs.pdf');
+  assert.equal(record.memo,full); assert.equal(record.attachedFiles[0].name,'Specs.pdf');
+  assert.deepEqual(record.history.at(-1).mediaCounts,{files:{added:1,removed:0}});
   assert.equal((await call('/api/suppliers',token,{...record,attachedFiles:[]})).status,200);
-  record=await snapshot();assert.equal(record.history.at(-1).changes.find(c=>c.field==='attachedFiles').before[0].name,'Specs.pdf');assert.deepEqual(record.history.at(-1).changes.find(c=>c.field==='attachedFiles').after,[]);
+  record=await snapshot(); assert.deepEqual(record.history.at(-1).mediaCounts,{files:{added:0,removed:1}}); assert.deepEqual(record.attachedFiles,[]);
+  const persisted=JSON.parse(fs.readFileSync(path.join(dir,'database.json'))).suppliers[0];
+  assert.ok(persisted.history.every(event=>event.version===3 && !event.changes && !event.content && !event.userAvatar));
   const usersAfter=JSON.parse(fs.readFileSync(path.join(dir,'database.json'))).users;
   assert.deepEqual(usersAfter,initialUsers);
   assert.equal((await call(`/api/suppliers/${item.id}`,token,{revision:record.revision},'DELETE')).status,200);

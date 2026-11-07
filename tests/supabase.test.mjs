@@ -18,7 +18,7 @@ async function fixture(t, { simulation = false, large = false } = {}) {
   if (large) {
     const avatar = `data:image/jpeg;base64,${randomBytes(52000).toString('base64')}`;
     body.users[0].avatar = avatar;
-    body.suppliers = Array.from({ length: 30 }, (_, i) => ({ id: `old-${i}`, name: `Old ${i}`, revision: 0, photos: { storefrontAndAtmosphere: ['/media/old-photo'], contactCards: [] }, history: Array.from({ length: 5 }, (_, j) => ({ id: `h-${i}-${j}`, userAvatar: avatar, action: 'create' })) }));
+    body.suppliers = Array.from({ length: 30 }, (_, i) => ({ id: `old-${i}`, name: `Old ${i}`, revision: 0, memo: 'field data '.repeat(42000), photos: { storefrontAndAtmosphere: ['/media/old-photo'], contactCards: [] }, history: Array.from({ length: 5 }, (_, j) => ({ id: `h-${i}-${j}`, userAvatar: avatar, action: 'create' })) }));
     body.notifications = Array.from({ length: 40 }, (_, i) => ({ id: `n-${i}`, userAvatar: avatar, title: 'Old', readBy: [] }));
   }
   if (simulation) body.users.push({ id: 'user-ann', emailOrId: 'ann', name: 'Ann', alias: 'Ann', pin: '', role: 'viewer', avatar: '' });
@@ -231,6 +231,7 @@ test('13 MB database saves a supplier and five photos with a small delta, retryi
   const f = await fixture(t, { large: true }); const a = await f.start();
   const before = await f.read();
   assert.ok(Buffer.byteLength(JSON.stringify(before)) > 13_000_000);
+  assert.ok(before.suppliers.every(item => item.history.every(event => event.version === 3 && !event.userAvatar)), 'migration persists concise events');
   const command = { id: 'field-large-save', name: 'Five photos', rating: 0, category: 'Field test', location: { lat: 23, lng: 113 }, catalogItems: [], photos: { storefrontAndAtmosphere: Array.from({ length: 5 }, (_, i) => `/media/photo-${i}`), contactCards: [] } };
   f.payloads.length = 0; f.failOnce();
   const result = await a.call('/api/suppliers', command, a.token);

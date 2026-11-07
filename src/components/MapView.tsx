@@ -8,6 +8,13 @@ import 'leaflet/dist/leaflet.css';
 const GOOGLE_TILE_URL = 'https://{s}.google.com/vt/lyrs=m&hl=en&gl=US&x={x}&y={y}&z={z}';
 import { Factory, Coffee, Layers, MapPin, ChevronRight, X, Navigation, Search, Crosshair, Loader2, Sparkles, ClipboardPaste } from 'lucide-react';
 import { searchPlacesApi, parseCoordinatesOrMapUrl, resolveMapUrlApi } from '../services/api';
+import { imageDisplayUrl } from '../utils/mediaUrl';
+
+function pinPhotoHtml(photo: string, name: string): string {
+  const escapeAttribute = (value: string) => value.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
+  // Leaflet inserts plain HTML; React components are not rendered inside divIcon.
+  return `<img src="${escapeAttribute(imageDisplayUrl(photo, 96))}" alt="${escapeAttribute(name)}" decoding="async" style="width: 100%; height: 100%; object-fit: cover;" />`;
+}
 
 interface MapViewProps {
   onSelectSupplier: (supplier: SupplierRecord) => void;
@@ -329,7 +336,7 @@ export const MapView: React.FC<MapViewProps> = ({
           null;
 
         const pinInner = photo
-          ? `<MediaImage src="${photo.replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;")}" style="width: 100%; height: 100%; object-fit: cover;" />`
+          ? pinPhotoHtml(photo, s.name)
           : `<div style="width: 100%; height: 100%; background: #ecfdf5; display: flex; align-items: center; justify-content: center; color: #059669; font-size: 18px;"><i class="fa-solid fa-industry"></i></div>`;
 
         const customIcon = L.divIcon({
@@ -369,7 +376,7 @@ export const MapView: React.FC<MapViewProps> = ({
           null;
 
         const pinInner = photo
-          ? `<MediaImage src="${photo.replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;")}" style="width: 100%; height: 100%; object-fit: cover;" />`
+          ? pinPhotoHtml(photo, d.storeName)
           : `<div style="width: 100%; height: 100%; background: #fffbeb; display: flex; align-items: center; justify-content: center; color: #d97706; font-size: 18px;"><i class="fa-solid fa-mug-hot"></i></div>`;
 
         const customIcon = L.divIcon({
@@ -409,7 +416,7 @@ export const MapView: React.FC<MapViewProps> = ({
           null;
 
         const pinInner = photo
-          ? `<MediaImage src="${photo.replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;")}" style="width: 100%; height: 100%; object-fit: cover;" />`
+          ? pinPhotoHtml(photo, loc.name)
           : `<div style="width: 100%; height: 100%; background: #f0f9ff; display: flex; align-items: center; justify-content: center; color: #0284c7; font-size: 18px;"><i class="fa-solid fa-map-location-dot"></i></div>`;
 
         const customIcon = L.divIcon({

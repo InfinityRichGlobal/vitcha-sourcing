@@ -169,6 +169,7 @@ export interface ActivityEntry {
   userAvatar?: string;
   timestamp: string;
   stageBefore?: HandoffStage | null;
+  mediaCounts?: Partial<Record<'images' | 'videos' | 'audio' | 'files', { added: number; removed: number }>>;
   stageAfter?: HandoffStage;
   changes?: Array<{ field: string; before: unknown; after: unknown }>;
   content?: Partial<ReviewerNote & ReviewReply> & { noteId?: string };
