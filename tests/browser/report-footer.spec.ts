@@ -23,8 +23,9 @@ test('every report page includes its record identity and actual page count in th
     return route.continue();
   });
   await page.addInitScript(() => { window.print = () => {}; });
-  // Subset Thai fonts can expose combining marks as NUL in PDF text extraction.
-  const normalized = (text: string) => text.normalize('NFKD').replace(/[\s\p{M}\u0000]/gu, '');
+  // macOS/Linux subset fonts expose Thai marks as combining, NUL or private-use
+  // glyph variants. Compare the complete base-letter identity and page counters.
+  const normalized = (text: string) => text.normalize('NFKD').replace(/[\s\p{M}\p{Co}\u0000]/gu, '');
   for (const entry of entries) {
     await page.route('**/footer-report', route => route.fulfill({ body: entry.html, contentType: 'text/html' }));
     await page.goto('/footer-report', { waitUntil: 'load' });
