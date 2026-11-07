@@ -637,7 +637,11 @@ export function buildExecutiveReportHtml(
       justify-content: space-between;
       gap: 12px;
       box-shadow: 0 4px 12px rgba(0,0,0,0.18);
-      min-width: 780px;
+      min-width: 0;
+      width: 100vw;
+      box-sizing: border-box;
+      left: 0;
+      flex-wrap: wrap;
     }
     .toolbar-btn {
       padding: 8px 16px;
@@ -650,6 +654,7 @@ export function buildExecutiveReportHtml(
       align-items: center;
       gap: 6px;
       font-family: inherit;
+      text-decoration: none;
     }
     .btn-pdf { background: #059669; color: #ffffff; }
     .btn-print { background: #2563eb; color: #ffffff; }
@@ -1300,7 +1305,8 @@ export function buildExecutiveReportHtml(
         ${mode === 'pdf' ? 'กำลังจัดหน้าและสร้างไฟล์ PDF...' : 'พร้อมพิมพ์รายงาน'}
       </span>
     </div>
-    <div style="display:flex;gap:8px;">
+    <div style="display:flex;gap:8px;flex-wrap:wrap;">
+      <a class="toolbar-btn btn-close" href="${escapeHtml(directLink)}">กลับหน้ารายละเอียด</a>
       <button class="toolbar-btn btn-pdf" onclick="triggerDownloadPdf()">ดาวน์โหลด PDF</button>
       <button class="toolbar-btn btn-print" onclick="window.print()">สั่งพิมพ์ (Print)</button>
       <button class="toolbar-btn btn-close" onclick="window.close()">ปิดหน้านี้</button>

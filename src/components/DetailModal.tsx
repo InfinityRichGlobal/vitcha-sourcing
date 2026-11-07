@@ -4,6 +4,7 @@ import { commentMedia } from '../utils/commentMedia';
 import { getPhotoGroups } from '../utils/photoGroups';
 import { normalizeMediaUrl, imageDisplayUrl, originalImageUrl } from '../utils/mediaUrl';
 import { MediaImage } from './MediaImage';
+import { AttachmentActions } from './AttachmentActions';
 import { ActivityTimeline } from './ActivityTimeline';
 import { AvatarImage } from './AvatarImage';
 import React, { useState, useEffect } from 'react';
@@ -13,7 +14,7 @@ import { SeenByBadge } from './SeenByBadge';
 import { openExecutiveReport } from '../utils/exportReport';
 import { getItemVoiceNotes } from '../utils/audioHelper';
 import { VideoPlayer } from './VideoPlayer';
-import { getFileCategoryInfo, formatBytes, openFileSafely } from './AttachedFilesSection';
+import { getFileCategoryInfo, formatBytes } from './AttachedFilesSection';
 import {
   X,
   MapPin,
@@ -53,7 +54,6 @@ import {
   Phone,
   User,
   Trash2,
-  ExternalLink,
 } from 'lucide-react';
 import { uploadMediaToServer } from '../services/api';
 
@@ -1025,7 +1025,7 @@ export const DetailModal: React.FC<DetailModalProps> = ({
                   <span>เอกสารและไฟล์แนบ ({(currentItem as any).attachedFiles.length} รายการ):</span>
                 </span>
                 <span className="text-[10px] text-slate-400">
-                  แตะเพื่อเปิดดูบน Google Drive / เบราว์เซอร์
+                  เปิด PDF ในแอป หรือดาวน์โหลดไฟล์ต้นฉบับ
                 </span>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -1033,18 +1033,9 @@ export const DetailModal: React.FC<DetailModalProps> = ({
                   const info = getFileCategoryInfo(file.name, file.mimeType);
                   const Icon = info.icon;
                   return (
-                    <a
+                    <div
                       key={file.id}
-                      href={file.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      onClick={(e) => {
-                        if (file.url.startsWith('data:')) {
-                          e.preventDefault();
-                          openFileSafely(file.url, file.name);
-                        }
-                      }}
-                      className="bg-white rounded-xl border border-slate-200/90 hover:border-sky-300 hover:shadow-xs p-3 flex items-center justify-between gap-3 transition-all group cursor-pointer"
+                      className="bg-white rounded-xl border border-slate-200/90 hover:border-sky-300 hover:shadow-xs p-3 flex flex-col items-stretch sm:flex-row sm:items-center justify-between gap-3 transition-all group"
                     >
                       <div className="flex items-center gap-2.5 min-w-0 flex-1">
                         <div
@@ -1070,11 +1061,8 @@ export const DetailModal: React.FC<DetailModalProps> = ({
                           </div>
                         </div>
                       </div>
-                      <span className="px-2.5 py-1 rounded-lg bg-sky-50 text-sky-700 group-hover:bg-sky-600 group-hover:text-white text-[11px] font-bold transition-all flex items-center gap-1 shrink-0">
-                        <span>เปิดไฟล์</span>
-                        <ExternalLink className="w-3 h-3" />
-                      </span>
-                    </a>
+                      <AttachmentActions file={file} />
+                    </div>
                   );
                 })}
               </div>

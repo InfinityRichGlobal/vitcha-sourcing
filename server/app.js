@@ -7,6 +7,7 @@ import express from 'express';
 import { parseCommentMedia } from './comment-media.js';
 import { SAMPLE_PACK_ID, sampleCatalog, mergeSamples } from './sample-pack.js';
 import cors from 'cors';
+import { downloadFilename } from './media-download.js';
 import fs from 'node:fs';
 import path from 'node:path';
 import { randomBytes, randomUUID, createHash, createHmac, scryptSync, timingSafeEqual } from 'node:crypto';
@@ -1352,7 +1353,10 @@ export function createApp({ dataDir, defaults = DEFAULT_DATABASE, sessionTtlMs =
 
   // Unpredictable media URLs support native video range requests. Never accept HTML/SVG.
   if (mediaStorage?.serve) app.get('/media/:id', mediaStorage.serve);
-  app.use('/uploads', express.static(uploads, { dotfiles: 'deny', setHeaders: res => { res.set('X-Content-Type-Options', 'nosniff'); res.set('Content-Security-Policy', "default-src 'none'; sandbox"); } }));
+  app.use('/uploads', express.static(uploads, { dotfiles: 'deny', setHeaders: res => {
+    res.set('X-Content-Type-Options', 'nosniff'); res.set('Content-Security-Policy', "default-src 'none'; sandbox");
+    if (res.req.query?.download === '1') res.attachment(downloadFilename(res.req.query.filename));
+  } }));
   app.use('/api', (_req, res) => res.status(404).json({ error: 'Unknown endpoint' }));
   app.use((err, _req, res, _next) => {
     const status = err.status || 500;

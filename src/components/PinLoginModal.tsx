@@ -185,6 +185,12 @@ export const PinLoginModal: React.FC<PinLoginModalProps> = ({
           <p className="text-xs leading-relaxed text-slate-500">ยังไม่มีรหัส? ขอคำเชิญจากผู้ดูแลทีมก่อนสมัครสมาชิก</p>
         </form>}
 
+        <nav aria-label="ข้อมูลแอปและความเป็นส่วนตัว" className="flex flex-wrap justify-center gap-x-4 gap-y-2 border-t border-slate-100 pt-4 text-[11px] text-slate-500">
+          <a href="./about.html" className="underline hover:text-emerald-700">ข้อมูลแอป</a>
+          <a href="./privacy.html" className="underline hover:text-emerald-700">ความเป็นส่วนตัว</a>
+          <a href="./terms.html" className="underline hover:text-emerald-700">เงื่อนไขการใช้งาน</a>
+        </nav>
+
         {!isGate && onClose && (
           <div className="text-center pt-1">
             <button

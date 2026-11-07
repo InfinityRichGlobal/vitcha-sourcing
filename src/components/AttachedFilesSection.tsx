@@ -6,13 +6,12 @@ import {
   File,
   Paperclip,
   Trash2,
-  ExternalLink,
   UploadCloud,
   Loader2,
 } from 'lucide-react';
 import { AttachedFile } from '../types';
 import { useMediaUploadQueue } from '../hooks/useMediaUploadQueue';
-import { originalImageUrl } from '../utils/mediaUrl';
+import { AttachmentActions } from './AttachmentActions';
 import { useApp } from '../context/AppContext';
 
 export interface AttachedFilesSectionProps {
@@ -26,26 +25,6 @@ export interface AttachedFilesSectionProps {
   title?: string;
   subtitle?: string;
   themeColor?: 'emerald' | 'amber' | 'sky' | 'indigo';
-}
-
-export function openFileSafely(url: string, name?: string) {
-  if (url.startsWith('data:')) {
-    try {
-      const arr = url.split(',');
-      const mime = arr[0].match(/:(.*?);/)?.[1] || 'application/octet-stream';
-      const bstr = atob(arr[1]);
-      let n = bstr.length;
-      const u8arr = new Uint8Array(n);
-      while (n--) {
-        u8arr[n] = bstr.charCodeAt(n);
-      }
-      const blob = new Blob([u8arr], { type: mime });
-      const blobUrl = URL.createObjectURL(blob);
-      window.open(blobUrl, '_blank', 'noopener,noreferrer');
-      return;
-    } catch {}
-  }
-  window.open(url, '_blank', 'noopener,noreferrer');
 }
 
 export function getFileCategoryInfo(name: string, mimeType?: string) {
@@ -249,7 +228,7 @@ export const AttachedFilesSection: React.FC<AttachedFilesSectionProps> = ({
             return (
               <div
                 key={file.id}
-                className="bg-white rounded-xl border border-slate-200/90 p-2.5 flex items-center justify-between gap-2.5 shadow-2xs hover:border-slate-300 transition-all group"
+                className="bg-white rounded-xl border border-slate-200/90 p-2.5 flex flex-col items-stretch sm:flex-row sm:items-center justify-between gap-2.5 shadow-2xs hover:border-slate-300 transition-all group"
               >
                 <div className="flex items-center gap-2.5 min-w-0 flex-1">
                   <div
@@ -280,23 +259,8 @@ export const AttachedFilesSection: React.FC<AttachedFilesSectionProps> = ({
                   </div>
                 </div>
 
-                <div className="flex items-center gap-1 shrink-0">
-                  <a
-                    href={file.mimeType?.startsWith('image/') ? originalImageUrl(file.url) : file.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    onClick={(e) => {
-                      if (file.url.startsWith('data:')) {
-                        e.preventDefault();
-                        openFileSafely(file.url, file.name);
-                      }
-                    }}
-                    className="p-1.5 rounded-lg bg-slate-50 hover:bg-sky-50 text-slate-600 hover:text-sky-700 border border-slate-200 hover:border-sky-200 transition-colors inline-flex items-center gap-1 text-[11px] font-bold"
-                    title="เปิดไฟล์ดูบนเบราว์เซอร์ / Google Drive"
-                  >
-                    <ExternalLink className="w-3.5 h-3.5" />
-                    <span className="hidden sm:inline">เปิดดู</span>
-                  </a>
+                <div className="flex items-center gap-1 shrink-0 self-end sm:self-auto">
+                  <AttachmentActions file={file} />
 
                   {!readOnly && (
                     <button

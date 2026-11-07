@@ -2,6 +2,7 @@ import fs from 'node:fs';
 import { createHash, randomBytes } from 'node:crypto';
 import { Readable } from 'node:stream';
 import { pipeline } from 'node:stream/promises';
+import { downloadFilename } from './media-download.js';
 
 // Both providers use a stable application URL. Expiring signed URLs and OAuth
 // access tokens are never written into product records or returned as credentials.
@@ -243,9 +244,11 @@ export function createCloudMedia({ request, url, key, drive = null, publicDriveI
     const [file] = await request(`/rest/v1/vitcha_media?id=eq.${id}&select=provider,file_id,mime_type,bytes`);
     if (!file) return res.sendStatus(404);
     res.set('X-Content-Type-Options', 'nosniff'); res.set('Cache-Control', 'private, no-store');
+    const download = req.query?.download === '1';
+    if (download) res.attachment(downloadFilename(req.query.filename));
     // Public Drive images travel Google -> browser. Legacy application URLs
     // remain valid; no record/history migration or permission change is needed.
-    if (publicDriveImages && file.provider === 'drive' && /^image\/(jpeg|png|webp|gif)$/.test(file.mime_type)) {
+    if (!download && publicDriveImages && file.provider === 'drive' && /^image\/(jpeg|png|webp|gif)$/.test(file.mime_type)) {
       if (req.query?.original === '1') return res.redirect(307, `https://drive.google.com/file/d/${encodeURIComponent(file.file_id)}/view`);
       const size = ['0', '96', '600', '2000'].includes(String(req.query?.size)) ? String(req.query.size) : '0';
       res.set('Cache-Control', 'private, max-age=3600');
@@ -259,6 +262,14 @@ export function createCloudMedia({ request, url, key, drive = null, publicDriveI
       if (signed.origin !== new URL(url).origin) throw new Error('Invalid media origin');
       // Storage returns /object/sign/... relative to its /storage/v1 API prefix.
       if (signed.pathname.startsWith('/object/')) signed.pathname = '/storage/v1' + signed.pathname;
+      if (download) {
+        const response = await fetchImpl(signed.href, { signal: AbortSignal.timeout(120000) });
+        if (!response.ok) return res.status(502).send('Media unavailable');
+        res.type(file.mime_type || 'application/octet-stream');
+        if (response.headers.has('content-length')) res.set('Content-Length', response.headers.get('content-length'));
+        if (response.body) await pipeline(Readable.fromWeb(response.body), res); else res.end();
+        return;
+      }
       return res.redirect(307, signed.href);
     }
     if (!driveConfig?.refreshToken) return res.status(503).send('Media storage is not connected');
