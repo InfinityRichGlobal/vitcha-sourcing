@@ -1,4 +1,5 @@
 node_modules
+public/pdfjs/
 .DS_Store
 .private/
 .env

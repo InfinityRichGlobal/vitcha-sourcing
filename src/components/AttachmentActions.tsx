@@ -1,9 +1,10 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { ArrowLeft, Download, FileText, Loader2 } from 'lucide-react';
 import { AttachedFile } from '../types';
 import { driveImageId, normalizeMediaUrl, originalImageUrl } from '../utils/mediaUrl';
 import { getRenderServerUrl } from '../services/api';
+const PdfCanvasViewer = lazy(() => import('./PdfCanvasViewer'));
 
 function embeddedBlob(url: string): string {
   const [header, content] = url.split(',');
@@ -48,7 +49,6 @@ async function downloadFile(file: AttachedFile) {
 function PdfPreview({ file, onClose, onDownload, downloading, error }: { file: AttachedFile; onClose: () => void; onDownload: () => void; downloading: boolean; error: string | null }) {
   const backRef = useRef<HTMLButtonElement>(null);
   const closeRef = useRef<() => void>(onClose);
-  const [loaded, setLoaded] = useState(false);
   const source = useMemo(() => {
     try {
       const url = fileUrl(file);
@@ -93,12 +93,11 @@ function PdfPreview({ file, onClose, onDownload, downloading, error }: { file: A
         <button type="button" onClick={onDownload} disabled={downloading} className="inline-flex min-h-11 items-center gap-1 rounded-xl border border-emerald-200 bg-emerald-50 px-3 text-sm font-bold text-emerald-800">{downloading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}ดาวน์โหลด</button>
       </div>
       <p className="mt-2 truncate text-xs font-semibold text-slate-600" title={file.name}>{file.name}</p>
-      <p className="mt-1 text-[11px] text-slate-500">หากอุปกรณ์แสดง PDF ไม่ครบ ให้กดดาวน์โหลดเพื่ออ่านไฟล์เต็ม</p>
+      <p className="mt-1 text-[11px] text-slate-500">อ่านเอกสารในหน้านี้ หรือดาวน์โหลดไฟล์ต้นฉบับเก็บไว้ได้</p>
       {error && <p role="alert" className="mt-2 text-xs text-rose-700">{error}</p>}
     </header>
     <div className="relative min-h-0 flex-1 overflow-auto pb-[env(safe-area-inset-bottom)]">
-      {!loaded && source.url && <p role="status" className="absolute inset-x-0 top-4 text-center text-sm text-slate-500">กำลังเปิด PDF…</p>}
-      {source.url ? <iframe src={source.url} title={`PDF — ${file.name}`} onLoad={() => setLoaded(true)} className="relative h-full min-h-[300px] w-full border-0 bg-white" referrerPolicy="no-referrer" /> : <p role="alert" className="p-6">อ่านลิงก์ PDF ไม่ได้ กรุณาตรวจสอบไฟล์แนบ</p>}
+      {source.url ? source.url.startsWith('https://drive.google.com/file/') ? <iframe src={source.url} title={`PDF — ${file.name}`} className="h-full min-h-[300px] w-full border-0 bg-white" referrerPolicy="no-referrer" /> : <Suspense fallback={<p role="status" className="p-6 text-center">กำลังเปิด PDF…</p>}><PdfCanvasViewer url={source.url} /></Suspense> : <p role="alert" className="p-6">อ่านลิงก์ PDF ไม่ได้ กรุณาตรวจสอบไฟล์แนบ</p>}
     </div>
   </div>, document.body);
 }
