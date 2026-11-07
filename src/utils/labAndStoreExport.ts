@@ -1,4 +1,5 @@
 import { LabItem, FranchiseStore, User } from '../types';
+import { reportFooterCss, reportFooterLabel } from './reportFooter';
 import { imageDisplayUrl } from './mediaUrl';
 import { buildFranchiseStoreReportHtml, EnrichedStoreMenu } from './franchiseReport';
 import { buildRecordedHistory, historyPrintCss, openPrintReport, reportActions, reportPrintScript, reportUrl } from './printReportSupport';
@@ -39,6 +40,7 @@ export function buildLeadLabSpecReportHtml(item: LabItem, users: User[] = []): s
   <style>
     ${historyPrintCss}
     @page { size: A4; margin: 15mm; }
+    ${reportFooterCss(reportFooterLabel('สูตร R&D', item.name))}
     body {
       font-family: -apple-system, BlinkMacSystemFont, "Sarabun", "Prompt", sans-serif;
       color: #0f172a;

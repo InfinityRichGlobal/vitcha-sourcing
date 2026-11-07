@@ -15,7 +15,7 @@ const text = html => html.replace(/<[^>]*>/g, '').replaceAll('&amp;', '&');
 const item = () => ({ id: 'report-test', type: 'supplier', name: 'รายงานทดสอบ', category: 'ชา', rating: 4, photos: { storefrontAndAtmosphere: [], contactCards: [] }, catalogItems: [], quickTags: [], location: { lat: 13, lng: 100 }, creator: { alias: 'ผู้สร้าง', timestamp: '2026-10-30T00:00:00Z' }, history: [], reviewerNotes: [], handoffStage: 'sample_test', assignedTo: 'member-1' });
 const users = [{ id: 'member-1', alias: 'May', name: 'May', role: 'editor' }];
 
-const historyPart = html => html.slice(html.indexOf('id="activity-history"'), html.indexOf('<script>\n    // Never'));
+const historyPart = html => { const start = html.indexOf('id="activity-history"'); return html.slice(start, html.indexOf('<script>', start)); };
 
 test('report includes all concise events in chronological order without copying old fields', () => {
   const record = item();

@@ -4,6 +4,7 @@ import QRCode from 'qrcode';
 import { SupplierRecord, StoreInspoRecord, LocationRecord, AttachedFile, User, ReviewerNote, ReviewReply } from '../types';
 import { getActivityActor, getActivityEntries } from './activityHistory';
 import { resolveActorProfile } from './actorProfile';
+import { reportFooterCss, reportFooterLabel, reportPdfFooterScript } from './reportFooter';
 import { getItemVoiceNotes } from './audioHelper';
 import { getRenderServerUrl } from '../services/api';
 
@@ -90,6 +91,7 @@ export function buildExecutiveReportHtml(
   const st = item.type === 'drink_store' ? (item as StoreInspoRecord) : null;
 
   const title = isSupplier ? sup!.name : isLocation ? loc!.name : st!.storeName;
+  const footerLabel = reportFooterLabel(isSupplier ? 'ซัพพลายเออร์' : isLocation ? 'ทำเล' : 'ร้านน้ำ', title);
   const chineseName = isSupplier ? sup!.chineseName : isLocation ? loc!.foreignName : st!.chineseName;
   const category = isSupplier ? sup!.category : isLocation ? (loc!.locationType === 'mall' ? 'ห้างสรรพสินค้า' : loc!.locationType) : st!.storeCategory || 'เรฟร้านน้ำ';
   const city = isSupplier ? sup!.marketOrCity : isLocation ? (loc!.location.addressText || loc!.zoneOrFloor) : st!.city;
@@ -1174,6 +1176,7 @@ export function buildExecutiveReportHtml(
     }
 
     @page { size: A4; margin: 8mm; }
+    ${reportFooterCss(footerLabel)}
     @media print {
       body { background: #ffffff; }
       .toolbar { display: none !important; }
@@ -1355,6 +1358,7 @@ export function buildExecutiveReportHtml(
   </div>
 
   <script>
+    ${reportPdfFooterScript(footerLabel)}
     // Never substitute another photo for a clip. Decode the actual file, preserving
     // its dimensions; at most two transfers run together and repeated URLs share a frame.
     function prepareVideoThumbnails() {
@@ -1480,7 +1484,7 @@ export function buildExecutiveReportHtml(
       if (window.html2pdf && element) {
         window.scrollTo(0, 0);
         var opt = {
-          margin: [8, 8, 8, 8],
+          margin: [8, 8, 16, 8],
           filename: ${JSON.stringify(safeFilename)},
           image: { type: 'jpeg', quality: 0.96 },
           html2canvas: {
@@ -1519,7 +1523,9 @@ export function buildExecutiveReportHtml(
             this.prop.container.style.top = '0px';
             this.prop.container.style.width = '732px';
           }
-        }).toCanvas().toPdf().save().then(function() {
+        }).toCanvas().toPdf().get('pdf').then(function(pdf) {
+          addReportFooters(pdf);
+        }).save().then(function() {
           if (statusEl) statusEl.textContent = 'ดาวน์โหลดไฟล์ PDF สำเร็จแล้ว';
         }).catch(function() {
           window.print();
