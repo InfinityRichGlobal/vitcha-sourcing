@@ -33,7 +33,11 @@ test('PDF keeps portrait and landscape proportions, captures each clip, and incl
   await page.addInitScript(() => { window.print = () => {}; });
   const url = (name: string, ext: string) => `https://report-media.test/${name}.${ext}`;
   const item: any = { id: 'report-ratios', type: 'supplier', name: 'รายงานสัดส่วนจริง', category: 'ชา', rating: 4, photos: { storefrontAndAtmosphere: [url('portrait', 'png'), url('landscape', 'png')], contactCards: [] }, catalogItems: [], location: { lat: 13, lng: 100 }, creator: { alias: 'นายเอ', timestamp: '2026-11-08T00:00:00Z' }, videos: [url('portrait', 'webm'), url('landscape', 'webm'), url('missing', 'webm')], history: [], reviewerNotes: [{ id: 'note', author: 'นายบี', timestamp: '2026-11-08T01:00:00Z', text: 'ความคิดเห็นครบทุกบรรทัด\nบรรทัดท้าย', media: [{ id: 'p', type: 'image', url: url('portrait', 'png'), name: 'หน้าร้านแนวตั้ง.png' }, { id: 'v', type: 'video', url: url('landscape', 'webm'), name: 'บรรยากาศแนวนอน.webm' }], voiceUrl: 'https://report-media.test/voice.wav', duration: 8, replies: [{ id: 'reply', author: 'นายซี', timestamp: '2026-11-08T02:00:00Z', text: 'ตอบกลับครบถ้วน' }] }] };
-  const html = buildExecutiveReportHtml(item, value => value, 'print');
+  item.reviewerNotes[0].authorId = 'comment-author';
+  item.reviewerNotes[0].authorAvatar = url('missing', 'png');
+  item.reviewerNotes[0].replies[0].authorAvatar = url('landscape', 'png');
+  const users: any[] = [{ id: 'comment-author', alias: 'นายบี', avatar: url('portrait', 'png') }, { id: 'creator', alias: 'นายเอ', avatar: url('landscape', 'png') }];
+  const html = buildExecutiveReportHtml(item, value => value, 'print', users);
   await page.route('**/report-preview', route => route.fulfill({ body: html, contentType: 'text/html' }));
   await page.goto('/report-preview', { waitUntil: 'domcontentloaded' });
   await expect(page.locator('html')).toHaveAttribute('data-report-ready', 'true', { timeout: 15000 });
@@ -58,7 +62,14 @@ test('PDF keeps portrait and landscape proportions, captures each clip, and incl
   for (const label of ['บรรทัดท้าย', 'ตอบกลับครบถ้วน', 'นายบี', 'นายซี', 'หน้าร้านแนวตั้ง.png', 'บรรยากาศแนวนอน.webm', 'เสียงแนบ', '8 วินาที']) await expect(comments).toContainText(label);
   await expect(comments.locator('.comment-audio a')).toHaveAttribute('href', 'https://report-media.test/voice.wav');
   await expect(page.locator('#activity-history')).not.toContainText('บรรทัดท้าย');
-  await expect(page.locator('#activity-history img')).toHaveCount(0);
+  await expect(comments.locator('img.person-avatar')).toHaveCount(2);
+  await expect(comments.locator('img.person-avatar').first()).toHaveAttribute('src', url('portrait', 'png'));
+  await expect(comments.locator('img.person-avatar').last()).toHaveAttribute('src', url('landscape', 'png'));
+  await expect(page.locator('#activity-history img.person-avatar')).toHaveCount(3);
+  for (const avatar of await page.locator('img.person-avatar').all()) {
+    await expect.poll(() => avatar.evaluate((img: HTMLImageElement) => img.complete && img.naturalWidth > 0)).toBeTruthy();
+  }
+  await expect(page.locator('#activity-history img:not(.person-avatar)')).toHaveCount(0);
   await page.emulateMedia({ media: 'print' });
   const pdf = await page.pdf({ format: 'A4', printBackground: true });
   expect(pdf.subarray(0, 5).toString()).toBe('%PDF-');

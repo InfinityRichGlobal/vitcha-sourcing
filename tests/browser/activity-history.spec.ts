@@ -22,7 +22,9 @@ test('mobile history shows actor, time and counts without duplicate media or com
   await expect(timeline).toContainText('เพิ่มรูปภาพ 5 รูป');
   await expect(timeline).toContainText('แสดงความคิดเห็น · แนบรูปภาพ 5 รูป · แนบเสียง 1 ไฟล์');
   await expect(timeline).not.toContainText('ข้อความจริงอยู่ในความคิดเห็นเท่านั้น');
-  await expect(timeline.locator('img, audio, video, details')).toHaveCount(0);
+  await expect(timeline.getByTestId('activity-avatar')).toHaveCount(3);
+  await expect(timeline.getByTestId('activity-avatar').first()).toHaveAttribute('alt', 'โปรไฟล์ QA admin');
+  await expect(timeline.locator('img:not([data-testid="activity-avatar"]), audio, video, details')).toHaveCount(0);
   expect(await timeline.evaluate(el => el.scrollWidth <= el.clientWidth + 1)).toBeTruthy();
   await timeline.getByLabel('ประเภทประวัติ').selectOption('comments');
   await expect(timeline.getByTestId('activity-event')).toHaveCount(1);
@@ -61,7 +63,10 @@ test('PDF report exports every concise event even when the timeline is filtered'
   await expect(history).toContainText('แสดงความคิดเห็น');
   await expect(history).not.toContainText('จบรายละเอียดส่งต่อ');
   await expect(history).not.toContainText('คำตอบในประวัติรายงาน');
-  await expect(history.locator('img, audio, video, .audit-change, .audit-stage')).toHaveCount(0);
+  await expect(history.locator('img.person-avatar')).toHaveCount(3);
+  await expect(history.locator('img.person-avatar').first()).toHaveAttribute('alt', 'โปรไฟล์ QA admin');
+  await expect(history.locator('img:not(.person-avatar), audio, video, .audit-change, .audit-stage')).toHaveCount(0);
+  await expect(popup.locator('#record-comments img.person-avatar')).toHaveCount(1);
   expect(await history.evaluate(el => el.scrollWidth <= el.clientWidth + 1)).toBeTruthy();
   await popup.emulateMedia({ media: 'print' });
   const pdf = await popup.pdf({ format: 'A4', printBackground: true });

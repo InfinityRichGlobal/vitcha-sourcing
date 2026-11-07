@@ -7,6 +7,7 @@ import { MediaImage } from './MediaImage';
 import { AttachmentActions } from './AttachmentActions';
 import { ActivityTimeline } from './ActivityTimeline';
 import { AvatarImage } from './AvatarImage';
+import { resolveActorProfile } from '../utils/actorProfile';
 import React, { useState, useEffect } from 'react';
 import { CommentMedia, SupplierRecord, StoreInspoRecord, LocationRecord, PipelineStatus, AttachedFile } from '../types';
 import { useApp } from '../context/AppContext';
@@ -1093,6 +1094,7 @@ export const DetailModal: React.FC<DetailModalProps> = ({
                 currentItem.reviewerNotes.map((note) => {
                   const replies = note.replies || [];
                   const isCollapsed = collapsedReplies[note.id];
+                  const author = resolveActorProfile(users, note.authorId, note.author, note.authorAvatar);
 
                   return (
                     <div
@@ -1102,12 +1104,13 @@ export const DetailModal: React.FC<DetailModalProps> = ({
                       {/* Main Comment */}
                       <div className="flex items-start gap-2.5">
                         <AvatarImage
-                          src={note.authorAvatar}
+                          src={author.avatar}
+                          alt={`โปรไฟล์ ${author.name}`}
                           className="w-7 h-7 rounded-full object-cover shrink-0 mt-0.5 ring-1 ring-slate-200"
                         />
                         <div className="min-w-0 flex-1">
                           <div className="flex items-center justify-between text-[11px] mb-0.5">
-                            <span className="font-bold text-slate-900">{note.author}</span>
+                            <span className="font-bold text-slate-900">{author.name}</span>
                             <span className="text-slate-400 font-mono text-[10px]">
                               {new Date(note.timestamp).toLocaleTimeString('th-TH', {
                                 hour: '2-digit',
@@ -1175,7 +1178,9 @@ export const DetailModal: React.FC<DetailModalProps> = ({
                       {/* Threaded Replies List (รีพายต่อกันได้เรื่อยๆ) */}
                       {replies.length > 0 && !isCollapsed && (
                         <div className="ml-6 pl-3 border-l-2 border-blue-200 space-y-2 pt-1">
-                          {replies.map((reply) => (
+                          {replies.map((reply) => {
+                            const replyAuthor = resolveActorProfile(users, reply.authorId, reply.author, reply.authorAvatar);
+                            return (
                             <div
                               key={reply.id}
                               className="p-2.5 bg-slate-50 rounded-xl border border-slate-200/60 text-xs space-y-1"
@@ -1183,10 +1188,11 @@ export const DetailModal: React.FC<DetailModalProps> = ({
                               <div className="flex items-center justify-between text-[10px]">
                                 <div className="flex items-center gap-1.5 font-bold text-slate-800">
                                   <AvatarImage
-                                    src={reply.authorAvatar}
+                                    src={replyAuthor.avatar}
+                                    alt={`โปรไฟล์ ${replyAuthor.name}`}
                                     className="w-4 h-4 rounded-full object-cover"
                                   />
-                                  <span>{reply.author}</span>
+                                  <span>{replyAuthor.name}</span>
                                   {reply.replyToAuthor && (
                                     <span className="text-blue-600 font-normal">
                                       ▸ ตอบกลับ @{reply.replyToAuthor}
@@ -1223,7 +1229,7 @@ export const DetailModal: React.FC<DetailModalProps> = ({
                             )}
                               </div>
                             </div>
-                          ))}
+                          ); })}
                         </div>
                       )}
 

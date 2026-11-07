@@ -41,7 +41,9 @@ test('comments and replies retain all text and named attachments separately from
   const history = historyPart(html);
   assert.equal((history.match(/class="audit-event"/g) || []).length, 2);
   assert.ok(!history.includes('ข้อความจริง') && !history.includes('คำตอบครบถ้วน'));
-  assert.ok(!history.includes('<img') && !history.includes('data-video-src'));
+  assert.equal((history.match(/<img /g) || []).length, 2);
+  assert.equal((history.match(/class="person-avatar"/g) || []).length, 2);
+  assert.ok(!history.includes('data-video-src') && !history.includes('portrait.jpg'));
 });
 
 test('legacy comments match their existing actor/time log instead of appearing twice', () => {

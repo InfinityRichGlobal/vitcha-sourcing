@@ -1,6 +1,13 @@
-import { ActivityEntry, SupplierRecord, StoreInspoRecord, LocationRecord } from '../types';
+import { ActivityEntry, SupplierRecord, StoreInspoRecord, LocationRecord, User } from '../types';
 import type { HandoffStage } from '../types';
 import { activityKind, compactActivity } from './activitySummary';
+import { resolveActorProfile } from './actorProfile';
+
+export function getActivityActor(item: SupplierRecord | StoreInspoRecord | LocationRecord, users: User[], event: ActivityEntry) {
+  const note = (item.reviewerNotes || []).flatMap(note => [note, ...(note.replies || [])]).find(note => note.id === event.id || note.timestamp === event.timestamp && (event.userId ? note.authorId === event.userId : note.author === event.user));
+  const avatar = note?.authorAvatar || (item.creator.alias === event.user ? item.creator.avatar : '');
+  return resolveActorProfile(users, event.userId || note?.authorId, event.user, avatar);
+}
 
 export const activityStages: Array<[HandoffStage, string]> = [
   ['awaiting', 'รอรับช่วงต่อ'], ['rfq_sent', 'ขอสเปก / ส่ง RFQ'],

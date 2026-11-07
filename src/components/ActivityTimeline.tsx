@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { getActivityEntries } from '../utils/activityHistory';
+import { getActivityActor, getActivityEntries } from '../utils/activityHistory';
+import { AvatarImage } from './AvatarImage';
 import { SupplierRecord, StoreInspoRecord, LocationRecord, User } from '../types';
 
 const date = (value: string) => Number.isNaN(Date.parse(value)) ? value : new Date(value).toLocaleString('th-TH', { dateStyle: 'medium', timeStyle: 'short' });
@@ -22,10 +23,13 @@ export function ActivityTimeline({ item, users }: { item: SupplierRecord | Store
       <span className="text-slate-500">{shown.length} เหตุการณ์</span>
     </div>
     <div className="divide-y divide-slate-200">{shown.slice(0, limit).map(({ e, index }) => {
-      const user = users.find(u => u.id === e.userId || u.alias === e.user || u.name === e.user);
-      return <article key={e.id || `${e.timestamp}-${index}`} className="py-1.5 min-w-0" data-testid="activity-event">
+      const actor = getActivityActor(item, users, e);
+      return <article key={e.id || `${e.timestamp}-${index}`} className="flex items-start gap-2 py-1.5 min-w-0" data-testid="activity-event">
+        <AvatarImage src={actor.avatar} alt={`โปรไฟล์ ${actor.name}`} className="w-7 h-7 rounded-full object-cover shrink-0 mt-0.5" data-testid="activity-avatar" />
+        <div className="min-w-0 flex-1">
         <time className="text-[11px] text-slate-500">{date(e.timestamp)}</time>
-        <p className="break-words [overflow-wrap:anywhere]"><strong>{user?.alias || e.user}</strong> · {e.action}</p>
+        <p className="break-words [overflow-wrap:anywhere]"><strong>{actor.name}</strong> · {e.action}</p>
+        </div>
       </article>;
     })}</div>
     {!shown.length && <p className="text-slate-500">ยังไม่มีประวัติที่บันทึกสำหรับตัวกรองนี้</p>}

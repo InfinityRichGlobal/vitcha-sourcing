@@ -2,7 +2,8 @@ import { imageDisplayUrl, normalizeMediaUrl, originalImageUrl } from './mediaUrl
 import { commentMedia } from './commentMedia';
 import QRCode from 'qrcode';
 import { SupplierRecord, StoreInspoRecord, LocationRecord, AttachedFile, User, ReviewerNote, ReviewReply } from '../types';
-import { getActivityEntries } from './activityHistory';
+import { getActivityActor, getActivityEntries } from './activityHistory';
+import { resolveActorProfile } from './actorProfile';
 import { getItemVoiceNotes } from './audioHelper';
 import { getRenderServerUrl } from '../services/api';
 
@@ -255,13 +256,19 @@ export function buildExecutiveReportHtml(
     : `<div class="empty-note">${segmentThaiHtml('ไม่มีคลิปวิดีโอในรายการนี้')}</div>`;
 
   const reportDate = (value?: string) => value && !Number.isNaN(Date.parse(value)) ? new Date(value).toLocaleString('th-TH') : value || 'ไม่ระบุเวลา';
+  const profileHtml = (person: { name: string; avatar: string }) => {
+    const fallback = new URL('logo.jpg', normalizedBase).href;
+    let src = fallback;
+    try { src = new URL(imageDisplayUrl(person.avatar || fallback, 96), normalizedBase).href; } catch { /* Keep the default avatar. */ }
+    return `<img class="person-avatar" width="27" height="27" src="${escapeHtml(src)}" crossorigin="anonymous" alt="${escapeHtml(`โปรไฟล์ ${person.name}`)}" onerror="${escapeHtml(`this.onerror=null;this.src=${JSON.stringify(fallback)}`)}" />`;
+  };
   const commentHtml = (note: ReviewerNote | ReviewReply, number: string, reply = false) => {
-    const author = users.find(u => u.id === note.authorId)?.alias || note.author;
+    const author = resolveActorProfile(users, note.authorId, note.author, note.authorAvatar);
     const context = `${reply ? 'ตอบกลับ' : 'ความคิดเห็น'} #${number}`;
     const media = commentMedia(note);
     const voice = note.voiceUrl || note.audioUrl;
     return `<article class="comment-box${reply ? ' reply-item' : ''}" data-comment-id="${escapeHtml(note.id)}">
-      <div class="comment-header"><strong class="comment-author">${segmentThaiHtml(`${context} · ${author}`)}</strong><time class="comment-time">${segmentThaiHtml(reportDate(note.timestamp))}</time></div>
+      <div class="comment-header">${profileHtml(author)}<strong class="comment-author">${segmentThaiHtml(`${context} · ${author.name}`)}</strong><time class="comment-time">${segmentThaiHtml(reportDate(note.timestamp))}</time></div>
       ${'replyToAuthor' in note && note.replyToAuthor ? `<p class="comment-target">${segmentThaiHtml(`ตอบกลับ ${note.replyToAuthor}`)}</p>` : ''}
       ${note.text ? `<div class="comment-body">${segmentThaiHtml(note.text)}</div>` : ''}
       ${media.length ? `<div class="comment-media media-masonry">${media.map((m, i) => {
@@ -502,8 +509,8 @@ export function buildExecutiveReportHtml(
 
   // Export every concise event, independent of the timeline's filter/page limit.
   const activityRowsHtml = historyEntries.map((h, idx) => {
-    const person = users.find(u => u.id === h.userId || u.alias === h.user || u.name === h.user);
-    return `<article class="audit-event" data-activity-id="${escapeHtml(h.id || idx)}"><div class="audit-event-heading"><strong>${segmentThaiHtml(person?.alias || h.user)}</strong><span>${segmentThaiHtml(Number.isNaN(Date.parse(h.timestamp)) ? h.timestamp : new Date(h.timestamp).toLocaleString('th-TH'))}</span></div><div class="audit-action">${segmentThaiHtml(h.action)}</div></article>`;
+    const person = getActivityActor(item, users, h);
+    return `<article class="audit-event" data-activity-id="${escapeHtml(h.id || idx)}">${profileHtml(person)}<div class="audit-event-content"><div class="audit-event-heading"><strong>${segmentThaiHtml(person.name)}</strong><span>${segmentThaiHtml(Number.isNaN(Date.parse(h.timestamp)) ? h.timestamp : new Date(h.timestamp).toLocaleString('th-TH'))}</span></div><div class="audit-action">${segmentThaiHtml(h.action)}</div></div></article>`;
   }).join('');
 
   const viewerRowsHtml =
@@ -969,10 +976,11 @@ export function buildExecutiveReportHtml(
     .audit-stage strong { display: block; font-size: 11px; }
     .audit-stage-missing { grid-column: 1 / -1; border: 0; padding: 2px 0; color: #64748b; }
     .audit-current { background: #ecfdf5; border-color: #10b981; }
-    .audit-event { border-bottom: 1px solid #e2e8f0; padding: 4px 0; margin: 0; font-size: 11.5px; overflow-wrap: anywhere; break-inside: avoid; }
+    .audit-event { display: flex; align-items: flex-start; gap: 7px; border-bottom: 1px solid #e2e8f0; padding: 4px 0; margin: 0; font-size: 11.5px; overflow-wrap: anywhere; break-inside: avoid; }
+    .audit-event-content { flex: 1; min-width: 0; }
     .audit-event-heading { display: flex; align-items: center; gap: 7px; font-size: 11px; break-after: avoid; }
     .audit-event-heading > span:last-child { color: #64748b; margin-left: auto; font-size: 10px; }
-    .audit-avatar { width: 27px; height: 27px; border-radius: 50%; object-fit: cover; flex-shrink: 0; }
+    img.person-avatar { display: block; width: 27px; height: 27px; border-radius: 50%; object-fit: cover; flex-shrink: 0; }
     .audit-avatar-fallback { background: #e2e8f0; color: #475569; text-align: center; line-height: 27px; }
     .audit-action { font-weight: 700; margin-top: 2px; }
     .audit-transition { color: #047857; font-weight: 700; margin: 6px 0; }
@@ -1117,6 +1125,8 @@ export function buildExecutiveReportHtml(
       margin-bottom: 4px;
     }
     .comment-author {
+      flex: 1;
+      min-width: 0;
       font-weight: 800;
       font-size: 11px;
       color: #0f172a;
