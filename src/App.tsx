@@ -13,6 +13,7 @@ import { CategoryExplorerView } from './components/CategoryExplorerView';
 const LocationList = lazy(() => import('./components/LocationList').then(m => ({ default: m.LocationList })));
 const HandoffManagementView = lazy(() => import('./components/HandoffManagementView').then(m => ({ default: m.HandoffManagementView })));
 const SettingsManagementView = lazy(() => import('./components/SettingsManagementView').then(m => ({ default: m.SettingsManagementView })));
+const OwnerMonitorView = lazy(() => import('./components/OwnerMonitorView').then(m => ({ default: m.OwnerMonitorView })));
 const MembersManagementView = lazy(() => import('./components/MembersManagementView').then(m => ({ default: m.MembersManagementView })));
 const ProductWorkspace = lazy(() => import('./components/ProductWorkspace').then(m => ({ default: m.ProductWorkspace })));
 const TrashView = lazy(() => import('./components/TrashView').then(m => ({ default: m.TrashView })));
@@ -87,7 +88,7 @@ const MainApp: React.FC = () => {
       setAuthView('invite');
     }
 
-    if (tabParam && ['dashboard', 'suppliers', 'drink_stores', 'locations', 'handoff', 'products', 'members', 'settings', 'trash', 'lead_lab', 'franchise_stores'].includes(tabParam)) {
+    if (tabParam && ['dashboard', 'suppliers', 'drink_stores', 'locations', 'handoff', 'products', 'members', 'settings', 'trash', 'lead_lab', 'franchise_stores', 'owner_monitor'].includes(tabParam)) {
       setActiveTab(tabParam as any);
       if (tabParam === 'lead_lab' && viewParam) {
         setInitialLeadLabItemId(viewParam);
@@ -302,6 +303,7 @@ const MainApp: React.FC = () => {
         )}
 
         {activeTab === 'members' && <MembersManagementView />}
+        {activeTab === 'owner_monitor' && <OwnerMonitorView />}
         {activeTab === 'products' && <ProductWorkspace onOpenSupplier={id => { const item = suppliers.find(s => s.id === id); if (item) setSelectedDetailItem(item); }} />}
         {activeTab === 'settings' && (
           <SettingsManagementView />

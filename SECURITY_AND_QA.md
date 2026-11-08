@@ -1,5 +1,17 @@
 # VITCHA security and QA handover
 
+## Owner Monitor — 2026-11-08
+
+The `owner_monitor` page and `GET /api/owner/monitor` are available only to the authenticated `user-ice` account outside simulation. Other admins, editors, viewers and simulated founder sessions are denied before provider access. The response is private/no-store and never contains provider credentials or raw provider errors. The page stops displaying readings when the effective identity changes.
+
+Monitoring runs on demand when the owner opens or refreshes the page. A one-hour server cache coalesces concurrent requests and persists one compact snapshot in the private `vitcha_runtime` row `owner_monitor_cache`; there is no scheduler, media download, or write to application records. Each provider has its own successful timestamp, and failed refreshes preserve same-period prior readings marked stale. Render readings from a previous month are not reused as the current month. Missing measurements/billing fields remain unknown, never zero.
+
+Render connects through a server-only API key in `RENDER_MONITOR_API_KEY` or the private `owner_monitor_config` row (`renderApiKey`, `renderServiceId`, `renderWorkspaceId`, `renderIncludedBandwidthBytes`, `renderPricePerGb`). The monitor performs only fixed GET calls for the chosen service and bandwidth. Render's account API key itself can have broader account permissions; creation requires explicit confirmation. No credentials belong in the browser, Git, screenshots or exported report. API bandwidth is a measurement for the configured service, while the included quota is shared across the workspace; cost and month-end figures are explicitly estimates and do not claim invoice/payment status.
+
+Supabase uses the existing server credential and the official Metrics endpoint for total/Postgres database size. It reads only `bytes` metadata of registered Supabase media in bounded pages; these are application-registered files, not total organization Storage usage. Free-tier quota references are labelled as references, not a live plan lookup. Monthly billed egress and invoices remain unknown with a dashboard link. Google Drive uses the existing application authorization to read account storage/quota; account usage includes shared Google services, not just this app's folder.
+
+Validation covers role isolation (including other admins and simulation), concurrent/persistent caching, stale timestamps, month rollover, missing/zero metrics, metadata pagination and secret redaction; browser checks cover navigation, forged URL access, quota/unknown/error rendering and 320/390/1440 px layout.
+
 ## Runtime and deployment
 
 The application uses React/Vite and Express with server-only Supabase PostgreSQL persistence in production and a JSON file adapter for local development. Deploy the matching frontend and server together: old clients do not have sessions and will receive 401 responses. Existing members keep their credentials; legacy plaintext PINs are hashed with salted scrypt when the server starts. Login resolves an exact account. Private server authentication configuration is loaded from the runtime directory or server environment, and is excluded from the frontend and delivery archive. Legacy `editor` users are treated as reviewers; new roles are admin, reviewer and viewer, with `user-ice` exclusively owning simulation and maintenance.

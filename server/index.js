@@ -6,6 +6,7 @@ import { createApp } from './app.js';
 import { DEFAULT_DATABASE } from './defaults.js';
 import { createSupabasePersistence, supabaseRequest } from './supabase-persistence.js';
 import { createCloudMedia } from './cloud-media.js';
+import { createOwnerMonitor } from './owner-monitor.js';
 
 const root = path.dirname(fileURLToPath(import.meta.url));
 const dataDir = process.env.DATA_DIR || path.join(root, 'data');
@@ -21,7 +22,7 @@ if (!cloud && !fs.existsSync(path.join(dataDir, 'database.json'))) {
 }
 const recoveryFile = path.join(dataDir, 'recovery.json');
 let recoveryPasswordHash = process.env.ACCOUNT_RECOVERY_PASSWORD_HASH || (fs.existsSync(recoveryFile) ? JSON.parse(fs.readFileSync(recoveryFile, 'utf8')).passwordHash : null);
-let persistence = null, mediaStorage = null;
+let persistence = null, mediaStorage = null, ownerMonitor = null;
 if (cloud) {
   const config = { url: process.env.SUPABASE_URL, key: process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY };
   const request = supabaseRequest(config);
@@ -37,8 +38,26 @@ if (cloud) {
       }
     : null;
   mediaStorage = createCloudMedia({ ...config, request, drive: runtime.find(row => row.key === 'google_drive')?.value || envDrive, publicDriveImages: true, driveOnly: true });
+  const monitorConfig = runtime.find(row => row.key === 'owner_monitor_config')?.value || {};
+  ownerMonitor = createOwnerMonitor({
+    supabase: config, request, getDriveStatus: mediaStorage.getDriveStatus,
+    render: {
+      token: process.env.RENDER_MONITOR_API_KEY || monitorConfig.renderApiKey,
+      serviceId: process.env.RENDER_SERVICE_ID || monitorConfig.renderServiceId,
+      workspaceId: monitorConfig.renderWorkspaceId,
+      includedBandwidthBytes: monitorConfig.renderIncludedBandwidthBytes,
+      pricePerGb: monitorConfig.renderPricePerGb,
+    },
+    cacheStore: {
+      load: async () => (await request('/rest/v1/vitcha_runtime?key=eq.owner_monitor_cache&select=value', { timeoutMs: 5000 }))[0]?.value,
+      save: value => request('/rest/v1/vitcha_runtime', {
+        method: 'POST', headers: { 'Content-Type': 'application/json', Prefer: 'resolution=merge-duplicates,return=minimal' },
+        body: JSON.stringify({ key: 'owner_monitor_cache', value }), timeoutMs: 5000,
+      }),
+    },
+  });
 }
-const app = createApp({ dataDir, defaults, recoveryPasswordHash, persistence, mediaStorage });
+const app = createApp({ dataDir, defaults, recoveryPasswordHash, persistence, mediaStorage, ownerMonitor });
 await persistence?.flush();
 
 // If running on the legacy Render instance (vitcha-sourcing.onrender.com without SUPABASE_URL),

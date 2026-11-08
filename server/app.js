@@ -13,6 +13,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { randomBytes, randomUUID, createHash, createHmac, scryptSync, timingSafeEqual } from 'node:crypto';
 import { createPersistence } from './persistence.js';
+import { createOwnerMonitor } from './owner-monitor.js';
 import { DEFAULT_DATABASE } from './defaults.js';
 import { productData, registerProductRoutes } from './products.js';
 
@@ -98,8 +99,9 @@ function validateRecord(record, collection) {
   }
 }
 
-export function createApp({ dataDir, defaults = DEFAULT_DATABASE, sessionTtlMs = 30 * 24 * 60 * 60 * 1000, recoveryPasswordHash = null, persistence = null, mediaStorage = null, pushDelivery = createPushDelivery() } = {}) {
+export function createApp({ dataDir, defaults = DEFAULT_DATABASE, sessionTtlMs = 30 * 24 * 60 * 60 * 1000, recoveryPasswordHash = null, persistence = null, mediaStorage = null, ownerMonitor = null, pushDelivery = createPushDelivery() } = {}) {
   const app = express();
+  const monitor = ownerMonitor || createOwnerMonitor({ getDriveStatus: mediaStorage?.getDriveStatus });
   const storage = persistence || createPersistence(path.join(dataDir, 'database.json'), defaults);
   const uploads = path.join(dataDir, 'uploads');
   fs.mkdirSync(uploads, { recursive: true });
@@ -389,6 +391,11 @@ export function createApp({ dataDir, defaults = DEFAULT_DATABASE, sessionTtlMs =
     res.json(req.query.media === 'images-v1' ? packSnapshot(snapshot) : snapshot);
   });
   app.get('/api/backup', (req, res) => { requireFounder(req); res.json(read()); });
+  app.get('/api/owner/monitor', async (req, res) => {
+    requireFounder(req);
+    res.set('Cache-Control', 'private, no-store');
+    res.json(await monitor.getSnapshot());
+  });
   for (const [route, collection] of [['suppliers', 'suppliers'], ['drink-stores', 'drinkStores'], ['locations', 'locations']]) {
     app.post(`/api/${route}`, (req, res) => {
       requireWriter(req);

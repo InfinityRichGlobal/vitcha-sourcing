@@ -128,6 +128,7 @@ async function sendNotificationReceipt(path: string, params: { id?: string; ids?
 export const markNotificationsReadApi = (params: { id?: string; ids?: string[]; all?: boolean }) => sendNotificationReceipt('/api/notifications/read', params);
 export const clearNotificationsApi = (params: { id?: string; ids?: string[]; all?: boolean }) => sendNotificationReceipt('/api/notifications/clear', params);
 export const getDriveStatusApi = () => requestJson('/api/drive/status');
+export const getOwnerMonitorApi = (signal?: AbortSignal) => requestJson('/api/owner/monitor', { signal }, 65000);
 export const saveDriveConfigApi = (config: { clientId: string; clientSecret: string; refreshToken: string; folderId?: string }) =>
   sendJson('/api/drive/config', config);
 

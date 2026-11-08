@@ -16,6 +16,7 @@ import {
   LogOut,
   Trash2,
   Loader2,
+  Activity,
 } from 'lucide-react';
 
 interface AppDrawerMenuProps {
@@ -382,6 +383,14 @@ export const AppDrawerMenu: React.FC<AppDrawerMenuProps> = ({
               <span className="text-[10px] text-emerald-700 font-bold bg-emerald-50 px-1.5 py-0.5 rounded">
                 Admin
               </span>
+            </button>
+          )}
+
+          {currentUser.id === 'user-ice' && !simulatedFromAdmin && (
+            <button onClick={() => { setActiveTab('owner_monitor'); onClose(); }}
+              className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-bold transition-colors ${activeTab === 'owner_monitor' ? 'bg-slate-900 text-white' : 'text-slate-700 hover:bg-slate-50'}`}>
+              <span className="flex items-center gap-2.5"><Activity className="w-4 h-4 text-teal-600" />Monitor · ค่าใช้จ่ายและโควต้า</span>
+              <span className="text-[10px] bg-teal-50 text-teal-800 px-1.5 py-0.5 rounded">Owner</span>
             </button>
           )}
 
