@@ -52,6 +52,21 @@ export async function resolveMapLink(value, fetcher = fetch) {
       }
     }
   }
+  if (!coordinates) {
+    const query = current.searchParams.get('q') || current.searchParams.get('query') || '';
+    if (/^(?:[23456789CFGHJMPQRVWX]{2}){1,4}\+[23456789CFGHJMPQRVWX]{2,7}\s+\S/i.test(query)) {
+      const embed = mapUrl('https://www.google.com/maps/embed?origin=mfe&pb=!1m2!2m1!1s' + encodeURIComponent(query));
+      const response = await fetcher(embed.href, { method: 'GET', redirect: 'manual', signal });
+      if (response.ok) {
+        const html = await response.text();
+        const pin = html.match(/\["0x[0-9a-f]+:0x[0-9a-f]+","((?:[^"\\]|\\.)*)",\[(-?[0-9.]+),(-?[0-9.]+)\]/i);
+        if (pin && pin[1].toUpperCase().startsWith(query.split(/\s/)[0].toUpperCase())) {
+          const lat = Number(pin[2]), lng = Number(pin[3]);
+          if (Number.isFinite(lat) && Number.isFinite(lng) && Math.abs(lat) <= 90 && Math.abs(lng) <= 180) coordinates = { lat, lng };
+        }
+      }
+    }
+  }
   if (coordinates) return { ok: true, ...coordinates, resolvedUrl: current.href };
   return { ok: false, error: 'ไม่พบพิกัดในลิงก์ที่ระบุ', resolvedUrl: current.href };
 }

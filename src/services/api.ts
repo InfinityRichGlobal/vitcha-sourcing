@@ -335,7 +335,8 @@ function decodeFullPlusCode(input: string): { lat: number; lng: number } | null 
   const code = input.toUpperCase().replace(/\s+/g, '');
   if (code.indexOf('+') !== 8 || code.lastIndexOf('+') !== 8) return null;
   const digits = code.replace('+', '');
-  if (digits.length < 8 || digits.length > 15 || /0/.test(digits)) return null;
+  if (digits.length < 8 || digits.length === 9 || digits.length > 15 || /0/.test(digits)) return null;
+  if (PLUS_CODE_ALPHABET.indexOf(digits[0]) >= 9 || PLUS_CODE_ALPHABET.indexOf(digits[1]) >= 18) return null;
 
   let lat = -90;
   let lng = -180;
@@ -375,8 +376,13 @@ export function parseCoordinatesOrMapUrl(input: string): ParsedLocationInput | n
   if (!input) return null;
   const str = input.trim();
 
-  const plusCode = decodeFullPlusCode(str);
+  const codeToken = str.match(/^([23456789CFGHJMPQRVWX]{8}\+[23456789CFGHJMPQRVWX]{2,7})(?:\s|$)/i)?.[1];
+  const plusCode = decodeFullPlusCode(codeToken || str);
   if (plusCode) return { type: 'coords', ...plusCode, raw: `${plusCode.lat.toFixed(7)}, ${plusCode.lng.toFixed(7)}` };
+
+  if (/^(?:[23456789CFGHJMPQRVWX]{2}){1,3}\+[23456789CFGHJMPQRVWX]{2,7}\s+\S/i.test(str)) {
+    return { type: 'short_url', url: 'https://www.google.com/maps?q=' + encodeURIComponent(str) };
+  }
 
   // Pattern 1: Raw coordinates with optional parentheses
   // e.g. "(13.9848152, 100.4729654)", "13.9848152, 100.4729654", "13.9848152 100.4729654"
