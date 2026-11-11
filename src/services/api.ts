@@ -226,6 +226,7 @@ export interface GeocodePlaceItem {
   id: string;
   name: string;
   displayName: string;
+  addressText?: string;
   lat: number;
   lng: number;
   type?: string;
@@ -428,7 +429,7 @@ export function parseCoordinatesOrMapUrl(input: string): ParsedLocationInput | n
   return null;
 }
 
-export async function resolveMapUrlApi(url: string, signal?: AbortSignal): Promise<{ ok: boolean; lat?: number; lng?: number; resolvedUrl?: string; error?: string }> {
+export async function resolveMapUrlApi(url: string, signal?: AbortSignal): Promise<{ ok: boolean; lat?: number; lng?: number; resolvedUrl?: string; addressText?: string; error?: string }> {
   try {
     const data = await requestJson(`/api/geocode/resolve-url?url=${encodeURIComponent(url)}`, { signal }, 8000);
     return data;

@@ -298,6 +298,7 @@ export const LocationPickerModal: React.FC<LocationPickerModalProps> = ({
     if (parsed && (parsed.type === 'coords' || parsed.type === 'direct_url') && parsed.lat !== undefined && parsed.lng !== undefined) {
       detectedMatches.push({
         id: 'detected-coords',
+        addressText: '',
         name: `📍 ตรวจพบพิกัด (${parsed.lat.toFixed(5)}, ${parsed.lng.toFixed(5)})`,
         displayName: `พิกัดละติจูด ${parsed.lat}, ลองจิจูด ${parsed.lng} · แตะเพื่อปักหมุดทันที`,
         lat: parsed.lat,
@@ -312,7 +313,8 @@ export const LocationPickerModal: React.FC<LocationPickerModalProps> = ({
         if (res.ok && res.lat !== undefined && res.lng !== undefined) {
           const item: GeocodePlaceItem = {
             id: 'detected-short-url',
-            name: `🔗 พิกัดจาก Google Maps (${res.lat.toFixed(5)}, ${res.lng.toFixed(5)})`,
+            addressText: res.addressText || '',
+            name: res.addressText || `🔗 พิกัดจาก Google Maps (${res.lat.toFixed(5)}, ${res.lng.toFixed(5)})`,
             displayName: `ถอดพิกัดสำเร็จ · แตะเพื่อปักหมุดทันที`,
             lat: res.lat,
             lng: res.lng,
@@ -415,7 +417,8 @@ export const LocationPickerModal: React.FC<LocationPickerModalProps> = ({
         setIsSearching(false);
         if (res.ok && res.lat !== undefined && res.lng !== undefined) {
           handleFlyToCoord(res.lat, res.lng, 17);
-          triggerReverseGeocode(res.lat, res.lng);
+          setAddressText(res.addressText || '');
+          setSelectedLocationLabel(res.addressText || '');
           setShowDropdown(false);
           return;
         } else {
@@ -464,7 +467,8 @@ export const LocationPickerModal: React.FC<LocationPickerModalProps> = ({
           setIsSearching(false);
           if (res.ok && res.lat !== undefined && res.lng !== undefined) {
             handleFlyToCoord(res.lat, res.lng, 17);
-            triggerReverseGeocode(res.lat, res.lng);
+            setAddressText(res.addressText || '');
+            setSelectedLocationLabel(res.addressText || '');
             setShowDropdown(false);
             return;
           } else {
@@ -488,7 +492,7 @@ export const LocationPickerModal: React.FC<LocationPickerModalProps> = ({
     setSearchQuery(item.name);
     setShowDropdown(false);
     handleFlyToCoord(item.lat, item.lng, 17);
-    const prettyAddress = item.displayName || item.name;
+    const prettyAddress = item.addressText !== undefined ? item.addressText : (item.displayName || item.name);
     setAddressText(prettyAddress);
     setSelectedLocationLabel(item.name);
   };

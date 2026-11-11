@@ -34,6 +34,7 @@ export async function resolveMapLink(value, fetcher = fetch) {
   }
 
   let coordinates = extractCoordinates(current.href);
+  let addressText = '';
   if (!coordinates) {
     const decoded = decodeURIComponent(current.href);
     const feature = decoded.match(/0x[0-9a-f]+:0x([0-9a-f]+)/i);
@@ -47,6 +48,7 @@ export async function resolveMapLink(value, fetcher = fetch) {
         const pin = html.match(new RegExp('\\["0x[0-9a-f]+:0x[0-9a-f]+","(?:[^"\\\\]|\\\\.)*",\\[(-?[0-9.]+),(-?[0-9.]+)\\],"' + cid + '"\\]', 'i'));
         if (pin) {
           const lat = Number(pin[1]), lng = Number(pin[2]);
+          try { addressText = JSON.parse(pin[0])[1] || ''; } catch {}
           if (Number.isFinite(lat) && Number.isFinite(lng) && Math.abs(lat) <= 90 && Math.abs(lng) <= 180) coordinates = { lat, lng };
         }
       }
@@ -67,6 +69,6 @@ export async function resolveMapLink(value, fetcher = fetch) {
       }
     }
   }
-  if (coordinates) return { ok: true, ...coordinates, resolvedUrl: current.href };
+  if (coordinates) return { ok: true, ...coordinates, ...(addressText ? { addressText } : {}), resolvedUrl: current.href };
   return { ok: false, error: 'ไม่พบพิกัดในลิงก์ที่ระบุ', resolvedUrl: current.href };
 }

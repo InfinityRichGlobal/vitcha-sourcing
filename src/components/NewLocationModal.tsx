@@ -1405,9 +1405,7 @@ export const NewLocationModal: React.FC<NewLocationModalProps> = ({ isOpen, onCl
               setLat('');
               setLng('');
             }
-            if (res.addressText) {
-              setAddressText(res.addressText);
-            }
+            setAddressText(res.addressText || '');
           }}
           initialLat={typeof lat === 'number' ? lat : undefined}
           initialLng={typeof lng === 'number' ? lng : undefined}
