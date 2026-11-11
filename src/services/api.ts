@@ -328,9 +328,55 @@ export interface ParsedLocationInput {
   raw?: string;
 }
 
+const PLUS_CODE_ALPHABET = '23456789CFGHJMPQRVWX';
+const PLUS_CODE_PAIR_RESOLUTIONS = [20, 1, 0.05, 0.0025, 0.000125];
+
+function decodeFullPlusCode(input: string): { lat: number; lng: number } | null {
+  const code = input.toUpperCase().replace(/\s+/g, '');
+  if (code.indexOf('+') !== 8 || code.lastIndexOf('+') !== 8) return null;
+  const digits = code.replace('+', '');
+  if (digits.length < 8 || digits.length > 15 || /0/.test(digits)) return null;
+
+  let lat = -90;
+  let lng = -180;
+  const pairLength = Math.min(digits.length, 10);
+  let latResolution = 0;
+  let lngResolution = 0;
+  for (let i = 0; i + 1 < pairLength; i += 2) {
+    const latDigit = PLUS_CODE_ALPHABET.indexOf(digits[i]);
+    const lngDigit = PLUS_CODE_ALPHABET.indexOf(digits[i + 1]);
+    if (latDigit < 0 || lngDigit < 0) return null;
+    const resolution = PLUS_CODE_PAIR_RESOLUTIONS[i / 2];
+    lat += latDigit * resolution;
+    lng += lngDigit * resolution;
+    latResolution = resolution;
+    lngResolution = resolution;
+  }
+
+  if (digits.length > 10) {
+    latResolution = PLUS_CODE_PAIR_RESOLUTIONS[4];
+    lngResolution = latResolution;
+  }
+  for (let i = 10; i < digits.length; i += 1) {
+    const digit = PLUS_CODE_ALPHABET.indexOf(digits[i]);
+    if (digit < 0) return null;
+    latResolution /= 5;
+    lngResolution /= 4;
+    lat += Math.floor(digit / 4) * latResolution;
+    lng += (digit % 4) * lngResolution;
+  }
+
+  lat += latResolution / 2;
+  lng += lngResolution / 2;
+  return { lat, lng };
+}
+
 export function parseCoordinatesOrMapUrl(input: string): ParsedLocationInput | null {
   if (!input) return null;
   const str = input.trim();
+
+  const plusCode = decodeFullPlusCode(str);
+  if (plusCode) return { type: 'coords', ...plusCode, raw: `${plusCode.lat.toFixed(7)}, ${plusCode.lng.toFixed(7)}` };
 
   // Pattern 1: Raw coordinates with optional parentheses
   // e.g. "(13.9848152, 100.4729654)", "13.9848152, 100.4729654", "13.9848152 100.4729654"

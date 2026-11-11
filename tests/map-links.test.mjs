@@ -19,6 +19,20 @@ test('Google Maps place pin takes precedence over the viewport center', async ()
   assert.equal(result.lat,13.751);assert.equal(result.lng,100.492);
 });
 
+test('map resolver reads place coordinates embedded in a Google Maps page', async () => {
+  let calls = 0;
+  const fetcher = async (_url, options) => {
+    calls += 1;
+    if (options.method === 'HEAD' && calls === 1) return new Response(null, { status: 302, headers: { location: '/maps/place//data=!1splace-id' } });
+    if (options.method === 'HEAD') return new Response(null, { status: 200 });
+    return new Response('<link href="/maps/preview/place?pb=%211d123%212d100.7419392%213d13.8018816">', { status: 200 });
+  };
+  const result = await resolveMapLink('https://maps.app.goo.gl/example', fetcher);
+  assert.equal(result.ok, true);
+  assert.equal(result.lat, 13.8018816);
+  assert.equal(result.lng, 100.7419392);
+});
+
 test('pasted map URLs keep the actual destination, encoded coordinates and negative signs', async () => {
   const {build}=await import('esbuild');const {createRequire}=await import('node:module');const fs=await import('node:fs/promises');const os=await import('node:os');const path=await import('node:path');
   const dir=await fs.mkdtemp(path.join(os.tmpdir(),'map-input-'));const file=path.join(dir,'api.cjs');
@@ -29,6 +43,10 @@ test('pasted map URLs keep the actual destination, encoded coordinates and negat
     assert.equal(parse('https://www.google.com/maps?q=-33%2C151').lat,-33);
     assert.equal(parse('(-33.8, 151.2)').lat,-33.8);
     assert.equal(parse('0, 100').lat,0);
+    const plusCode = parse('849VCWC8+R9');
+    assert.equal(plusCode.type, 'coords');
+    assert.ok(Math.abs(plusCode.lat - 37.4220625) < 1e-7);
+    assert.ok(Math.abs(plusCode.lng + 122.0840625) < 1e-7);
     for(const value of ['95,200','https://maps.app.goo.gl.evil.example/x','https://www.google.com/maps?q=%ZZ'])assert.equal(parse(value),null);
   } finally {await fs.rm(dir,{recursive:true,force:true});}
 });
