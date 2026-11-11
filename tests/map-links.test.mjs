@@ -23,9 +23,9 @@ test('map resolver reads place coordinates embedded in a Google Maps page', asyn
   let calls = 0;
   const fetcher = async (_url, options) => {
     calls += 1;
-    if (options.method === 'HEAD' && calls === 1) return new Response(null, { status: 302, headers: { location: '/maps/place//data=!1splace-id' } });
+    if (options.method === 'HEAD' && calls === 1) return new Response(null, { status: 302, headers: { location: '/maps/place//data=!1s0x123:0x456' } });
     if (options.method === 'HEAD') return new Response(null, { status: 200 });
-    return new Response('<link href="/maps/preview/place?pb=%211d123%212d100.7419392%213d13.8018816">', { status: 200 });
+    return new Response('["0x123:0x456","Place",[13.8018816,100.7419392],"1110"]', { status: 200 });
   };
   const result = await resolveMapLink('https://maps.app.goo.gl/example', fetcher);
   assert.equal(result.ok, true);
