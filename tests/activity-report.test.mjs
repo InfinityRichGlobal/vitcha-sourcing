@@ -72,3 +72,30 @@ test('location report uses location ratings, contacts and lease data without res
   for (const value of ['ข้อมูลพื้นที่และเงื่อนไขเช่า', '60000', '120', 'เจ้าของพื้นที่', '0123456789', 'ห้องมุม']) assert.ok(plain.includes(value), value);
   assert.ok(!plain.includes('undefined') && !plain.includes('รสชาติ') && !plain.includes('เมนูชิม'));
 });
+
+test('Thai supplier reports use baht for explicit, legacy and zero prices without currency conversion', () => {
+  const record = { ...item(), country: 'TH', catalogItems: [
+    { id: 'explicit', name: 'ราคาเงินบาท', photo: '', priceThb: 1500, priceRmb: 300 },
+    { id: 'legacy', name: 'ราคาเดิม', photo: '', priceRmb: 1234.5 },
+    { id: 'zero', name: 'ตัวอย่างฟรี', photo: '', priceThb: 0, priceRmb: 99 },
+  ], history: [{ kind: 'update', action: 'แก้ไขข้อมูล', user: 'May', timestamp: '2026-10-30T00:00:00Z', changes: [
+    { field: 'catalogItems', before: [{ priceRmb: 1200 }], after: [{ priceRmb: 1234.5 }] },
+  ] }] };
+  for (const mode of ['print', 'pdf']) {
+    const plain = text(report(record, () => { throw new Error('Thai supplier prices must not be converted'); }, mode));
+    for (const value of ['ประเทศไทย (TH)', 'บาท / THB', '฿1,500', '฿1,234.5', '฿0']) assert.ok(plain.includes(value), value);
+    assert.ok(!plain.includes('¥') && !plain.includes('≈') && !plain.includes('หยวน'));
+  }
+});
+
+test('Chinese supplier reports retain yuan pricing and baht conversion, including zero', () => {
+  const record = { ...item(), country: 'CN', catalogItems: [
+    { id: 'cny', name: 'เครื่องชง', photo: '', priceRmb: 88, priceThb: 999 },
+    { id: 'zero', name: 'ตัวอย่างฟรี', photo: '', priceRmb: 0 },
+    { id: 'thb', name: 'ราคาเงินบาท', photo: '', priceThb: 700 },
+  ] };
+  const conversions = [];
+  const plain = text(report(record, value => { conversions.push(value); return value * 5; }, 'print'));
+  for (const value of ['ประเทศจีน (CN)', '¥88', '(≈ ฿440)', '¥0', '(≈ ฿0)', '฿700']) assert.ok(plain.includes(value), value);
+  assert.deepEqual(conversions, [88, 0]);
+});

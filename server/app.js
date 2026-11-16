@@ -2,6 +2,7 @@ import { newPushKeys, createPushDelivery, registerPushRoutes } from './push.js';
 import { registerUploadSessions } from './upload-sessions.js';
 import { recordActivity } from './activity-history.js';
 import { compactActivityHistories } from '../src/utils/activitySummary.js';
+import { normalizeSupplierCatalogItem } from '../src/utils/supplierCurrency.js';
 import { resolveMapLink } from './map-links.js';
 import { packSnapshot } from './snapshot-wire.js';
 import express from 'express';
@@ -87,6 +88,9 @@ function validateRecord(record, collection) {
       if (entry.id && (typeof entry.id !== 'string' || itemIds.has(entry.id))) fail(400, 'รหัสสินค้าซ้ำหรือไม่ถูกต้อง');
       entry.id ||= randomUUID(); itemIds.add(entry.id);
       if (entry.photo !== undefined && (typeof entry.photo !== 'string' || /^(idb:|blob:)/.test(entry.photo))) fail(400, 'กรุณาอัปโหลดรูปสินค้าให้สำเร็จก่อน');
+    }
+    if (collection === 'suppliers' && record.country === 'TH') {
+      record.catalogItems = entries.map(entry => normalizeSupplierCatalogItem(entry, record.country));
     }
   }
   if ((record.videos || []).some(url => typeof url !== 'string' || /^(idb:|blob:)/.test(url))) fail(400, 'กรุณาอัปโหลดวิดีโอขึ้นเซิร์ฟเวอร์ให้สำเร็จก่อน');

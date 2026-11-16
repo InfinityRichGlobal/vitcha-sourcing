@@ -14,6 +14,7 @@ import { useApp } from '../context/AppContext';
 import { SeenByBadge } from './SeenByBadge';
 import { openExecutiveReport } from '../utils/exportReport';
 import { getItemVoiceNotes } from '../utils/audioHelper';
+import { getSupplierPrice } from '../utils/supplierCurrency';
 import { VideoPlayer } from './VideoPlayer';
 import { getFileCategoryInfo, formatBytes } from './AttachedFilesSection';
 import {
@@ -849,7 +850,9 @@ export const DetailModal: React.FC<DetailModalProps> = ({
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {(supplier.catalogItems || []).map((catItem, idx) => (
+                {(supplier.catalogItems || []).map((catItem, idx) => {
+                  const price = getSupplierPrice(catItem, supplier.country);
+                  return (
                   <div
                     key={catItem.id || idx}
                     className="p-3 rounded-xl border border-slate-200 bg-white flex gap-3 shadow-xs"
@@ -870,17 +873,14 @@ export const DetailModal: React.FC<DetailModalProps> = ({
                       <div className="font-bold text-xs text-slate-900 truncate">
                         {catItem.name || `รายการที่ ${idx + 1}`}
                       </div>
-                      {catItem.priceRmb && (
+                      {price && (
                         <div className="text-xs font-mono font-bold text-emerald-700">
-                          ¥{catItem.priceRmb}{' '}
-                          <span className="text-[11px] font-normal text-slate-500">
-                            (≈{convertCnyToThb(catItem.priceRmb).toLocaleString()}฿)
-                          </span>
-                        </div>
-                      )}
-                      {catItem.priceThb && !catItem.priceRmb && (
-                        <div className="text-xs font-mono font-bold text-emerald-700">
-                          ฿{catItem.priceThb.toLocaleString()}
+                          {price.currency === 'THB' ? '฿' : '¥'}{price.amount.toLocaleString()}
+                          {price.currency === 'CNY' && (
+                            <span className="text-[11px] font-normal text-slate-500">
+                              {' '}(≈{convertCnyToThb(price.amount).toLocaleString()}฿)
+                            </span>
+                          )}
                         </div>
                       )}
                       {catItem.weightKg && (
@@ -909,7 +909,8 @@ export const DetailModal: React.FC<DetailModalProps> = ({
                       )}
                     </div>
                   </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           )}

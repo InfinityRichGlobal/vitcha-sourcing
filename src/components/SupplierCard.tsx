@@ -8,6 +8,7 @@ import React, { useState } from 'react';
 import { SupplierRecord } from '../types';
 import { useApp } from '../context/AppContext';
 import { SeenByBadge } from './SeenByBadge';
+import { getSupplierPrice } from '../utils/supplierCurrency';
 import {
   MapPin,
   Share2,
@@ -88,6 +89,7 @@ export const SupplierCard: React.FC<SupplierCardProps> = ({
   const likes = Array.isArray(supplier.likes) ? supplier.likes : [];
   const isLikedByMe = likes.some((l) => l.userId === currentUser.id);
   const catalogItems = Array.isArray(supplier.catalogItems) ? supplier.catalogItems : [];
+  const primaryPrice = catalogItems[0] ? getSupplierPrice(catalogItems[0], supplier.country) : undefined;
   const voiceNotesCount = (supplier.voiceNotes && supplier.voiceNotes.length > 0)
     ? supplier.voiceNotes.length
     : (supplier.voiceNoteUrl ? 1 : 0);
@@ -239,18 +241,16 @@ export const SupplierCard: React.FC<SupplierCardProps> = ({
                 </div>
               </div>
               <div className="text-right shrink-0">
-                {catalogItems[0].priceRmb ? (
+                {primaryPrice && (
                   <span className="text-xs font-mono font-bold text-emerald-700">
-                    ¥{catalogItems[0].priceRmb.toLocaleString()}{' '}
-                    <span className="text-[11px] font-normal text-slate-400">
-                      (≈{convertCnyToThb(catalogItems[0].priceRmb).toLocaleString()}฿)
-                    </span>
+                    {primaryPrice.currency === 'THB' ? '฿' : '¥'}{primaryPrice.amount.toLocaleString()}
+                    {primaryPrice.currency === 'CNY' && (
+                      <span className="text-[11px] font-normal text-slate-400">
+                        {' '}(≈{convertCnyToThb(primaryPrice.amount).toLocaleString()}฿)
+                      </span>
+                    )}
                   </span>
-                ) : catalogItems[0].priceThb ? (
-                  <span className="text-xs font-mono font-bold text-emerald-700">
-                    ฿{catalogItems[0].priceThb.toLocaleString()}
-                  </span>
-                ) : null}
+                )}
               </div>
             </div>
           )}

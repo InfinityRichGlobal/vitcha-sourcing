@@ -7,6 +7,7 @@ import { resolveActorProfile } from './actorProfile';
 import { reportFooterCss, reportFooterLabel, reportPdfFooterScript } from './reportFooter';
 import { getItemVoiceNotes } from './audioHelper';
 import { getRenderServerUrl } from '../services/api';
+import { getSupplierPrice } from './supplierCurrency';
 
 function escapeHtml(str?: string | number | null): string {
   if (str === undefined || str === null) return '';
@@ -288,6 +289,7 @@ export function buildExecutiveReportHtml(
     const rows = (sup.catalogItems || [])
       .map((c, i) => {
         const subVoices = getItemVoiceNotes(c);
+        const price = getSupplierPrice(c, sup.country);
         return `
         <tr>
           <td style="text-align:center;font-weight:700;">${i + 1}</td>
@@ -314,16 +316,14 @@ export function buildExecutiveReportHtml(
           <td>
             <div class="cell-price-green">
               ${
-                c.priceRmb
-                  ? `¥${c.priceRmb.toLocaleString()}`
-                  : c.priceThb
-                  ? `฿${c.priceThb.toLocaleString()}`
+                price
+                  ? `${price.currency === 'THB' ? '฿' : '¥'}${price.amount.toLocaleString()}`
                   : '-'
               }
             </div>
             ${
-              c.priceRmb
-                ? `<div class="cell-sub">(≈ ฿${convertCnyToThb(c.priceRmb).toLocaleString()})</div>`
+              price?.currency === 'CNY'
+                ? `<div class="cell-sub">(≈ ฿${convertCnyToThb(price.amount).toLocaleString()})</div>`
                 : ''
             }
           </td>
@@ -350,7 +350,7 @@ export function buildExecutiveReportHtml(
                     <th>${segmentThaiHtml('รูปภาพ')}</th>
                     <th>${segmentThaiHtml('ชื่อรายการ & รายละเอียดสเปก')}</th>
                     <th>${segmentThaiHtml('ขนาด / น้ำหนัก')}</th>
-                    <th>${segmentThaiHtml('ราคาประเมิน')}</th>
+                    <th>${segmentThaiHtml(sup.country === 'TH' ? 'ราคาประเมิน (บาท / THB)' : 'ราคาประเมิน')}</th>
                   </tr>
                 </thead>
                 <tbody>${rows}</tbody>

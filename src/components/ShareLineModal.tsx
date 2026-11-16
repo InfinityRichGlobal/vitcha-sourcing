@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { SupplierRecord, StoreInspoRecord } from '../types';
 import { useApp } from '../context/AppContext';
 import { X, Share2, Copy, Check, Lock, ExternalLink } from 'lucide-react';
+import { getSupplierPrice } from '../utils/supplierCurrency';
 
 interface ShareLineModalProps {
   item: SupplierRecord | StoreInspoRecord | null;
@@ -29,7 +30,7 @@ export const ShareLineModal: React.FC<ShareLineModalProps> = ({
 
   let shareText = '';
   if (supplier) {
-    shareText = `🏭 [CHINA SOURCING 2026] สรุปข้อมูลซัพพลายเออร์
+    shareText = `🏭 [${supplier.country === 'TH' ? 'THAILAND' : 'CHINA'} SOURCING 2026] สรุปข้อมูลซัพพลายเออร์
 ━━━━━━━━━━━━━━━━━━━━
 📌 ชื่อ: ${supplier.name} ${supplier.chineseName ? `(${supplier.chineseName})` : ''}
 📍 ทำเล: ${supplier.marketOrCity || supplier.location.addressText || 'ไม่ระบุสถานที่'}
@@ -38,7 +39,13 @@ export const ShareLineModal: React.FC<ShareLineModalProps> = ({
 👤 ผู้สำรวจบันทึก: ${supplier.creator.alias}
 ━━━━━━━━━━━━━━━━━━━━
 🛠️ รายการสินค้า/อุปกรณ์เด่น:
-${supplier.catalogItems.map((c) => `• ${c.name || 'สินค้า'} ${c.priceRmb ? `[¥${c.priceRmb} ≈ ฿${convertCnyToThb(c.priceRmb).toLocaleString()}]` : ''}`).join('\n')}
+${supplier.catalogItems.map((c) => {
+  const price = getSupplierPrice(c, supplier.country);
+  const priceText = !price ? '' : price.currency === 'THB'
+    ? `[฿${price.amount.toLocaleString()} บาท (THB)]`
+    : `[¥${price.amount.toLocaleString()} ≈ ฿${convertCnyToThb(price.amount).toLocaleString()}]`;
+  return `• ${c.name || 'สินค้า'} ${priceText}`;
+}).join('\n')}
 ${supplier.memo ? `\n📝 โน้ตหน้างาน: "${supplier.memo}"` : ''}
 ━━━━━━━━━━━━━━━━━━━━
 🔒 ดูข้อมูลสเปก รูปภาพ และไฟล์เสียงฉบับเต็มได้ที่ลิงก์นี้:

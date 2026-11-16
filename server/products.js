@@ -1,4 +1,5 @@
 import { createHash, randomUUID } from "node:crypto";
+import { normalizeSupplierCatalogItem } from "../src/utils/supplierCurrency.js";
 
 const now = () => new Date().toISOString();
 const clean = (value) => (typeof value === "string" ? value.trim() : "");
@@ -28,6 +29,7 @@ export function productData(db) {
     (supplier.catalogItems || [])
       .filter((item) => item && typeof item === "object")
       .map((item, index) => {
+        const localItem = normalizeSupplierCatalogItem(item, supplier.country);
         const id = productId(supplier.id, item.id || `index-${index}`);
         const entry = ws.entries[id] || {};
         return {
@@ -40,8 +42,8 @@ export function productData(db) {
           photo: item.photo || "",
           dimensions: item.dimensions || "",
           weightKg: item.weightKg || "",
-          priceRmb: item.priceRmb,
-          priceThb: item.priceThb,
+          priceRmb: localItem.priceRmb,
+          priceThb: localItem.priceThb,
           sourceMemo: item.memo || "",
           voiceNotes:
             item.voiceNotes ||

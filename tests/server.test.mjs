@@ -39,6 +39,52 @@ test('snapshot polling avoids repeated payloads while observing writes and chang
   const simulated = (await poll(changed.version)).data;
   assert.equal(simulated.user.id, 'user-ann'); assert.notEqual(simulated.version, changed.version);
 });
+test('Thai supplier writes store baht without converting legacy values and preserve China currencies', async t => {
+  const { call, login, dir } = await setup(t);
+  const token = await login('ice');
+  const catalogItems = [
+    { id: 'legacy', name: 'Legacy baht', priceRmb: 1250.5, photo: '' },
+    { id: 'explicit', name: 'Explicit baht', priceThb: 2400, priceRmb: 480, photo: '' },
+    { id: 'zero', name: 'Free sample', priceThb: 0, priceRmb: 99, photo: '' },
+    { id: 'unpriced', name: 'Awaiting quote', photo: '' },
+  ];
+  const request = { ...item, country: 'TH', catalogItems };
+  const created = await call('/api/suppliers', token, request);
+  assert.equal(created.status, 200);
+  assert.deepEqual(created.data.item.catalogItems.map(entry => entry.priceThb), [1250.5, 2400, 0, undefined]);
+  assert.ok(created.data.item.catalogItems.every(entry => !Object.hasOwn(entry, 'priceRmb')));
+  // An older client retrying the exact request must still get the existing record.
+  const retried = await call('/api/suppliers', token, request);
+  assert.equal(retried.status, 200);
+  assert.equal(retried.data.item.revision, created.data.item.revision);
+  const updated = await call('/api/suppliers', token, { ...request, revision: created.data.item.revision, catalogItems: [{ id: 'legacy', priceRmb: 875.25, photo: '' }] });
+  assert.equal(updated.status, 200);
+  assert.equal(updated.data.item.catalogItems[0].priceThb, 875.25);
+  assert.equal(updated.data.item.catalogItems[0].priceRmb, undefined);
+  const stored = JSON.parse(fs.readFileSync(path.join(dir, 'database.json'))).suppliers[0];
+  assert.equal(stored.catalogItems[0].priceThb, 875.25);
+  assert.ok(!Object.hasOwn(stored.catalogItems[0], 'priceRmb'));
+  const china = await call('/api/suppliers', token, { ...item, id: 'china', country: 'CN', catalogItems });
+  assert.equal(china.status, 200);
+  assert.deepEqual(china.data.item.catalogItems, catalogItems);
+  const snapshot = (await call('/api/data', token, undefined, 'GET')).data;
+  assert.equal(snapshot.products.find(product => product.supplierId === item.id).priceThb, 875.25);
+  assert.equal(snapshot.products.find(product => product.supplierId === item.id).priceRmb, undefined);
+});
+test('legacy Thai product snapshots expose baht while keeping source data untouched', async t => {
+  const { call, login, dir } = await setup(t);
+  const token = await login('ice');
+  const databasePath = path.join(dir, 'database.json');
+  const database = JSON.parse(fs.readFileSync(databasePath));
+  const legacy = { ...item, country: 'TH', catalogItems: [{ id: 'legacy', name: 'Legacy Thai price', priceRmb: 1500, photo: '' }] };
+  database.suppliers = [legacy];
+  fs.writeFileSync(databasePath, JSON.stringify(database));
+  const snapshot = (await call('/api/data', token, undefined, 'GET')).data;
+  assert.equal(snapshot.products[0].priceThb, 1500);
+  assert.equal(snapshot.products[0].priceRmb, undefined);
+  assert.equal(snapshot.suppliers[0].catalogItems[0].priceRmb, 1500);
+  assert.deepEqual(JSON.parse(fs.readFileSync(databasePath)).suppliers, [legacy]);
+});
 test('login uses exact identity, no founder fallback PIN, and hashes legacy PIN', async t => {
   const { call, login, dir } = await setup(t);
   assert.equal((await call('/api/login', null, { idOrEmail: 'ice', pin: '1234' })).status, 401);

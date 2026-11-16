@@ -19,6 +19,7 @@ import { useApp } from "../context/AppContext";
 import { CuratedProduct, ProductSet, ProductChanges } from "../types";
 import { useDialog } from "../hooks/useDialog";
 import { VideoPlayer } from "./VideoPlayer";
+import { getSupplierPrice } from "../utils/supplierCurrency";
 
 const decisions = {
   pending: "ยังไม่คัด",
@@ -455,7 +456,11 @@ export function ProductWorkspace({
         </div>
       ) : (
         <div className="grid gap-3 grid-cols-2 sm:grid-cols-3 lg:grid-cols-4">
-          {filtered.map((product) => (
+          {filtered.map((product) => {
+            const price = product.country !== "TH" && product.priceThb != null
+              ? { amount: Number(product.priceThb), currency: "THB" as const }
+              : getSupplierPrice(product, product.country);
+            return (
             <article
               key={product.id}
               className={`group flex flex-col justify-between overflow-hidden rounded-2xl border bg-white p-2.5 shadow-2xs transition-all hover:shadow-sm ${selected.has(product.id) ? "border-emerald-500 ring-1 ring-emerald-500" : "border-slate-200/90 hover:border-slate-300"}`}
@@ -497,11 +502,9 @@ export function ProductWorkspace({
                       {product.supplierName}
                     </p>
                     <p className="font-mono text-xs font-extrabold text-emerald-700 shrink-0">
-                      {product.priceThb != null
-                        ? `฿${Number(product.priceThb).toLocaleString()}`
-                        : product.priceRmb != null
-                          ? `¥${Number(product.priceRmb).toLocaleString()}`
-                          : "รอราคา"}
+                      {price
+                        ? `${price.currency === "THB" ? "฿" : "¥"}${price.amount.toLocaleString()}`
+                        : "รอราคา"}
                     </p>
                   </div>
 
@@ -587,7 +590,8 @@ export function ProductWorkspace({
                 )}
               </div>
             </article>
-          ))}
+            );
+          })}
         </div>
       )}
       {opened && (

@@ -7,6 +7,7 @@ import { useApp } from '../context/AppContext';
 import { CatalogItem, VoiceNoteEntry, AttachedFile } from '../types';
 import { AudioRecorder } from './AudioRecorder';
 import { getItemVoiceNotes } from '../utils/audioHelper';
+import { getSupplierPrice, normalizeSupplierCatalogItem } from '../utils/supplierCurrency';
 import { useMediaUploadQueue } from '../hooks/useMediaUploadQueue';
 import { UploadablePhotoGrid } from './UploadablePhotoGrid';
 import { AttachedFilesSection } from './AttachedFilesSection';
@@ -126,7 +127,7 @@ export const NewSupplierModal: React.FC<NewSupplierModalProps> = ({ isOpen, onCl
       setContactCards(editingSupplier.photos?.contactCards || []);
       setVideos(editingSupplier.videos || []);
       setAttachedFiles(editingSupplier.attachedFiles || []);
-      setCatalogItems(editingSupplier.catalogItems || []);
+      setCatalogItems((editingSupplier.catalogItems || []).map(item => normalizeSupplierCatalogItem(item, editingSupplier.country)));
       setLat(editingSupplier.location?.lat && editingSupplier.location.lat !== 0 ? editingSupplier.location.lat : '');
       setLng(editingSupplier.location?.lng && editingSupplier.location.lng !== 0 ? editingSupplier.location.lng : '');
       setAddressText(editingSupplier.location?.addressText || editingSupplier.marketOrCity || '');
@@ -178,7 +179,7 @@ export const NewSupplierModal: React.FC<NewSupplierModalProps> = ({ isOpen, onCl
     const files = Array.from(e.target.files || []); e.target.value = '';
     const newItems: CatalogItem[] = files.map(file => {
       const id = crypto.randomUUID();
-      return { id, photo: itemUploads.enqueue(id, file), name: '', dimensions: '', weightKg: '', priceRmb: undefined, memo: '', voiceNotes: [] };
+      return { id, photo: itemUploads.enqueue(id, file), name: '', dimensions: '', weightKg: '', memo: '', voiceNotes: [] };
     });
     setCatalogItems(previous => [...previous, ...newItems]);
   };
@@ -192,7 +193,6 @@ export const NewSupplierModal: React.FC<NewSupplierModalProps> = ({ isOpen, onCl
         name: '',
         dimensions: '',
         weightKg: '',
-        priceRmb: undefined,
         memo: '',
       },
     ]);
@@ -298,7 +298,7 @@ export const NewSupplierModal: React.FC<NewSupplierModalProps> = ({ isOpen, onCl
           },
           videos,
           attachedFiles,
-          catalogItems,
+          catalogItems: catalogItems.map(item => normalizeSupplierCatalogItem(item, country)),
           memo: memo.trim() || undefined,
           voiceNoteUrl: mainVoiceNotes[0]?.url || mainVoiceUrl,
           voiceDurationSec: mainVoiceNotes[0]?.durationSec || mainVoiceSec,
@@ -328,7 +328,7 @@ export const NewSupplierModal: React.FC<NewSupplierModalProps> = ({ isOpen, onCl
           },
           videos,
           attachedFiles,
-          catalogItems,
+          catalogItems: catalogItems.map(item => normalizeSupplierCatalogItem(item, country)),
           memo: memo.trim() || undefined,
           voiceNoteUrl: mainVoiceNotes[0]?.url || mainVoiceUrl,
           voiceDurationSec: mainVoiceNotes[0]?.durationSec || mainVoiceSec,
@@ -873,19 +873,27 @@ export const NewSupplierModal: React.FC<NewSupplierModalProps> = ({ isOpen, onCl
 
                     <div className="grid grid-cols-2 gap-1.5">
                       <div className="relative">
+                        <label htmlFor={`supplier-price-${item.id}`} className="block text-[10px] font-medium text-slate-600 mb-1">
+                          {country === 'TH' ? 'ราคา (บาท / THB)' : 'ราคา (หยวน / CNY)'}
+                        </label>
                         <input
+                          id={`supplier-price-${item.id}`}
                           type="number"
-                          placeholder="ราคา ¥"
-                          value={item.priceRmb || ''}
+                          step="any"
+                          placeholder={country === 'TH' ? 'ราคา ฿' : 'ราคา ¥'}
+                          value={(country === 'TH' ? getSupplierPrice(item, country)?.amount : item.priceRmb) ?? ''}
                           onChange={(e) => {
-                            const updated = [...catalogItems];
                             const val = parseFloat(e.target.value);
-                            updated[idx].priceRmb = isNaN(val) ? undefined : val;
-                            setCatalogItems(updated);
+                            setCatalogItems(previous => previous.map(entry => {
+                              if (entry.id !== item.id) return entry;
+                              if (country === 'CN') return { ...entry, priceRmb: isNaN(val) ? undefined : val };
+                              const { priceRmb, priceThb, ...rest } = entry;
+                              return isNaN(val) ? rest : { ...rest, priceThb: val };
+                            }));
                           }}
                           className="w-full bg-slate-50 border border-slate-200 rounded-lg px-2 py-1 text-xs text-slate-900 font-mono"
                         />
-                        {item.priceRmb && (
+                        {country === 'CN' && item.priceRmb != null && (
                           <span className="text-[9px] text-amber-600 font-mono block">
                             ≈฿{convertCnyToThb(item.priceRmb).toLocaleString()}
                           </span>

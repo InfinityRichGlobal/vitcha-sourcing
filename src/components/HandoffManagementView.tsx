@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
 import { SupplierRecord, StoreInspoRecord, LocationRecord, HandoffStage } from '../types';
 import { SeenByBadge } from './SeenByBadge';
+import { getSupplierPrice } from '../utils/supplierCurrency';
 import {
   Users,
   Clock,
@@ -210,6 +211,7 @@ export const HandoffManagementView: React.FC<HandoffManagementViewProps> = ({ on
     const isSupplier = item.itemType === 'supplier';
     const isLocation = item.itemType === 'location';
     const sup = isSupplier ? (item as SupplierRecord) : null;
+    const supplierPrice = sup?.catalogItems?.[0] ? getSupplierPrice(sup.catalogItems[0], sup.country) : undefined;
     const st = item.itemType === 'drink_store' ? (item as StoreInspoRecord) : null;
     const loc = isLocation ? (item as LocationRecord) : null;
 
@@ -291,16 +293,14 @@ export const HandoffManagementView: React.FC<HandoffManagementViewProps> = ({ on
                   <i className="fa-solid fa-box-open text-[11px] text-slate-500" />
                   <span>{sup.catalogItems[0].name || 'สินค้าหลัก'}</span>
                 </span>
-                {sup.catalogItems[0].priceRmb ? (
+                {supplierPrice && (
                   <span className="font-mono font-extrabold text-emerald-700 shrink-0">
-                    ¥{sup.catalogItems[0].priceRmb} (≈
-                    {convertCnyToThb(sup.catalogItems[0].priceRmb).toLocaleString()}฿)
+                    {supplierPrice.currency === 'THB' ? '฿' : '¥'}{supplierPrice.amount.toLocaleString()}
+                    {supplierPrice.currency === 'CNY' && (
+                      <> (≈{convertCnyToThb(supplierPrice.amount).toLocaleString()}฿)</>
+                    )}
                   </span>
-                ) : sup.catalogItems[0].priceThb ? (
-                  <span className="font-mono font-extrabold text-emerald-700 shrink-0">
-                    ฿{sup.catalogItems[0].priceThb.toLocaleString()}
-                  </span>
-                ) : null}
+                )}
               </div>
             )}
             <div className="flex items-center gap-2 text-[11px] text-slate-600 flex-wrap">
