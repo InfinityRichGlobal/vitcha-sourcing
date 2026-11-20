@@ -57,7 +57,9 @@ export async function createSupabasePersistence(options) {
     let version;
     for (let attempt = 0; attempt < 2; attempt++) {
       try {
-        version = await request('/rest/v1/rpc/vitcha_commit_delta', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: payload, timeoutMs: 12000 });
+        // The RPC has a scoped 30s database deadline. Leave response headroom;
+        // two attempts plus receipt checks still fit the caller's 90s save limit.
+        version = await request('/rest/v1/rpc/vitcha_commit_delta', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: payload, timeoutMs: 35000 });
         break;
       } catch (error) {
         if (error.status === 409) throw error;
@@ -73,6 +75,10 @@ export async function createSupabasePersistence(options) {
   }
   const store = {
     read() { return structuredClone(context.getStore()?.body || initialWrite || cached.body); },
+    readFields(fields) {
+      const body = context.getStore()?.body || initialWrite || cached.body;
+      return structuredClone(Object.fromEntries(fields.map(field => [field, body[field]])));
+    },
     save(body) {
       const current = context.getStore();
       if (current) { if (current.aborted || current.readOnly) throw unavailable(); current.body = structuredClone(body); current.dirty = true; }

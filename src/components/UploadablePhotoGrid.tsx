@@ -121,9 +121,9 @@ export const UploadablePhotoGrid: React.FC<UploadablePhotoGridProps> = ({
 
   const pump = () => {
     if (!mounted.current) return;
-    // Keep six transfers moving continuously without launching an entire
-    // album at once. Originals are never resized or re-encoded.
-    while (navigator.onLine && !disabled && active.current.size < 6) {
+    // The API also shares a two-transfer limit across all form groups.
+    // Originals are never resized or re-encoded.
+    while (navigator.onLine && !disabled && active.current.size < 2) {
       const item = itemsRef.current.find(photo => photo.status === 'queued');
       if (!item?.file) break;
       const controller = new AbortController();

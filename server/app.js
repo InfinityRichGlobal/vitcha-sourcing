@@ -1,5 +1,6 @@
 import { newPushKeys, createPushDelivery, registerPushRoutes } from './push.js';
 import { registerUploadSessions } from './upload-sessions.js';
+import { createUploadLimiter } from './upload-limits.js';
 import { recordActivity } from './activity-history.js';
 import { compactActivityHistories } from '../src/utils/activitySummary.js';
 import { normalizeSupplierCatalogItem } from '../src/utils/supplierCurrency.js';
@@ -112,14 +113,17 @@ export function createApp({ dataDir, defaults = DEFAULT_DATABASE, sessionTtlMs =
   const sessionSecret = recoveryPasswordHash || process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY || 'vitcha-persistent-session-secret-v1';
   const attempts = new Map();
   const read = () => storage.read();
+  const readFields = fields => storage.readFields ? storage.readFields(fields) : pick(read(), fields);
   // Every read/validate/write transaction below is synchronous (no await between
   // read and save). Run one Node writer per DATA_DIR; revisions protect stale clients.
   const save = db => {
-    const previous = new Set((read().notifications || []).map(n => n.id));
+    const previous = new Set((readFields(['notifications']).notifications || []).map(n => n.id));
     const fresh = (db.notifications || []).filter(n => !previous.has(n.id));
     db.updatedAt = now(); db.revision = revision(db) + 1; storage.save(db);
     if (fresh.length) {
-      const snapshot = structuredClone(db);
+      // Push delivery needs recipients and keys, never record photos or history.
+      // A provider retry can retain this snapshot for 30 seconds.
+      const snapshot = structuredClone({ pushVapid: db.pushVapid, pushSubscriptions: db.pushSubscriptions, users: (db.users || []).map(u => ({ id: u.id })) });
       const send = () => { for (const n of fresh) void pushDelivery.broadcast(snapshot, n).catch(() => console.warn('Web Push unavailable')); };
       if (storage.afterCommit) storage.afterCommit(send); else send();
     }
@@ -344,7 +348,9 @@ export function createApp({ dataDir, defaults = DEFAULT_DATABASE, sessionTtlMs =
   });
   app.use('/api', (req, res, next) => {
     const token = req.headers.authorization?.replace(/^Bearer /, '');
-    const db = read();
+    // Authentication runs for every binary chunk and must not clone the entire
+    // catalogue (including legacy embedded images) for each request.
+    const db = readFields(['users', 'revokedSessions', 'sessionOverrides']);
     const s = resolveSession(token, db);
     const actor = s && db.users.find(u => u.id === s.userId);
     if (!s || !actor) { return res.status(401).json({ error: 'เซสชันหมดอายุ กรุณาเข้าสู่ระบบใหม่' }); }
@@ -354,6 +360,9 @@ export function createApp({ dataDir, defaults = DEFAULT_DATABASE, sessionTtlMs =
     req.user = publicUser(user); req.session = s; req.token = token;
     next();
   });
+  // Older cached clients still send originals as JSON/base64. Serialize those
+  // requests before parsing so parallel retries cannot exhaust the instance RAM.
+  app.use('/api/upload', createUploadLimiter());
   app.use('/api', express.json({ limit: '75mb' }));
   registerPushRoutes(app, { read, save, delivery: pushDelivery });
   registerProductRoutes(app, { read, save, requireWriter });
@@ -1201,8 +1210,11 @@ export function createApp({ dataDir, defaults = DEFAULT_DATABASE, sessionTtlMs =
     if (!bytes.length || bytes.length > 50 * 1024 * 1024) fail(413, 'ไฟล์ต้องไม่เกิน 50 MB');
     const filename = `${randomBytes(24).toString('hex')}${types[mimeType]}`;
     if (mediaStorage) {
-      const url = await mediaStorage.upload({ filename, bytes, mimeType, recordType, recordId, recordTitle });
-      res.status(201).json({ success: true, url });
+      const release = res.locals.holdUploadSlot();
+      try {
+        const url = await mediaStorage.upload({ filename, bytes, mimeType, recordType, recordId, recordTitle });
+        res.status(201).json({ success: true, url });
+      } finally { release(); }
     } else {
       fs.writeFileSync(path.join(uploads, filename), bytes, { flag: 'wx' });
       res.status(201).json({ success: true, url: `/uploads/${filename}` });

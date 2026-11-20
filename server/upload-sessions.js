@@ -2,6 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { randomBytes } from 'node:crypto';
 import express from 'express';
+import { createUploadLimiter } from './upload-limits.js';
 
 export const MAX_UPLOAD_BYTES = 2 * 1024 ** 3;
 export const UPLOAD_CHUNK_BYTES = 4 * 1024 ** 2;
@@ -43,7 +44,7 @@ export function registerUploadSessions(app, { uploads, mediaStorage, requireWrit
     sessions.set(id, { id, userId: req.user.id, filePath, filename: `${id}${types.get(mimeType)}`, originalName: String(filename || '').slice(0, 255), mimeType, fileSize, recordType, recordId, recordTitle, offset: 0, touched: Date.now(), controller: new AbortController() });
     res.status(201).json({ id, chunkSize: UPLOAD_CHUNK_BYTES });
   });
-  app.post('/api/uploads/:id/chunk', express.raw({ type: 'application/octet-stream', limit: UPLOAD_CHUNK_BYTES }), (req, res) => {
+  app.post('/api/uploads/:id/chunk', createUploadLimiter({ concurrency: 4 }), express.raw({ type: 'application/octet-stream', limit: UPLOAD_CHUNK_BYTES }), (req, res) => {
     const s = get(req); const offset = Number(req.query.offset); const bytes = req.body;
     if (s.finishing || s.result) fail(409, 'ไฟล์กำลังตรวจสอบหรือบันทึกแล้ว');
     if (!Number.isSafeInteger(offset) || offset < 0 || !Buffer.isBuffer(bytes) || !bytes.length || offset + bytes.length > s.fileSize) fail(400, 'ข้อมูลส่วนของไฟล์ไม่ถูกต้อง');

@@ -1,5 +1,6 @@
 import { uploadInChunks, UploadOptions } from './chunkUpload';
 import { unpackSnapshot } from './snapshotWire';
+import { withUploadSlot } from './uploadScheduler';
 import { SupplierRecord, StoreInspoRecord, User, InviteLink, AppNotification, LabItem, LabFormulaStatus, FranchiseStore } from '../types';
 
 const RENDER_CONFIG_KEY = 'vitcha_render_server_url';
@@ -149,6 +150,13 @@ export async function uploadMediaToServer(
   file: File,
   options?: UploadOptions
 ): Promise<string> {
+  return withUploadSlot(() => uploadMediaFile(file, options), options?.signal);
+}
+
+async function uploadMediaFile(
+  file: File,
+  options?: UploadOptions
+): Promise<string> {
   let mimeType = file.type ? file.type.split(';')[0].toLowerCase() : '';
 
   // Fallback MIME detection from file extension if browser/OS reported empty or octet-stream
@@ -187,7 +195,9 @@ export async function uploadMediaToServer(
   }
 
   options?.signal?.throwIfAborted();
-  if (mimeType.startsWith('video/') || file.size > 8 * 1024 * 1024 || options?.onProgress) {
+  // Binary chunks keep original photos off the JSON/base64 path. Retain that
+  // path only for tiny payloads whose allocation is bounded by the shared queue.
+  if (mimeType.startsWith('video/') || file.size > 256 * 1024 || options?.onProgress) {
     return uploadInChunks(file, mimeType, options);
   }
 

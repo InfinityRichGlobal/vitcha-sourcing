@@ -3,7 +3,7 @@
 begin;
 create or replace function public.vitcha_apply_delta(previous jsonb, delta jsonb)
 returns jsonb language plpgsql immutable security invoker set search_path = '' as $$
-declare result jsonb; entry jsonb; source_index integer;
+declare result jsonb; entry jsonb; source_index integer; change_count integer; same_order boolean;
 begin
   if delta = 'null'::jsonb then return previous; end if;
   if jsonb_typeof(delta) is distinct from 'object' then
@@ -23,6 +23,19 @@ begin
         end if;
       end if;
     end loop;
+    -- The common edit changes one record without reordering its collection.
+    -- jsonb_set copies that array once instead of materializing all its records.
+    select count(*) filter (where value ? 'change'),
+      bool_and(case when value ? 'value' then false else (value->>'from')::integer = ordinal - 1 end)
+      into change_count, same_order
+      from jsonb_array_elements(delta->'items') with ordinality as items(value, ordinal);
+    if same_order and jsonb_array_length(previous) = jsonb_array_length(delta->'items') and change_count <= 1 then
+      if change_count = 0 then return previous; end if;
+      select value into entry from jsonb_array_elements(delta->'items') where value ? 'change';
+      source_index := (entry->>'from')::integer;
+      return jsonb_set(previous, array[entry->>'from'],
+        public.vitcha_apply_delta(previous->source_index, entry->'change'), false);
+    end if;
     select coalesce(jsonb_agg(case when value ? 'value' then value->'value'
       when value ? 'change' then public.vitcha_apply_delta(previous->((value->>'from')::integer), value->'change')
       else previous->((value->>'from')::integer) end order by ordinal), '[]'::jsonb)
@@ -31,13 +44,15 @@ begin
   end if;
   if delta ? 'fields' and jsonb_typeof(previous) = 'object'
      and jsonb_typeof(delta->'fields') = 'object' and jsonb_typeof(delta->'remove') = 'array' then
-    -- Rebuild a changed object once, not once per field in a multi-MB document.
-    select coalesce(jsonb_object_agg(key, value), '{}'::jsonb) into result from (
-      select key, value from jsonb_each(previous)
-        where not (delta->'fields') ? key and not (delta->'remove') ? key
-      union all
-      select key, public.vitcha_apply_delta(previous->key, value) from jsonb_each(delta->'fields')
-    ) as fields;
+    if exists (select 1 from jsonb_array_elements(delta->'remove') as removed(value)
+      where jsonb_typeof(value) is distinct from 'string') then
+      raise exception sqlstate 'PT400' using message = 'Invalid removed field';
+    end if;
+    -- Aggregate only changed fields. Native JSONB merge retains the large,
+    -- unchanged values without expanding the whole object into SQL rows.
+    select coalesce(jsonb_object_agg(key, public.vitcha_apply_delta(previous->key, value)), '{}'::jsonb)
+      into result from jsonb_each(delta->'fields');
+    result := (previous - array(select jsonb_array_elements_text(delta->'remove'))) || result;
     return result;
   end if;
   raise exception sqlstate 'PT400' using message = 'Invalid state delta shape';
@@ -47,7 +62,10 @@ revoke all on function public.vitcha_apply_delta(jsonb,jsonb) from public, anon,
 grant execute on function public.vitcha_apply_delta(jsonb,jsonb) to service_role;
 
 create or replace function public.vitcha_commit_delta(expected_version bigint, delta jsonb, commit_id uuid)
-returns bigint language plpgsql security invoker set search_path = '' as $$
+returns bigint language plpgsql security invoker set search_path = ''
+-- This server-only RPC rewrites one complete document. Supabase REST otherwise
+-- inherits the authenticator's 8s deadline, even for service_role calls.
+set statement_timeout = '30s' as $$
 declare result_version bigint; previous jsonb; next_body jsonb;
 begin
   perform pg_advisory_xact_lock(748302910);

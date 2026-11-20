@@ -24,10 +24,11 @@ async function fixture(t, { simulation = false, large = false } = {}) {
   if (simulation) body.users.push({ id: 'user-ann', emailOrId: 'ann', name: 'Ann', alias: 'Ann', pin: '', role: 'viewer', avatar: '' });
   await db.query('insert into public.vitcha_state(id,body) values ($1,$2)', ['main', JSON.stringify(body)]);
   let failWrite = false, loseAcknowledgement = false, beforeCommit = null, transientFailures = 0, receiptFailures = 0;
-  const payloads = [];
+  const payloads = [], commitTimeouts = [];
   const request = async (route, options = {}) => {
     if (route === '/rest/v1/rpc/vitcha_commit_delta') {
       payloads.push(options.body);
+      commitTimeouts.push(options.timeoutMs);
       if (transientFailures-- > 0) throw Object.assign(new Error('temporary network failure'), { status: 503 });
       if (beforeCommit) await beforeCommit();
       if (failWrite) throw Object.assign(new Error('fixture unavailable'), { status: 503 });
@@ -60,7 +61,7 @@ async function fixture(t, { simulation = false, large = false } = {}) {
     return { call, token, dir };
   };
   t.after(async () => { for (const server of servers) await new Promise(resolve => server.close(resolve)); for (const dir of dirs) fs.rmSync(dir, { recursive: true, force: true }); await db.close(); });
-  return { db, start, payloads, failOnce: () => { transientFailures = 1; }, failReceiptOnce: () => { receiptFailures = 1; }, failWrites: v => { failWrite = v; }, loseAck: () => { loseAcknowledgement = true; }, gate: v => { beforeCommit = v; }, read: async () => (await db.query('select body from public.vitcha_state')).rows[0].body };
+  return { db, start, payloads, commitTimeouts, failOnce: () => { transientFailures = 1; }, failReceiptOnce: () => { receiptFailures = 1; }, failWrites: v => { failWrite = v; }, loseAck: () => { loseAcknowledgement = true; }, gate: v => { beforeCommit = v; }, read: async () => (await db.query('select body from public.vitcha_state')).rows[0].body };
 }
 
 test('PostgreSQL commits concurrent invites and consumes each invitation once, surviving a fresh server', async t => {
@@ -282,4 +283,40 @@ test('SQL delta preserves reordered arrays, null, removed fields and arbitrary J
   assert.deepEqual(await f.read(), before);
   await assert.rejects(f.db.query('select public.vitcha_commit_delta(1,$1,$2)', [JSON.stringify({ value: {} }), randomUUID()]), e => e.code === 'PT400');
   assert.deepEqual(await f.read(), before);
+});
+
+
+test('optimized SQL edits one large record losslessly and retains general array operations', async t => {
+  const f = await fixture(t);
+  const previous = { unchanged: 'unmodified document '.repeat(100000), records: Array.from({ length: 35 }, (_, index) => ({ id: `record-${index}`, memo: `memo-${index} `.repeat(6000), nested: { keep: true, remove: 1 } })), remove: 'old', '{}': 'literal object-shaped key' };
+  const next = structuredClone(previous);
+  next.records[17].memo = 'Edited once';
+  next.records[17].nested.added = null;
+  delete next.records[17].nested.remove;
+  delete next.remove;
+  next.added = { nested: [null, 0, false] };
+  const apply = async (old, delta) => (await f.db.query('select public.vitcha_apply_delta($1,$2) as body', [JSON.stringify(old), JSON.stringify(delta)])).rows[0].body;
+  assert.deepEqual(await apply(previous, stateDelta(previous, next)), next);
+  assert.deepEqual(await apply(previous.records, { items: previous.records.map((_, from) => ({ from })) }), previous.records);
+  const reordered = [next.records[34], { id: 'new', memo: 'New record' }, ...next.records.slice(0, 34).reverse()];
+  assert.deepEqual(await apply(next.records, stateDelta(next.records, reordered)), reordered);
+  const multiple = structuredClone(next.records); multiple[0].memo = 'first'; multiple[34].memo = 'last';
+  assert.deepEqual(await apply(next.records, stateDelta(next.records, multiple)), multiple);
+  assert.deepEqual(await apply([null], { items: [{ value: { fresh: true }, from: 'ignored-by-value', change: {} }] }), [{ fresh: true }]);
+  const shortened = next.records.slice(0, -1);
+  assert.deepEqual(await apply(next.records, stateDelta(next.records, shortened)), shortened);
+  // Native merge must not turn malformed removal values into string field names.
+  for (const remove of [[{}], [null], [1]]) await assert.rejects(apply(previous, { fields: {}, remove }), error => error.code === 'PT400');
+  for (const from of [-1, 0.5, '0', 999]) await assert.rejects(apply([{}], { items: [{ from, change: { value: null } }] }), error => error.code === 'PT400');
+});
+
+test('only delta commits receive the bounded REST timeout and client waits for its durable acknowledgement', async t => {
+  const f = await fixture(t);
+  const settings = (await f.db.query("select proname, proconfig from pg_proc where pronamespace = 'public'::regnamespace and proname in ('vitcha_commit_delta', 'vitcha_commit', 'vitcha_apply_delta')")).rows;
+  assert.ok(settings.find(row => row.proname === 'vitcha_commit_delta').proconfig.includes('statement_timeout=30s'));
+  for (const row of settings.filter(row => row.proname !== 'vitcha_commit_delta')) assert.ok(!row.proconfig.some(value => value.startsWith('statement_timeout=')));
+  const a = await f.start();
+  assert.equal((await a.call('/api/invites', { role: 'reviewer', requestId: 'bounded-delta-deadline' }, a.token)).status, 201);
+  assert.ok(f.commitTimeouts.length > 0);
+  assert.ok(f.commitTimeouts.every(timeout => timeout === 35000));
 });

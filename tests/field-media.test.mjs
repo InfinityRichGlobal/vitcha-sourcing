@@ -121,3 +121,48 @@ test('six original image uploads can hold chunk sessions together and release ev
  assert.ok(results.every(r=>r.status===201));
  for(const result of results) assert.equal((await call(`/api/uploads/${result.data.id}`,token,undefined,'DELETE')).status,200);
 });
+
+test('legacy original uploads are serialized and a failed transfer releases the next request', async t => {
+ let active=0,peak=0,entered=0;
+ const mediaStorage={upload:async({bytes})=>{
+  active++;peak=Math.max(peak,active);const index=++entered;
+  try {assert.equal(bytes.length,1024*1024);await new Promise(resolve=>setTimeout(resolve,30));if(index===1)throw new Error('temporary fixture failure');return `/media/original-${index}`;}
+  finally {active--;}
+ }};
+ const {call,login}=await setup(t,{mediaStorage});const token=await login('editor');
+ const payload={mimeType:'image/png',base64:`data:image/png;base64,${Buffer.alloc(1024*1024,42).toString('base64')}`};
+ const results=await Promise.all(Array.from({length:4},()=>call('/api/upload',token,payload)));
+ assert.equal(peak,1);assert.equal(entered,4);
+ assert.deepEqual(results.map(r=>r.status).sort(),[201,201,201,500]);
+});
+
+test('an aborted legacy upload keeps its memory slot until the upstream transfer settles', async t => {
+ let entered=0,release,started;const gate=new Promise(resolve=>{release=resolve;});const reached=new Promise(resolve=>{started=resolve;});
+ const mediaStorage={upload:async()=>{const index=++entered;if(index===1){started();await gate;}return `/media/original-${index}`;}};
+ const {base,call,login}=await setup(t,{mediaStorage});const token=await login('editor');
+ const payload={mimeType:'image/png',base64:'data:image/png;base64,aW1hZ2U='};
+ const controller=new AbortController();
+ const first=fetch(`${base}/api/upload`,{method:'POST',headers:{Authorization:`Bearer ${token}`,'Content-Type':'application/json'},body:JSON.stringify(payload),signal:controller.signal}).catch(error=>error);
+ await reached;controller.abort();await first;
+ const second=call('/api/upload',token,payload);
+ try {await new Promise(resolve=>setTimeout(resolve,50));assert.equal(entered,1);}
+ finally {release();}
+ assert.equal((await second).status,201);assert.equal(entered,2);
+});
+
+test('upload authentication reads only session fields instead of copying the full catalogue per chunk', async t => {
+ let body={users:[{id:'user-ice',emailOrId:'ice',name:'Ice',alias:'Ice',role:'admin',pin:'qa-password'}],suppliers:[],drinkStores:[],invites:[],notifications:[]};
+ let fullReads=0;const selections=[];
+ const persistence={
+  read:()=>{fullReads++;return structuredClone(body);},
+  readFields:fields=>{selections.push(fields);return structuredClone(Object.fromEntries(fields.map(field=>[field,body[field]])));},
+  save:next=>{body=structuredClone(next);},
+ };
+ const {base,call,login}=await setup(t,{persistence});const token=await login('ice');const before=fullReads;
+ const session=await call('/api/uploads',token,{filename:'original.png',mimeType:'image/png',fileSize:10});assert.equal(session.status,201);
+ const response=await fetch(`${base}/api/uploads/${session.data.id}/chunk?offset=0`,{method:'POST',headers:{Authorization:`Bearer ${token}`,'Content-Type':'application/octet-stream'},body:Buffer.alloc(10)});
+ assert.equal(response.status,200);await response.json();
+ assert.equal((await call(`/api/uploads/${session.data.id}/complete`,token,{})).status,200);
+ assert.equal(fullReads,before);
+ assert.deepEqual(selections.slice(-3),Array.from({length:3},()=>['users','revokedSessions','sessionOverrides']));
+});

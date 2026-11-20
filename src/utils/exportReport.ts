@@ -110,7 +110,7 @@ export function buildExecutiveReportHtml(
   const directLink = `${normalizedBase}?view=${encodeURIComponent(item.id)}&type=${encodeURIComponent(item.type)}`;
   const qrDataUri = generateQrSvgDataUri(directLink);
 
-  // Collect all photos with clear labels
+  // Item photos appear with their cards; the gallery retains other field photos.
   const allPhotos: { url: string; label: string }[] = [];
   if (sup) {
     sup.photos.storefrontAndAtmosphere?.forEach((p, idx) =>
@@ -119,14 +119,6 @@ export function buildExecutiveReportHtml(
     sup.photos.contactCards?.forEach((p, idx) =>
       allPhotos.push({ url: p, label: `นามบัตร / WeChat #${idx + 1}` })
     );
-    sup.catalogItems?.forEach((c, idx) => {
-      if (c.photo) {
-        allPhotos.push({
-          url: c.photo,
-          label: c.name ? `สินค้า: ${c.name}` : `รายการสินค้า #${idx + 1}`,
-        });
-      }
-    });
   } else if (loc) {
     loc.photos.storefrontAndAtmosphere?.forEach((p, idx) =>
       allPhotos.push({ url: p, label: `หน้าร้าน / ทางเดิน #${idx + 1}` })
@@ -150,15 +142,16 @@ export function buildExecutiveReportHtml(
     st.photos.drinkCups?.forEach((p, idx) =>
       allPhotos.push({ url: p, label: `แก้วเครื่องดื่ม #${idx + 1}` })
     );
-    st.drinkItems?.forEach((d, idx) => {
-      if (d.photo) {
-        allPhotos.push({
-          url: d.photo,
-          label: d.name ? `เมนูชิม: ${d.name}` : `แก้วชิม #${idx + 1}`,
-        });
-      }
-    });
   }
+
+  const itemPhotoUrls = (sup?.catalogItems || st?.drinkItems || []).map(entry => entry.photo).filter(Boolean);
+  const seenPhotoUrls = new Set(itemPhotoUrls);
+  const galleryPhotos = allPhotos.filter(photo => {
+    if (seenPhotoUrls.has(photo.url)) return false;
+    seenPhotoUrls.add(photo.url);
+    return true;
+  });
+  const photoCount = seenPhotoUrls.size;
 
   // Collect all voice clips (main item + sub-items)
   const mainVoiceClips = getItemVoiceNotes(item);
@@ -283,165 +276,71 @@ export function buildExecutiveReportHtml(
   };
   const commentsHtml = notes.map((note, index) => `<section class="comment-thread">${commentHtml(note, String(index + 1))}${(note.replies || []).map((reply, i) => commentHtml(reply, `${index + 1}.${i + 1}`, true)).join('')}</section>`).join('');
 
-  // Build Catalog or Drink Items Table HTML
+  // Keep the photo and its specifications together in two generous cards per row.
+  // Explicit rows paginate consistently in native print and html2pdf.
+  const pairedRows = (cards: string[], rowClass: string) => cards.reduce((rows, card, index) => {
+    if (index % 2 === 0) rows.push([]);
+    rows[rows.length - 1].push(card);
+    return rows;
+  }, [] as string[][]).map(row => `<div class="${rowClass}">${row.join('')}</div>`).join('');
+  const itemPhoto = (url: string | undefined, name: string) => `<div class="item-report-photo${url ? '' : ' item-report-photo-missing'}">${url
+    ? `<img src="${escapeHtml(imageDisplayUrl(url, 2000))}" crossorigin="anonymous" alt="${escapeHtml(name)}" />`
+    : `<div class="item-report-photo-empty">${segmentThaiHtml('ยังไม่มีภาพรายการนี้')}</div>`}</div>`;
+  const itemField = (label: string, value: string) => `<div class="item-report-field"><dt>${segmentThaiHtml(label)}</dt><dd>${value}</dd></div>`;
   let itemsSectionHtml = '';
   if (isSupplier && sup) {
-    const rows = (sup.catalogItems || [])
-      .map((c, i) => {
-        const subVoices = getItemVoiceNotes(c);
-        const price = getSupplierPrice(c, sup.country);
-        return `
-        <tr>
-          <td style="text-align:center;font-weight:700;">${i + 1}</td>
-          <td>
-            ${
-              c.photo
-                ? `<img src="${escapeHtml(imageDisplayUrl(c.photo, 2000))}" crossorigin="anonymous" class="table-thumb" />`
-                : `<div class="table-thumb-empty">ไม่มีรูป</div>`
-            }
-          </td>
-          <td>
-            <div class="cell-title">${segmentThaiHtml(c.name || `รายการที่ #${i + 1}`)}</div>
-            ${c.memo ? `<div class="cell-sub">${segmentThaiHtml(c.memo)}</div>` : ''}
-            ${
-              subVoices.length > 0
-                ? `<div class="cell-voice-badge">แนบเสียงบันทึก ${subVoices.length} คลิป</div>`
-                : ''
-            }
-          </td>
-          <td>
-            <div class="cell-text">${segmentThaiHtml(c.dimensions || '-')}</div>
-            <div class="cell-sub">${segmentThaiHtml(c.weightKg ? `น้ำหนัก: ${c.weightKg}` : '')}</div>
-          </td>
-          <td>
-            <div class="cell-price-green">
-              ${
-                price
-                  ? `${price.currency === 'THB' ? '฿' : '¥'}${price.amount.toLocaleString()}`
-                  : '-'
-              }
-            </div>
-            ${
-              price?.currency === 'CNY'
-                ? `<div class="cell-sub">(≈ ฿${convertCnyToThb(price.amount).toLocaleString()})</div>`
-                : ''
-            }
-          </td>
-        </tr>`;
-      })
-      .join('');
-
-    itemsSectionHtml = `
-      <div class="section-box">
-        <div class="section-title">${segmentThaiHtml(`กลุ่มที่ 3: รายการสินค้า / อุปกรณ์ / วัตถุดิบ (${(sup.catalogItems || []).length} รายการ)`)}</div>
-        ${
-          rows
-            ? `<table class="data-table">
-                <colgroup>
-                  <col style="width:6%;" />
-                  <col style="width:13%;" />
-                  <col style="width:43%;" />
-                  <col style="width:20%;" />
-                  <col style="width:18%;" />
-                </colgroup>
-                <thead>
-                  <tr>
-                    <th style="text-align:center;">#</th>
-                    <th>${segmentThaiHtml('รูปภาพ')}</th>
-                    <th>${segmentThaiHtml('ชื่อรายการ & รายละเอียดสเปก')}</th>
-                    <th>${segmentThaiHtml('ขนาด / น้ำหนัก')}</th>
-                    <th>${segmentThaiHtml(sup.country === 'TH' ? 'ราคาประเมิน (บาท / THB)' : 'ราคาประเมิน')}</th>
-                  </tr>
-                </thead>
-                <tbody>${rows}</tbody>
-              </table>`
-            : `<div class="empty-note">${segmentThaiHtml('ไม่มีรายการย่อย')}</div>`
-        }
-      </div>
-    `;
+    const cards = (sup.catalogItems || []).map((c, i) => {
+      const name = c.name || `รายการที่ #${i + 1}`;
+      const subVoices = getItemVoiceNotes(c);
+      const price = getSupplierPrice(c, sup.country);
+      const priceHtml = `<span class="cell-price-green">${price ? `${price.currency === 'THB' ? '฿' : '¥'}${price.amount.toLocaleString()}` : '-'}</span>${price?.currency === 'CNY'
+        ? `<span class="item-report-conversion">${segmentThaiHtml(`(≈ ฿${convertCnyToThb(price.amount).toLocaleString()})`)}</span>` : ''}`;
+      return `<article class="item-report-card" data-item-id="${escapeHtml(c.id)}">
+        ${itemPhoto(c.photo, name)}
+        <div class="item-report-content">
+          <div class="item-report-number">${segmentThaiHtml(`รายการ ${i + 1}`)}</div>
+          <h3 class="item-report-title">${segmentThaiHtml(name)}</h3>
+          <dl class="item-report-fields">
+            ${itemField('ขนาด / สเปก', segmentThaiHtml(c.dimensions || '-'))}
+            ${itemField('น้ำหนัก', segmentThaiHtml(c.weightKg || '-'))}
+            ${itemField(sup.country === 'TH' ? 'ราคาประเมิน (บาท / THB)' : 'ราคาประเมิน', priceHtml)}
+          </dl>
+          ${c.memo ? `<div class="item-report-notes"><strong>${segmentThaiHtml('รายละเอียดเพิ่มเติม')}</strong><div>${segmentThaiHtml(c.memo)}</div></div>` : ''}
+          ${subVoices.length ? `<div class="cell-voice-badge">${segmentThaiHtml(`แนบเสียงบันทึก ${subVoices.length} คลิป`)}</div>` : ''}
+        </div>
+      </article>`;
+    });
+    itemsSectionHtml = `<section class="section-box item-report-section" id="record-items">
+      <div class="section-title">${segmentThaiHtml(`กลุ่มที่ 3: รายการสินค้า / อุปกรณ์ / วัตถุดิบ (${cards.length} รายการ)`)}</div>
+      ${cards.length ? `<div class="item-report-grid">${pairedRows(cards, 'item-report-row')}</div>` : `<div class="empty-note">${segmentThaiHtml('ไม่มีรายการย่อย')}</div>`}
+    </section>`;
   } else if (st) {
-    const rows = (st.drinkItems || [])
-      .map((d, i) => {
-        const subVoices = getItemVoiceNotes(d);
-        return `
-        <tr>
-          <td style="text-align:center;font-weight:700;">${i + 1}</td>
-          <td>
-            ${
-              d.photo
-                ? `<img src="${escapeHtml(imageDisplayUrl(d.photo, 2000))}" crossorigin="anonymous" class="table-thumb" />`
-                : `<div class="table-thumb-empty">ไม่มีรูป</div>`
-            }
-          </td>
-          <td>
-            <div class="cell-title">${segmentThaiHtml(d.name || `แก้วที่ #${i + 1}`)}</div>
-            ${
-              d.gimmickNotes
-                ? `<div class="cell-sub">${segmentThaiHtml(`กิมมิก: ${d.gimmickNotes}`)}</div>`
-                : ''
-            }
-            ${
-              subVoices.length > 0
-                ? `<div class="cell-voice-badge">แนบเสียงบันทึก ${subVoices.length} คลิป</div>`
-                : ''
-            }
-          </td>
-          <td>
-            <div class="cell-text">${segmentThaiHtml(d.cupSize || '-')}</div>
-          </td>
-          <td>
-            <div class="cell-text">${segmentThaiHtml(d.fitMenuTarget || '-')}</div>
-          </td>
-          <td>
-            <div class="cell-price-amber">
-              ${
-                d.priceRmb
-                  ? `¥${d.priceRmb.toLocaleString()}`
-                  : d.priceThb
-                  ? `฿${d.priceThb.toLocaleString()}`
-                  : '-'
-              }
-            </div>
-            ${
-              d.priceRmb
-                ? `<div class="cell-sub">(≈ ฿${convertCnyToThb(d.priceRmb).toLocaleString()})</div>`
-                : ''
-            }
-          </td>
-        </tr>`;
-      })
-      .join('');
-
-    itemsSectionHtml = `
-      <div class="section-box">
-        <div class="section-title">${segmentThaiHtml(`กลุ่มที่ 3: เมนูที่ชิม & การถอดรหัสสูตร (${(st.drinkItems || []).length} เมนู)`)}</div>
-        ${
-          rows
-            ? `<table class="data-table">
-                <colgroup>
-                  <col style="width:6%;" />
-                  <col style="width:13%;" />
-                  <col style="width:33%;" />
-                  <col style="width:11%;" />
-                  <col style="width:23%;" />
-                  <col style="width:14%;" />
-                </colgroup>
-                <thead>
-                  <tr>
-                    <th style="text-align:center;">#</th>
-                    <th>${segmentThaiHtml('รูปแก้ว')}</th>
-                    <th>${segmentThaiHtml('ชื่อเมนู & กิมมิก')}</th>
-                    <th>${segmentThaiHtml('ขนาดแก้ว')}</th>
-                    <th>${segmentThaiHtml('ต่อยอดเมนูของเรา')}</th>
-                    <th>${segmentThaiHtml('ราคาขาย')}</th>
-                  </tr>
-                </thead>
-                <tbody>${rows}</tbody>
-              </table>`
-            : `<div class="empty-note">${segmentThaiHtml('ไม่มีเมนูย่อย')}</div>`
-        }
-      </div>
-    `;
+    const cards = (st.drinkItems || []).map((d, i) => {
+      const name = d.name || `แก้วที่ #${i + 1}`;
+      const subVoices = getItemVoiceNotes(d);
+      const hasYuan = typeof d.priceRmb === 'number';
+      const hasBaht = typeof d.priceThb === 'number';
+      const priceHtml = `<span class="cell-price-amber">${hasYuan ? `¥${d.priceRmb!.toLocaleString()}` : hasBaht ? `฿${d.priceThb!.toLocaleString()}` : '-'}</span>${hasYuan
+        ? `<span class="item-report-conversion">${segmentThaiHtml(`(≈ ฿${convertCnyToThb(d.priceRmb!).toLocaleString()})`)}</span>` : ''}`;
+      return `<article class="item-report-card" data-item-id="${escapeHtml(d.id)}">
+        ${itemPhoto(d.photo, name)}
+        <div class="item-report-content">
+          <div class="item-report-number">${segmentThaiHtml(`เมนู ${i + 1}`)}</div>
+          <h3 class="item-report-title">${segmentThaiHtml(name)}</h3>
+          <dl class="item-report-fields">
+            ${itemField('ขนาดแก้ว', segmentThaiHtml(d.cupSize || '-'))}
+            ${itemField('ต่อยอดเมนูของเรา', segmentThaiHtml(d.fitMenuTarget || '-'))}
+            ${itemField('ราคาขาย', priceHtml)}
+          </dl>
+          ${d.gimmickNotes ? `<div class="item-report-notes"><strong>${segmentThaiHtml('กิมมิก / รายละเอียด')}</strong><div>${segmentThaiHtml(d.gimmickNotes)}</div></div>` : ''}
+          ${subVoices.length ? `<div class="cell-voice-badge">${segmentThaiHtml(`แนบเสียงบันทึก ${subVoices.length} คลิป`)}</div>` : ''}
+        </div>
+      </article>`;
+    });
+    itemsSectionHtml = `<section class="section-box item-report-section" id="record-items">
+      <div class="section-title">${segmentThaiHtml(`กลุ่มที่ 3: เมนูที่ชิม & การถอดรหัสสูตร (${cards.length} เมนู)`)}</div>
+      ${cards.length ? `<div class="item-report-grid">${pairedRows(cards, 'item-report-row')}</div>` : `<div class="empty-note">${segmentThaiHtml('ไม่มีเมนูย่อย')}</div>`}
+    </section>`;
   }
 
   if (loc) {
@@ -493,21 +392,14 @@ export function buildExecutiveReportHtml(
         </div>`
       : '';
 
-  // Build All Photos Grid
-  const photosGridHtml =
-    allPhotos.length > 0
-      ? `<div class="photo-grid media-masonry">
-          ${allPhotos
-            .map(
-              (p, i) => `
-              <div class="photo-card">
-                <img src="${escapeHtml(imageDisplayUrl(p.url, 2000))}" crossorigin="anonymous" alt="${escapeHtml(p.label)}" />
-                <div class="photo-caption">${segmentThaiHtml(`รูปที่ ${i + 1}: ${p.label}`)}</div>
-              </div>`
-            )
-            .join('')}
-        </div>`
-      : `<div class="empty-note">${segmentThaiHtml('ไม่มีรูปภาพในรายการนี้')}</div>`;
+  // Explicit two-photo rows also keep native printing from stacking a full
+  // column on one page and leaving the other half of the page empty.
+  const photosGridHtml = galleryPhotos.length
+    ? `<div class="photo-grid">${pairedRows(galleryPhotos.map((p, i) => `<div class="photo-card">
+        <img src="${escapeHtml(imageDisplayUrl(p.url, 2000))}" crossorigin="anonymous" alt="${escapeHtml(p.label)}" />
+        <div class="photo-caption">${segmentThaiHtml(`รูปที่ ${i + 1}: ${p.label}`)}</div>
+      </div>`), 'photo-report-row')}</div>`
+    : `<div class="empty-note">${segmentThaiHtml('ไม่มีรูปภาพในรายการนี้')}</div>`;
 
   // Export every concise event, independent of the timeline's filter/page limit.
   const activityRowsHtml = historyEntries.map((h, idx) => {
@@ -1022,25 +914,54 @@ export function buildExecutiveReportHtml(
       color: #1e293b;
       font-size: 11px;
     }
-    .table-thumb {
-      width: 62px;
-      height: auto;
-      border-radius: 6px;
-      border: 1px solid #cbd5e1;
-      display: block;
+    .item-report-row {
+      display: flex;
+      align-items: stretch;
+      gap: 14px;
+      margin-bottom: 14px;
+      break-inside: avoid;
+      page-break-inside: avoid;
     }
-    .table-thumb-empty {
-      width: 62px;
-      height: 62px;
-      border-radius: 6px;
-      background: #f1f5f9;
+    .item-report-card {
+      width: calc((100% - 14px) / 2);
+      flex: 0 0 calc((100% - 14px) / 2);
+      min-width: 0;
       border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      background: #ffffff;
+      overflow-wrap: anywhere;
+    }
+    .item-report-photo {
+      height: 240px;
+      padding: 8px;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 10px;
-      color: #94a3b8;
+      background: #f8fafc;
+      border-bottom: 1px solid #e2e8f0;
+      border-radius: 8px 8px 0 0;
     }
+    .item-report-photo img {
+      display: block;
+      width: auto;
+      height: auto;
+      max-width: 100%;
+      max-height: 100%;
+      object-fit: contain;
+    }
+    .item-report-photo-missing { height: 80px; }
+    .item-report-photo-empty { color: #64748b; font-size: 12px; }
+    .item-report-content { padding: 12px; }
+    .item-report-number { font-size: 10px; color: #64748b; margin-bottom: 3px; }
+    .item-report-title { margin: 0 0 10px; font-size: 15px; line-height: 1.45; color: #0f172a; }
+    .item-report-fields { margin: 0; font-size: 12px; line-height: 1.5; }
+    .item-report-field { padding: 6px 0; border-top: 1px solid #e2e8f0; }
+    .item-report-field dt { color: #64748b; font-size: 10.5px; margin-bottom: 2px; }
+    .item-report-field dd { margin: 0; color: #1e293b; }
+    .item-report-conversion { display: block; font-size: 11px; color: #475569; }
+    .item-report-notes { margin-top: 8px; padding-top: 8px; border-top: 1px solid #e2e8f0; font-size: 12px; line-height: 1.55; }
+    .item-report-notes strong { display: block; margin-bottom: 3px; font-size: 10.5px; color: #64748b; }
+    .item-report-card .w-seg { max-width: 100%; white-space: normal; overflow-wrap: anywhere; }
     .cell-title {
       font-weight: 800;
       color: #0f172a;
@@ -1082,7 +1003,8 @@ export function buildExecutiveReportHtml(
     }
 
     /* Photos Grid */
-    .photo-grid { column-count: 3; }
+    .photo-report-row { display: flex; gap: 12px; align-items: flex-start; margin-bottom: 12px; break-inside: avoid; page-break-inside: avoid; }
+    .photo-report-row > .photo-card { width: calc((100% - 12px) / 2); flex: 0 0 calc((100% - 12px) / 2); min-width: 0; margin: 0; }
     .photo-card {
       border: 1px solid #cbd5e1;
       border-radius: 8px;
@@ -1219,7 +1141,7 @@ export function buildExecutiveReportHtml(
 
           <!-- At-a-glance Multimedia & Detail Counter Pills -->
           <div class="summary-pills">
-            <span class="summary-pill">${segmentThaiHtml(`รูปภาพ ${allPhotos.length} รูป`)}</span>
+            <span class="summary-pill">${segmentThaiHtml(`รูปภาพ ${photoCount} รูป`)}</span>
             <span class="summary-pill">${segmentThaiHtml(`วอยซ์เสียง ${allVoiceClips.length} คลิป`)}</span>
             <span class="summary-pill">${segmentThaiHtml(`วิดีโอ ${rawVideos.length} คลิป`)}</span>
             <span class="summary-pill">${segmentThaiHtml(isSupplier ? `สินค้า ${(sup?.catalogItems || []).length} รายการ` : isLocation ? `พื้นที่ ${loc?.spaceSpecs?.usableAreaSqm ?? '-'} ตร.ม.` : `เมนูชิม ${(st?.drinkItems || []).length} เมนู`)}</span>
@@ -1338,7 +1260,7 @@ export function buildExecutiveReportHtml(
 
       <!-- Group 4: All Photos of This Item -->
       <div class="section-box">
-        <div class="section-title">${segmentThaiHtml(`กลุ่มที่ 4: แกลเลอรีภาพถ่ายทั้งหมดของรายการนี้ (${allPhotos.length} รูป)`)}</div>
+        <div class="section-title">${segmentThaiHtml(`กลุ่มที่ 4: ภาพหน้างานและเอกสารเพิ่มเติม (${galleryPhotos.length} รูป)`)}</div>
         ${photosGridHtml}
       </div>
 
@@ -1451,11 +1373,7 @@ export function buildExecutiveReportHtml(
       // in complete rows for the downloadable PDF; the preview stays masonry.
       clone.querySelectorAll('.media-masonry').forEach(function(grid) {
         var cards = Array.from(grid.children);
-        var portraitClips = grid.classList.contains('video-grid') && cards.every(function(card) {
-          var image = card.querySelector('.video-thumb-img');
-          return image && !image.hidden && image.naturalHeight > image.naturalWidth;
-        });
-        var columns = grid.classList.contains('photo-grid') || portraitClips ? 3 : 2;
+        var columns = 2;
         grid.replaceChildren(); grid.classList.remove('media-masonry'); grid.classList.add('pdf-media-grid');
         grid.style.columnCount = 'auto';
         for (var i = 0; i < cards.length; i += columns) {
@@ -1501,7 +1419,7 @@ export function buildExecutiveReportHtml(
           jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
           pagebreak: {
             mode: ['css', 'legacy'],
-            avoid: ['.location-details', '.pdf-media-row', 'tr', '.info-item', '.voice-card', '.video-card', '.photo-card', '.comment-header', '.comment-audio', '.note-banner', '.handoff-banner', '.report-header', '.file-attachment-card', '.audit-stage', '.audit-event', '.audit-change', '.audit-event-heading', '.audit-media']
+            avoid: ['.location-details', '.item-report-row', '.photo-report-row', '.pdf-media-row', 'tr', '.info-item', '.voice-card', '.video-card', '.photo-card', '.comment-header', '.comment-audio', '.note-banner', '.handoff-banner', '.report-header', '.file-attachment-card', '.audit-stage', '.audit-event', '.audit-change', '.audit-event-heading', '.audit-media']
           }
         };
         var worker = window.html2pdf().set(opt).from(pdfLayout(element));
@@ -1522,6 +1440,13 @@ export function buildExecutiveReportHtml(
             this.prop.container.style.right = 'auto';
             this.prop.container.style.top = '0px';
             this.prop.container.style.width = '732px';
+            // Row pagination can add enough blank space to exceed the canvas
+            // limit even when the original report was short enough.
+            if (this.prop.container.scrollHeight > 14000) {
+              if (statusEl) statusEl.textContent = 'รายงานมีหลายหน้า กรุณาเลือกบันทึกเป็น PDF ในหน้าพิมพ์เพื่อเก็บข้อมูลครบ';
+              if (this.prop.overlay) this.prop.overlay.remove();
+              throw new Error('Report exceeds the safe PDF canvas height');
+            }
           }
         }).toCanvas().toPdf().get('pdf').then(function(pdf) {
           addReportFooters(pdf);

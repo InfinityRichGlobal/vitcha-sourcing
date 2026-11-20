@@ -29,7 +29,7 @@ export function useMediaUploadQueue(options: Options) {
   };
   const pump = () => {
     if (!mounted.current || latest.current.enabled === false || !navigator.onLine) return;
-    while (active.current.size < 6) {
+    while (active.current.size < 2) {
       const job = current.current.find(j => j.status === 'queued' && !active.current.has(j.id));
       if (!job) break;
       const controller = new AbortController(); active.current.set(job.id, controller);

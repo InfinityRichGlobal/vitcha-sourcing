@@ -36,7 +36,7 @@ test('90 photos retain 15 failures, retry one or all repeatedly, and save all 90
   await expect(grid.getByTestId('photo-upload-item')).toHaveCount(90);
   await expect(grid.locator('[data-status=error]')).toHaveCount(15, { timeout: 60000 });
   await expect(grid.locator('[data-status=done]')).toHaveCount(75);
-  expect(requests).toBe(90); expect(maximum).toBeLessThanOrEqual(6); expect(maximum).toBeGreaterThan(1);
+  expect(requests).toBe(90); expect(maximum).toBeLessThanOrEqual(2); expect(maximum).toBeGreaterThan(1);
   await expect(dialog.getByRole('button', { name: 'ยังมีรูปอัปโหลดไม่ครบ' })).toBeDisabled();
   await grid.getByRole('button', { name: /^ลองอัปโหลดใหม่ / }).first().click();
   await expect(grid.locator('[data-status=done]')).toHaveCount(76);
@@ -131,6 +131,42 @@ test('large original image uses chunks and downloads with every original byte in
   expect((await download.body()).equals(original)).toBeTruthy();
 });
 
+test('medium originals in separate photo groups share two binary transfers and preserve all bytes', async ({ page }) => {
+  const dialog = await openForm(page);
+  const grids = dialog.getByTestId('photo-upload-grid');
+  const originals = Array.from({ length: 6 }, (_, i) => Buffer.concat([bytes, Buffer.alloc(2 * 1024 * 1024, i + 1)]));
+  let started = 0, active = 0, maximum = 0, held = 0;
+  let release!: () => void; const gate = new Promise<void>(resolve => { release = resolve; });
+  const completed: string[] = [];
+  await page.route('**/api/upload', () => { throw new Error('Original photos must use binary chunks'); });
+  await page.route('**/api/uploads', async route => {
+    const body = route.request().postDataJSON();
+    expect(body.fileSize).toBe(originals[0].length); expect(body.base64).toBeUndefined();
+    started++; active++; maximum = Math.max(maximum, active);
+    await route.continue();
+  });
+  await page.route('**/api/uploads/*/complete', async route => {
+    held++; await gate;
+    const response = await route.fetch(); expect(response.ok()).toBeTruthy();
+    completed.push((await response.json()).url); active--;
+    await route.fulfill({ response });
+  });
+  const select = (start: number) => originals.slice(start, start + 3).map((buffer, i) => ({ name: `medium-${start + i}.png`, mimeType: 'image/png', buffer }));
+  await grids.nth(0).locator('input[type=file]').setInputFiles(select(0));
+  await grids.nth(1).locator('input[type=file]').setInputFiles(select(3));
+  await expect.poll(() => held).toBe(2);
+  expect(started).toBe(2);
+  await expect(dialog.getByRole('button', { name: 'ยังมีรูปอัปโหลดไม่ครบ' })).toBeDisabled();
+  release();
+  await expect(grids.nth(0).locator('[data-status=done]')).toHaveCount(3);
+  await expect(grids.nth(1).locator('[data-status=done]')).toHaveCount(3);
+  expect(started).toBe(6); expect(maximum).toBe(2); expect(active).toBe(0);
+  const downloads = await Promise.all(completed.map(async url => {
+    const response = await page.request.get(url); expect(response.ok()).toBeTruthy(); return response.body();
+  }));
+  for (const original of originals) expect(downloads.some(download => download.equals(original))).toBeTruthy();
+});
+
 for (const kind of ['supplier', 'store']) test(`${kind} item photos keep failed originals, retry a batch and save acknowledged URLs`, async ({ page }) => {
   const dialog = await openForm(page, kind);
   await dialog.locator(kind === 'supplier' ? 'input[placeholder*="FEST"]' : 'input[placeholder*="CHAGEE"]').fill('Original item photos');
@@ -147,7 +183,7 @@ for (const kind of ['supplier', 'store']) test(`${kind} item photos keep failed 
   await batch.setInputFiles(files(12));
   await expect(dialog.getByRole('button', { name: 'ลองอัปโหลดใหม่', exact: true })).toHaveCount(4);
   const submit = dialog.getByRole('button', { name: kind === 'supplier' ? /^(ยังมีรูปอัปโหลดไม่ครบ|บันทึกเข้าระบบ)$/ : 'บันทึกร้านน้ำ', exact: true }); await expect(submit).toBeDisabled();
-  expect(maximum).toBeGreaterThan(1); expect(maximum).toBeLessThanOrEqual(6);
+  expect(maximum).toBeGreaterThan(1); expect(maximum).toBeLessThanOrEqual(2);
   await dialog.getByRole('button', { name: 'ลองอัปโหลดใหม่', exact: true }).first().scrollIntoViewIfNeeded();
   await page.screenshot({ path: `test-results/${kind}-original-retry-mobile.png` });
   fail = false; await dialog.getByRole('button', { name: 'ลองใหม่ทั้งหมด (4 รูป)' }).click();

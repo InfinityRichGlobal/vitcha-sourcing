@@ -1,5 +1,15 @@
 # VITCHA security and QA handover
 
+## Large item photos and upload memory — 2026-11-20
+
+Supplier catalog and drink-menu details now show full-width, uncropped photos above readable names, prices, specifications and notes. Cards use two columns from 380 px and one on narrower screens. Keyboard photo zoom and original-file links remain available. PDF reports use paired item cards and paired gallery rows; photos already shown with an item are not repeated in the gallery. Long PDF reports use the existing native-print fallback, including a second height check after canvas pagination inserts spacing.
+
+Render's Events page confirmed an instance exceeded its 512 MB memory limit at 15:03 Bangkok time on November 20. Application logs also showed repeated SQL `57014` failures in delta commits around 14:57–14:58. The client now shares a two-transfer upload limit across all photo groups, item lists, comments and attachments. Originals above 256 KiB use binary chunks; tiny uploads retain the compatible JSON route. No original images are resized or re-encoded. The server serializes legacy JSON uploads before parsing, retains their slot until an interrupted upstream transfer settles, and bounds binary chunk parsing. Upload authentication reads only session fields, and push delivery no longer retains the full database while waiting for providers.
+
+The actual “โรงงานคุ้มคง ผลิตซุ้ม” record was exported with all 48 catalog items and 60 unique photos. All images loaded and all item fields matched the source report DOM; the complete 19-page native PDF and its rendered pages were inspected. Physical-device behavior and production memory after release still require observation.
+
+Apply the updated `deployment/supabase-delta.sql` for the database timeout fix. It uses native JSONB object merging and a single-record array-edit shortcut while preserving version checks, commit receipts, validation and existing grants. Only the server commit RPC receives a 30-second SQL deadline; its server HTTP deadline is 35 seconds. Ordinary database queries and role settings are unchanged. The required production migration must be verified separately from publishing the application. Validation before publication: 153 application tests, 17 PostgreSQL tests after the SQL changes, the production build and 19 affected production-browser workflows passed.
+
 ## Owner Monitor — 2026-11-08
 
 The `owner_monitor` page and `GET /api/owner/monitor` are available only to the authenticated `user-ice` account outside simulation. Other admins, editors, viewers and simulated founder sessions are denied before provider access. The response is private/no-store and never contains provider credentials or raw provider errors. The page stops displaying readings when the effective identity changes.

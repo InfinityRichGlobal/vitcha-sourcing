@@ -849,59 +849,71 @@ export const DetailModal: React.FC<DetailModalProps> = ({
                 </span>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div data-testid="supplier-catalog-grid" className="grid grid-cols-1 min-[380px]:grid-cols-2 gap-3 items-start">
                 {(supplier.catalogItems || []).map((catItem, idx) => {
                   const price = getSupplierPrice(catItem, supplier.country);
                   return (
                   <div
                     key={catItem.id || idx}
-                    className="p-3 rounded-xl border border-slate-200 bg-white flex gap-3 shadow-xs"
+                    data-testid="detail-item-card"
+                    className="min-w-0 rounded-xl border border-slate-200 bg-white overflow-hidden shadow-xs"
                   >
                     {catItem.photo ? (
-                      <MediaImage
-                        src={catItem.photo}
-                        alt=""
+                      <button
+                        type="button"
+                        aria-label={`ขยายรูป ${catItem.name || `รายการที่ ${idx + 1}`}`}
                         onClick={() => openPhotoByUrl(catItem.photo, 'catalog')}
-                        className="w-16 h-16 rounded-lg object-cover cursor-pointer border border-slate-100 hover:opacity-90"
-                      />
+                        className="block w-full h-52 min-[380px]:h-44 sm:h-56 bg-slate-50 border-b border-slate-200 p-2 hover:bg-slate-100 focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-emerald-600"
+                      >
+                        <MediaImage
+                          src={catItem.photo}
+                          alt={catItem.name || `รายการที่ ${idx + 1}`}
+                          className="w-full h-full object-contain"
+                        />
+                      </button>
                     ) : (
-                      <div className="w-16 h-16 rounded-lg bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-400 text-xs">
+                      <div className="h-52 min-[380px]:h-44 sm:h-56 bg-slate-50 border-b border-slate-200 flex items-center justify-center text-slate-400 text-sm">
                         ไม่มีรูป
                       </div>
                     )}
-                    <div className="min-w-0 flex-1 space-y-1">
-                      <div className="font-bold text-xs text-slate-900 truncate">
+                    <div className="min-w-0 p-3 space-y-2 break-words">
+                      <div className="font-bold text-sm text-slate-900 leading-snug">
                         {catItem.name || `รายการที่ ${idx + 1}`}
                       </div>
                       {price && (
-                        <div className="text-xs font-mono font-bold text-emerald-700">
+                        <div className="text-sm font-mono font-bold text-emerald-700">
                           {price.currency === 'THB' ? '฿' : '¥'}{price.amount.toLocaleString()}
                           {price.currency === 'CNY' && (
-                            <span className="text-[11px] font-normal text-slate-500">
+                            <span className="block text-xs font-normal text-slate-500 mt-0.5">
                               {' '}(≈{convertCnyToThb(price.amount).toLocaleString()}฿)
                             </span>
                           )}
                         </div>
                       )}
                       {catItem.weightKg && (
-                        <div className="text-[11px] text-slate-500">
+                        <div className="text-sm text-slate-600">
                           น้ำหนัก: <span className="font-mono">{catItem.weightKg}</span>
                         </div>
                       )}
+                      {catItem.dimensions && (
+                        <div className="text-sm text-slate-600">
+                          ขนาด: <span className="font-mono">{catItem.dimensions}</span>
+                        </div>
+                      )}
                       {catItem.memo && (
-                        <p className="text-[11px] text-slate-600 whitespace-pre-wrap leading-relaxed">{catItem.memo}</p>
+                        <p className="text-sm text-slate-600 whitespace-pre-wrap leading-relaxed">{catItem.memo}</p>
                       )}
                       {getItemVoiceNotes(catItem).length > 0 && (
                         <div className="space-y-1 pt-1">
                           {getItemVoiceNotes(catItem).map((vClip, vIdx) => (
-                            <div key={vIdx} className="flex flex-col sm:flex-row sm:items-center gap-1 bg-emerald-50/90 p-1.5 rounded-lg border border-emerald-200/80">
-                              <span className="text-[10px] font-bold text-emerald-900 truncate min-w-0 flex items-center gap-1">
+                            <div key={vIdx} className="min-w-0 flex flex-col gap-2 bg-emerald-50/90 p-2 rounded-lg border border-emerald-200/80">
+                              <span className="text-xs font-bold text-emerald-900 min-w-0 flex items-start gap-1">
                                 <Volume2 className="w-3 h-3 text-emerald-600 shrink-0" />
-                                <span className="truncate">{vClip.label || `เสียง #${vIdx + 1}`}</span>
+                                <span className="min-w-0 break-words">{vClip.label || `เสียง #${vIdx + 1}`}</span>
                                 {vClip.durationSec ? `(${vClip.durationSec}s)` : ''}
                               </span>
                               {vClip.url && (
-                                <audio controls preload="metadata" playsInline src={vClip.url} className="h-6 w-full sm:w-44 shrink-0" />
+                                <audio controls preload="metadata" playsInline src={vClip.url} className="h-8 w-full min-w-0 max-w-full" />
                               )}
                             </div>
                           ))}
@@ -923,51 +935,70 @@ export const DetailModal: React.FC<DetailModalProps> = ({
                   เมนูที่ชิม & ถอดรหัสสูตร ({(store.drinkItems || []).length} เมนู):
                 </span>
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {(store.drinkItems || []).map((drink, idx) => (
+              <div data-testid="store-menu-grid" className="grid grid-cols-1 min-[380px]:grid-cols-2 gap-3 items-start">
+                {(store.drinkItems || []).map((drink, idx) => {
+                  const hasYuan = typeof drink.priceRmb === 'number';
+                  const hasBaht = typeof drink.priceThb === 'number';
+                  return (
                   <div
                     key={drink.id || idx}
-                    className="p-3 rounded-xl border border-amber-200/80 bg-amber-50/20 flex gap-3 shadow-xs"
+                    data-testid="detail-item-card"
+                    className="min-w-0 rounded-xl border border-amber-200/80 bg-white overflow-hidden shadow-xs"
                   >
-                    {drink.photo && (
-                      <MediaImage
-                        src={drink.photo}
-                        alt=""
+                    {drink.photo ? (
+                      <button
+                        type="button"
+                        aria-label={`ขยายรูป ${drink.name || `แก้วที่ #${idx + 1}`}`}
                         onClick={() => openPhotoByUrl(drink.photo, 'drinks')}
-                        className="w-16 h-16 rounded-lg object-cover cursor-pointer border border-amber-200"
-                      />
+                        className="block w-full h-52 min-[380px]:h-44 sm:h-56 bg-amber-50/30 border-b border-amber-200/80 p-2 hover:bg-amber-50 focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-amber-600"
+                      >
+                        <MediaImage
+                          src={drink.photo}
+                          alt={drink.name || `แก้วที่ #${idx + 1}`}
+                          className="w-full h-full object-contain"
+                        />
+                      </button>
+                    ) : (
+                      <div className="h-52 min-[380px]:h-44 sm:h-56 bg-amber-50/30 border-b border-amber-200/80 flex items-center justify-center text-slate-400 text-sm">
+                        ไม่มีรูป
+                      </div>
                     )}
-                    <div className="min-w-0 flex-1 space-y-1">
-                      <div className="font-bold text-xs text-slate-900 truncate">
+                    <div className="min-w-0 p-3 space-y-2 break-words">
+                      <div className="font-bold text-sm text-slate-900 leading-snug">
                         {drink.name || `แก้วที่ #${idx + 1}`}
                       </div>
-                      {drink.priceRmb && (
-                        <div className="text-xs font-mono font-bold text-amber-700">
-                          ¥{drink.priceRmb}{' '}
-                          <span className="text-[11px] font-normal text-slate-500">
-                            (≈{convertCnyToThb(drink.priceRmb)}฿)
-                          </span>
+                      {(hasYuan || hasBaht) && (
+                        <div className="text-sm font-mono font-bold text-amber-700">
+                          {hasYuan ? `¥${drink.priceRmb!.toLocaleString()}` : `฿${drink.priceThb!.toLocaleString()}`}
+                          {hasYuan && (
+                            <span className="block text-xs font-normal text-slate-500 mt-0.5">
+                              (≈{convertCnyToThb(drink.priceRmb!).toLocaleString()}฿)
+                            </span>
+                          )}
                         </div>
                       )}
                       {drink.fitMenuTarget && (
-                        <div className="text-[11px] font-semibold text-emerald-700">
+                        <div className="text-sm font-semibold text-emerald-700">
                           ต่อยอด: {drink.fitMenuTarget}
                         </div>
                       )}
+                      {drink.cupSize && (
+                        <div className="text-sm text-slate-600">ขนาดแก้ว: {drink.cupSize}</div>
+                      )}
                       {drink.gimmickNotes && (
-                        <p className="text-[11px] text-slate-600">{drink.gimmickNotes}</p>
+                        <p className="text-sm text-slate-600 whitespace-pre-wrap leading-relaxed">{drink.gimmickNotes}</p>
                       )}
                       {getItemVoiceNotes(drink).length > 0 && (
                         <div className="space-y-1 pt-1">
                           {getItemVoiceNotes(drink).map((vClip, vIdx) => (
-                            <div key={vIdx} className="flex flex-col sm:flex-row sm:items-center gap-1 bg-amber-50/90 p-1.5 rounded-lg border border-amber-200/80">
-                              <span className="text-[10px] font-bold text-amber-900 truncate min-w-0 flex items-center gap-1">
+                            <div key={vIdx} className="min-w-0 flex flex-col gap-2 bg-amber-50/90 p-2 rounded-lg border border-amber-200/80">
+                              <span className="text-xs font-bold text-amber-900 min-w-0 flex items-start gap-1">
                                 <Volume2 className="w-3 h-3 text-amber-600 shrink-0" />
-                                <span className="truncate">{vClip.label || `เสียง #${vIdx + 1}`}</span>
+                                <span className="min-w-0 break-words">{vClip.label || `เสียง #${vIdx + 1}`}</span>
                                 {vClip.durationSec ? `(${vClip.durationSec}s)` : ''}
                               </span>
                               {vClip.url && (
-                                <audio controls preload="metadata" playsInline src={vClip.url} className="h-6 w-full sm:w-44 shrink-0" />
+                                <audio controls preload="metadata" playsInline src={vClip.url} className="h-8 w-full min-w-0 max-w-full" />
                               )}
                             </div>
                           ))}
@@ -975,7 +1006,8 @@ export const DetailModal: React.FC<DetailModalProps> = ({
                       )}
                     </div>
                   </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           )}
